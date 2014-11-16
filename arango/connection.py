@@ -1,215 +1,172 @@
 """ArangoDB Connection Module."""
 
 import json
-import requests
+
 from arango.util import unicode_to_str
+from arango.client import ArangoRequestClient
+from arango.database import ArangoDatabase
 from arango.exceptions import *
 
 
 class ArangoConnection(object):
     """A wrapper around ArangoDB API.
 
-    :param host: the address of the ArangoDB host
-    :type host: str
-    :param port: the port of the ArangoDB host
-    :type port: int
+    :param host: the address of the ArangoDB host.
+    :type host: str.
+    :param port: the port of the ArangoDB host.
+    :type port: int.
     """
 
     def __init__(self, host="localhost", port=8529):
-        self._host = host
-        self._port = port
-        self._sess = requests.Session()
+        self._client = ArangoRequestClient(host, port)
+        self.db = ArangoDatabase(self._client)
 
-    def _url(self, path, db=None):
-        """Return the full request URL.
+    def db(self, name):
 
-        :param path: the API path
-        :type path: str
-        :param db: name of the database
-        :type db: str or None
-        :returns: str
-        """
-        path=path[1:] if path.startswith("/") else path
-        if db is not None:
-            return "http://{host}:{port}/_db/{db}/_api/{path}".format(
-                host=self._host, port=self._port, db = db, path=path
-            )
-        else:  # Use the default database if not specified
-            return "http://{host}:{port}/_api/{path}".format(
-                host=self._host, port=self._port, path=path
-            )
 
-    def _get(self, path, db=None, **kwargs):
-        """Execute an HTTP GET method."""
-        return self._sess.get(self._url(path, db), **kwargs)
-
-    def _put(self, path, data="", db=None, **kwargs):
-        """Execute an HTTP PUT method."""
-        return self._sess.put(self._url(path, db), data, **kwargs)
-
-    def _post(self, path, data="", db=None, **kwargs):
-        """Execute an HTTP POST method."""
-        return self._sess.post(self._url(path, db), data, **kwargs)
-
-    def _delete(self, path, db=None, **kwargs):
-        """Execute an HTTP DELETE method."""
-        return self._sess.delete(self._url(path, db), **kwargs)
+    def __getattr__(self, host)
 
     @property
     def version(self):
         """Return the version number of ArangoDB.
 
-        :returns: str -- version number
-        :raises: ArangoError
+        :returns: str -- version number.
+        :raises: ArangoError.
         """
-        res = self._get("/version")
-        if res.status_code == 200:
-            return unicode_to_str(res.json()["version"])
-        else:
-            raise ArangoError("Failed to get the version", res)
-
-    ####################
-    # Database Methods #
-    ####################
+        res = self._client.get("/version")
+        if res.status_code != 200:
+            raise ArangoError("Failed to get ArangoDB version", res)
+        return unicode_to_str(res.json()["version"])
 
     def databases(self, user_only=False):
-        """Return a list of all database namess.
+        """Return a list of all database names.
 
-        :param user_only: return only the dbs the user has access to
-        :type user_only: bool
-        :returns: list -- list of the database names
-        :raises: ArangoDatabaseReadError
+        :param user_only: return only the dbs the user has access to.
+        :type user_only: bool.
+        :returns: list -- list of the database names.
+        :raises: ArangoDatabaseReadError.
         """
-        if user_only:
-            res = self._get("/database/user")
-        else:
-            res = self._get("/database")
-        if res.status_code == 200:
-            return unicode_to_str(res.json()["result"])
-        else:
-            raise ArangoDatabaseReadError(
-                "Failed to get the databases", res
-            )
+        res = self._get("/database/user" if user_only else "/database")
+        if res.status_code != 200:
+            raise ArangoDatabaseError("Failed to get the database list", res)
+        return unicode_to_str(res.json()["result"])
 
     def database_exists(self, name):
         """Return True if the given database exists, False otherwise.
 
-        :param name: the name of the database
-        :type name: str
-        :return: bool -- True if exists else False
+        :param name: the name of the database.
+        :type name: str.
+        :return: bool -- True if exists else False.
         """
         return name in self.databases()
 
     def database_info(self, name=None):
         """Return the information of the current/specified database.
 
-        :param name: the name of the database
-        :type name: str or None
-        :returns: str -- the name of the current database
-        :raises: ArangoDatabaseReadError
+        :param name: the name of the database (if not given use current).
+        :type name: str or None.
+        :returns: str -- the name of the current database.
+        :raises: ArangoDatabaseNotFoundError, ArangoDatabaseError.
         """
-        res = self._get("/_api/database/current", name)
+        res = self._get("/database/current", name)
         if res.status_code == 200:
             return unicode_to_str(res.json()["result"])
         elif res.status_code == 404:
             raise ArangoDatabaseNotFoundError(name)
         else:
-            raise ArangoDatabaseReadError(
-                "Failed to get database '{}'".format(name), res
+            raise ArangoDatabaseError(
+                "Failed to get info on database '{}'".format(name), res
             )
 
-    def create_database(self, db, users=None):
+    def create_database(self, name, users=None):
         """Create a new database.
 
-        :param db: the name of the database
-        :type db: str
-        :param users: the ``users`` config sub-object
-        :type users: dict
-        :raises: ArangoDatabaseCreateError
+        :param name: the name of the database.
+        :type name: str.
+        :param users: the ``users`` config sub-object.
+        :type users: dict.
+        :raises: ArangoDatabaseCreateError.
         """
-        data = {"name": db}
-        if users is not None:
-            data["users"] = users
-        res = self._post(
-            "/_api/database",
-            data=json.dumps(data),
-            db="_system"
-        )
+        data = {"name": name, "users": users} if users else {"name": name}
+        res = self._post("/database", data=json.dumps(data))
         if res.status_code == 201:
-            return
+            return  # Database created successfully
         elif res.status_code == 409:
             raise ArangoDatabaseCreateError(
-                "Database '{}' already exists".format(db)
+                "Database '{}' already exists".format(name), res
             )
         else:
             raise ArangoDatabaseCreateError(
-                "Failed to create database '{}'".format(db), res
+                "Failed to create database '{}'".format(name), res
             )
 
-    def delete_database(self, db):
+    def delete_database(self, name):
         """Delete the given database.
 
-        :param db: the name of the database
-        :type db: str
-        :raises: ArangoDatabaseDeleteError
+        :param name: the name of the database.
+        :type name: str.
+        :raises: ArangoDatabaseDeleteError.
         """
-        if db == self._db:
-            self._db = "_system"
-        res = self._delete("/_api/database/{}".format(db))
+        res = self._delete("/database/{}".format(name))
         if res.status_code != 200:
-            raise ArangoDatabaseDeleteError(
-                "Failed to delete database '{}'".format(db), res
-            )
+            raise ArangoDatabaseDeleteError(name, res)
 
     ######################
     # Collection Methods #
     ######################
 
-    def list_collections(self, exclude_system=False):
+    def collections(self, exclude_system=False):
         """Return of list of the collections in the current database.
 
-        :returns: list -- list of the names of the collections
-        :raises: ArangoCollectionReadError
+        :returns: list -- list of the names of the collections.
+        :raises: ArangoCollectionReadError.
         """
-        res = self._get(
-            "/_api/collection?excludeSystem={}"
-            .format("true" if exclude_system else "false")
-        )
+        res = self._get("/collection?excludeSystem={}"
+                        .format("true" if exclude_system else "false"))
         if res.status_code == 200:
             return unicode_to_str(
                 [col["name"] for col in res.json()["collections"]]
             )
         else:
-            raise ArangoCollectionReadError(
-                "Failed to retrieve the list of collections", res
+            raise ArangoCollectionError(
+                "Failed to get the list of collections", res
             )
 
-    def collection_exists(self, col_name):
+    def collection_exists(self, name):
         """Return True the collection exists, otherwise False.
 
-        :param col_name: the name of the collection
-        :type col_name: str
-        :returns: bool
+        :param name: the name of the collection.
+        :type name: str.
+        :returns: bool.
         """
-        return col_name in self.list_collections()
+        return name in self.collections()
 
-    def collection_info(self, col_name, include_revision=True):
+    def collection_statistics(self, name):
         """Return the statistics of the given collection.
 
-        :param col_name: the name of the collection
-        :type col_name: str
-        :returns: dict
+        :param name: the name of the collection.
+        :type name: str.
+        :returns: dict.
         """
-        res = self._get("/_api/collection/{}/figures".format(col_name))
+        res = self._get("/collection/{}/figures".format(name))
         if res.status_code == 200:
-            if include_revision:
-                rev = self._get("/_api/collection/{}/revision".format(col_name))
-                rev
             return unicode_to_str(res.json())
         elif res.status_code == 404:
-            raise ArangoCollectionNotFoundError(col_name)
+            raise ArangoCollectionNotFoundError(name)
         else:
-            raise ArangoCollectionReadError(
+            raise ArangoCollectionError(
+                "Failed to retrieve the collection statistics", res
+            )
+
+    def collection_revision(self, name):
+        """"""
+        res = self._get("/collection/{}/figures".format(name))
+        if res.status_code == 200:
+            return unicode_to_str(res.json())
+        elif res.status_code == 404:
+            raise ArangoCollectionNotFoundError(name)
+        else:
+            raise ArangoCollectionError(
                 "Failed to retrieve the collection statistics", res
             )
 
@@ -273,7 +230,7 @@ class ArangoConnection(object):
     def create_document(self, data):
         """Create a new document"""
 
-    def update_document(self, doc_id, data, overwrite):
+    def modify_document(self, doc_id, data, overwrite):
         """Partially update document."""
 
     def delete_document(self, doc_id, data, overwrite):
@@ -281,4 +238,8 @@ class ArangoConnection(object):
 
 
 if __name__ == "__main__":
-    TEST = ArangoConnection()
+    a = ArangoConnection()
+    print a.version
+    print a.databases(user_only=True)
+    print a.databases()
+
