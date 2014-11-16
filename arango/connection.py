@@ -2,12 +2,18 @@
 
 import json
 import requests
-from arangoo.util import unicode_to_str
-from arangoo.exceptions import *
+from arango.util import unicode_to_str
+from arango.exceptions import *
 
 
 class ArangoConnection(object):
-    """A wrapper around ArangoDB API."""
+    """A wrapper around ArangoDB API.
+
+    :param host: the address of the ArangoDB host
+    :type host: str
+    :param port: the port of the ArangoDB host
+    :type port: int
+    """
 
     def __init__(self, host="localhost", port=8529):
         self._host = host
@@ -15,7 +21,7 @@ class ArangoConnection(object):
         self._sess = requests.Session()
 
     def _url(self, path, db=None):
-        """Return the full request URL given the API path (and database).
+        """Return the full request URL.
 
         :param path: the API path
         :type path: str
@@ -23,15 +29,14 @@ class ArangoConnection(object):
         :type db: str or None
         :returns: str
         """
+        path=path[1:] if path.startswith("/") else path
         if db is not None:
             return "http://{host}:{port}/_db/{db}/_api/{path}".format(
-                host=self._host, port=self._port, db = db,
-                path=path[1:] if path.startswith("/") else path
+                host=self._host, port=self._port, db = db, path=path
             )
         else:  # Use the default database if not specified
             return "http://{host}:{port}/_api/{path}".format(
-                host=self._host, port=self._port,
-                path=path[1:] if path.startswith("/") else path
+                host=self._host, port=self._port, path=path
             )
 
     def _get(self, path, db=None, **kwargs):
@@ -57,78 +62,61 @@ class ArangoConnection(object):
         :returns: str -- version number
         :raises: ArangoError
         """
-        res = self._get("/_api/version")
+        res = self._get("/version")
         if res.status_code == 200:
             return unicode_to_str(res.json()["version"])
         else:
-            raise ArangoError("Failed to retrieve the version", res)
+            raise ArangoError("Failed to get the version", res)
 
     ####################
     # Database Methods #
     ####################
 
-    def list_databases(self, user_only=False):
-        """Return a list of all databases.
+    def databases(self, user_only=False):
+        """Return a list of all database namess.
 
-        :param user_only: return only the databases the user has access to
+        :param user_only: return only the dbs the user has access to
         :type user_only: bool
         :returns: list -- list of the database names
         :raises: ArangoDatabaseReadError
         """
         if user_only:
-            res = self._get("/_api/database/user")
+            res = self._get("/database/user")
         else:
-            res = self._get("/_api/database", db="_system")
+            res = self._get("/database")
         if res.status_code == 200:
             return unicode_to_str(res.json()["result"])
         else:
             raise ArangoDatabaseReadError(
-                "Failed to retrieve the list of the databases", res
+                "Failed to get the databases", res
             )
 
-    def database_exists(self, db):
-        """Return True iff the given database exists.
+    def database_exists(self, name):
+        """Return True if the given database exists, False otherwise.
 
-        :param db: the name of the database
-        :type db: str
-        :return: bool
+        :param name: the name of the database
+        :type name: str
+        :return: bool -- True if exists else False
         """
-        return db in self.list_databases()
+        return name in self.databases()
 
-    def database_info(self, db=None):
+    def database_info(self, name=None):
         """Return the information of the current/specified database.
 
-        :param db: name of the database
-        :type db: str or None
+        :param name: the name of the database
+        :type name: str or None
         :returns: str -- the name of the current database
         :raises: ArangoDatabaseReadError
         """
-        db = db if db is not None else self._db
-        res = self._get("/_api/database/current", db)
+        res = self._get("/_api/database/current", name)
         if res.status_code == 200:
             return unicode_to_str(res.json()["result"])
         elif res.status_code == 404:
-            raise ArangoDatabaseNotFoundError(db)
+            raise ArangoDatabaseNotFoundError(name)
         else:
             raise ArangoDatabaseReadError(
-                "Failed to read database '{}'".format(db), res
+                "Failed to get database '{}'".format(name), res
             )
-
-    def use_database(self, db):
-        """Switch to an existing database.
-
-        :param db: the name of the database
-        :type db: str
-        :raises: ArangoDatabaseReadError
-        """
-        if db in self.list_databases(user_only=True):
-            self._db = db
-        elif db in self.list_databases():
-            raise ArangoDatabaseReadError(
-                "The user does not have access to database '{}'"
-                .format(db))
-        else:
-            raise ArangoDatabaseNotFoundError(db)
 
     def create_database(self, db, users=None):
         """Create a new database.
