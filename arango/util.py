@@ -2,6 +2,7 @@
 
 import collections
 
+
 def unicode_to_str(data):
     """Convert any unicode in ``data`` to str and return it."""
     if isinstance(data, basestring):
@@ -12,3 +13,9 @@ def unicode_to_str(data):
         return type(data)(map(unicode_to_str, data))
     else:
         return data
+
+
+def camelify(string):
+    """Convert the string from snake to camel case and return it."""
+    words = string.split("_")
+    return words[0] + "".join(word.title() for word in words[1:])

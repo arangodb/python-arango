@@ -1,51 +1,41 @@
-"""Request Client for ArangoDB"""
+"""Request Client for ArangoDB."""
 
+import json
 import requests
+from arango.util import unicode_to_str
 
 
-class ArangoRequestClient(object):
+class ArangoClient(object):
+    """A simple wrapper for requests."""
 
-    def __init__(self, host, port):
-        self._host = host
-        self._port = port
-        self._sess = requests.Session()
-
-    def url(self, path, db=None):
-        """Return the full request URL.
-
-        :param path: the API path.
-        :type path: str.
-        :param db: name of the database.
-        :type db: str or None.
-        :returns: str.
-        """
-        path=path[1:] if path.startswith("/") else path
-        if db is not None:
-            return "http://{host}:{port}/_db/{db}/_api/{path}".format(
-                host=self._host,
-                port=self._port,
-                db = db,
-                path=path
-            )
-        else:  # Use the default database if not specified
-            return "http://{host}:{port}/_api/{path}".format(
-                host=self._host,
-                port=self._port,
-                path=path
-            )
-
-    def get(self, path, db=None, **kwargs):
+    def _get(self, path="", **kwargs):
         """Execute an HTTP GET method."""
-        return self._sess.get(self.url(path, db), **kwargs)
+        res = requests.get(self._url_prefix + path, **kwargs)
+        res.obj = unicode_to_str(res.json())
+        return res
 
-    def put(self, path, db=None, **kwargs):
+    def _put(self, path="", data=None, **kwargs):
         """Execute an HTTP PUT method."""
-        return self._sess.put(self.url(path, db), **kwargs)
+        res = requests.put(
+            self._url_prefix + path,
+            "" if data is None else json.dumps(data),
+            **kwargs
+        )
+        res.obj = unicode_to_str(res.json())
+        return res
 
-    def post(self, path, db=None, **kwargs):
+    def _post(self, path="", data=None, **kwargs):
         """Execute an HTTP POST method."""
-        return self._sess.post(self.url(path, db), **kwargs)
+        res = requests.post(
+            self._url_prefix + path,
+            "" if data is None else json.dumps(data),
+            **kwargs
+        )
+        res.obj = unicode_to_str(res.json())
+        return res
 
-    def delete(self, path, db=None, **kwargs):
+    def _delete(self, path=""):
         """Execute an HTTP DELETE method."""
-        return self._sess.delete(self.url(path, db), **kwargs)
+        res = requests.delete(self._url_prefix + path)
+        res.obj = unicode_to_str(res.json())
+        return res

@@ -4,36 +4,42 @@
 class ArangoError(Exception):
     """Base ArangoDB exception class."""
 
-    def __init__(self, message, response=None):
-        if response:
+    def __init__(self, res, name=None):
+        if isinstance(res, str):
+            super(ArangoError, self).__init__(res)
+            self.status_code = None
+        else:
             super(ArangoError, self).__init__(
-                "{message} ({status_code}: {reason})".format(
-                    message=message,
-                    status_code=response.status_code,
-                    reason=response.reason,
+                "{name}{msg} ({status_code})".format(
+                    name="" if name is None else "{}: ".format(name),
+                    msg=res.obj.get("errorMessage", res.reason),
+                    status_code=res.status_code,
                 )
             )
-            self.url= response.url
-            self.status_code = response.status_code
-            self.reason = response.reason
-        else:
-            super(ArangoError, self).__init__(message)
-            self.url = self.status_code = self.reason = None
+            self.status_code = res.status_code
 
 
-class ArangoConnectionInitError(ArangoError):
-    """Failed to initialize the connection to ArangoDB."""
+class ArangoConnectionError(ArangoError):
+    """Failed to connect to ArangoDB."""
 
-#############
-# Databases #
-#############
 
-class ArangoDatabaseError(ArangoError):
-    """Request failed on a database endpoint."""
+class ArangoVersionError(ArangoError):
+    """Failed to retrieve the version."""
+
+#######################
+# Database Exceptions #
+#######################
+
+class ArangoDatabaseListError(ArangoError):
+    """Failed to retrieve the database list."""
 
 
 class ArangoDatabaseNotFoundError(ArangoError):
-    """The database does not exist."""
+    """Failed to locate database."""
+
+
+class ArangoDatabasePropertyError(ArangoError):
+    """Failed to retrieve the database property."""
 
 
 class ArangoDatabaseCreateError(ArangoError):
@@ -43,17 +49,20 @@ class ArangoDatabaseCreateError(ArangoError):
 class ArangoDatabaseDeleteError(ArangoError):
     """Failed to delete the database."""
 
-
-##############
-# Collection #
-##############
+#########################
+# Collection Exceptions #
+#########################
 
 class ArangoCollectionNotFoundError(ArangoError):
-    """The collection does not exist in ArangoDB."""
+    """Failed to locate the collection."""
 
 
-class ArangoCollectionError(ArangoError):
-    """Failed to retrieve the collection."""
+class ArangoCollectionListError(ArangoError):
+    """Failed to retrieve the collection list."""
+
+
+class ArangoCollectionPropertyError(ArangoError):
+    """Failed to retrieve the collection property."""
 
 
 class ArangoCollectionCreateError(ArangoError):
@@ -61,8 +70,43 @@ class ArangoCollectionCreateError(ArangoError):
 
 
 class ArangoCollectionDeleteError(ArangoError):
-    """Failed to delete the collection."""
+    """Failed to delete the collection"""
+
+
+class ArangoCollectionModifyError(ArangoError):
+    """Failed to modify the collection."""
+
+
+class ArangoCollectionRenameError(ArangoError):
+    """Failed to rename the collection."""
 
 
 class ArangoCollectionTruncateError(ArangoError):
-    """Failed to delete the collection."""
+    """Failed to truncate the collection."""
+
+
+class ArangoCollectionLoadError(ArangoError):
+    """Failed to load the collection into memory."""
+
+
+class ArangoCollectionUnloadError(ArangoError):
+    """Failed to unload the collection from memory."""
+
+
+class ArangoCollectionRotateJournalError(ArangoError):
+    """Failed to rotate the journal of the collection."""
+
+###################
+# Index Exeptions #
+###################
+
+class ArangoIndexListError(ArangoError):
+    """Failed to list all the collections."""
+
+
+class ArangoIndexCreateError(ArangoError):
+    """Failed to create the index."""
+
+
+class ArangoIndexDeleteError(ArangoError):
+    """Failed to delete the index."""
