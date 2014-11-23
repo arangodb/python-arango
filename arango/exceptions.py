@@ -96,9 +96,22 @@ class ArangoCollectionUnloadError(ArangoError):
 class ArangoCollectionRotateJournalError(ArangoError):
     """Failed to rotate the journal of the collection."""
 
-###################
-# Index Exeptions #
-###################
+#######################
+# Document Exceptions #
+#######################
+
+class ArangoDocumentGetError(ArangoError):
+    """Failed to get the ArangoDB document(s)."""
+
+
+class ArangoDocumentCreateError(ArangoError):
+    """Failed to create the ArangoDB document(s)."""
+
+
+
+####################
+# Index Exceptions #
+####################
 
 class ArangoIndexListError(ArangoError):
     """Failed to list all the collections."""

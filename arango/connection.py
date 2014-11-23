@@ -1,12 +1,12 @@
 """ArangoDB Connection."""
 
 import json
-from arango.client import ArangoClient
+from arango.client import ArangoClientMixin
 from arango.database import ArangoDatabase
 from arango.exceptions import *
 
 
-class ArangoConnection(ArangoClient):
+class ArangoConnection(ArangoClientMixin):
     """A wrapper around ArangoDB API.
 
     :param protocol: the internet transfer protocol (default: http).
@@ -18,16 +18,23 @@ class ArangoConnection(ArangoClient):
     """
 
     def __init__(self, protocol="http", host="localhost", port=8529):
-        self._url_prefix = "{}://{}:{}".format(protocol, host, port)
-        # Check the connection indirectly by getting the version
-        if self._get("/_api/version").status_code != 200:
+        self.protocol = protocol
+        self.host = host
+        self.port = port
+        # Check the connection by requesting a header of the version endpoint
+        url_prefix = "{}://{}:{}".format(protocol, host, port)
+        test_endpoint = "{}/_api/version".format(url_prefix)
+        if self._head(test_endpoint, full_path=True).status_code != 200:
             raise ArangoConnectionError(
-                "Failed to connect to '{}'".format(self._url_prefix)
-            )
+                "Failed to connect to '{}'".format(url_prefix))
         # Cache for ArangoDatabase objects
         self._databases = {}
         # Default database (i.e. "_system")
-        self._default_database = ArangoDatabase(self._url_prefix)
+        self._default_database = ArangoDatabase(
+            protocol=protocol,
+            host=host,
+            port=port
+        )
 
     def __getattr__(self, attr):
         """Call __getattr__ of the default database."""
@@ -44,7 +51,24 @@ class ArangoConnection(ArangoClient):
         for db in cached_dbs - real_dbs:
             del self._databases[db]
         for db in real_dbs - cached_dbs:
-            self._databases[db] = ArangoDatabase(self._url_prefix, db)
+            self._databases[db] = ArangoDatabase(
+                name=db,
+                protocol=self.protocol,
+                host=self.host,
+                port=self.port,
+            )
+
+    @property
+    def _url_prefix(self):
+        """Return the URL prefix.
+
+        :returns: str
+        """
+        return "{protocol}://{host}:{port}".format(
+            protocol=self.protocol,
+            host=self.host,
+            port=self.port
+        )
 
     @property
     def version(self):
@@ -58,18 +82,16 @@ class ArangoConnection(ArangoClient):
             raise ArangoVersionError(res)
         return res.obj["version"]
 
-    def db(self, name=None):
+    def db(self, name="_system"):
         """Alias for ``self.database``."""
         return self.database(name)
 
-    def database(self, name=None):
+    def database(self, name="_system"):
         """Return the ArangoDatabase object of the specified name.
 
         :returns: ArangoDatabase -- the database (default: _system).
         :raises: ArangoDatabaseNotFoundError.
         """
-        if name is None:
-            return self._default_database
         if name in self._databases:
             return self._databases[name]
         else:

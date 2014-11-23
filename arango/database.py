@@ -1,21 +1,27 @@
 """ArangoDB Database."""
 
 
-from arango.client import ArangoClient
+from arango.client import ArangoClientMixin
 from arango.collection import ArangoCollection
 from arango.exceptions import *
 
 
-class ArangoDatabase(ArangoClient):
+class ArangoDatabase(ArangoClientMixin):
     """A wrapper around ArangoDB database API."""
 
-    def __init__(self, prefix, name=None):
-        self._url_prefix = "{}/_db/{}".format(prefix, name) if name else prefix
+    def __init__(self,
+                 name="_system",
+                 protocol="http",
+                 host="localhost",
+                 port=8529):
         self.name = name
+        self.protocol = protocol
+        self.host = host
+        self.port = port
         # Cache for ArangoCollection objects
         self._collections = {}
 
-    def __getitem(self, name):
+    def __getitem__(self, name):
         """Return the collection of the specified name."""
         self.collection(name)
 
@@ -26,7 +32,26 @@ class ArangoDatabase(ArangoClient):
         for col in cached_cols - real_cols:
             del self._collections[col]
         for col in real_cols - cached_cols:
-            self._collections[col] = ArangoCollection(self._url_prefix, col)
+            self._collections[col] = ArangoCollection(
+                name=col,
+                protocol=self.protocol,
+                host=self.host,
+                port=self.port,
+                db_name=self.name,
+            )
+
+    @property
+    def _url_prefix(self):
+        """Return the URL prefix.
+
+        :returns: str
+        """
+        return "{protocol}://{host}:{port}/_db/{name}".format(
+            protocol=self.protocol,
+            host=self.host,
+            port=self.port,
+            name=self.name
+        )
 
     @property
     def properties(self):
@@ -38,6 +63,7 @@ class ArangoDatabase(ArangoClient):
         res = self._get("/_api/database/current")
         if res.status_code != 200:
             raise ArangoDatabasePropertyError(res)
+        return res.obj["result"]
 
     @property
     def id(self):
@@ -81,7 +107,13 @@ class ArangoDatabase(ArangoClient):
             self._update_collection_cache()
             if name not in self._collections:
                 raise ArangoCollectionNotFoundError(name)
-            return ArangoCollection(self._url_prefix, name)
+            return ArangoCollection(
+                name=name,
+                protocol=self.protocol,
+                host=self.host,
+                port=self.port,
+                db_name=self.name,
+            )
 
     def collections(self, exclude_system=True):
         """Return non-system collections in the current database.

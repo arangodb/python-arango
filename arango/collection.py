@@ -2,15 +2,26 @@
 
 from arango.util import camelify
 from arango.index import ArangoIndexMixin
-from arango.client import ArangoClient
+from arango.client import ArangoClientMixin
+from arango.document import ArangoDocumentMixin
 from arango.exceptions import *
 
 
-class ArangoCollection(ArangoClient, ArangoIndexMixin):
+class ArangoCollection(ArangoClientMixin,
+                       ArangoIndexMixin,
+                       ArangoDocumentMixin):
 
-    def __init__(self, url_prefix, name):
-        self._url_prefix = url_prefix
+    def __init__(self,
+                 name,
+                 protocol="http",
+                 host="localhost",
+                 port=8529,
+                 db_name="_system"):
         self.name = name
+        self.protocol = protocol
+        self.host = host
+        self.port = port
+        self.db_name = db_name
 
     def __len__(self):
         """Return the number of documents in this collection."""
@@ -26,6 +37,19 @@ class ArangoCollection(ArangoClient, ArangoIndexMixin):
                 raise ArangoCollectionModifyError(res)
         else:
             super(ArangoCollection, self).__setattr__(attr, value)
+
+    @property
+    def _url_prefix(self):
+        """Return the URL prefix.
+
+        :returns: str
+        """
+        return "{protocol}://{host}:{port}/_db/{db_name}".format(
+            protocol=self.protocol,
+            host=self.host,
+            port=self.port,
+            db_name=self.db_name
+        )
 
     @property
     def properties(self):
