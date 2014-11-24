@@ -1,12 +1,12 @@
 """ArangoDB Connection."""
 
 import json
-from arango.client import ArangoClientMixin
-from arango.database import ArangoDatabase
+from arango.client import ClientMixin
+from arango.database import Database
 from arango.exceptions import *
 
 
-class ArangoConnection(ArangoClientMixin):
+class Connection(ClientMixin):
     """A wrapper around ArangoDB API.
 
     :param protocol: the internet transfer protocol (default: http).
@@ -15,43 +15,48 @@ class ArangoConnection(ArangoClientMixin):
     :type host: str.
     :param port: ArangoDB port (default: 8529).
     :type port: int.
+    :raises: ArangoConnectionError
     """
 
     def __init__(self, protocol="http", host="localhost", port=8529):
         self.protocol = protocol
         self.host = host
         self.port = port
+
         # Check the connection by requesting a header of the version endpoint
         url_prefix = "{}://{}:{}".format(protocol, host, port)
         test_endpoint = "{}/_api/version".format(url_prefix)
         if self._head(test_endpoint, full_path=True).status_code != 200:
             raise ArangoConnectionError(
                 "Failed to connect to '{}'".format(url_prefix))
+
         # Cache for ArangoDatabase objects
         self._databases = {}
+
         # Default database (i.e. "_system")
-        self._default_database = ArangoDatabase(
+        self._default_database = Database(
+            name="_system",
             protocol=protocol,
             host=host,
             port=port
         )
 
     def __getattr__(self, attr):
-        """Call __getattr__ of the default database."""
+        """Call __getattr__ of the default database if not here."""
         return getattr(self._default_database, attr)
 
     def __getitem__(self, item):
-        """Call __getitem__ of the default database."""
+        """Call __getitem__ of the default database if not here."""
         return self._default_database[item]
 
     def _invalidate_database_cache(self):
-        """Invalidate the database cache."""
-        real_dbs = set(self.databases(user_only=True))
+        """Invalidate the Database object cache."""
+        real_dbs = set(self.databases)
         cached_dbs = set(self._databases)
         for db in cached_dbs - real_dbs:
             del self._databases[db]
         for db in real_dbs - cached_dbs:
-            self._databases[db] = ArangoDatabase(
+            self._databases[db] = Database(
                 name=db,
                 protocol=self.protocol,
                 host=self.host,
@@ -60,10 +65,7 @@ class ArangoConnection(ArangoClientMixin):
 
     @property
     def _url_prefix(self):
-        """Return the URL prefix.
-
-        :returns: str
-        """
+        """Return the URL prefix of this connection."""
         return "{protocol}://{host}:{port}".format(
             protocol=self.protocol,
             host=self.host,
@@ -82,14 +84,22 @@ class ArangoConnection(ArangoClientMixin):
             raise ArangoVersionError(res)
         return res.obj["version"]
 
-    def db(self, name="_system"):
-        """Alias for ``self.database``."""
-        return self.database(name)
+    @property
+    def databases(self):
+        """"Return the list of the database names.
 
-    def database(self, name="_system"):
+        :returns: list -- list of the database names.
+        :raises: ArangoDatabaseListError.
+        """
+        res = self._get("/_api/database")
+        if res.status_code != 200:
+            raise ArangoDatabaseListError(res)
+        return res.obj["result"]
+
+    def db(self, name):
         """Return the ArangoDatabase object of the specified name.
 
-        :returns: ArangoDatabase -- the database (default: _system).
+        :returns: Database -- the Database object.
         :raises: ArangoDatabaseNotFoundError.
         """
         if name in self._databases:
@@ -99,17 +109,6 @@ class ArangoConnection(ArangoClientMixin):
             if name not in self._databases:
                 raise ArangoDatabaseNotFoundError(name)
             return self._databases[name]
-
-    def databases(self, user_only=False):
-        """"Return the list of the databases accessible to the user.
-
-        :returns: list -- list of the database names (excluding system).
-        :raises: ArangoDatabaseListError.
-        """
-        res = self._get("/_api/database{}".format("/user" if user_only else ""))
-        if res.status_code != 200:
-            raise ArangoDatabaseListError(res)
-        return res.obj["result"]
 
     def create_database(self, name, users=None):
         """Create a new database.
@@ -140,5 +139,7 @@ class ArangoConnection(ArangoClientMixin):
 
 
 if __name__ == "__main__":
-    a = ArangoConnection()
+    a = Connection()
     print a.version
+    for doc in a["blue"]:
+        print doc["name"]

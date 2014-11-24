@@ -5,20 +5,24 @@ from arango.util import camelify
 from arango.exceptions import *
 
 
-class ArangoIndexMixin(object):
+class IndexMixin(object):
 
-    _index_types = {"cap", "hash", "skiplist", "geo", "fulltext"}
+    index_types = ["cap", "hash", "skiplist", "geo", "fulltext"]
 
+    @property
     def indexes(self):
         """List the indexes."""
         res = self._get("/_api/index?collection={}".format(self.name))
         if res.status_code != 200:
             raise ArangoIndexListError(res)
-        return res.obj["identifiers"]
+        return {
+            index_id.split("/", 1)[1]: details for
+            index_id, details in res.obj["identifiers"].items()
+        }
 
     def create_index(self, index_type, **config):
         """Create the index."""
-        if index_type not in self._index_types:
+        if index_type not in self.index_types:
             raise ArangoIndexCreateError(
                 "Unknown index type '{}'".format(index_type))
         config["type"] = index_type

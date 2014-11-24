@@ -1,19 +1,16 @@
 """ArangoDB Database."""
 
-
-from arango.client import ArangoClientMixin
-from arango.collection import ArangoCollection
+from arango.aql import AQLMixin
+from arango.client import ClientMixin
+from arango.collection import Collection
 from arango.exceptions import *
 
 
-class ArangoDatabase(ArangoClientMixin):
+class Database(ClientMixin, AQLMixin):
     """A wrapper around ArangoDB database API."""
 
-    def __init__(self,
-                 name="_system",
-                 protocol="http",
-                 host="localhost",
-                 port=8529):
+    def __init__(self, name="_system", protocol="http",
+                 host="localhost", port=8529):
         self.name = name
         self.protocol = protocol
         self.host = host
@@ -22,17 +19,31 @@ class ArangoDatabase(ArangoClientMixin):
         self._collections = {}
 
     def __getitem__(self, name):
-        """Return the collection of the specified name."""
-        self.collection(name)
+        """Return the Collection object of the specified name.
+
+        :param name: the name of the collection.
+        :type name: str.
+        :returns: Collection.
+        :raises: TypeError, ArangoCollectionNotFound.
+        """
+        if not isinstance(name, str):
+            raise TypeError("Expecting a str.")
+        if name in self._collections:
+            return self._collections[name]
+        else:
+            self._update_collection_cache()
+            if name not in self._collections:
+                raise ArangoCollectionNotFoundError(name)
+            return self._collections[name]
 
     def _update_collection_cache(self):
         """Invalidate the collection cache."""
-        real_cols = set(self.collections())
+        real_cols = set(self.collections)
         cached_cols = set(self._collections)
         for col in cached_cols - real_cols:
             del self._collections[col]
         for col in real_cols - cached_cols:
-            self._collections[col] = ArangoCollection(
+            self._collections[col] = Collection(
                 name=col,
                 protocol=self.protocol,
                 host=self.host,
@@ -42,10 +53,7 @@ class ArangoDatabase(ArangoClientMixin):
 
     @property
     def _url_prefix(self):
-        """Return the URL prefix.
-
-        :returns: str
-        """
+        """Return the URL prefix of this database."""
         return "{protocol}://{host}:{port}/_db/{name}".format(
             protocol=self.protocol,
             host=self.host,
@@ -55,9 +63,9 @@ class ArangoDatabase(ArangoClientMixin):
 
     @property
     def properties(self):
-        """Return information on this database.
+        """Return the properties of this database.
 
-        :returns: dict.
+        :returns: dict -- the database properties.
         :raises: ArangoDatabasePropertyError.
         """
         res = self._get("/_api/database/current")
@@ -89,43 +97,17 @@ class ArangoDatabase(ArangoClientMixin):
         """
         return self.properties["isSystem"]
 
-    def col(self, name):
-        """Alias for ``self.collection``."""
-        return self.collection(name)
+    @property
+    def collections(self):
+        """Return the names of the collections in this database.
 
-    def collection(self, name):
-        """Return the ArangoCollection object of the specified name.
-
-        :param name: the name of the collection.
-        :type name: str.
-        :returns: ArangoCollection.
-        :raises: ArangoCollectionNotFound.
-        """
-        if name in self._collections:
-            return self._collections[name]
-        else:
-            self._update_collection_cache()
-            if name not in self._collections:
-                raise ArangoCollectionNotFoundError(name)
-            return ArangoCollection(
-                name=name,
-                protocol=self.protocol,
-                host=self.host,
-                port=self.port,
-                db_name=self.name,
-            )
-
-    def collections(self, exclude_system=True):
-        """Return non-system collections in the current database.
-
-        :returns: list -- list of collection names (excluding system).
+        :returns: list -- list of collection names.
         :raises: ArangoCollectionListError.
         """
-        res = self._get(
-            "/_api/collection?excludeSystem={}".format(exclude_system))
+        res = self._get("/_api/collection")
         if res.status_code != 200:
             raise ArangoCollectionListError(res)
-        return res.obj["names"].keys()
+        return res.obj["names"]
 
     def create_collection(self, name, wait_for_sync=False, do_compact=True,
                           journal_size=None, is_system=False, is_volatile=False,
@@ -165,7 +147,9 @@ class ArangoDatabase(ArangoClientMixin):
 
         :param name: the name of the collection.
         :type name: str.
-        :raises: ArangoCollectionDeleteError.
+        :param new_name: the new name for the collection.
+        :type new_name: str.
+        :raises: ArangoCollectionRenameError.
         """
         res = self._put("/_api/collection/{}/rename".format(name),
                         data={"name": new_name})

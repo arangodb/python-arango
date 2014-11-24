@@ -19,3 +19,8 @@ def camelify(string):
     """Convert the string from snake to camel case and return it."""
     words = string.split("_")
     return words[0] + "".join(word.title() for word in words[1:])
+
+
+def filter_keys(dictionary, filtered):
+    """Return a new dictionary with the specified keys filtered."""
+    return {k: v for k, v in dictionary.items() if k not in filtered}

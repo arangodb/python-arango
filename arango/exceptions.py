@@ -1,125 +1,175 @@
-"""ArangoDB Exceptions."""
+"""ArangoDB Exception."""
 
 
-class ArangoError(Exception):
-    """Base ArangoDB exception class."""
+class ArangoRequestError(Exception):
+    """Base ArangoDB request exception class."""
 
-    def __init__(self, res, name=None):
-        if isinstance(res, str):
-            super(ArangoError, self).__init__(res)
-            self.status_code = None
+    def __init__(self, res):
+        if res.obj is not None and "errorMessage" in res.obj:
+            message = res.obj["errorMessage"]
         else:
-            super(ArangoError, self).__init__(
-                "{name}{msg} ({status_code})".format(
-                    name="" if name is None else "{}: ".format(name),
-                    msg=res.obj.get("errorMessage", res.reason),
-                    status_code=res.status_code,
-                )
+            message = res.reason
+        super(ArangoRequestError, self).__init__(
+            "{message} ({status_code})".format(
+                message=message,
+                status_code=res.status_code
             )
-            self.status_code = res.status_code
+        )
+        self.status_code = res.status_code
 
 
-class ArangoConnectionError(ArangoError):
+class ArangoKeyError(KeyError):
+    """ArangoDB key error class."""
+
+    def __init__(self, name):
+        super(ArangoKeyError, self).__init__(name)
+
+#########################
+# Connection Exceptions #
+#########################
+
+class ArangoConnectionError(ArangoRequestError):
     """Failed to connect to ArangoDB."""
 
 
-class ArangoVersionError(ArangoError):
+class ArangoVersionError(ArangoRequestError):
     """Failed to retrieve the version."""
 
 #######################
 # Database Exceptions #
 #######################
 
-class ArangoDatabaseListError(ArangoError):
-    """Failed to retrieve the database list."""
-
-
-class ArangoDatabaseNotFoundError(ArangoError):
+class ArangoDatabaseNotFoundError(ArangoRequestError):
     """Failed to locate database."""
 
 
-class ArangoDatabasePropertyError(ArangoError):
+class ArangoDatabaseListError(ArangoRequestError):
+    """Failed to retrieve the database list."""
+
+
+class ArangoDatabasePropertyError(ArangoRequestError):
     """Failed to retrieve the database property."""
 
 
-class ArangoDatabaseCreateError(ArangoError):
+class ArangoDatabaseCreateError(ArangoRequestError):
     """Failed to create the database."""
 
 
-class ArangoDatabaseDeleteError(ArangoError):
+class ArangoDatabaseDeleteError(ArangoRequestError):
     """Failed to delete the database."""
 
 #########################
 # Collection Exceptions #
 #########################
 
-class ArangoCollectionNotFoundError(ArangoError):
+class ArangoCollectionNotFoundError(ArangoKeyError):
     """Failed to locate the collection."""
 
 
-class ArangoCollectionListError(ArangoError):
+class ArangoCollectionListError(ArangoRequestError):
     """Failed to retrieve the collection list."""
 
 
-class ArangoCollectionPropertyError(ArangoError):
+class ArangoCollectionPropertyError(ArangoRequestError):
     """Failed to retrieve the collection property."""
 
 
-class ArangoCollectionCreateError(ArangoError):
+class ArangoCollectionCreateError(ArangoRequestError):
     """Failed to create the collection."""
 
 
-class ArangoCollectionDeleteError(ArangoError):
+class ArangoCollectionDeleteError(ArangoRequestError):
     """Failed to delete the collection"""
 
 
-class ArangoCollectionModifyError(ArangoError):
+class ArangoCollectionModifyError(ArangoRequestError):
     """Failed to modify the collection."""
 
 
-class ArangoCollectionRenameError(ArangoError):
+class ArangoCollectionRenameError(ArangoRequestError):
     """Failed to rename the collection."""
 
 
-class ArangoCollectionTruncateError(ArangoError):
+class ArangoCollectionTruncateError(ArangoRequestError):
     """Failed to truncate the collection."""
 
 
-class ArangoCollectionLoadError(ArangoError):
+class ArangoCollectionLoadError(ArangoRequestError):
     """Failed to load the collection into memory."""
 
 
-class ArangoCollectionUnloadError(ArangoError):
+class ArangoCollectionUnloadError(ArangoRequestError):
     """Failed to unload the collection from memory."""
 
 
-class ArangoCollectionRotateJournalError(ArangoError):
+class ArangoCollectionRotateJournalError(ArangoRequestError):
     """Failed to rotate the journal of the collection."""
 
 #######################
 # Document Exceptions #
 #######################
 
-class ArangoDocumentGetError(ArangoError):
+class ArangoDocumentInvalidError(Exception):
+    """The document is invalid."""
+
+
+class ArangoDocumentGetError(ArangoRequestError):
     """Failed to get the ArangoDB document(s)."""
 
 
-class ArangoDocumentCreateError(ArangoError):
+class ArangoDocumentCreateError(ArangoRequestError):
     """Failed to create the ArangoDB document(s)."""
 
 
+class ArangoDocumentReplaceError(ArangoRequestError):
+    """Failed to create the ArangoDB document(s)."""
+
+
+class ArangoDocumentPatchError(ArangoRequestError):
+    """Failed to create the ArangoDB document(s)."""
+
+
+class ArangoDocumentDeleteError(ArangoRequestError):
+    """Failed to create the ArangoDB document(s)."""
 
 ####################
 # Index Exceptions #
 ####################
 
-class ArangoIndexListError(ArangoError):
+class ArangoIndexListError(ArangoRequestError):
     """Failed to list all the collections."""
 
 
-class ArangoIndexCreateError(ArangoError):
+class ArangoIndexCreateError(ArangoRequestError):
     """Failed to create the index."""
 
 
-class ArangoIndexDeleteError(ArangoError):
+class ArangoIndexDeleteError(ArangoRequestError):
     """Failed to delete the index."""
+
+##################
+# AQL Exceptions #
+##################
+
+class ArangoQueryParseError(ArangoRequestError):
+    """Failed to validate the query."""
+
+
+class ArangoQueryExecuteError(ArangoRequestError):
+    """Failed to execute the query."""
+
+
+class ArangoCursorDeleteError(ArangoRequestError):
+    """Failed to delete the query cursor."""
+
+
+class ArangoAQLFunctionListError(ArangoRequestError):
+    """Failed to get the list of AQL functions."""
+
+
+class ArangoAQLFunctionCreateError(ArangoRequestError):
+    """Failed to create the AQL function."""
+
+
+class ArangoAQLFunctionDeleteError(ArangoRequestError):
+    """Failed to delete the AQL function."""

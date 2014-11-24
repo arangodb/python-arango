@@ -1,22 +1,20 @@
 """ArangoDB Collection."""
 
-from arango.util import camelify
-from arango.index import ArangoIndexMixin
-from arango.client import ArangoClientMixin
-from arango.document import ArangoDocumentMixin
+from arango.util import camelify, filter_keys
+from arango.document import DocumentMixin
+from arango.index import IndexMixin
+from arango.aql import AQLMixin
+from arango.client import ClientMixin
 from arango.exceptions import *
 
 
-class ArangoCollection(ArangoClientMixin,
-                       ArangoIndexMixin,
-                       ArangoDocumentMixin):
+class Collection(ClientMixin,
+                 DocumentMixin,
+                 IndexMixin,
+                 AQLMixin):
 
-    def __init__(self,
-                 name,
-                 protocol="http",
-                 host="localhost",
-                 port=8529,
-                 db_name="_system"):
+    def __init__(self, name, protocol="http", host="localhost",
+                 port=8529, db_name="_system"):
         self.name = name
         self.protocol = protocol
         self.host = host
@@ -27,6 +25,10 @@ class ArangoCollection(ArangoClientMixin,
         """Return the number of documents in this collection."""
         return self.count
 
+    def __iter__(self):
+        """Return the generator for all the documents in this collection."""
+        return self.execute_query("FOR d in {} RETURN d".format(self.name))
+
     def __setattr__(self, attr, value):
         if attr == "wait_for_sync" or attr == "journal_size":
             res = self._put(
@@ -36,7 +38,7 @@ class ArangoCollection(ArangoClientMixin,
             if res.status_code != 200:
                 raise ArangoCollectionModifyError(res)
         else:
-            super(ArangoCollection, self).__setattr__(attr, value)
+            super(Collection, self).__setattr__(attr, value)
 
     @property
     def _url_prefix(self):
@@ -117,8 +119,8 @@ class ArangoCollection(ArangoClientMixin,
     def checksum(self, revision=False, data=False):
         """Return the checksum for this collection."""
         res = self._get(
-            "/_api/collection/{}/checksum?withRevision={}?withData={}"
-            .format(self.name, revision, data)
+            "/_api/collection/{}/checksum".format(self.name),
+            params={"withRevision": revision, "withData": data}
         )
         if res.status_code != 200:
             raise ArangoCollectionPropertyError(res)
@@ -147,3 +149,11 @@ class ArangoCollection(ArangoClientMixin,
         res = self._put("/_api/collection/{}/rotate".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionRotateJournalError(res)
+
+
+
+    def batch_create(self, documents):
+        pass
+
+    def batch_replace(self, documents):
+        pass
