@@ -18,17 +18,17 @@ class ArangoRequestError(Exception):
         self.status_code = res.status_code
 
 
-class ArangoKeyError(KeyError):
+class ArangoNotFoundError(KeyError):
     """ArangoDB key error class."""
 
     def __init__(self, name):
-        super(ArangoKeyError, self).__init__(name)
+        super(ArangoNotFoundError, self).__init__(name)
 
 #########################
 # Connection Exceptions #
 #########################
 
-class ArangoConnectionError(ArangoRequestError):
+class ArangoConnectionError(Exception):
     """Failed to connect to ArangoDB."""
 
 
@@ -39,7 +39,7 @@ class ArangoVersionError(ArangoRequestError):
 # Database Exceptions #
 #######################
 
-class ArangoDatabaseNotFoundError(ArangoRequestError):
+class ArangoDatabaseNotFoundError(ArangoNotFoundError):
     """Failed to locate database."""
 
 
@@ -62,7 +62,7 @@ class ArangoDatabaseDeleteError(ArangoRequestError):
 # Collection Exceptions #
 #########################
 
-class ArangoCollectionNotFoundError(ArangoKeyError):
+class ArangoCollectionNotFoundError(ArangoNotFoundError):
     """Failed to locate the collection."""
 
 
@@ -72,6 +72,10 @@ class ArangoCollectionListError(ArangoRequestError):
 
 class ArangoCollectionPropertyError(ArangoRequestError):
     """Failed to retrieve the collection property."""
+
+
+class ArangoCollectionGetChecksumError(ArangoRequestError):
+    """Failed to retrieve the collection checksum."""
 
 
 class ArangoCollectionCreateError(ArangoRequestError):
@@ -105,6 +109,10 @@ class ArangoCollectionUnloadError(ArangoRequestError):
 class ArangoCollectionRotateJournalError(ArangoRequestError):
     """Failed to rotate the journal of the collection."""
 
+
+class ArangoRevisionMismatchError(ArangoRequestError):
+    """There was a mismatch between expected and actual revision."""
+
 #######################
 # Document Exceptions #
 #######################
@@ -122,15 +130,42 @@ class ArangoDocumentCreateError(ArangoRequestError):
 
 
 class ArangoDocumentReplaceError(ArangoRequestError):
-    """Failed to create the ArangoDB document(s)."""
+    """Failed to replace the ArangoDB document(s)."""
 
 
 class ArangoDocumentPatchError(ArangoRequestError):
-    """Failed to create the ArangoDB document(s)."""
+    """Failed to patch the ArangoDB document(s)."""
 
 
 class ArangoDocumentDeleteError(ArangoRequestError):
-    """Failed to create the ArangoDB document(s)."""
+    """Failed to delete the ArangoDB document(s)."""
+
+#######################
+# Edge Exceptions #
+#######################
+
+class ArangoEdgeInvalidError(Exception):
+    """The edge is invalid."""
+
+
+class ArangoEdgeGetError(ArangoRequestError):
+    """Failed to get the ArangoDB edge(s)."""
+
+
+class ArangoEdgeCreateError(ArangoRequestError):
+    """Failed to create the ArangoDB edge(s)."""
+
+
+class ArangoEdgeReplaceError(ArangoRequestError):
+    """Failed to replace the ArangoDB edge(s)."""
+
+
+class ArangoEdgePatchError(ArangoRequestError):
+    """Failed to patch the ArangoDB edge(s)."""
+
+
+class ArangoEdgeDeleteError(ArangoRequestError):
+    """Failed to delete the ArangoDB edge(s)."""
 
 ####################
 # Index Exceptions #

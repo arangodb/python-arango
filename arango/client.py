@@ -4,62 +4,85 @@ import json
 import requests
 from arango.util import unicode_to_str
 
+class Client(object):
+    """A simple wrapper for making HTTP requests to ArangoDB.
 
-class ClientMixin(object):
-    """A simple mix-in wrapper for requests."""
+    :param str protocol: the internet transfer protocol (default: http)
+    :param str host: ArangoDB host (default: localhost)
+    :param int port: ArangoDB port (default: 8529)
+    :param str username: username for ArangoDB (default: root)
+    :param str password: password for ArangoDB (default: empty string)
+    :param str db_name: the database to use (default: _system)
+    """
 
-    def _head(self, path="", full_path=False, **kwargs):
+    def __init__(self, protocol="http", host="localhost", port=8529,
+                 username="root", password="", db_name="_system"):
+        self.protocol = protocol
+        self.host = host
+        self.port = port
+        self.username = username
+        self.password = password
+        self.db_name = db_name
+
+    @property
+    def _url_prefix(self):
+        """Generate and return the URL prefix.
+
+        :returns: str -- e.g. http://localhost:8529/_db/_system
+        """
+        return "{protocol}://{host}:{port}/_db/{db}".format(
+            protocol = self.protocol,
+            host = self.host,
+            port = self.port,
+            db = self.db_name,
+        )
+
+    def head(self, path, **kwargs):
         """Execute an HTTP HEAD method."""
-        res = requests.head(
-            path if full_path else self._url_prefix + path,
-            **kwargs
-        )
+        res = requests.head(self._url_prefix + path,
+                            auth=(self.username, self.password),
+                            **kwargs)
         return res
 
-    def _get(self, path="", full_path=False, **kwargs):
+    def get(self, path, **kwargs):
         """Execute an HTTP GET method."""
-        res = requests.get(
-            path if full_path else self._url_prefix + path,
-            **kwargs
-        )
+        res = requests.get(self._url_prefix + path,
+                           auth=(self.username, self.password),
+                           **kwargs)
         res.obj = unicode_to_str(res.json()) if res.text else None
         return res
 
-    def _put(self, path="", data=None, full_path=False, **kwargs):
+    def put(self, path, data=None, **kwargs):
         """Execute an HTTP PUT method."""
-        res = requests.put(
-            path if full_path else self._url_prefix + path,
-            "" if data is None else json.dumps(data),
-            **kwargs
-        )
+        res = requests.put(self._url_prefix + path,
+                           data="" if data is None else json.dumps(data),
+                           auth=(self.username, self.password),
+                           **kwargs)
         res.obj = unicode_to_str(res.json()) if res.text else None
         return res
 
-    def _post(self, path="", data=None, full_path=False, **kwargs):
+    def post(self, path, data=None, **kwargs):
         """Execute an HTTP POST method."""
-        res = requests.post(
-            path if full_path else self._url_prefix + path,
-            "" if data is None else json.dumps(data),
-            **kwargs
-        )
+        res = requests.post(self._url_prefix + path,
+                            data="" if data is None else json.dumps(data),
+                            auth=(self.username, self.password),
+                            **kwargs)
         res.obj = unicode_to_str(res.json()) if res.text else None
         return res
 
-    def _patch(self, path="", data=None, full_path=False, **kwargs):
-        """Execute an HTTP POST method."""
-        res = requests.patch(
-            path if full_path else self._url_prefix + path,
-            "" if data is None else json.dumps(data),
-            **kwargs
-        )
+    def patch(self, path, data=None, **kwargs):
+        """Execute an HTTP PATCH method."""
+        res = requests.patch(self._url_prefix + path,
+                             data="" if data is None else json.dumps(data),
+                             auth=(self.username, self.password),
+                             **kwargs)
         res.obj = unicode_to_str(res.json()) if res.text else None
         return res
 
-    def _delete(self, path="", full_path=False, **kwargs):
+    def delete(self, path, **kwargs):
         """Execute an HTTP DELETE method."""
-        res = requests.delete(
-            path if full_path else self._url_prefix + path,
-            **kwargs
-        )
+        res = requests.delete(self._url_prefix + path,
+                              auth=(self.username, self.password),
+                              **kwargs)
         res.obj = unicode_to_str(res.json()) if res.text else None
         return res
