@@ -10,10 +10,13 @@ from arango.exceptions import (
 
 
 class DocumentMixin(object):
-    """Mix-in class for handling ArangoDB documents."""
+    """Mix-in for ArangoDB document endpoints.
+
+    This class is used by :class:`arango.collection.Collection`.
+    """
 
     def __getitem__(self, key):
-        """Return the document of the given key.
+        """Return the document from this collection.
 
         :param key: the document key.
         :type key: str.
@@ -23,6 +26,14 @@ class DocumentMixin(object):
         if not isinstance(key, str):
             raise TypeError("Expecting a str.")
         return self.get(key)
+
+    def __setitem(self, key, doc):
+        """Write the document into this collection.
+
+        :param key: the document key.
+        :type key: str.
+        """
+
 
     def get(self, key, rev=None, match=True):
         """Return the document of the given key.
@@ -46,6 +57,14 @@ class DocumentMixin(object):
         return res.obj
 
     def create(self, doc, wait_for_sync=False):
+        """Create the given document in this collection.
+
+        :param doc: the document to create in this collection.
+        :type doc: dict.
+        :param wait_for_sync: block until the document is synced to disk.
+        :type wait_for_sync: bool.
+        :raises: ArangoDocumentCreateError.
+        """
         res = self._post(
             "/_api/document".format(self.name),
             data=doc,
@@ -59,6 +78,16 @@ class DocumentMixin(object):
         return filter_keys(res.obj, ["error"])
 
     def replace(self, doc, ignore_rev=True, wait_for_sync=False):
+        """Replace the document in this collection.
+
+        :param doc: the new document to replace the one in this collection.
+        :type doc: dict.
+        :param ignore_rev: ignore the revision of the document ("_rev") if present.
+        :type ignore_rev: bool.
+        :param wait_for_sync: block until the document is synced to disk.
+        :type wait_for_sync: bool.
+        :raises: ArangoDocumentReplaceError.
+        """
         if "_key" not in doc:
             raise ArangoDocumentInvalidError("'_key' missing")
         res = self._put(
@@ -104,8 +133,3 @@ class DocumentMixin(object):
         if res.status_code != 200 and res.status_code != 202:
             raise ArangoDocumentReplaceError(res)
         return filter_keys(res.obj, ["error"])
-
-
-        res = self._delete(
-            "/_api/document/{}/{}".format(self.name, key)
-        )

@@ -6,7 +6,7 @@ from arango.util import unicode_to_str
 
 
 class ClientMixin(object):
-    """A simple wrapper for requests."""
+    """A simple mix-in wrapper for requests."""
 
     def _head(self, path="", full_path=False, **kwargs):
         """Execute an HTTP HEAD method."""

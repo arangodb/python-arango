@@ -5,13 +5,30 @@ from arango.document import DocumentMixin
 from arango.index import IndexMixin
 from arango.aql import AQLMixin
 from arango.client import ClientMixin
-from arango.exceptions import *
+from arango.exceptions import (
+    ArangoCollectionListError,
+    ArangoCollectionCreateError,
+    ArangoCollectionDeleteError,
+    ArangoCollectionModifyError,
+    ArangoCollectionCreateError
+
+)
 
 
-class Collection(ClientMixin,
-                 DocumentMixin,
-                 IndexMixin,
-                 AQLMixin):
+class Collection(ClientMixin, DocumentMixin, IndexMixin, AQLMixin):
+    """ArangoDB Collection.
+
+    :param name: the name of this collection.
+    :param type: str.
+    :param protocol: the internet transfer protocol (default: http).
+    :type protocol: str.
+    :param host: ArangoDB host (default: localhost).
+    :type host: str.
+    :param port: ArangoDB port (default: 8529).
+    :type port: int.
+    :param db_name: the name of the database (default: _system).
+    :type db_name: str.
+    """
 
     def __init__(self, name, protocol="http", host="localhost",
                  port=8529, db_name="_system"):
@@ -26,10 +43,17 @@ class Collection(ClientMixin,
         return self.count
 
     def __iter__(self):
-        """Return the generator for all the documents in this collection."""
-        return self.execute_query("FOR d in {} RETURN d".format(self.name))
+        """Iterate through the documents in this collection."""
+        return self.execute_query(
+            "FOR d in {} RETURN d".format(self.name)
+        )
 
     def __setattr__(self, attr, value):
+        """Modify the properties of this collection.
+
+        Only the values of ``wait_for_sync`` and ``journal_size``
+        properties can be changed.
+        """
         if attr == "wait_for_sync" or attr == "journal_size":
             res = self._put(
                 "/_api/collection/{}/properties".format(self.name),
@@ -42,10 +66,7 @@ class Collection(ClientMixin,
 
     @property
     def _url_prefix(self):
-        """Return the URL prefix.
-
-        :returns: str
-        """
+        """Return the URL prefix for this collection."""
         return "{protocol}://{host}:{port}/_db/{db_name}".format(
             protocol=self.protocol,
             host=self.host,
@@ -55,7 +76,11 @@ class Collection(ClientMixin,
 
     @property
     def properties(self):
-        """Return the properties of this collection."""
+        """Return the properties of this collection.
+
+        :returns: dict.
+        :raises: ArangoCollectionPropertyError.
+        """
         res = self._get("/_api/collection/{}/properties".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionPropertyError(res)
@@ -63,6 +88,11 @@ class Collection(ClientMixin,
 
     @property
     def count(self):
+        """Return the number of documents in this collection.
+
+        :returns: int.
+        :raises: ArangoCollectionPropertyError.
+        """
         res = self._get("/_api/collection/{}/count".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionPropertyError(res)
@@ -70,14 +100,29 @@ class Collection(ClientMixin,
 
     @property
     def id(self):
+        """Return the ID of this collection.
+
+        :returns: str.
+        :raises: ArangoCollectionPropertyError.
+        """
         return self.properties["id"]
 
     @property
     def status(self):
+        """Return the status of this collection.
+
+        :returns: str.
+        :raises: ArangoCollectionPropertyError.
+        """
         return self.properties["status"]
 
     @property
     def key_options(self):
+        """Return this collection's key options.
+
+        :returns: dict.
+        :raises: ArangoCollectionPropertyError.
+        """
         return self.properties["keyOptions"]
 
     @property
@@ -133,27 +178,28 @@ class Collection(ClientMixin,
             raise ArangoCollectionTruncateError(res)
 
     def load(self):
-        """Load this collection into memory."""
+        """Load this collection into memory.
+
+        :raises: ArangoCollectionLoadError
+        """
         res = self._put("/_api/collection/{}/load".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionLoadError(res)
 
     def unload(self):
-        """Unload this collection from memory."""
+        """Unload this collection from memory.
+
+        :raises: ArangoCollectionUnloadError
+        """
         res = self._put("/_api/collection/{}/unload".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionUnloadError(res)
 
     def rotate_journal(self):
-        """Rotate the journal of this collection."""
+        """Rotate the journal of this collection.
+
+        :raises: ArangoCollectionRotateJournalError
+        """
         res = self._put("/_api/collection/{}/rotate".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionRotateJournalError(res)
-
-
-
-    def batch_create(self, documents):
-        pass
-
-    def batch_replace(self, documents):
-        pass

@@ -141,5 +141,3 @@ class Connection(ClientMixin):
 if __name__ == "__main__":
     a = Connection()
     print a.version
-    for doc in a["blue"]:
-        print doc["name"]
