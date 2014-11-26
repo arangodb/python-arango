@@ -5,8 +5,13 @@ import requests
 from arango.util import unicode_to_str
 
 
-class ClientMixin(object):
+class Client(object):
     """A simple mix-in wrapper for requests."""
+
+
+    def __init__(self, session=None, protocol="http", host="localhost",
+                 port=8529, db_name="_system"):
+
 
     def _head(self, path="", full_path=False, **kwargs):
         """Execute an HTTP HEAD method."""

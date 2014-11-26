@@ -1,12 +1,12 @@
 """ArangoDB Database."""
 
 from arango.aql import AQLMixin
-from arango.client import ClientMixin
+from arango.client import Client
 from arango.collection import Collection
 from arango.exceptions import *
 
 
-class Database(ClientMixin, AQLMixin):
+class Database(Client, AQLMixin):
     """A wrapper around ArangoDB database API."""
 
     def __init__(self, name="_system", protocol="http",

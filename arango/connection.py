@@ -1,12 +1,13 @@
 """ArangoDB Connection."""
 
 import json
-from arango.client import ClientMixin
+import requests
+from arango.client import Client
 from arango.database import Database
 from arango.exceptions import *
 
 
-class Connection(ClientMixin):
+class Connection(Client):
     """A wrapper around ArangoDB API.
 
     :param protocol: the internet transfer protocol (default: http).
@@ -19,6 +20,7 @@ class Connection(ClientMixin):
     """
 
     def __init__(self, protocol="http", host="localhost", port=8529):
+        self.session = requests.session()
         self.protocol = protocol
         self.host = host
         self.port = port
