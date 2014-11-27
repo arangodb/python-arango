@@ -1,14 +1,12 @@
-"""ArangoDB Connection."""
+"""ArangoDB Request Client."""
 
 import json
 import requests
-from arango.client import Client
-from arango.database import Database
-from arango.exceptions import *
+from arango.util import unicode_to_str
 
 
-class Connection(Client):
-    """A wrapper around ArangoDB API.
+class Connection(object):
+    """A simple wrapper for making HTTP requests to ArangoDB.
 
     :param protocol: the internet transfer protocol (default: http).
     :type protocol: str.
@@ -16,130 +14,83 @@ class Connection(Client):
     :type host: str.
     :param port: ArangoDB port (default: 8529).
     :type port: int.
-    :raises: ArangoConnectionError
+    :param username: username for ArangoDB.
+    :type username: str.
+    :param password: password for ArangoDB.
+    :type password: str.
+    :param db_name: the database to make the requests to (default: _system)
+    :type db_name: str.
     """
 
-    def __init__(self, protocol="http", host="localhost", port=8529):
-        self.session = requests.session()
-        self.protocol = protocol
-        self.host = host
-        self.port = port
-
-        # Check the connection by requesting a header of the version endpoint
-        url_prefix = "{}://{}:{}".format(protocol, host, port)
-        test_endpoint = "{}/_api/version".format(url_prefix)
-        if self._head(test_endpoint, full_path=True).status_code != 200:
-            raise ArangoConnectionError(
-                "Failed to connect to '{}'".format(url_prefix))
-
-        # Cache for ArangoDatabase objects
-        self._databases = {}
-
-        # Default database (i.e. "_system")
-        self._default_database = Database(
-            name="_system",
-            protocol=protocol,
-            host=host,
-            port=port
+    def __init__(self, protocol="http", host="localhost", port=8529,
+                 username=None, password=None, db_name="_system"):
+        self._url_prefix = "{protocol}://{host}:{port}/_db/{db}".format(
+            protocol = protocol,
+            host = host,
+            port = port,
+            db = db_name,
         )
+        self._username = username
+        self._password = password
 
-    def __getattr__(self, attr):
-        """Call __getattr__ of the default database if not here."""
-        return getattr(self._default_database, attr)
-
-    def __getitem__(self, item):
-        """Call __getitem__ of the default database if not here."""
-        return self._default_database[item]
-
-    def _invalidate_database_cache(self):
-        """Invalidate the Database object cache."""
-        real_dbs = set(self.databases)
-        cached_dbs = set(self._databases)
-        for db in cached_dbs - real_dbs:
-            del self._databases[db]
-        for db in real_dbs - cached_dbs:
-            self._databases[db] = Database(
-                name=db,
-                protocol=self.protocol,
-                host=self.host,
-                port=self.port,
-            )
-
-    @property
-    def _url_prefix(self):
-        """Return the URL prefix of this connection."""
-        return "{protocol}://{host}:{port}".format(
-            protocol=self.protocol,
-            host=self.host,
-            port=self.port
+    def head(self, path, **kwargs):
+        """Execute an HTTP HEAD method."""
+        res = requests.head(
+            self._url_prefix + path,
+            auth=(self._username, self._password),
+            **kwargs
         )
+        return res
 
-    @property
-    def version(self):
-        """Return the version of ArangoDB.
+    def get(self, path, **kwargs):
+        """Execute an HTTP GET method."""
+        res = requests.get(
+            self._url_prefix + path,
+            auth=(self._username, self._password),
+            **kwargs
+        )
+        res.obj = unicode_to_str(res.json()) if res.text else None
+        return res
 
-        :returns: str -- the version number.
-        :raises: ArangoVersionError.
-        """
-        res = self._get("/_api/version")
-        if res.status_code != 200:
-            raise ArangoVersionError(res)
-        return res.obj["version"]
+    def put(self, path, data=None, **kwargs):
+        """Execute an HTTP PUT method."""
+        res = requests.put(
+            self._url_prefix + path,
+            data="" if data is None else json.dumps(data),
+            auth=(self._username, self._password),
+            **kwargs
+        )
+        res.obj = unicode_to_str(res.json()) if res.text else None
+        return res
 
-    @property
-    def databases(self):
-        """"Return the list of the database names.
+    def post(self, path, data=None, **kwargs):
+        """Execute an HTTP POST method."""
+        res = requests.post(
+            self._url_prefix + path,
+            data="" if data is None else json.dumps(data),
+            auth=(self._username, self._password),
+            **kwargs
+        )
+        res.obj = unicode_to_str(res.json()) if res.text else None
+        return res
 
-        :returns: list -- list of the database names.
-        :raises: ArangoDatabaseListError.
-        """
-        res = self._get("/_api/database")
-        if res.status_code != 200:
-            raise ArangoDatabaseListError(res)
-        return res.obj["result"]
+    def patch(self, path, data=None, **kwargs):
+        """Execute an HTTP POST method."""
+        res = requests.patch(
+            self._url_prefix + path,
+            data="" if data is None else json.dumps(data),
+            auth=(self._username, self._password),
+            **kwargs
+        )
+        res.obj = unicode_to_str(res.json()) if res.text else None
+        return res
 
-    def db(self, name):
-        """Return the ArangoDatabase object of the specified name.
-
-        :returns: Database -- the Database object.
-        :raises: ArangoDatabaseNotFoundError.
-        """
-        if name in self._databases:
-            return self._databases[name]
-        else:
-            self._invalidate_database_cache()
-            if name not in self._databases:
-                raise ArangoDatabaseNotFoundError(name)
-            return self._databases[name]
-
-    def create_database(self, name, users=None):
-        """Create a new database.
-
-        :param name: the name of the database to create.
-        :type name: str.
-        :param users: the ``users`` config sub-object.
-        :type users: dict.
-        :raises: ArangoDatabaseCreateError.
-        """
-        data = {"name": name, "users": users} if users else {"name": name}
-        res = self._post("/_api/database", data=data)
-        if res.status_code != 201:
-            raise ArangoDatabaseCreateError(res)
-        self._invalidate_database_cache()
-
-    def delete_database(self, name):
-        """Delete the specified database.
-
-        :param name: the name of the database to delete.
-        :type name: str.
-        :raises: ArangoDatabaseDeleteError.
-        """
-        res = self._delete("/_api/database/{}".format(name))
-        if res.status_code != 200:
-            raise ArangoDatabaseDeleteError(res)
-        self._invalidate_database_cache()
-
-
-if __name__ == "__main__":
-    a = Connection()
-    print a.version
+    def delete(self, path, **kwargs):
+        """Execute an HTTP DELETE method."""
+        res = requests.delete(
+           self._url_prefix + path,
+           auth=(self._username, self._password),
+           **kwargs
+        )
+        res.obj = unicode_to_str(res.json()) if res.text else None
+        return res

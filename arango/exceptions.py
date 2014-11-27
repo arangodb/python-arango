@@ -18,17 +18,17 @@ class ArangoRequestError(Exception):
         self.status_code = res.status_code
 
 
-class ArangoKeyError(KeyError):
+class ArangoNotFoundError(KeyError):
     """ArangoDB key error class."""
 
     def __init__(self, name):
-        super(ArangoKeyError, self).__init__(name)
+        super(ArangoNotFoundError, self).__init__(name)
 
 #########################
 # Connection Exceptions #
 #########################
 
-class ArangoConnectionError(ArangoRequestError):
+class ArangoConnectionError(Exception):
     """Failed to connect to ArangoDB."""
 
 
@@ -39,7 +39,7 @@ class ArangoVersionError(ArangoRequestError):
 # Database Exceptions #
 #######################
 
-class ArangoDatabaseNotFoundError(ArangoRequestError):
+class ArangoDatabaseNotFoundError(ArangoNotFoundError):
     """Failed to locate database."""
 
 
@@ -62,7 +62,7 @@ class ArangoDatabaseDeleteError(ArangoRequestError):
 # Collection Exceptions #
 #########################
 
-class ArangoCollectionNotFoundError(ArangoKeyError):
+class ArangoCollectionNotFoundError(ArangoNotFoundError):
     """Failed to locate the collection."""
 
 

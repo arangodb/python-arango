@@ -1,11 +1,10 @@
 """ArangoDB Collection."""
 
 from arango.util import camelify, filter_keys
-from arango.document import DocumentMixin
 from arango.index import IndexMixin
 from arango.aql import AQLMixin
 from arango.query import QueryMixin
-from arango.client import Client
+from arango.connection import Connection
 from arango.exceptions import (
     ArangoDocumentGetError,
     ArangoDocumentCreateError,
@@ -22,7 +21,7 @@ from arango.exceptions import (
 )
 
 
-class Collection(Client, IndexMixin, QueryMixin):
+class Collection(IndexMixin, QueryMixin):
     """ArangoDB Collection.
 
     :param name: the name of this collection.
@@ -37,13 +36,9 @@ class Collection(Client, IndexMixin, QueryMixin):
     :type db_name: str.
     """
 
-    def __init__(self, name, protocol="http", host="localhost",
-                 port=8529, db_name="_system"):
+    def __init__(self, name, client):
         self.name = name
-        self.protocol = protocol
-        self.host = host
-        self.port = port
-        self.db_name = db_name
+        self._conn = client
 
     def __len__(self):
         """Return the number of documents in this collection."""
@@ -62,7 +57,7 @@ class Collection(Client, IndexMixin, QueryMixin):
         properties can be changed.
         """
         if attr == "wait_for_sync" or attr == "journal_size":
-            res = self._put(
+            res = self._conn.put(
                 "/_api/collection/{}/properties".format(self.name),
                 data={camelify(attr): value}
             )
@@ -107,7 +102,7 @@ class Collection(Client, IndexMixin, QueryMixin):
         :returns: dict.
         :raises: ArangoCollectionPropertyError.
         """
-        res = self._get("/_api/collection/{}/properties".format(self.name))
+        res = self._conn.get("/_api/collection/{}/properties".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionPropertyError(res)
         return res.obj
@@ -119,7 +114,7 @@ class Collection(Client, IndexMixin, QueryMixin):
         :returns: int.
         :raises: ArangoCollectionPropertyError.
         """
-        res = self._get("/_api/collection/{}/count".format(self.name))
+        res = self._conn.get("/_api/collection/{}/count".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionPropertyError(res)
         return res.obj["count"]
@@ -174,7 +169,7 @@ class Collection(Client, IndexMixin, QueryMixin):
     @property
     def figures(self):
         """Return the statistics of this collection."""
-        res = self._get("/_api/collection/{}/figures".format(self.name))
+        res = self._conn.get("/_api/collection/{}/figures".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionPropertyError(res)
         return res.obj["figures"]
@@ -182,14 +177,14 @@ class Collection(Client, IndexMixin, QueryMixin):
     @property
     def revision(self):
         """Return the revision of this collection."""
-        res = self._get("/_api/collection/{}/revision".format(self.name))
+        res = self._conn.get("/_api/collection/{}/revision".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionPropertyError(res)
         return res.obj["revision"]
 
     def checksum(self, revision=False, data=False):
         """Return the checksum for this collection."""
-        res = self._get(
+        res = self._conn.get(
             "/_api/collection/{}/checksum".format(self.name),
             params={"withRevision": revision, "withData": data}
         )
@@ -202,7 +197,7 @@ class Collection(Client, IndexMixin, QueryMixin):
 
         :raises: ArangoCollectionTruncateError
         """
-        res = self._put("/_api/collection/{}/truncate".format(self.name))
+        res = self._conn.put("/_api/collection/{}/truncate".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionTruncateError(res)
 
@@ -211,7 +206,7 @@ class Collection(Client, IndexMixin, QueryMixin):
 
         :raises: ArangoCollectionLoadError
         """
-        res = self._put("/_api/collection/{}/load".format(self.name))
+        res = self._conn.put("/_api/collection/{}/load".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionLoadError(res)
 
@@ -220,7 +215,7 @@ class Collection(Client, IndexMixin, QueryMixin):
 
         :raises: ArangoCollectionUnloadError
         """
-        res = self._put("/_api/collection/{}/unload".format(self.name))
+        res = self._conn.put("/_api/collection/{}/unload".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionUnloadError(res)
 
@@ -229,7 +224,7 @@ class Collection(Client, IndexMixin, QueryMixin):
 
         :raises: ArangoCollectionRotateJournalError
         """
-        res = self._put("/_api/collection/{}/rotate".format(self.name))
+        res = self._conn.put("/_api/collection/{}/rotate".format(self.name))
         if res.status_code != 200:
             raise ArangoCollectionRotateJournalError(res)
 
@@ -246,7 +241,7 @@ class Collection(Client, IndexMixin, QueryMixin):
         :raises: ArangoDocumentGetError.
         """
         headers = {"If-Match" if match else "If-None-Match": rev} if rev else {}
-        res = self._get(
+        res = self._conn.get(
             "/_api/document/{}/{}".format(self.name, key),
             headers=headers
         )
@@ -263,7 +258,7 @@ class Collection(Client, IndexMixin, QueryMixin):
         :type wait_for_sync: bool.
         :raises: ArangoDocumentCreateError.
         """
-        res = self._post(
+        res = self._conn.post(
             "/_api/document".format(self.name),
             data=doc,
             params = {
@@ -288,7 +283,7 @@ class Collection(Client, IndexMixin, QueryMixin):
         """
         if "_key" not in doc:
             raise ArangoDocumentInvalidError("'_key' missing")
-        res = self._put(
+        res = self._conn.put(
             "/_api/document/{}/{}".format(self.name, doc["_key"]),
             data=doc,
             params={
@@ -305,7 +300,7 @@ class Collection(Client, IndexMixin, QueryMixin):
               wait_for_sync=False):
         if "_key" not in doc:
             raise ArangoDocumentInvalidError("'_key' missing")
-        res = self._patch(
+        res = self._conn.patch(
             "/_api/document/{}/{}".format(self.name, doc["_key"]),
             data=doc,
             params={
@@ -320,7 +315,7 @@ class Collection(Client, IndexMixin, QueryMixin):
         return filter_keys(res.obj, ["error"])
 
     def delete(self, key, ignore_rev=True, wait_for_sync=False):
-        res = self._delete(
+        res = self._conn.delete(
             "/_api/document/{}/{}".format(self.name, key),
             params={
                 "waitForSync": wait_for_sync,

@@ -10,6 +10,9 @@ from arango.exceptions import (
 class QueryMixin(object):
     """Mix-in class for handling AQL queries."""
 
+    def __init__(self, client):
+        self._conn = client
+
     def parse_query(self, query):
         """Validate the AQL query.
 
@@ -17,7 +20,7 @@ class QueryMixin(object):
         :type query: str
         :raises: ArangoQueryParseError
         """
-        res = self._post("/_api/query", data={"query": query})
+        res = self._conn.post("/_api/query", data={"query": query})
         if res.status_code != 200:
             raise ArangoQueryParseError(res)
 
@@ -31,7 +34,7 @@ class QueryMixin(object):
         """
         data = {"query": query}
         data.update(kwargs)
-        res = self._post("/_api/cursor", data=data)
+        res = self._conn.post("/_api/cursor", data=data)
         if res.status_code != 201:
             raise ArangoQueryExecuteError(res)
         for item in res.obj["result"]:
