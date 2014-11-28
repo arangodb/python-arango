@@ -1,10 +1,9 @@
 """ArangoDB Collection."""
 
+from collections import Mapping
+
 from arango.util import camelify, filter_keys
-from arango.index import IndexMixin
-from arango.aql import AQLMixin
-from arango.query import QueryMixin
-from arango.connection import Connection
+from arango.query import Query
 from arango.exceptions import (
     ArangoDocumentGetError,
     ArangoDocumentCreateError,
@@ -17,11 +16,14 @@ from arango.exceptions import (
     ArangoCollectionLoadError,
     ArangoCollectionUnloadError,
     ArangoCollectionTruncateError,
-    ArangoCollectionRotateJournalError
+    ArangoCollectionRotateJournalError,
+    ArangoCollectionGetChecksumError,
+    ArangoIndexCreateError,
+    ArangoIndexDeleteError,
 )
 
 
-class Collection(IndexMixin, QueryMixin):
+class Collection(Query):
     """ArangoDB Collection.
 
     :param name: the name of this collection.
@@ -36,9 +38,13 @@ class Collection(IndexMixin, QueryMixin):
     :type db_name: str.
     """
 
-    def __init__(self, name, client):
+    index_types = {"cap", "hash", "skiplist", "geo", "fulltext"}
+
+    def __init__(self, name, connection):
         self.name = name
-        self._conn = client
+        self._conn = connection
+        self._query = Query(self._conn)
+        self.is_edge = self.properties["type"] == 3
 
     def __len__(self):
         """Return the number of documents in this collection."""
@@ -46,7 +52,7 @@ class Collection(IndexMixin, QueryMixin):
 
     def __iter__(self):
         """Iterate through the documents in this collection."""
-        return self.execute_query(
+        return self._query.execute(
             "FOR d in {} RETURN d".format(self.name)
         )
 
@@ -76,24 +82,32 @@ class Collection(IndexMixin, QueryMixin):
         """
         if not isinstance(key, str):
             raise TypeError("Expecting a str.")
-        return self.get(key)
+        return self.document(key)
 
     def __setitem__(self, key, doc):
         """Write the document into this collection.
 
         :param key: the document key.
         :type key: str.
+        :param doc: the document body.
+        :type doc: dict.
+        :raises: TypeError, ArangoDocumentCreateError.
         """
+        if not isinstance(key, str):
+            raise TypeError("Excepting a str for the key.")
+        if not isinstance(doc, Mapping):
+            raise TypeError("Expecting a dict for the value.")
+        doc["_key"] = key
+        try:
+            self.create_document(doc)
+        except ArangoDocumentCreateError as err:
+            if err.status_code == 409:
+                self.replace_document(doc)
 
     @property
-    def _url_prefix(self):
-        """Return the URL prefix for this collection."""
-        return "{protocol}://{host}:{port}/_db/{db_name}".format(
-            protocol=self.protocol,
-            host=self.host,
-            port=self.port,
-            db_name=self.db_name
-        )
+    def documents(self):
+        """Return all the documents in this collection."""
+        return list(self.__iter__())
 
     @property
     def properties(self):
@@ -182,15 +196,16 @@ class Collection(IndexMixin, QueryMixin):
             raise ArangoCollectionPropertyError(res)
         return res.obj["revision"]
 
-    def checksum(self, revision=False, data=False):
-        """Return the checksum for this collection."""
-        res = self._conn.get(
-            "/_api/collection/{}/checksum".format(self.name),
-            params={"withRevision": revision, "withData": data}
-        )
+    @property
+    def indexes(self):
+        """List the indexes of this collection."""
+        res = self._conn.get("/_api/index?collection={}".format(self.name))
         if res.status_code != 200:
-            raise ArangoCollectionPropertyError(res)
-        return res.obj["checksum"]
+            raise ArangoIndexListError(res)
+        return {
+            index_id.split("/", 1)[1]: details for
+            index_id, details in res.obj["identifiers"].items()
+        }
 
     def truncate(self):
         """Remove all documents from this collection.
@@ -228,7 +243,17 @@ class Collection(IndexMixin, QueryMixin):
         if res.status_code != 200:
             raise ArangoCollectionRotateJournalError(res)
 
-    def get(self, key, rev=None, match=True):
+    def get_checksum(self, revision=False, data=False):
+        """Return the checksum for this collection."""
+        res = self._conn.get(
+            "/_api/collection/{}/checksum".format(self.name),
+            params={"withRevision": revision, "withData": data}
+        )
+        if res.status_code != 200:
+            raise ArangoCollectionGetChecksumError(res)
+        return res.obj["checksum"]
+
+    def document(self, key, rev=None, match=True):
         """Return the document of the given key.
 
         :param key: the document key.
@@ -249,12 +274,19 @@ class Collection(IndexMixin, QueryMixin):
             raise ArangoDocumentGetError(res)
         return res.obj
 
-    def create(self, doc, wait_for_sync=False):
+    def doc(self, key, rev=None, match=True):
+        return self.document(key, rev, match)
+
+    ######################
+    # Managing Documents #
+    ######################
+
+    def create_document(self, doc, wait_for_sync=False):
         """Create the given document in this collection.
 
         :param doc: the document to create in this collection.
         :type doc: dict.
-        :param wait_for_sync: block until the document is synced to disk.
+        :param wait_for_sync: wait until the document is synced to disk.
         :type wait_for_sync: bool.
         :raises: ArangoDocumentCreateError.
         """
@@ -270,12 +302,12 @@ class Collection(IndexMixin, QueryMixin):
             raise ArangoDocumentCreateError(res)
         return filter_keys(res.obj, ["error"])
 
-    def replace(self, doc, ignore_rev=True, wait_for_sync=False):
+    def replace_document(self, doc, ignore_rev=True, wait_for_sync=False):
         """Replace the document in this collection.
 
         :param doc: the new document to replace the one in this collection.
         :type doc: dict.
-        :param ignore_rev: ignore the revision of the document ("_rev") if present.
+        :param ignore_rev: ignore the revision of the document if given.
         :type ignore_rev: bool.
         :param wait_for_sync: block until the document is synced to disk.
         :type wait_for_sync: bool.
@@ -296,7 +328,7 @@ class Collection(IndexMixin, QueryMixin):
             raise ArangoDocumentReplaceError(res)
         return filter_keys(res.obj, ["error"])
 
-    def patch(self, doc, ignore_rev=True, keep_none=True,
+    def patch_document(self, doc, ignore_rev=True, keep_none=True,
               wait_for_sync=False):
         if "_key" not in doc:
             raise ArangoDocumentInvalidError("'_key' missing")
@@ -314,7 +346,7 @@ class Collection(IndexMixin, QueryMixin):
             raise ArangoDocumentPatchError(res)
         return filter_keys(res.obj, ["error"])
 
-    def delete(self, key, ignore_rev=True, wait_for_sync=False):
+    def delete_document(self, key, ignore_rev=True, wait_for_sync=False):
         res = self._conn.delete(
             "/_api/document/{}/{}".format(self.name, key),
             params={
@@ -326,3 +358,24 @@ class Collection(IndexMixin, QueryMixin):
         if res.status_code != 200 and res.status_code != 202:
             raise ArangoDocumentDeleteError(res)
         return filter_keys(res.obj, ["error"])
+
+    ####################
+    # Managing Indexes #
+    ####################
+
+    def create_index(self, index_type, **config):
+        """Create a new index in this collection."""
+        if index_type not in self.index_types:
+            raise ArangoIndexCreateError(
+                "Unknown index type '{}'".format(index_type))
+        config["type"] = index_type
+        res = self._conn.post("/_api/index?collection={}".format(self.name),
+                         data={camelify(k): v for k, v in config.items()})
+        if res.status_code != 200 and res.status_code != 201:
+            raise ArangoIndexCreateError(res)
+
+    def delete_index(self, index_id):
+        """Delete an index from this collection."""
+        res = self._conn.delete("/_api/index/{}/{}".format(self.name, index_id))
+        if res.status_code != 200:
+            raise ArangoIndexDeleteError(res)

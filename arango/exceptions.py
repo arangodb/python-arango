@@ -74,6 +74,10 @@ class ArangoCollectionPropertyError(ArangoRequestError):
     """Failed to retrieve the collection property."""
 
 
+class ArangoCollectionGetChecksumError(ArangoRequestError):
+    """Failed to retrieve the collection checksum."""
+
+
 class ArangoCollectionCreateError(ArangoRequestError):
     """Failed to create the collection."""
 

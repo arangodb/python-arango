@@ -7,13 +7,13 @@ from arango.exceptions import (
 )
 
 
-class QueryMixin(object):
+class Query(object):
     """Mix-in class for handling AQL queries."""
 
-    def __init__(self, client):
-        self._conn = client
+    def __init__(self, connection):
+        self._conn = connection
 
-    def parse_query(self, query):
+    def parse(self, query):
         """Validate the AQL query.
 
         :param query: the AQL query to validate.
@@ -24,7 +24,7 @@ class QueryMixin(object):
         if res.status_code != 200:
             raise ArangoQueryParseError(res)
 
-    def execute_query(self, query, **kwargs):
+    def execute(self, query, **kwargs):
         """Execute the AQL query and return the result.
 
         :param query: the AQL query to execute.
