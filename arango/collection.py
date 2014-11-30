@@ -8,8 +8,10 @@ import arango.exceptions as ex
 class Collection(object):
     """ArangoDB Collection.
 
-    :param str name: the name of this collection
-    :param Client client: the http client
+    :param name: the name of this collection
+    :type name: str
+    :param client: ArangoDB http client object
+    :type client: arango.client.Client
     """
 
     index_types = {"cap", "hash", "skiplist", "geo", "fulltext"}
@@ -48,8 +50,10 @@ class Collection(object):
     def __getitem__(self, key):
         """Return the document from this collection.
 
-        :param str key: the document key
-        :returns: dict -- the requested document
+        :param key: the document key
+        :type key: str
+        :returns: the requested document
+        :rtype: dict
         :raises: TypeError
         """
         if not isinstance(key, str):
@@ -65,8 +69,10 @@ class Collection(object):
         If ``_key`` is provided in ``data``, its value is overwritten by
         the value of parameter ``key``.
 
-        :param str key: the document key
-        :param dict data: the document body
+        :param key: the document key
+        :type key: str
+        :param data: the document body
+        :type data: dict
         :raises: TypeError, ArangoDocumentCreateError
         """
         if not isinstance(key, str):
@@ -82,14 +88,19 @@ class Collection(object):
 
     @property
     def all(self):
-        """Return the list of all documents/edges in this collection."""
+        """Return the list of all documents/edges in this collection.
+
+        :returns: all documents/edges
+        :rtype: list
+        """
         return list(self.__iter__())
 
     @property
     def properties(self):
         """Return the properties of this collection.
 
-        :returns: dict -- contains id, status, key_options etc.
+        :returns: the collection's id, status, key_options etc.
+        :rtype: dict
         :raises: ArangoCollectionPropertyError
         """
         res = self._client.get("/_api/collection/{}/properties".format(self.name))
@@ -101,7 +112,8 @@ class Collection(object):
     def count(self):
         """Return the number of documents in this collection.
 
-        :returns: int -- the number of documents
+        :returns: the number of documents in this collection
+        :rtype: int
         :raises: ArangoCollectionPropertyError
         """
         res = self._client.get("/_api/collection/{}/count".format(self.name))
@@ -113,7 +125,8 @@ class Collection(object):
     def id(self):
         """Return the ID of this collection.
 
-        :returns: str -- the collection ID
+        :returns: the ID of this collection
+        :rtype: str
         :raises: ArangoCollectionPropertyError
         """
         return self.properties["id"]
@@ -122,7 +135,8 @@ class Collection(object):
     def status(self):
         """Return the status of this collection.
 
-        :returns: str -- the collection status
+        :returns: the collection status
+        :rtype: str
         :raises: ArangoCollectionPropertyError
         """
         return self.properties["status"]
@@ -131,7 +145,8 @@ class Collection(object):
     def key_options(self):
         """Return this collection's key options.
 
-        :returns: dict -- the key options
+        :returns: the key options
+        :rtype: dict
         :raises: ArangoCollectionPropertyError
         """
         return self.properties["keyOptions"]
@@ -140,7 +155,8 @@ class Collection(object):
     def wait_for_sync(self):
         """Return True if this collection waits for changes to sync to disk.
 
-        :returns: bool -- True if collection waits for sync, False otherwise
+        :returns: True if collection waits for sync, False otherwise
+        :rtype: bool
         :raises: ArangoCollectionPropertyError
         """
         return self.properties["waitForSync"]
@@ -149,7 +165,8 @@ class Collection(object):
     def journal_size(self):
         """Return the journal size of this collection.
 
-        :returns: int -- the journal size
+        :returns: the journal size of this collection
+        :rtype: str
         :raises: ArangoCollectionPropertyError
         """
         return self.properties["journalSize"]
@@ -158,7 +175,8 @@ class Collection(object):
     def is_volatile(self):
         """Return True if this collection is kept in memory and not persistent.
 
-        :returns: bool -- True if the collection is volatile, False otherwise
+        :returns: True if the collection is volatile, False otherwise
+        :rtype: bool
         :raises: ArangoCollectionPropertyError
         """
         return self.properties["isVolatile"]
@@ -167,7 +185,8 @@ class Collection(object):
     def is_system(self):
         """Return True if this collection is a system Collection.
 
-        :returns: bool -- True if system collection, False otherwise
+        :returns: True if system collection, False otherwise
+        :rtype: bool
         :raises: ArangoCollectionPropertyError
         """
         return self.properties["isSystem"]
@@ -176,8 +195,8 @@ class Collection(object):
     def is_edge(self):
         """Return True if this collection is a system Collection.
 
-
-        :returns: bool -- True if edge collection, False otherwise
+        :returns: True if edge collection, False otherwise
+        :rtype: bool
         :raises: ArangoCollectionPropertyError
         """
         return self.properties["type"] == 3
@@ -186,7 +205,8 @@ class Collection(object):
     def figures(self):
         """Return the statistics of this collection.
 
-        :returns: dict -- the statistics
+        :returns: the statistics of this collection
+        :rtype: dict
         :raises: ArangoCollectionPropertyError
         """
         res = self._client.get("/_api/collection/{}/figures".format(self.name))
@@ -198,7 +218,8 @@ class Collection(object):
     def revision(self):
         """Return the revision of this collection.
 
-        :returns: str -- the collection revision
+        :returns: the collection revision (etag)
+        :rtype: str
         :raises: ArangoCollectionPropertyError
         """
         res = self._client.get("/_api/collection/{}/revision".format(self.name))
@@ -208,9 +229,10 @@ class Collection(object):
 
     @property
     def indexes(self):
-        """List the indexes of this collection.
+        """Return this collection's index names and details.
 
-        :returns: dict -- the indexes of this collection
+        :returns: the indexes of this collection
+        :rtype: dict
         :raises: ArangoIndexListError
         """
         res = self._client.get("/_api/index?collection={}".format(self.name))
@@ -260,9 +282,12 @@ class Collection(object):
     def get_checksum(self, with_rev=False, with_data=False):
         """Return the checksum for this collection.
 
-        :param bool with_rev: include the revision in checksum calculation
-        :param bool with_data: include the data in checksum calculation
-        :returns: str -- the checksum
+        :param with_rev: include the revision in checksum calculation
+        :type with_rev: bool
+        :param with_data: include the data in checksum calculation
+        :type with_data: bool
+        :returns: the checksum
+        :rtype: str
         :raises: ArangoCollectionGetChecksumError
         """
         res = self._client.get(
@@ -285,10 +310,14 @@ class Collection(object):
         and the revisions do NOT match, or if ``match is set to False and the
         revisions DO match, an ``ArangoRevisionMismatchError`` is thrown.
 
-        :param str key: the document/edge key.
-        :param str rev: the document/edge revision.
-        :param bool match: whether the revision must match or not.
-        :returns: dict -- the requested document/edge.
+        :param key: the document/edge key
+        :type key: str
+        :param rev: the document/edge revision
+        :type rev: str
+        :param match: whether the revision must match or not
+        :type match: bool
+        :returns: the requested document/edge.
+        :rtype: dict
         :raises:
             ArangoRevisionMisMatchError,
             ArangoDocumentGetError,
@@ -317,9 +346,12 @@ class Collection(object):
         contain the ``_from`` and ``_to`` attributes with valid document handles
         as values.
 
-        :param dict data: the document/edge to create in this collection
-        :param bool wait_for_sync: wait for create to sync to disk
-        :returns: dict -- the id, rev and key of the new document/edge
+        :param data: the document/edge to create in this collection
+        :type data: dict
+        :param wait_for_sync: wait for create to sync to disk
+        :type wait_for_sync: bool
+        :returns: the id, rev and key of the new document/edge
+        :rtype: bool
         :raises: ArangoDocumentCreateError, ArangoEdgeCreateError
         """
         if self.is_edge and ("_from" not in data or "_to" not in data):
@@ -356,9 +388,12 @@ class Collection(object):
         The ``_from`` and ``_to`` attributes are immutable, and they are
         ignored if present in ``data``.
 
-        :param dict data: the document/edge to replace
-        :param bool wait_for_sync: wait for the replace to sync to disk
-        :returns: dict -- the id, rev and key of the new document/edge
+        :param data: the document/edge to replace
+        :rtype data: dict
+        :param wait_for_sync: wait for the replace to sync to disk
+        :type wait_for_sync: bool
+        :returns: the id, rev and key of the new document/edge
+        :rtype: dict
         :raises:
             ArangoRevisionMismatchError,
             ArangoDocumentReplaceError,
@@ -402,10 +437,14 @@ class Collection(object):
         The ``_from`` and ``_to`` attributes are immutable, and they are
         ignored if provided in ``data``.
 
-        :param dict data: the document/edge to patch
-        :param bool keep_none: whether to keep the items with value None
-        :param bool wait_for_sync: wait for the replace to sync to disk
-        :returns: dict -- the id, rev and key of the new document/edge
+        :param data: the document/edge to patch
+        :type data: dict
+        :param keep_none: whether to keep the items with value None
+        :type keep_none: bool
+        :param wait_for_sync: wait for the replace to sync to disk
+        :type wait_for_sync: bool
+        :returns: the id, rev and key of the new document/edge
+        :rtype: dict
         :raises:
             ArangoRevisionMismatchError,
             ArangoDocumentPatchError,
@@ -445,8 +484,10 @@ class Collection(object):
         the revision of the target document. If there is a mismatch between
         the values, an ArangoRevisionMismatchError is thrown.
 
-        :param str key: the key of the document/edge to delete
-        :param bool wait_for_sync: wait for the delete to sync to disk
+        :param key: the key of the document/edge to delete
+        :type key: str
+        :param wait_for_sync: wait for the delete to sync to disk
+        :type wait_for_sync: bool
         :raises:
             ArangoRevisionMismatchError,
             ArangoDocumentDeleteError,
@@ -466,6 +507,34 @@ class Collection(object):
                 raise ex.ArangoEdgeDeleteError(res)
             raise ex.ArangoDocumentPatchError(res)
 
+    def bulk_import(self, data, complete=True, details=True):
+        """Import documents/edges into this collection in bulk.
+
+        :param data: list of documents/edges (dict) to import
+        :type data: list
+        :param complete: entire import fails if any document/edge is invalid
+        :type complete: bool
+        :param details: return details about invalid documents/edges
+        :type details: bool
+        :returns: the bulk import results
+        :rtype: dict
+        :raises: ArangoCollectionBulkImportError
+        """
+        res = self._client.post(
+            "_api/import",
+            data=data,
+            params={
+                "type": self._type,
+                "collection": self.name,
+                "complete": complete,
+                "details": details
+            }
+        )
+        if res.status_code != 201:
+            raise ex.ArangoCollectionBulkImportError(res)
+        del res.obj["error"]
+        return res.obj
+
     ####################
     # Managing Indexes #
     ####################
@@ -473,7 +542,8 @@ class Collection(object):
     def create_index(self, index_type, **config):
         """Create a new index in this collection.
 
-        :param str index_type: type of the index (must be in cls.index_types)
+        :param index_type: type of the index (must be in cls.index_types)
+        :type index_type: str
         :raises: ArangoIndexCreateError
         """
         if index_type not in self.index_types:
@@ -488,7 +558,8 @@ class Collection(object):
     def delete_index(self, index_id):
         """Delete an index from this collection.
 
-        :param str index_id: the ID of the index to delete
+        :param index_id: the ID of the index to delete
+        :type index_id: str
         :raises: ArangoIndexDeleteError
         """
         res = self._client.delete("/_api/index/{}/{}".format(self.name, index_id))

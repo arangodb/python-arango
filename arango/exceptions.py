@@ -113,6 +113,10 @@ class ArangoCollectionRotateJournalError(ArangoRequestError):
 class ArangoRevisionMismatchError(ArangoRequestError):
     """There was a mismatch between expected and actual revision."""
 
+
+class ArangoCollectionBulkImportError(ArangoRequestError):
+    """Failed to bulk import documents/edges"""
+
 #######################
 # Document Exceptions #
 #######################
@@ -208,3 +212,10 @@ class ArangoAQLFunctionCreateError(ArangoRequestError):
 
 class ArangoAQLFunctionDeleteError(ArangoRequestError):
     """Failed to delete the AQL function."""
+
+################
+# Transactions #
+################
+
+class ArangoTransactionError(ArangoRequestError):
+    """Failed to execute a transaction."""

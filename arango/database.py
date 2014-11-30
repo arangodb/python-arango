@@ -9,8 +9,10 @@ from arango.exceptions import *
 class Database(object):
     """A wrapper around ArangoDB database API.
 
-    :param str name: the name of this database
-    :param Client client: the http client
+    :param name: the name of this database
+    :param client: the http client
+    :type name: str
+    :type client: Client
     """
 
     def __init__(self, name, client):
@@ -22,11 +24,21 @@ class Database(object):
     def __getitem__(self, name):
         """Return the Collection object of the specified name.
 
-        :param str name: the name of the collection
-        :returns: Collection -- the requested collection
+        :param name: the name of the collection
+        :type name: str
+        :returns: the requested collection object
+        :rtype: Collection
         :raises: TypeError, ArangoCollectionNotFound
         """
-        return self.collection(name)
+        if not isinstance(name, str):
+            raise TypeError("Expecting a str.")
+        if name in self._collection_cache:
+            return self._collection_cache[name]
+        else:
+            self._update_collection_cache()
+            if name not in self._collection_cache:
+                raise ArangoCollectionNotFoundError(name)
+            return self._collection_cache[name]
 
     def _update_collection_cache(self):
         """Invalidate the collection cache."""
@@ -44,7 +56,8 @@ class Database(object):
     def properties(self):
         """Return all properties of this database.
 
-        :returns: dict -- the database properties
+        :returns: the database properties
+        :rtype: dict
         :raises: ArangoDatabasePropertyError
         """
         res = self._client.get("/_api/database/current")
@@ -56,7 +69,8 @@ class Database(object):
     def id(self):
         """Return the ID of this database.
 
-        :returns: str -- the database ID
+        :returns: the database ID
+        :rtype: str
         :raises: ArangoDatabasePropertyError
         """
         return self.properties["id"]
@@ -65,16 +79,18 @@ class Database(object):
     def path(self):
         """Return the file path of this database.
 
-        :returns: str -- the path of this database
+        :returns: the file path of this database
+        :rtype: str
         :raises: ArangoDatabasePropertyError
         """
         return self.properties["path"]
 
     @property
     def is_system(self):
-        """Return True if this is a system database, otherwise False.
+        """Return True if this is a system database, False otherwise.
 
-        :returns: bool -- whether this is a system database or not
+        :returns: True if this is a system database, False otherwise
+        :rtype: bool
         :raises: ArangoDatabasePropertyError
         """
         return self.properties["isSystem"]
@@ -83,7 +99,8 @@ class Database(object):
     def collections(self):
         """Return the names of the collections in this database.
 
-        :returns: list -- list of collection names
+        :returns: the list of string names of the collections
+        :rtype: list
         :raises: ArangoCollectionListError
         """
         res = self._client.get("/_api/collection")
@@ -95,33 +112,14 @@ class Database(object):
     def aql_functions(self):
         """Return the AQL functions defined in this database.
 
-        :returns: dict -- mapping of function names to its code
+        :returns: a mapping of AQL function names to its javascript code
+        :rtype: dict
         :raises: ArangoAQLFunctionListError
         """
         res = self._client.get("/_api/aqlfunction")
         if res.status_code != 200:
             raise ArangoAQLFunctionListError(res)
         return {func["name"]: func["code"]for func in res.obj}
-
-    def collection(self, name):
-        """Return the Collection object of the specified name.
-
-        :param str name: the name of the collection
-        :returns: Collection -- the requested collection
-        :raises: TypeError, ArangoCollectionNotFound
-        """
-        if not isinstance(name, str):
-            raise TypeError("Expecting a str.")
-        if name in self._collection_cache:
-            return self._collection_cache[name]
-        else:
-            self._update_collection_cache()
-            if name not in self._collection_cache:
-                raise ArangoCollectionNotFoundError(name)
-            return self._collection_cache[name]
-
-    def col(self, name):
-        return self.collection(name)
 
     ########################
     # Managing Collections #
@@ -132,14 +130,24 @@ class Database(object):
                           key_options=None, is_edge=False):
         """Create a new collection in this database.
 
-        :param str name: name of the new collection
-        :param bool wait_for_sync: if True the collection waits for syncs to disk
-        :param bool do_compact: whether or not the collection is compacted
-        :param int journal_size: the maximal size of journal or datafile
-        :param bool is_system: whether or not the collection is a system collection
-        :param bool is_volatile: whether or not the collection is kept in memory only
-        :param dict key_options: options for document key generation
-        :param bool is_edge: whether or not the collection is an edge collection
+        #TODO key_options
+
+        :param name: name of the new collection
+        :type name: str
+        :param wait_for_sync: whether or not the collection waits for syncs to disk
+        :type wait_for_sync: bool
+        :param do_compact: whether or not the collection is compacted
+        :type do_compact: bool
+        :param journal_size: the maximal size of journal or datafile
+        :type journal_size: str or int
+        :param is_system: whether or not the collection is a system collection
+        :type is_system: bool
+        :param is_volatile: whether or not the collection is kept in memory only
+        :type is_volatile: bool
+        :param key_options: settings for document key generation
+        :type key_options: dict
+        :param is_edge: whether or not the collection is an edge collection
+        :type is_edge: bool
         :raises: ArangoCollectionCreateError
         """
         data = {
@@ -162,7 +170,8 @@ class Database(object):
     def delete_collection(self, name):
         """Delete the specified collection in this database.
 
-        :param str name: the name of the collection to delete
+        :param name: the name of the collection to delete
+        :type name: str
         :raises: ArangoCollectionDeleteError
         """
         res = self._client.delete("/_api/collection/{}".format(name))
@@ -173,8 +182,10 @@ class Database(object):
     def rename_collection(self, name, new_name):
         """Rename the specified collection in this database.
 
-        :param str name: the name of the collection to rename
-        :param str new_name: the new name for the collection
+        :param name: the name of the collection to rename
+        :type name: str
+        :param new_name: the new name for the collection
+        :type new_name: str
         :raises: ArangoCollectionRenameError
         """
         res = self._client.put(
@@ -190,6 +201,15 @@ class Database(object):
     ##########################
 
     def create_aql_function(self, name, code, **kwargs):
+        """Create a new AQL function.
+
+        :param name: the name of the new AQL function to create
+        :type name: str
+        :param code: the stringified javascript code of the new function
+        :type code: str
+        :param kwargs: optional parameters
+        :raises: ArangoAQLFunctionCreateError
+        """
         data = {"name": name, "code": code}
         data.update(kwargs)
         res = self._client.post("/_api/aqlfunction", data=data)
@@ -197,6 +217,13 @@ class Database(object):
             raise ArangoAQLFunctionCreateError(res)
 
     def delete_aql_function(self, name, **kwargs):
+        """Delete an AQL function.
+
+        :param name: the name of the AQL function to delete
+        :type name: str
+        :param kwargs: optional parameters
+        :raises: ArangoAQLFunctionDeleteError
+        """
         res = self._client.delete(
             "/_api/aqlfunction/{}".format(name), data=kwargs
         )
@@ -208,7 +235,49 @@ class Database(object):
     ###############
 
     def parse_query(self, query):
+        """Validate the AQL query.
+
+        :param query: the AQL query to validate
+        :type query: str
+        :raises: ArangoQueryParseError
+        """
         self._query.parse(query)
 
     def execute_query(self, query, **kwargs):
+        """Execute the AQL query and return the result.
+
+        :param query: the AQL query to execute
+        :type query: str
+        :param kwargs: optional parameters
+        :returns: the result from executing the query
+        :rtype: types.GeneratorType
+        :raises: ArangoQueryExecuteError, ArangoCursorDeleteError
+        """
         return self._query.execute(query, **kwargs)
+
+    ################
+    # Transactions #
+    ################
+
+    def execute_transaction(self, collections=None, action=None):
+        """Execute the transaction and return the result.
+
+        The ``collections`` dict can only have keys ``write`` or ``read``
+        with str or list as values. The values must be name(s) of collections
+        that exist in this database.
+
+        :param collections: the collections read/modified
+        :type collections: dict
+        :param action: the ArangoDB commands (in javascript) to be executed
+        :type action: str
+        :returns: the result from executing the transaction
+        :rtype: dict
+        :raises: ArangoTransactionError
+        """
+        data = {
+            collections: {} if collections is None else collections,
+            action: "" if action is None else ""
+        }
+        res = self._client.post("/_api/transaction", data=data)
+        if res != 200:
+            raise ArangoTransactionError(res)

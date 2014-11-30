@@ -10,7 +10,8 @@ from arango.exceptions import (
 class Query(object):
     """ArangoDB AQL queries.
 
-    :param Client client: the http client
+    :param client: the http client
+    :type client: Client
     """
 
     def __init__(self, client):
@@ -19,7 +20,8 @@ class Query(object):
     def parse(self, query):
         """Validate the AQL query.
 
-        :param str query: the AQL query to validate
+        :param query: the AQL query to validate
+        :type query: str
         :raises: ArangoQueryParseError
         """
         res = self._client.post("/_api/query", data={"query": query})
@@ -29,8 +31,10 @@ class Query(object):
     def execute(self, query, **kwargs):
         """Execute the AQL query and return the result.
 
-        :param str query: the AQL query to execute
-        :returns: iterator for the query result
+        :param query: the AQL query to execute
+        :type query: str
+        :returns: the result from executing the query
+        :rtype: types.GeneratorType
         :raises: ArangoQueryExecuteError, ArangoCursorDeleteError
         """
         data = {"query": query}

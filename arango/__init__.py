@@ -8,9 +8,12 @@ from arango.exceptions import *
 class Arango(object):
     """A wrapper around ArangoDB API.
 
-    :param str protocol: the internet transfer protocol (default: http)
-    :param str host: ArangoDB host (default: localhost)
-    :param int port: ArangoDB port (default: 8529)
+    :param protocol: the internet transfer protocol (default: http)
+    :type protocol: str
+    :param host: ArangoDB host (default: localhost)
+    :type host: str
+    :param port: ArangoDB port (default: 8529)
+    :type port: int or str
     :raises: ArangoConnectionError
     """
 
@@ -75,7 +78,8 @@ class Arango(object):
     def version(self):
         """Return the version of ArangoDB.
 
-        :returns: str -- the version number
+        :returns: the version number
+        :rtype: str
         :raises: ArangoVersionError
         """
         res = self._client.get("/_api/version")
@@ -87,7 +91,8 @@ class Arango(object):
     def databases(self):
         """"Return the database names.
 
-        :returns: dict -- database names
+        :returns: the database names
+        :rtype: list
         :raises: ArangoDatabaseListError
         """
         res = self._client.get("/_api/database/user")
@@ -105,7 +110,8 @@ class Arango(object):
     def db(self, name):
         """Return the ``Database`` object of the given name.
 
-        :returns: Database -- the Database object
+        :returns: the database object
+        :rtype: arango.database.Database
         :raises: ArangoDatabaseNotFoundError
         """
         if name in self._database_cache:
@@ -119,8 +125,10 @@ class Arango(object):
     def create_database(self, name, users=None):
         """Create a new database.
 
-        :param str name: the name of the new database
-        :param dict users: the ``users`` configurations
+        :param name: the name of the new database
+        :type name: str
+        :param users: the users configurations
+        :type users: dict
         :raises: ArangoDatabaseCreateError
         """
         data = {"name": name, "users": users} if users else {"name": name}
@@ -132,7 +140,8 @@ class Arango(object):
     def delete_database(self, name):
         """Delete the database of the given name.
 
-        :param str name: the name of the database to delete
+        :param name: the name of the database to delete
+        :type name: str
         :raises: ArangoDatabaseDeleteError
         """
         res = self._client.delete("/_api/database/{}".format(name))
