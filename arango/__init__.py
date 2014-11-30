@@ -1,36 +1,46 @@
 """ArangoDB Connection."""
 
 from arango.database import Database
-from arango.client import Client
+from arango.api import ArangoAPI
 from arango.exceptions import *
 
 
 class Arango(object):
     """A wrapper around ArangoDB API.
 
-    :param str protocol: the internet transfer protocol (default: http)
-    :param str host: ArangoDB host (default: localhost)
-    :param int port: ArangoDB port (default: 8529)
+    :param protocol: the internet transfer protocol (default: http)
+    :type protocol: str
+    :param host: ArangoDB host (default: localhost)
+    :type host: str
+    :param port: ArangoDB port (default: 8529)
+    :type port: int
+    :param username: the username
+    :type username: str
+    :param password: the password
+    :type password: str
+    :param client: the custom client object
+    :type client: arango.clients.base.BaseArangoClient
     :raises: ArangoConnectionError
     """
 
     def __init__(self, protocol="http", host="localhost", port=8529,
-                 username="root", password=""):
+                 username="root", password="", client=None):
         self._protocol = protocol
         self._host = host
         self._port = port
         self._username = username
         self._password = password
-
-        self._client = Client(
+        self._client = client
+        self._api = ArangoAPI(
             protocol=self._protocol,
             host=self._host,
             port=self._port,
             username=self._username,
             password=self._password,
+            client=self._client,
         )
         # Check the connection by requesting a header of the version endpoint
-        res = self._client.head("/_api/version")
+        res = self._api.head("/_api/version")
         if res.status_code != 200:
             raise ArangoConnectionError(
                 "Failed to connect to '{host}' ({status}: {reason})".format(
@@ -39,18 +49,18 @@ class Arango(object):
                     reason=res.reason
                 )
             )
-        # Cache for Collection objects
+        # Cache for Database objects
         self._database_cache = {}
         # Default database (i.e. "_system")
-        self._default_database = Database("_system", self._client)
+        self._default_database = Database("_system", self._api)
 
     def __getattr__(self, attr):
-        """Call __getattr__ of the default database if not here."""
+        """Call __getattr__ of the default database."""
         return getattr(self._default_database, attr)
 
     def __getitem__(self, item):
-        """Call __getitem__ of the default database if not here."""
-        return self._default_database[item]
+        """Call __getitem__ of the default database."""
+        return self._default_database.collection(item)
 
     def _invalidate_database_cache(self):
         """Invalidate the Database object cache."""
@@ -61,13 +71,14 @@ class Arango(object):
         for db_name in real_dbs - cached_dbs:
             self._database_cache[db_name] = Database(
                 name=db_name,
-                client=Client(
+                api=ArangoAPI(
                     protocol=self._protocol,
                     host=self._host,
                     port=self._port,
                     username=self._username,
                     password=self._password,
-                    db_name=db_name
+                    db_name=db_name,
+                    client=self._client
                 )
             )
 
@@ -75,69 +86,82 @@ class Arango(object):
     def version(self):
         """Return the version of ArangoDB.
 
-        :returns: str -- the version number
-        :raises: ArangoVersionError
+        :returns: the version number
+        :rtype: str
+        :raises: VersionGetError
         """
-        res = self._client.get("/_api/version")
+        res = self._api.get("/_api/version")
         if res.status_code != 200:
-            raise ArangoVersionError(res)
+            raise VersionGetError(res)
         return res.obj["version"]
 
     @property
     def databases(self):
         """"Return the database names.
 
-        :returns: dict -- database names
-        :raises: ArangoDatabaseListError
+        :returns: the database names
+        :rtype: dict
+        :raises: DatabaseListError
         """
-        res = self._client.get("/_api/database/user")
+        res = self._api.get("/_api/database/user")
         if res.status_code != 200:
-            raise ArangoDatabaseListError(res)
+            raise DatabaseListError(res)
         user_databases = res.obj["result"]
 
-        res = self._client.get("/_api/database")
+        res = self._api.get("/_api/database")
         if res.status_code != 200:
-            raise ArangoDatabaseListError(res)
+            raise DatabaseListError(res)
         all_databases = res.obj["result"]
 
-        return {"user": user_databases, "all": all_databases}
+        return {"all": all_databases, "user": user_databases}
 
     def db(self, name):
-        """Return the ``Database`` object of the given name.
+        """Alias for self.database."""
+        return self.database(name)
 
-        :returns: Database -- the Database object
-        :raises: ArangoDatabaseNotFoundError
+    def database(self, name):
+        """Return the ``Database`` object of the specified name.
+
+        :returns: the database object
+        :rtype: arango.database.Database
+        :raises: DatabaseNotFoundError
         """
         if name in self._database_cache:
             return self._database_cache[name]
         else:
             self._invalidate_database_cache()
             if name not in self._database_cache:
-                raise ArangoDatabaseNotFoundError(name)
+                raise DatabaseNotFoundError(name)
             return self._database_cache[name]
 
-    def create_database(self, name, users=None):
-        """Create a new database.
+    def add_database(self, name, users=None):
+        """Add a new database.
 
-        :param str name: the name of the new database
-        :param dict users: the ``users`` configurations
-        :raises: ArangoDatabaseCreateError
+        :param name: the name of the new database
+        :type name: str
+        :param users: the users configurations
+        :type users: dict
+        :returns: the Database object
+        :rtype: arango.database.Database
+        :raises: DatabaseCreateError
         """
         data = {"name": name, "users": users} if users else {"name": name}
-        res = self._client.post("/_api/database", data=data)
+        res = self._api.post("/_api/database", data=data)
         if res.status_code != 201:
-            raise ArangoDatabaseCreateError(res)
+            raise DatabaseAddError(res)
         self._invalidate_database_cache()
+        return self.db(name)
 
-    def delete_database(self, name):
-        """Delete the database of the given name.
+    def remove_database(self, name):
+        """Remove the database of the specified name.
 
-        :param str name: the name of the database to delete
-        :raises: ArangoDatabaseDeleteError
+        :param name: the name of the database to remove
+        :type name: str
+        :raises: DatabaseDeleteError
         """
-        res = self._client.delete("/_api/database/{}".format(name))
+        res = self._api.delete("/_api/database/{}".format(name))
         if res.status_code != 200:
-            raise ArangoDatabaseDeleteError(res)
+            raise DatabaseRemoveError(res)
         self._invalidate_database_cache()
 
 
