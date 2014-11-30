@@ -4,21 +4,15 @@ import json
 import requests
 from arango.util import unicode_to_str
 
-class Connection(object):
+class Client(object):
     """A simple wrapper for making HTTP requests to ArangoDB.
 
-    :param protocol: the internet transfer protocol (default: http).
-    :type protocol: str.
-    :param host: ArangoDB host (default: localhost).
-    :type host: str.
-    :param port: ArangoDB port (default: 8529).
-    :type port: int.
-    :param username: username for ArangoDB (default: root).
-    :type username: str.
-    :param password: password for ArangoDB (default: empty string).
-    :type password: str.
-    :param db_name: the database to make the requests to (default: _system)
-    :type db_name: str.
+    :param str protocol: the internet transfer protocol (default: http)
+    :param str host: ArangoDB host (default: localhost)
+    :param int port: ArangoDB port (default: 8529)
+    :param str username: username for ArangoDB (default: root)
+    :param str password: password for ArangoDB (default: empty string)
+    :param str db_name: the database to use (default: _system)
     """
 
     def __init__(self, protocol="http", host="localhost", port=8529,
@@ -32,7 +26,10 @@ class Connection(object):
 
     @property
     def _url_prefix(self):
-        """Generate and return the URL prefix."""
+        """Generate and return the URL prefix.
+
+        :returns: str -- e.g. http://localhost:8529/_db/_system
+        """
         return "{protocol}://{host}:{port}/_db/{db}".format(
             protocol = self.protocol,
             host = self.host,

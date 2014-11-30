@@ -109,6 +109,10 @@ class ArangoCollectionUnloadError(ArangoRequestError):
 class ArangoCollectionRotateJournalError(ArangoRequestError):
     """Failed to rotate the journal of the collection."""
 
+
+class ArangoRevisionMismatchError(ArangoRequestError):
+    """There was a mismatch between expected and actual revision."""
+
 #######################
 # Document Exceptions #
 #######################
@@ -126,15 +130,42 @@ class ArangoDocumentCreateError(ArangoRequestError):
 
 
 class ArangoDocumentReplaceError(ArangoRequestError):
-    """Failed to create the ArangoDB document(s)."""
+    """Failed to replace the ArangoDB document(s)."""
 
 
 class ArangoDocumentPatchError(ArangoRequestError):
-    """Failed to create the ArangoDB document(s)."""
+    """Failed to patch the ArangoDB document(s)."""
 
 
 class ArangoDocumentDeleteError(ArangoRequestError):
-    """Failed to create the ArangoDB document(s)."""
+    """Failed to delete the ArangoDB document(s)."""
+
+#######################
+# Edge Exceptions #
+#######################
+
+class ArangoEdgeInvalidError(Exception):
+    """The edge is invalid."""
+
+
+class ArangoEdgeGetError(ArangoRequestError):
+    """Failed to get the ArangoDB edge(s)."""
+
+
+class ArangoEdgeCreateError(ArangoRequestError):
+    """Failed to create the ArangoDB edge(s)."""
+
+
+class ArangoEdgeReplaceError(ArangoRequestError):
+    """Failed to replace the ArangoDB edge(s)."""
+
+
+class ArangoEdgePatchError(ArangoRequestError):
+    """Failed to patch the ArangoDB edge(s)."""
+
+
+class ArangoEdgeDeleteError(ArangoRequestError):
+    """Failed to delete the ArangoDB edge(s)."""
 
 ####################
 # Index Exceptions #

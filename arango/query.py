@@ -8,33 +8,34 @@ from arango.exceptions import (
 
 
 class Query(object):
-    """Mix-in class for handling AQL queries."""
+    """ArangoDB AQL queries.
 
-    def __init__(self, connection):
-        self._conn = connection
+    :param Client client: the http client
+    """
+
+    def __init__(self, client):
+        self._client = client
 
     def parse(self, query):
         """Validate the AQL query.
 
-        :param query: the AQL query to validate.
-        :type query: str
+        :param str query: the AQL query to validate
         :raises: ArangoQueryParseError
         """
-        res = self._conn.post("/_api/query", data={"query": query})
+        res = self._client.post("/_api/query", data={"query": query})
         if res.status_code != 200:
             raise ArangoQueryParseError(res)
 
     def execute(self, query, **kwargs):
         """Execute the AQL query and return the result.
 
-        :param query: the AQL query to execute.
-        :type query: str
-        :returns: iterator
+        :param str query: the AQL query to execute
+        :returns: iterator for the query result
         :raises: ArangoQueryExecuteError, ArangoCursorDeleteError
         """
         data = {"query": query}
         data.update(kwargs)
-        res = self._conn.post("/_api/cursor", data=data)
+        res = self._client.post("/_api/cursor", data=data)
         if res.status_code != 201:
             raise ArangoQueryExecuteError(res)
         for item in res.obj["result"]:
@@ -43,12 +44,12 @@ class Query(object):
         while res.obj["hasMore"]:
             if cursor_id is None:
                 cursor_id = res.obj["id"]
-            res = self._put("/api/cursor/{}".format(cursor_id))
+            res = self._client.put("/api/cursor/{}".format(cursor_id))
             if res.status_code != 200:
                 raise ArangoQueryExecuteError(res)
             for item in res.obj["result"]:
                 yield item
         if cursor_id is not None:
-            res = self._delete("/api/cursor/{}".format(cursor_id))
+            res = self._client.delete("/api/cursor/{}".format(cursor_id))
             if res.status_code != 202:
                 raise ArangoCursorDeleteError(res)
