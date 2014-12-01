@@ -53,7 +53,7 @@ class Arango(object):
 
     def __getitem__(self, item):
         """Call __getitem__ of the default database if not here."""
-        return self._default_database[item]
+        return self._default_database.collection(item)
 
     def _invalidate_database_cache(self):
         """Invalidate the Database object cache."""
@@ -92,7 +92,7 @@ class Arango(object):
         """"Return the database names.
 
         :returns: the database names
-        :rtype: list
+        :rtype: dict
         :raises: ArangoDatabaseListError
         """
         res = self._client.get("/_api/database/user")
@@ -108,6 +108,10 @@ class Arango(object):
         return {"user": user_databases, "all": all_databases}
 
     def db(self, name):
+        """Alias for self.database."""
+        return self.database(name)
+
+    def database(self, name):
         """Return the ``Database`` object of the given name.
 
         :returns: the database object
@@ -153,3 +157,21 @@ class Arango(object):
 if __name__ == "__main__":
     a = Arango()
     print a.version
+
+    edge_definition01 = {
+        "collection": "edge_col",
+        "from": ["col01"],
+        "to": ["col01"]
+    }
+
+    edge_definition02 = {
+        "collection": "edge_col02",
+        "from": ["col02"],
+        "to": ["col03"]
+    }
+
+    a.delete_aql_function("myfunctions::temperature::celsiustofahrenheit")
+    a.create_aql_function(
+        "myfunctions::temperature::celsiustofahrenheit",
+        "function (celsius) { return celsius * 1.8 + 32; }"
+    )

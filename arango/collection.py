@@ -279,7 +279,7 @@ class Collection(object):
         if res.status_code != 200:
             raise ex.ArangoCollectionRotateJournalError(res)
 
-    def get_checksum(self, with_rev=False, with_data=False):
+    def checksum(self, with_rev=False, with_data=False):
         """Return the checksum for this collection.
 
         :param with_rev: include the revision in checksum calculation
@@ -299,7 +299,7 @@ class Collection(object):
         return res.obj["checksum"]
 
     ############################
-    # Managing Documents/Edges #
+    # Handling Documents/Edges #
     ############################
 
     def get(self, key, rev=None, match=True):
@@ -346,7 +346,7 @@ class Collection(object):
         contain the ``_from`` and ``_to`` attributes with valid document handles
         as values.
 
-        :param data: the document/edge to create in this collection
+        :param data: the body of the new document/edge
         :type data: dict
         :param wait_for_sync: wait for create to sync to disk
         :type wait_for_sync: bool
@@ -355,8 +355,9 @@ class Collection(object):
         :raises: ArangoDocumentCreateError, ArangoEdgeCreateError
         """
         if self.is_edge and ("_from" not in data or "_to" not in data):
-            raise ex.ArangoEdgeInvalidError("the edge data must contain the "
-                                         "'_from' and '_to' attributes.")
+            raise ex.ArangoEdgeInvalidError(
+                "the edge data must contain the '_from' and '_to' attributes."
+            )
         params = {
             "collection": self.name,
             "waitForSync": wait_for_sync,
@@ -388,7 +389,7 @@ class Collection(object):
         The ``_from`` and ``_to`` attributes are immutable, and they are
         ignored if present in ``data``.
 
-        :param data: the document/edge to replace
+        :param data: the body of the new document/edge
         :rtype data: dict
         :param wait_for_sync: wait for the replace to sync to disk
         :type wait_for_sync: bool
@@ -437,7 +438,7 @@ class Collection(object):
         The ``_from`` and ``_to`` attributes are immutable, and they are
         ignored if provided in ``data``.
 
-        :param data: the document/edge to patch
+        :param data: the body of the document/edge to patch
         :type data: dict
         :param keep_none: whether to keep the items with value None
         :type keep_none: bool
@@ -536,7 +537,7 @@ class Collection(object):
         return res.obj
 
     ####################
-    # Managing Indexes #
+    # Handling Indexes #
     ####################
 
     def create_index(self, index_type, **config):
