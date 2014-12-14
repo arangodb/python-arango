@@ -19,7 +19,7 @@ class ArangoRequestError(Exception):
 
 
 class ArangoNotFoundError(KeyError):
-    """ArangoDB key error class."""
+    """Base ArangoDB "not found" exception class."""
 
     def __init__(self, name):
         super(ArangoNotFoundError, self).__init__(name)
@@ -56,7 +56,7 @@ class ArangoDatabasePropertyError(ArangoRequestError):
 
 
 class ArangoDatabaseCreateError(ArangoRequestError):
-    """Failed to create the database."""
+    """Failed to add the database."""
 
 
 class ArangoDatabaseDeleteError(ArangoRequestError):
@@ -83,11 +83,11 @@ class ArangoCollectionGetChecksumError(ArangoRequestError):
     """Failed to retrieve the collection checksum."""
 
 
-class ArangoCollectionCreateError(ArangoRequestError):
-    """Failed to create the collection."""
+class ArangoCollectionAddError(ArangoRequestError):
+    """Failed to add the collection."""
 
 
-class ArangoCollectionDeleteError(ArangoRequestError):
+class ArangoCollectionRemoveError(ArangoRequestError):
     """Failed to delete the collection"""
 
 
@@ -135,7 +135,7 @@ class ArangoDocumentGetError(ArangoRequestError):
 
 
 class ArangoDocumentCreateError(ArangoRequestError):
-    """Failed to create the ArangoDB document(s)."""
+    """Failed to add the ArangoDB document(s)."""
 
 
 class ArangoDocumentReplaceError(ArangoRequestError):
@@ -162,20 +162,50 @@ class ArangoEdgeGetError(ArangoRequestError):
     """Failed to get the ArangoDB edge(s)."""
 
 
-class ArangoEdgeCreateError(ArangoRequestError):
-    """Failed to create the ArangoDB edge(s)."""
+class ArangoEdgeAddError(ArangoRequestError):
+    """Failed to add the ArangoDB edge(s)."""
 
 
 class ArangoEdgeReplaceError(ArangoRequestError):
     """Failed to replace the ArangoDB edge(s)."""
 
 
-class ArangoEdgePatchError(ArangoRequestError):
+class ArangoEdgeUpdateError(ArangoRequestError):
     """Failed to patch the ArangoDB edge(s)."""
 
 
-class ArangoEdgeDeleteError(ArangoRequestError):
+class ArangoEdgeRemoveError(ArangoRequestError):
     """Failed to delete the ArangoDB edge(s)."""
+
+
+############
+# Vertices #
+############
+
+
+class ArangoVertexInvalidError(ArangoRequestError):
+    """The vertex is invalid."""
+
+
+class ArangoVertexGetError(ArangoRequestError):
+    """Failed to get the vertex."""
+
+
+class ArangoVertexAddError(ArangoRequestError):
+    """Failed to add the vertex."""
+
+
+class ArangoVertexUpdateError(ArangoRequestError):
+    """Failed to modify the vertex."""
+
+
+class ArangoVertexReplaceError(ArangoRequestError):
+    """Failed to replace the vertex."""
+
+
+class ArangoVertexRemoveError(ArangoRequestError):
+    """Failed to delete the vertex."""
+
 
 ###########
 # Indexes #
@@ -185,16 +215,16 @@ class ArangoIndexListError(ArangoRequestError):
     """Failed to list all the collections."""
 
 
-class ArangoIndexCreateError(ArangoRequestError):
-    """Failed to create the index."""
+class ArangoIndexAddError(ArangoRequestError):
+    """Failed to add the index."""
 
 
-class ArangoIndexDeleteError(ArangoRequestError):
+class ArangoIndexRemoveError(ArangoRequestError):
     """Failed to delete the index."""
 
-###############
-# AQL Queries #
-###############
+###########
+# Queries #
+###########
 
 class ArangoQueryParseError(ArangoRequestError):
     """Failed to validate the query."""
@@ -212,19 +242,85 @@ class ArangoAQLFunctionListError(ArangoRequestError):
     """Failed to get the list of AQL functions."""
 
 
-class ArangoAQLFunctionCreateError(ArangoRequestError):
-    """Failed to create the AQL function."""
+class ArangoAQLFunctionAddError(ArangoRequestError):
+    """Failed to add the AQL function."""
 
 
-class ArangoAQLFunctionDeleteError(ArangoRequestError):
+class ArangoAQLFunctionRemoveError(ArangoRequestError):
     """Failed to delete the AQL function."""
+
+##################
+# Simple Queries #
+##################
+
+class ArangoSimpleQueryGetByExampleError(ArangoRequestError):
+    """Failed to execute the ``by-example`` simple query."""
+
+
+class ArangoSimpleQueryFirstExampleError(ArangoRequestError):
+    """Failed to execute the ``first-example`` simple query."""
+
+
+class ArangoSimpleQueryReplaceByExampleError(ArangoRequestError):
+    """Failed to execute the ``replace-by-example`` simple query."""
+
+
+class ArangoSimpleQueryUpdateByExampleError(ArangoRequestError):
+    """Failed to execute the ``update-by-example`` simple query."""
+
+
+class ArangoSimpleQueryDeleteByExampleError(ArangoRequestError):
+    """Failed to execute the ``remove-by-example`` simple query."""
+
+
+class ArangoSimpleQueryFirstError(ArangoRequestError):
+    """Failed to execute the ``first`` simple query."""
+
+
+class ArangoSimpleQueryLastError(ArangoRequestError):
+    """Failed to execute the ``last`` simple query."""
+
+
+class ArangoSimpleQueryAllError(ArangoRequestError):
+    """Failed to execute the `all`` simple query."""
+
+
+class ArangoSimpleQueryAnyError(ArangoRequestError):
+    """Failed to execute the ``any`` simple query."""
+
+
+class ArangoSimpleQueryRangeError(ArangoRequestError):
+    """Failed to execute the ``range`` simple query."""
+
+
+class ArangoSimpleQueryNearError(ArangoRequestError):
+    """Failed to execute the ``near`` simple query."""
+
+
+class ArangoSimpleQueryWithinError(ArangoRequestError):
+    """Failed to execute the ``within`` simple query."""
+
+
+class ArangoSimpleQueryFullTextError(ArangoRequestError):
+    """Failed to execute a ``fulltext`` query."""
+
+
+class ArangoSimpleQueryError(ArangoRequestError):
+    """Failed to execute a simple query."""
 
 ################
 # Transactions #
 ################
 
-class ArangoTransactionError(ArangoRequestError):
+class ArangoTransactionExecuteError(ArangoRequestError):
     """Failed to execute a transaction."""
+
+###########
+# Batches #
+###########
+
+class ArangoBatchExecuteError(ArangoRequestError):
+    """Failed to execute a batch request."""
 
 ##########
 # Graphs #
@@ -242,16 +338,20 @@ class ArangoGraphGetError(ArangoRequestError):
     """Failed to retrieve the graph."""
 
 
-class ArangoGraphCreateError(ArangoRequestError):
-    """Failed to create the graph."""
+class ArangoGraphAddError(ArangoRequestError):
+    """Failed to add the graph."""
 
 
-class ArangoGraphDeleteError(ArangoRequestError):
+class ArangoGraphRemoveError(ArangoRequestError):
     """Failed to drop the graph."""
 
 
 class ArangoGraphPropertiesError(ArangoRequestError):
     """Failed to retrieve the properties of the graph."""
+
+
+class ArangoGraphTraversalError(ArangoRequestError):
+    """Failed to traverse the graph."""
 
 ######################
 # Vertex Collections #
@@ -272,7 +372,7 @@ class ArangoVertexCollectionRemoveError(ArangoRequestError):
 # Edge Collections/Definitions #
 ################################
 
-class ArangoEdgeCollectionListError(ArangoRequestError):
+class ArangoEdgeDefinitionListError(ArangoRequestError):
     """Failed to list the edge collections."""
 
 
@@ -286,56 +386,3 @@ class ArangoEdgeDefinitionReplaceError(ArangoRequestError):
 
 class ArangoEdgeDefinitionRemoveError(ArangoRequestError):
     """Failed to remove a edge definition from the graph."""
-
-############
-# Vertices #
-############
-
-
-class ArangoVertexInvalidError(ArangoRequestError):
-    """The vertex is invalid."""
-
-
-class ArangoVertexGetError(ArangoRequestError):
-    """Failed to get the vertex."""
-
-
-class ArangoVertexCreateError(ArangoRequestError):
-    """Failed to create the vertex."""
-
-
-class ArangoVertexPatchError(ArangoRequestError):
-    """Failed to modify the vertex."""
-
-
-class ArangoVertexReplaceError(ArangoRequestError):
-    """Failed to replace the vertex."""
-
-
-class ArangoVertexDeleteError(ArangoRequestError):
-    """Failed to delete the vertex."""
-
-
-#########
-# Edges #
-#########
-
-
-class ArangoEdgeGetError(ArangoRequestError):
-    """Failed to get the edge."""
-
-
-class ArangoEdgeCreateError(ArangoRequestError):
-    """Failed to create the edge."""
-
-
-class ArangoEdgeModifyError(ArangoRequestError):
-    """Failed to modify the edge."""
-
-
-class ArangoEdgeReplaceError(ArangoRequestError):
-    """Failed to modify the edge."""
-
-
-class ArangoEdgeDeleteError(ArangoRequestError):
-    """Failed to delete the edge."""

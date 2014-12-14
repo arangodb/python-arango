@@ -1,18 +1,20 @@
 """ArangoDB Database."""
 
 
+from arango.utils import camelify
 from arango.query import Query
+from arango.batch import Batch
 from arango.graph import Graph
 from arango.collection import Collection
 from arango.exceptions import *
 
 
 class Database(object):
-    """A wrapper around ArangoDB database API.
+    """A wrapper around database specific API.
 
     :param name: the name of this database
-    :param client: the http client
     :type name: str
+    :param client: the http client
     :type client: arango.client.Client
     """
 
@@ -21,7 +23,8 @@ class Database(object):
         self._client = client
         self._collection_cache = {}
         self._graph_cache = {}
-        self._query = Query(self._client)
+        self.query = Query(self._client)
+        self.batch = Batch(self._client)
 
     def _update_collection_cache(self):
         """Invalidate the collection cache."""
@@ -31,8 +34,7 @@ class Database(object):
             del self._collection_cache[col_name]
         for col_name in real_cols - cached_cols:
             self._collection_cache[col_name] = Collection(
-                name=col_name,
-                client=self._client
+                name=col_name, client=self._client
             )
 
     def _update_graph_cache(self):
@@ -43,8 +45,7 @@ class Database(object):
             del self._graph_cache[graph_name]
         for graph_name in real_graphs - cached_graphs:
             self._graph_cache[graph_name] = Graph(
-                name=graph_name,
-                client=self._client
+                name=graph_name, client=self._client
             )
 
     @property
@@ -107,17 +108,13 @@ class Database(object):
             raise ArangoCollectionListError(res)
         return res.obj["names"]
 
-    def col(self, name):
-        """Alias for self.collection"""
-        return self.collection(name)
-
     def collection(self, name):
         """Return the Collection object of the specified name.
 
         :param name: the name of the collection
         :type name: str
         :returns: the requested collection object
-        :rtype: Collection
+        :rtype: arango.collection.Collection
         :raises: TypeError, ArangoCollectionNotFound
         """
         if not isinstance(name, str):
@@ -130,10 +127,10 @@ class Database(object):
                 raise ArangoCollectionNotFoundError(name)
             return self._collection_cache[name]
 
-    def create_collection(self, name, wait_for_sync=False, do_compact=True,
-                          journal_size=None, is_system=False, is_volatile=False,
-                          key_options=None, is_edge=False):
-        """Create a new collection in this database.
+    def add_collection(self, name, wait_for_sync=False, do_compact=True,
+                       journal_size=None, is_system=False, is_volatile=False,
+                       key_options=None, is_edge=False):
+        """Add a new collection in this database.
 
         #TODO expand on key_options
 
@@ -153,7 +150,7 @@ class Database(object):
         :type key_options: dict
         :param is_edge: whether or not the collection is an edge collection
         :type is_edge: bool
-        :raises: ArangoCollectionCreateError
+        :raises: ArangoCollectionAddError
         """
         data = {
             "name": name,
@@ -169,24 +166,21 @@ class Database(object):
 
         res = self._client.post("/_api/collection", data=data)
         if res.status_code != 200:
-            raise ArangoCollectionCreateError(res)
+            raise ArangoCollectionAddError(res)
         self._update_collection_cache()
         return res.obj
 
-    def delete_collection(self, name):
-        """Delete the specified collection in this database.
+    def remove_collection(self, name):
+        """Remove the specified collection in this database.
 
         :param name: the name of the collection to delete
         :type name: str
-        :returns: True
-        :rtype: boolean
-        :raises: ArangoCollectionDeleteError
+        :raises: ArangoCollectionRemoveError
         """
         res = self._client.delete("/_api/collection/{}".format(name))
         if res.status_code != 200:
-            raise ArangoCollectionDeleteError(res)
+            raise ArangoCollectionRemoveError(res)
         self._update_collection_cache()
-        return True
 
     def rename_collection(self, name, new_name):
         """Rename the specified collection in this database.
@@ -195,8 +189,6 @@ class Database(object):
         :type name: str
         :param new_name: the new name for the collection
         :type new_name: str
-        :returns: True
-        :rtype: boolean
         :raises: ArangoCollectionRenameError
         """
         res = self._client.put(
@@ -206,7 +198,6 @@ class Database(object):
         if res.status_code != 200:
             raise ArangoCollectionRenameError(res)
         self._update_collection_cache()
-        return True
 
     ##########################
     # Handling AQL Functions #
@@ -225,69 +216,46 @@ class Database(object):
             raise ArangoAQLFunctionListError(res)
         return {func["name"]: func["code"]for func in res.obj}
 
-    def create_aql_function(self, name, code, **kwargs):
-        """Create a new AQL function.
+    def add_aql_function(self, name, code):
+        """Add a new AQL function.
 
-        :param name: the name of the new AQL function to create
+        :param name: the name of the new AQL function to add
         :type name: str
         :param code: the stringified javascript code of the new function
         :type code: str
-        :param kwargs: optional parameters
-        :returns: True
-        :rtype: boolean
-        :raises: ArangoAQLFunctionCreateError
+        :returns: the updated AQL functions
+        :rtype: dict
+        :raises: ArangoAQLFunctionAddError
         """
         data = {"name": name, "code": code}
-        data.update(kwargs)
         res = self._client.post("/_api/aqlfunction", data=data)
         if res.status_code not in (200, 201):
-            raise ArangoAQLFunctionCreateError(res)
-        return True
+            raise ArangoAQLFunctionAddError(res)
+        return self.aql_functions
 
-    def delete_aql_function(self, name, **kwargs):
-        """Delete an AQL function.
+    def remove_aql_function(self, name, group=True):
+        """Remove an existing AQL function.
 
-        :param name: the name of the AQL function to delete
+        If ``group`` is set to True, then the function name provided in
+        ``name`` is treated as a namespace prefix, and all functions in
+        the specified namespace will be deleted. If set to False, the
+        function name provided in ``name`` must be fully qualified,
+        including any namespaces.
+
+        :param name: the name of the AQL function to remove
         :type name: str
-        :param kwargs: optional parameters
-        :returns: True
-        :rtype: boolean
-        :raises: ArangoAQLFunctionDeleteError
+        :param group: whether or not to treat name as a namespace prefix
+        :returns: the updated AQL functions
+        :rtype: dict
+        :raises: ArangoAQLFunctionRemoveError
         """
         res = self._client.delete(
-            "/_api/aqlfunction/{}".format(name), data=kwargs
+            "/_api/aqlfunction/{}".format(name),
+            params={"group": group}
         )
         if res.status_code != 200:
-            raise ArangoAQLFunctionDeleteError(res)
-        return True
-
-    ###############
-    # AQL Queries #
-    ###############
-
-    def parse_query(self, query):
-        """Validate the AQL query.
-
-        :param query: the AQL query to validate
-        :type query: str
-        :returns: True
-        :rtype: boolean
-        :raises: ArangoQueryParseError
-        """
-        self._query.parse(query)
-        return True
-
-    def execute_query(self, query, **kwargs):
-        """Execute the AQL query and return the result.
-
-        :param query: the AQL query to execute
-        :type query: str
-        :param kwargs: optional parameters
-        :returns: the result from executing the query
-        :rtype: types.GeneratorType
-        :raises: ArangoQueryExecuteError, ArangoCursorDeleteError
-        """
-        return self._query.execute(query, **kwargs)
+            raise ArangoAQLFunctionRemoveError(res)
+        return self.aql_functions
 
     ################
     # Transactions #
@@ -306,7 +274,7 @@ class Database(object):
         :type action: str
         :returns: the result from executing the transaction
         :rtype: dict
-        :raises: ArangoTransactionError
+        :raises: ArangoTransactionExecuteError
         """
         data = {
             collections: {} if collections is None else collections,
@@ -314,7 +282,7 @@ class Database(object):
         }
         res = self._client.post("/_api/transaction", data=data)
         if res != 200:
-            raise ArangoTransactionError(res)
+            raise ArangoTransactionExecuteError(res)
         return res.obj["result"]
 
     ###################
@@ -353,9 +321,9 @@ class Database(object):
                 raise ArangoGraphNotFoundError(name)
             return self._graph_cache[name]
 
-    def create_graph(self, name, edge_definitions=None,
-                     orphan_collections=None):
-        """Create a new graph in this database.
+    def add_graph(self, name, edge_definitions=None,
+                  orphan_collections=None):
+        """Add a new graph in this database.
 
         # TODO expand on edge_definitions and orphan_collections
 
@@ -365,9 +333,9 @@ class Database(object):
         :type edge_definitions: list
         :param orphan_collections: names of additional vertex collections
         :type orphan_collections: list
-        :returns: the details on the created graph
+        :returns: the details on the new graph
         :rtype: dict
-        :raises: ArangoGraphCreateError
+        :raises: ArangoGraphAddError
         """
         data = {"name": name}
         if edge_definitions is not None:
@@ -377,21 +345,81 @@ class Database(object):
 
         res = self._client.post("/_api/gharial", data=data)
         if res.status_code != 201:
-            raise ArangoGraphCreateError(res)
+            raise ArangoGraphAddError(res)
         self._update_graph_cache()
         return res.obj["graph"]
 
-    def delete_graph(self, name):
-        """Delete the graph of the given name.
+    def remove_graph(self, name):
+        """Delete the graph of the given name from this database.
 
         :param name: the name of the graph to delete
         :type name: str
-        :returns: True
-        :rtype: boolean
-        :raises: ArangoGraphDeleteError
+        :raises: ArangoGraphRemoveError
         """
         res = self._client.delete("/_api/gharial/{}".format(name))
         if res.status_code != 200:
-            raise ArangoGraphDeleteError(res)
+            raise ArangoGraphRemoveError(res)
         self._update_graph_cache()
-        return True
+
+    def execute_traversal(self, start_vertex, edge_collection=None,
+            graph_name=None, direction=None, strategy=None,
+            order=None, item_order=None, uniqueness=None,
+            max_iterations=None, min_depth=None, max_depth=None,
+            init=None, filter=None, visitor=None, expander=None,
+            sort=None):
+        """Execute a graph traversal and return the visited vertices.
+
+        Either ``edge_collection`` and ``graph_name`` should be provided.
+        If both are set, the value ``graph_name`` is preferred.
+
+        For more details on ``init``, ``filter``, ``visitor``, ``expander``
+        and ``sort`` please refer to the ArangoDB HTTP API documentation:
+        https://docs.arangodb.com/HttpTraversal/README.html
+
+        :param start_vertex: the ID of the start vertex (e.g. "col/key")
+        :type start_vertex: str
+        :param edge_collection: the name of the edge collection
+        :type edge_collection: str
+        :param graph_name: the name of the graph that contains the edges
+        :type graph_name: str
+        :param direction: traversal direction ("outbound/inbound/any")
+        :type direction: str
+        :param strategy: ``depthfirst`` or ``breadthfirst``
+        :type strategy: str
+        :param order: ``preorder`` or ``postorder``
+        :type order: str
+        :param item_order: ``forward`` or ``backward``
+        :type item_order: str
+        :param uniqueness: uniqueness of vertices and edges visited
+        :type uniqueness: dict
+        :param max_iterations: max number of iterations in each traversal
+        :type max_iterations: int
+        :param min_depth: minimum traversal depth
+        :type min_depth: int
+        :param max_depth: maximum traversal depth
+        :type max_depth: int
+        :param init: custom init function in Javascript
+        :type init: str
+        :param filter: custom filter function in Javascript
+        :type filter: str
+        :param visitor: custom visitor function in Javascript
+        :type visitor: str
+        :param expander: custom expander function in Javascript
+        :type expander: str
+        :param sort: custom sorting function in Javascript
+        :type sort: str
+        :returns:
+        :rtype: dict
+        :raises: ArangoGraphTraversalError
+        """
+        res = self._client.post(
+            "/_api/traversal",
+            params = {
+                camelify(arg): val
+                for arg, val in locals().iteritems()
+                if val is not None
+            }
+        )
+        if res.status_code != 200:
+            raise ArangoGraphTraversalError(res)
+        return res.obj["result"]

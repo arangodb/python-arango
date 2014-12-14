@@ -2,7 +2,9 @@
 
 import json
 import requests
-from arango.util import unicode_to_str
+from arango.utils import unicode_to_str
+
+#TODO add base client
 
 class Client(object):
     """A simple wrapper for making HTTP requests to ArangoDB.

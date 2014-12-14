@@ -14,18 +14,23 @@ class Arango(object):
     :type host: str
     :param port: ArangoDB port (default: 8529)
     :type port: int or str
+    :param username: the username
+    :type username: str
+    :param password: the password
+    :type password: str
+    :param client_cls: the client class (optional)
     :raises: ArangoConnectionError
     """
 
     def __init__(self, protocol="http", host="localhost", port=8529,
-                 username="root", password=""):
+                 username="root", password="", client_cls=None):
+        self._client_cls = client_cls if client_cls else Client
         self._protocol = protocol
         self._host = host
         self._port = port
         self._username = username
         self._password = password
-
-        self._client = Client(
+        self._client = self._client_cls(
             protocol=self._protocol,
             host=self._host,
             port=self._port,
@@ -42,17 +47,17 @@ class Arango(object):
                     reason=res.reason
                 )
             )
-        # Cache for Collection objects
+        # Cache for Database objects
         self._database_cache = {}
         # Default database (i.e. "_system")
         self._default_database = Database("_system", self._client)
 
     def __getattr__(self, attr):
-        """Call __getattr__ of the default database if not here."""
+        """Call __getattr__ of the default database."""
         return getattr(self._default_database, attr)
 
     def __getitem__(self, item):
-        """Call __getitem__ of the default database if not here."""
+        """Call __getitem__ of the default database."""
         return self._default_database.collection(item)
 
     def _invalidate_database_cache(self):
@@ -64,7 +69,7 @@ class Arango(object):
         for db_name in real_dbs - cached_dbs:
             self._database_cache[db_name] = Database(
                 name=db_name,
-                client=Client(
+                client=self._client_cls(
                     protocol=self._protocol,
                     host=self._host,
                     port=self._port,
