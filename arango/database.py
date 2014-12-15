@@ -1,7 +1,7 @@
 """ArangoDB Database."""
 
 
-from arango.utils import camelify
+from arango.utils import camelify, uncamelify
 from arango.query import Query
 from arango.batch import Batch
 from arango.graph import Graph
@@ -28,7 +28,8 @@ class Database(object):
 
     def _update_collection_cache(self):
         """Invalidate the collection cache."""
-        real_cols = set(self.collections)
+        cols = self.collections
+        real_cols = set(cols["user"] + cols["system"])
         cached_cols = set(self._collection_cache)
         for col_name in cached_cols - real_cols:
             del self._collection_cache[col_name]
@@ -59,7 +60,7 @@ class Database(object):
         res = self._client.get("/_api/database/current")
         if res.status_code != 200:
             raise ArangoDatabasePropertyError(res)
-        return res.obj["result"]
+        return {uncamelify(k): v for k, v in res.obj["result"].items()}
 
     @property
     def id(self):
@@ -89,7 +90,7 @@ class Database(object):
         :rtype: bool
         :raises: ArangoDatabasePropertyError
         """
-        return self.properties["isSystem"]
+        return self.properties["is_system"]
 
     ########################
     # Handling Collections #
@@ -99,14 +100,22 @@ class Database(object):
     def collections(self):
         """Return the names of the collections in this database.
 
-        :returns: the list of string names of the collections
-        :rtype: list
+        :returns: the names of the collections
+        :rtype: dict
         :raises: ArangoCollectionListError
         """
         res = self._client.get("/_api/collection")
         if res.status_code != 200:
             raise ArangoCollectionListError(res)
-        return res.obj["names"]
+
+        user_collections = []
+        system_collections = []
+        for collection in res.obj["collections"]:
+            if collection["isSystem"]:
+                system_collections.append(collection["name"])
+            else:
+                user_collections.append(collection["name"])
+        return {"user": user_collections, "system": system_collections}
 
     def collection(self, name):
         """Return the Collection object of the specified name.
@@ -168,19 +177,22 @@ class Database(object):
         if res.status_code != 200:
             raise ArangoCollectionAddError(res)
         self._update_collection_cache()
-        return res.obj
+        return {uncamelify(k): v for k, v in res.obj.items()}
 
     def remove_collection(self, name):
-        """Remove the specified collection in this database.
+        """Remove the specified collection from this database.
 
-        :param name: the name of the collection to delete
+        :param name: the name of the collection to remove
         :type name: str
+        :returns: the updated names of the collection in this database
+        :rtype: dict
         :raises: ArangoCollectionRemoveError
         """
         res = self._client.delete("/_api/collection/{}".format(name))
         if res.status_code != 200:
             raise ArangoCollectionRemoveError(res)
         self._update_collection_cache()
+        return self.collections
 
     def rename_collection(self, name, new_name):
         """Rename the specified collection in this database.
@@ -189,6 +201,8 @@ class Database(object):
         :type name: str
         :param new_name: the new name for the collection
         :type new_name: str
+        :returns: the updated names of the collections in this database
+        :rtype: dict
         :raises: ArangoCollectionRenameError
         """
         res = self._client.put(
@@ -198,6 +212,7 @@ class Database(object):
         if res.status_code != 200:
             raise ArangoCollectionRenameError(res)
         self._update_collection_cache()
+        return self.collections
 
     ##########################
     # Handling AQL Functions #

@@ -245,7 +245,9 @@ class Collection(object):
 
         :raises: ArangoCollectionTruncateError
         """
-        res = self._client.put("/_api/collection/{}/truncate".format(self.name))
+        res = self._client.put(
+            "/_api/collection/{}/truncate".format(self.name)
+        )
         if res.status_code != 200:
             raise ArangoCollectionTruncateError(res)
 
@@ -254,7 +256,9 @@ class Collection(object):
 
         :raises: ArangoCollectionLoadError
         """
-        res = self._client.put("/_api/collection/{}/load".format(self.name))
+        res = self._client.put(
+            "/_api/collection/{}/load".format(self.name)
+        )
         if res.status_code != 200:
             raise ArangoCollectionLoadError(res)
 
@@ -263,7 +267,9 @@ class Collection(object):
 
         :raises: ArangoCollectionUnloadError
         """
-        res = self._client.put("/_api/collection/{}/unload".format(self.name))
+        res = self._client.put(
+            "/_api/collection/{}/unload".format(self.name)
+        )
         if res.status_code != 200:
             raise ArangoCollectionUnloadError(res)
 
@@ -272,7 +278,9 @@ class Collection(object):
 
         :raises: ArangoCollectionRotateJournalError
         """
-        res = self._client.put("/_api/collection/{}/rotate".format(self.name))
+        res = self._client.put(
+            "/_api/collection/{}/rotate".format(self.name)
+        )
         if res.status_code != 200:
             raise ArangoCollectionRotateJournalError(res)
 

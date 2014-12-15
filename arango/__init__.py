@@ -110,7 +110,7 @@ class Arango(object):
             raise ArangoDatabaseListError(res)
         all_databases = res.obj["result"]
 
-        return {"user": user_databases, "all": all_databases}
+        return {"all": all_databases, "user": user_databases}
 
     def db(self, name):
         """Alias for self.database."""
@@ -138,8 +138,6 @@ class Arango(object):
         :type name: str
         :param users: the users configurations
         :type users: dict
-        :returns: updated names of databases
-        :rtype: dict
         :raises: ArangoDatabaseCreateError
         """
         data = {"name": name, "users": users} if users else {"name": name}
@@ -153,8 +151,6 @@ class Arango(object):
 
         :param name: the name of the database to delete
         :type name: str
-        :returns: updated names of databases
-        :rtype: dict
         :raises: ArangoDatabaseDeleteError
         """
         res = self._client.delete("/_api/database/{}".format(name))
