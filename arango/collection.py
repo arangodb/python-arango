@@ -14,6 +14,14 @@ class Collection(object):
     :type client: arango.client.Client
     """
 
+    collection_status = {
+        1: "new",
+        2: "unloaded",
+        3: "loaded",
+        4: "unloading",
+        5: "deleted",
+    }
+
     def __init__(self, name, client):
         self.name = name
         self._client = client
@@ -35,7 +43,7 @@ class Collection(object):
 
         Only ``wait_for_sync`` and ``journal_size`` are mutable.
         """
-        if attr == "wait_for_sync" or attr == "journal_size":
+        if attr in {"wait_for_sync", "journal_size"}:
             res = self._client.put(
                 "/_api/collection/{}/properties".format(self.name),
                 data={camelify(attr): value}
@@ -101,7 +109,9 @@ class Collection(object):
         :rtype: dict
         :raises: ArangoCollectionPropertyError
         """
-        res = self._client.get("/_api/collection/{}/properties".format(self.name))
+        res = self._client.get(
+            "/_api/collection/{}/properties".format(self.name)
+        )
         if res.status_code != 200:
             raise ArangoCollectionPropertyError(res)
         return res.obj
@@ -135,9 +145,14 @@ class Collection(object):
 
         :returns: the collection status
         :rtype: str
-        :raises: ArangoCollectionPropertyError
+        :raises: ArangoCollectionPropertyError, ArangoCollectionCorruptedError
         """
-        return self.properties["status"]
+        status_num = self.properties["status"]
+        if status_num not in self.collection_status:
+            raise ArangoCollectionCorruptedError(
+                "Got unknown status number: {}".format(status_num)
+            )
+        return self.collection_status[status_num]
 
     @property
     def key_options(self):

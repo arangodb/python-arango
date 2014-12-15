@@ -66,6 +66,9 @@ class ArangoDatabaseDeleteError(ArangoRequestError):
 # Collections #
 ###############
 
+class ArangoCollectionCorruptedError(Exception):
+    """The collection is corrupted (unknown status)."""
+
 
 class ArangoCollectionNotFoundError(ArangoNotFoundError):
     """Failed to locate the collection."""

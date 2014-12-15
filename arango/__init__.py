@@ -13,12 +13,12 @@ class Arango(object):
     :param host: ArangoDB host (default: localhost)
     :type host: str
     :param port: ArangoDB port (default: 8529)
-    :type port: int or str
+    :type port: int
     :param username: the username
     :type username: str
     :param password: the password
     :type password: str
-    :param client_cls: the client class (optional)
+    :param client_cls: the custom client class
     :raises: ArangoConnectionError
     """
 
@@ -117,7 +117,7 @@ class Arango(object):
         return self.database(name)
 
     def database(self, name):
-        """Return the ``Database`` object of the given name.
+        """Return the ``Database`` object of the specified name.
 
         :returns: the database object
         :rtype: arango.database.Database
@@ -131,13 +131,15 @@ class Arango(object):
                 raise ArangoDatabaseNotFoundError(name)
             return self._database_cache[name]
 
-    def create_database(self, name, users=None):
-        """Create a new database.
+    def add_database(self, name, users=None):
+        """Add a new database.
 
         :param name: the name of the new database
         :type name: str
         :param users: the users configurations
         :type users: dict
+        :returns: updated names of databases
+        :rtype: dict
         :raises: ArangoDatabaseCreateError
         """
         data = {"name": name, "users": users} if users else {"name": name}
@@ -146,11 +148,13 @@ class Arango(object):
             raise ArangoDatabaseCreateError(res)
         self._invalidate_database_cache()
 
-    def delete_database(self, name):
-        """Delete the database of the given name.
+    def remove_database(self, name):
+        """Remove the database of the specified name.
 
         :param name: the name of the database to delete
         :type name: str
+        :returns: updated names of databases
+        :rtype: dict
         :raises: ArangoDatabaseDeleteError
         """
         res = self._client.delete("/_api/database/{}".format(name))
@@ -163,20 +167,20 @@ if __name__ == "__main__":
     a = Arango()
     print a.version
 
-    edge_definition01 = {
-        "collection": "edge_col",
-        "from": ["col01"],
-        "to": ["col01"]
-    }
+    #edge_definition01 = {
+        #"collection": "edge_col",
+        #"from": ["col01"],
+        #"to": ["col01"]
+    #}
 
-    edge_definition02 = {
-        "collection": "edge_col02",
-        "from": ["col02"],
-        "to": ["col03"]
-    }
+    #edge_definition02 = {
+        #"collection": "edge_col02",
+        #"from": ["col02"],
+        #"to": ["col03"]
+    #}
 
-    a.delete_aql_function("myfunctions::temperature::celsiustofahrenheit")
-    a.create_aql_function(
-        "myfunctions::temperature::celsiustofahrenheit",
-        "function (celsius) { return celsius * 1.8 + 32; }"
-    )
+    #a.delete_aql_function("myfunctions::temperature::celsiustofahrenheit")
+    #a.create_aql_function(
+        #"myfunctions::temperature::celsiustofahrenheit",
+        #"function (celsius) { return celsius * 1.8 + 32; }"
+    #)
