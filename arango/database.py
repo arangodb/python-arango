@@ -1,8 +1,6 @@
 """ArangoDB Database."""
 
-
 from arango.utils import camelify, uncamelify
-from arango.query import Query
 from arango.batch import Batch
 from arango.graph import Graph
 from arango.collection import Collection
@@ -14,28 +12,26 @@ class Database(object):
 
     :param name: the name of this database
     :type name: str
-    :param client: the http client
-    :type client: arango.client.Client
+    :param api: ArangoDB API object
+    :type api: arango.api.ArangoAPI
     """
 
-    def __init__(self, name, client):
+    def __init__(self, name, api):
         self.name = name
-        self._client = client
+        self._api = api
         self._collection_cache = {}
         self._graph_cache = {}
-        self.query = Query(self._client)
-        self.batch = Batch(self._client)
+        self.batch = Batch(self._api)
 
     def _update_collection_cache(self):
         """Invalidate the collection cache."""
-        cols = self.collections
-        real_cols = set(cols["user"] + cols["system"])
+        real_cols = set(self.collections["all"])
         cached_cols = set(self._collection_cache)
         for col_name in cached_cols - real_cols:
             del self._collection_cache[col_name]
         for col_name in real_cols - cached_cols:
             self._collection_cache[col_name] = Collection(
-                name=col_name, client=self._client
+                name=col_name, api=self._api
             )
 
     def _update_graph_cache(self):
@@ -46,8 +42,31 @@ class Database(object):
             del self._graph_cache[graph_name]
         for graph_name in real_graphs - cached_graphs:
             self._graph_cache[graph_name] = Graph(
-                name=graph_name, client=self._client
+                name=graph_name, api=self._api
             )
+
+    #TODO remove duplicate code (also in collection.py)
+    def cursor(self, res):
+        """Continuously read from the cursor and yield the result.
+
+        :param res: ArangoDB response object
+        :type res: arango.response.ArangoResponse
+        """
+        for item in res.obj["result"]:
+            yield item
+        cursor_id = None
+        while res.obj["hasMore"]:
+            if cursor_id is None:
+                cursor_id = res.obj["id"]
+            res = self._api.put("/_api/cursor/{}".format(cursor_id))
+            if res.status_code != 200:
+                raise ArangoQueryExecuteError(res)
+            for item in res.obj["result"]:
+                yield item
+        if cursor_id is not None:
+            res = self._api.delete("/api/cursor/{}".format(cursor_id))
+            if res.status_code != 202:
+                raise ArangoCursorDeleteError(res)
 
     @property
     def properties(self):
@@ -57,10 +76,10 @@ class Database(object):
         :rtype: dict
         :raises: ArangoDatabasePropertyError
         """
-        res = self._client.get("/_api/database/current")
+        res = self._api.get("/_api/database/current")
         if res.status_code != 200:
             raise ArangoDatabasePropertyError(res)
-        return {uncamelify(k): v for k, v in res.obj["result"].items()}
+        return uncamelify(res.obj["result"])
 
     @property
     def id(self):
@@ -92,6 +111,40 @@ class Database(object):
         """
         return self.properties["is_system"]
 
+    ###########
+    # Queries #
+    ###########
+
+    def explain_query(self, query):
+        pass
+
+    def parse_query(self, query):
+        """Validate the AQL query.
+
+        :param query: the AQL query to validate
+        :type query: str
+        :raises: ArangoQueryParseError
+        """
+        res = self._api.post("/_api/query", data={"query": query})
+        if res.status_code != 200:
+            raise ArangoQueryParseError(res)
+
+    def execute_query(self, query, count=None, batch_size=None, ttl=None,
+                      bind_vars=None, options=None, full_count=None,
+                      max_plans=None, optimizer_rules=None):
+        """Execute the AQL query and return the result.
+
+        :param query: the AQL query to execute
+        :type query: str
+        :returns: the cursor from executing the query
+        :raises: ArangoQueryExecuteError, ArangoCursorDeleteError
+        """
+        data = {"query": query}
+        res = self._api.post("/_api/cursor", data=data)
+        if res.status_code != 201:
+            raise ArangoQueryExecuteError(res)
+        return self.cursor(res)
+
     ########################
     # Handling Collections #
     ########################
@@ -104,7 +157,7 @@ class Database(object):
         :rtype: dict
         :raises: ArangoCollectionListError
         """
-        res = self._client.get("/_api/collection")
+        res = self._api.get("/_api/collection")
         if res.status_code != 200:
             raise ArangoCollectionListError(res)
 
@@ -115,7 +168,15 @@ class Database(object):
                 system_collections.append(collection["name"])
             else:
                 user_collections.append(collection["name"])
-        return {"user": user_collections, "system": system_collections}
+        return {
+            "user": user_collections,
+            "system": system_collections,
+            "all": user_collections + system_collections,
+        }
+
+    def col(self, name):
+        """Alias for self.collection."""
+        return self.collection(name)
 
     def collection(self, name):
         """Return the Collection object of the specified name.
@@ -138,29 +199,47 @@ class Database(object):
 
     def add_collection(self, name, wait_for_sync=False, do_compact=True,
                        journal_size=None, is_system=False, is_volatile=False,
-                       key_options=None, is_edge=False):
-        """Add a new collection in this database.
-
-        #TODO expand on key_options
+                       key_generator_type="traditional", allow_user_keys=True,
+                       key_increment=None, key_offset=None, is_edge=False,
+                       number_of_shards=None, shard_keys=None):
+        """Add a new collection to this database.
 
         :param name: name of the new collection
         :type name: str
-        :param wait_for_sync: whether or not the collection waits disk syncs
+        :param wait_for_sync: whether or not to wait for sync to disk
         :type wait_for_sync: bool
         :param do_compact: whether or not the collection is compacted
         :type do_compact: bool
-        :param journal_size: the maximal size of journal or datafile
-        :type journal_size: str or int
+        :param journal_size: the max size of the journal or datafile
+        :type journal_size: int
         :param is_system: whether or not the collection is a system collection
         :type is_system: bool
-        :param is_volatile: whether or not the collection is in memory only
+        :param is_volatile: whether or not the collection is in-memory only
         :type is_volatile: bool
-        :param key_options: settings for document key generation
-        :type key_options: dict
+        :param key_generator_type: ``traditional`` or ``autoincrement``
+        :type key_generator_type: str
+        :param allow_user_keys: whether or not to allow users to supply keys
+        :type allow_user_keys: bool
+        :param key_increment: increment value for ``autoincrement`` generator
+        :type key_increment: int
+        :param key_offset: initial offset value for ``autoincrement`` generator
+        :type key_offset: int
         :param is_edge: whether or not the collection is an edge collection
         :type is_edge: bool
+        :param number_of_shards: the number of shards to create
+        :type number_of_shards: int
+        :param shard_keys: the attribute(s) used to determine the target shard
+        :type shard_keys: list
         :raises: ArangoCollectionAddError
         """
+        key_options = {
+            "type": key_generator_type,
+            "allowUserKeys": allow_user_keys
+        }
+        if key_increment is not None:
+            key_options["increment"] = key_increment
+        if key_offset is not None:
+            key_options["offset"] = key_offset
         data = {
             "name": name,
             "waitForSync": wait_for_sync,
@@ -168,31 +247,32 @@ class Database(object):
             "isSystem": is_system,
             "isVolatile": is_volatile,
             "type": 3 if is_edge else 2,
-            "keyOptions": {} if key_options is None else key_options,
+            "keyOptions": key_options
         }
-        if journal_size:
+        if journal_size is not None:
             data["journalSize"] = journal_size
+        if number_of_shards is not None:
+            data["numberOfShards"] = number_of_shards
+        if shard_keys is not None:
+            data["shardKeys"] = shard_keys
 
-        res = self._client.post("/_api/collection", data=data)
+        res = self._api.post("/_api/collection", data=data)
         if res.status_code != 200:
             raise ArangoCollectionAddError(res)
         self._update_collection_cache()
-        return {uncamelify(k): v for k, v in res.obj.items()}
+        return self.collection(name)
 
     def remove_collection(self, name):
         """Remove the specified collection from this database.
 
         :param name: the name of the collection to remove
         :type name: str
-        :returns: the updated names of the collection in this database
-        :rtype: dict
         :raises: ArangoCollectionRemoveError
         """
-        res = self._client.delete("/_api/collection/{}".format(name))
+        res = self._api.delete("/_api/collection/{}".format(name))
         if res.status_code != 200:
             raise ArangoCollectionRemoveError(res)
         self._update_collection_cache()
-        return self.collections
 
     def rename_collection(self, name, new_name):
         """Rename the specified collection in this database.
@@ -201,18 +281,15 @@ class Database(object):
         :type name: str
         :param new_name: the new name for the collection
         :type new_name: str
-        :returns: the updated names of the collections in this database
-        :rtype: dict
         :raises: ArangoCollectionRenameError
         """
-        res = self._client.put(
+        res = self._api.put(
             "/_api/collection/{}/rename".format(name),
             data={"name": new_name}
         )
         if res.status_code != 200:
             raise ArangoCollectionRenameError(res)
         self._update_collection_cache()
-        return self.collections
 
     ##########################
     # Handling AQL Functions #
@@ -226,7 +303,7 @@ class Database(object):
         :rtype: dict
         :raises: ArangoAQLFunctionListError
         """
-        res = self._client.get("/_api/aqlfunction")
+        res = self._api.get("/_api/aqlfunction")
         if res.status_code != 200:
             raise ArangoAQLFunctionListError(res)
         return {func["name"]: func["code"]for func in res.obj}
@@ -243,7 +320,7 @@ class Database(object):
         :raises: ArangoAQLFunctionAddError
         """
         data = {"name": name, "code": code}
-        res = self._client.post("/_api/aqlfunction", data=data)
+        res = self._api.post("/_api/aqlfunction", data=data)
         if res.status_code not in (200, 201):
             raise ArangoAQLFunctionAddError(res)
         return self.aql_functions
@@ -264,7 +341,7 @@ class Database(object):
         :rtype: dict
         :raises: ArangoAQLFunctionRemoveError
         """
-        res = self._client.delete(
+        res = self._api.delete(
             "/_api/aqlfunction/{}".format(name),
             params={"group": group}
         )
@@ -295,7 +372,7 @@ class Database(object):
             collections: {} if collections is None else collections,
             action: "" if action is None else ""
         }
-        res = self._client.post("/_api/transaction", data=data)
+        res = self._api.post("/_api/transaction", data=data)
         if res != 200:
             raise ArangoTransactionExecuteError(res)
         return res.obj["result"]
@@ -312,7 +389,7 @@ class Database(object):
         :rtype: dict
         :raises: ArangoGraphGetError
         """
-        res = self._client.get("/_api/gharial")
+        res = self._api.get("/_api/gharial")
         if res.status_code not in (200, 202):
             raise ArangoGraphListError(res)
         return {graph["_key"]: graph for graph in res.obj["graphs"]}
@@ -358,7 +435,7 @@ class Database(object):
         if orphan_collections is not None:
             data["orphanCollections"] = orphan_collections
 
-        res = self._client.post("/_api/gharial", data=data)
+        res = self._api.post("/_api/gharial", data=data)
         if res.status_code != 201:
             raise ArangoGraphAddError(res)
         self._update_graph_cache()
@@ -367,11 +444,11 @@ class Database(object):
     def remove_graph(self, name):
         """Delete the graph of the given name from this database.
 
-        :param name: the name of the graph to delete
+        :param name: the name of the graph to remove
         :type name: str
         :raises: ArangoGraphRemoveError
         """
-        res = self._client.delete("/_api/gharial/{}".format(name))
+        res = self._api.delete("/_api/gharial/{}".format(name))
         if res.status_code != 200:
             raise ArangoGraphRemoveError(res)
         self._update_graph_cache()
@@ -427,7 +504,7 @@ class Database(object):
         :rtype: dict
         :raises: ArangoGraphTraversalError
         """
-        res = self._client.post(
+        res = self._api.post(
             "/_api/traversal",
             params = {
                 camelify(arg): val

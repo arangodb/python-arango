@@ -4,7 +4,7 @@ import unittest
 from arango import Arango
 
 
-class DatabaseTest(unittest.TestCase):
+class DatabaseManagementTest(unittest.TestCase):
 
     def setUp(self):
         self.arango = Arango()

@@ -29,7 +29,6 @@ class Batch(object):
               "Content-Type": "multipart/form-data; boundary=XXXsubpartXXX"
             },
             data=data,
-            raw_data=True
         )
         if res.status_code != 200:
             raise ArangoBatchExecuteError(res)

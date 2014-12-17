@@ -8,7 +8,7 @@ class ArangoRequestError(Exception):
         if res.obj is not None and "errorMessage" in res.obj:
             message = res.obj["errorMessage"]
         else:
-            message = res.reason
+            message = "no message"
         super(ArangoRequestError, self).__init__(
             "{message} ({status_code})".format(
                 message=message,
@@ -55,12 +55,12 @@ class ArangoDatabasePropertyError(ArangoRequestError):
     """Failed to retrieve the database property."""
 
 
-class ArangoDatabaseCreateError(ArangoRequestError):
+class ArangoDatabaseAddError(ArangoRequestError):
     """Failed to add the database."""
 
 
-class ArangoDatabaseDeleteError(ArangoRequestError):
-    """Failed to delete the database."""
+class ArangoDatabaseRemoveError(ArangoRequestError):
+    """Failed to remove the database."""
 
 ###############
 # Collections #
@@ -91,7 +91,7 @@ class ArangoCollectionAddError(ArangoRequestError):
 
 
 class ArangoCollectionRemoveError(ArangoRequestError):
-    """Failed to delete the collection"""
+    """Failed to remove the collection"""
 
 
 class ArangoCollectionModifyError(ArangoRequestError):
@@ -118,7 +118,7 @@ class ArangoCollectionRotateJournalError(ArangoRequestError):
     """Failed to rotate the journal of the collection."""
 
 
-class ArangoRevisionMismatchError(ArangoRequestError):
+class ArangoDocumentRevisionError(ArangoRequestError):
     """There was a mismatch between expected and actual revision."""
 
 
@@ -137,7 +137,7 @@ class ArangoDocumentGetError(ArangoRequestError):
     """Failed to get the ArangoDB document(s)."""
 
 
-class ArangoDocumentCreateError(ArangoRequestError):
+class ArangoDocumentAddError(ArangoRequestError):
     """Failed to add the ArangoDB document(s)."""
 
 
@@ -145,12 +145,12 @@ class ArangoDocumentReplaceError(ArangoRequestError):
     """Failed to replace the ArangoDB document(s)."""
 
 
-class ArangoDocumentPatchError(ArangoRequestError):
-    """Failed to patch the ArangoDB document(s)."""
+class ArangoDocumentUpdateError(ArangoRequestError):
+    """Failed to update the ArangoDB document(s)."""
 
 
-class ArangoDocumentDeleteError(ArangoRequestError):
-    """Failed to delete the ArangoDB document(s)."""
+class ArangoDocumentRemoveError(ArangoRequestError):
+    """Failed to remove the ArangoDB document(s)."""
 
 
 #########
@@ -174,11 +174,11 @@ class ArangoEdgeReplaceError(ArangoRequestError):
 
 
 class ArangoEdgeUpdateError(ArangoRequestError):
-    """Failed to patch the ArangoDB edge(s)."""
+    """Failed to update the ArangoDB edge(s)."""
 
 
 class ArangoEdgeRemoveError(ArangoRequestError):
-    """Failed to delete the ArangoDB edge(s)."""
+    """Failed to remove the ArangoDB edge(s)."""
 
 
 ############
@@ -207,7 +207,7 @@ class ArangoVertexReplaceError(ArangoRequestError):
 
 
 class ArangoVertexRemoveError(ArangoRequestError):
-    """Failed to delete the vertex."""
+    """Failed to remove the vertex."""
 
 
 ###########
@@ -223,7 +223,7 @@ class ArangoIndexAddError(ArangoRequestError):
 
 
 class ArangoIndexRemoveError(ArangoRequestError):
-    """Failed to delete the index."""
+    """Failed to remove the index."""
 
 ###########
 # Queries #
@@ -238,7 +238,7 @@ class ArangoQueryExecuteError(ArangoRequestError):
 
 
 class ArangoCursorDeleteError(ArangoRequestError):
-    """Failed to delete the query cursor."""
+    """Failed to remove the query cursor."""
 
 
 class ArangoAQLFunctionListError(ArangoRequestError):
@@ -250,7 +250,7 @@ class ArangoAQLFunctionAddError(ArangoRequestError):
 
 
 class ArangoAQLFunctionRemoveError(ArangoRequestError):
-    """Failed to delete the AQL function."""
+    """Failed to remove the AQL function."""
 
 ##################
 # Simple Queries #

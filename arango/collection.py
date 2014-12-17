@@ -1,8 +1,9 @@
 """ArangoDB Collection."""
 
-from arango.utils import camelify, filter_keys
-from arango.query import Query
-from arango.exceptions import  *
+import json
+
+from arango.utils import camelify, uncamelify
+from arango.exceptions import *
 
 
 class Collection(object):
@@ -10,8 +11,8 @@ class Collection(object):
 
     :param name: the name of this collection
     :type name: str
-    :param client: ArangoDB http client object
-    :type client: arango.client.Client
+    :param api: ArangoDB API object
+    :type api: arango.api.ArangoAPI
     """
 
     collection_status = {
@@ -22,21 +23,18 @@ class Collection(object):
         5: "deleted",
     }
 
-    def __init__(self, name, client):
+    def __init__(self, name, api):
         self.name = name
-        self._client = client
-        self._query = Query(self._client)
+        self._api = api
         self._type = "edge" if self.is_edge else "document"
+
+    def __iter__(self):
+        """Iterate through the documents in this collection."""
+        return self.all()
 
     def __len__(self):
         """Return the number of documents in this collection."""
         return self.count
-
-    def __iter__(self):
-        """Iterate through the documents in this collection."""
-        return self._query.execute(
-            "FOR d in {} RETURN d".format(self.name)
-        )
 
     def __setattr__(self, attr, value):
         """Modify the properties of this collection.
@@ -44,7 +42,7 @@ class Collection(object):
         Only ``wait_for_sync`` and ``journal_size`` are mutable.
         """
         if attr in {"wait_for_sync", "journal_size"}:
-            res = self._client.put(
+            res = self._api.put(
                 "/_api/collection/{}/properties".format(self.name),
                 data={camelify(attr): value}
             )
@@ -66,40 +64,55 @@ class Collection(object):
             raise TypeError("Expecting a str.")
         return self.get(key)
 
-    def __setitem__(self, key, data):
-        """Write the document into this collection.
-
-        First attempt to add the document. If the document with the
-        specified key exists already attempt to replace the document.
-
-        If ``_key`` is provided in ``data``, its value is overwritten by
-        the value of parameter ``key``.
+    def __contains__(self, key):
+        """Return True if the document exists in this collection.
 
         :param key: the document key
         :type key: str
-        :param data: the document body
-        :type data: dict
-        :raises: TypeError, ArangoDocumentCreateError
+        :returns: True if the document exists, else False
+        :rtype: bool
+        :raises: ArangoDocumentGetError
         """
-        if not isinstance(key, str):
-            raise TypeError("Excepting a str for the key.")
-        if not isinstance(data, dict):
-            raise TypeError("Expecting a dict for the value.")
-        data["_key"] = key
-        try:
-            self.add(data)
-        except ArangoDocumentCreateError as err:
-            if err.status_code == 409:
-                self.replace(data)
+        return self.contains(key)
+
+    #TODO remove duplicate code (also in database.py)
+    def cursor(self, res):
+        """Continuously read from the ArangoDB cursor and yield the items.
+
+        :param res: ArangoDB response object
+        :type res: arango.response.ArangoResponse
+        :raises: ArangoQueryExecuteError, ArangoCursorDeleteError
+        """
+        for item in res.obj["result"]:
+            yield item
+        cursor_id = None
+        while res.obj["hasMore"]:
+            if cursor_id is None:
+                cursor_id = res.obj["id"]
+            res = self._api.put("/_api/cursor/{}".format(cursor_id))
+            if res.status_code != 200:
+                raise ArangoQueryExecuteError(res)
+            for item in res.obj["result"]:
+                yield item
+        if cursor_id is not None:
+            res = self._api.delete("/api/cursor/{}".format(cursor_id))
+            if res.status_code != 202:
+                raise ArangoCursorDeleteError(res)
 
     @property
-    def all(self):
-        """Return the list of all documents/edges in this collection.
+    def count(self):
+        """Return the number of documents present in this collection.
 
-        :returns: all documents/edges
-        :rtype: list
+        :returns: the number of documents
+        :rtype: int
+        :raises: ArangoCollectionPropertyError
         """
-        return list(self.__iter__())
+        res = self._api.get(
+            "/_api/collection/{}/count".format(self.name)
+        )
+        if res.status_code != 200:
+            raise ArangoCollectionPropertyError(res)
+        return res.obj["count"]
 
     @property
     def properties(self):
@@ -109,25 +122,26 @@ class Collection(object):
         :rtype: dict
         :raises: ArangoCollectionPropertyError
         """
-        res = self._client.get(
+        res = self._api.get(
             "/_api/collection/{}/properties".format(self.name)
         )
         if res.status_code != 200:
             raise ArangoCollectionPropertyError(res)
-        return res.obj
-
-    @property
-    def count(self):
-        """Return the number of documents in this collection.
-
-        :returns: the number of documents in this collection
-        :rtype: int
-        :raises: ArangoCollectionPropertyError
-        """
-        res = self._client.get("/_api/collection/{}/count".format(self.name))
-        if res.status_code != 200:
-            raise ArangoCollectionPropertyError(res)
-        return res.obj["count"]
+        return {
+            "id": res.obj["id"],
+            "name": res.obj["name"],
+            "is_edge": res.obj["type"] == 3,
+            "status": self.collection_status.get(
+                res.obj["status"],
+                "corrupted ({})".format(res.obj["status"])
+            ),
+            "do_compact": res.obj["doCompact"],
+            "is_system": res.obj["isSystem"],
+            "is_volatile": res.obj["isVolatile"],
+            "journal_size": res.obj["journalSize"],
+            "wait_for_sync": res.obj["waitForSync"],
+            "key_options": uncamelify(res.obj["keyOptions"])
+        }
 
     @property
     def id(self):
@@ -145,24 +159,19 @@ class Collection(object):
 
         :returns: the collection status
         :rtype: str
-        :raises: ArangoCollectionPropertyError, ArangoCollectionCorruptedError
+        :raises: ArangoCollectionPropertyError
         """
-        status_num = self.properties["status"]
-        if status_num not in self.collection_status:
-            raise ArangoCollectionCorruptedError(
-                "Got unknown status number: {}".format(status_num)
-            )
-        return self.collection_status[status_num]
+        return self.properties["status"]
 
     @property
     def key_options(self):
         """Return this collection's key options.
 
-        :returns: the key options
+        :returns: the key options of this collection
         :rtype: dict
         :raises: ArangoCollectionPropertyError
         """
-        return self.properties["keyOptions"]
+        return self.properties["key_options"]
 
     @property
     def wait_for_sync(self):
@@ -172,7 +181,7 @@ class Collection(object):
         :rtype: bool
         :raises: ArangoCollectionPropertyError
         """
-        return self.properties["waitForSync"]
+        return self.properties["wait_for_sync"]
 
     @property
     def journal_size(self):
@@ -182,7 +191,7 @@ class Collection(object):
         :rtype: str
         :raises: ArangoCollectionPropertyError
         """
-        return self.properties["journalSize"]
+        return self.properties["journal_size"]
 
     @property
     def is_volatile(self):
@@ -192,7 +201,7 @@ class Collection(object):
         :rtype: bool
         :raises: ArangoCollectionPropertyError
         """
-        return self.properties["isVolatile"]
+        return self.properties["is_volatile"]
 
     @property
     def is_system(self):
@@ -202,7 +211,7 @@ class Collection(object):
         :rtype: bool
         :raises: ArangoCollectionPropertyError
         """
-        return self.properties["isSystem"]
+        return self.properties["is_system"]
 
     @property
     def is_edge(self):
@@ -212,7 +221,17 @@ class Collection(object):
         :rtype: bool
         :raises: ArangoCollectionPropertyError
         """
-        return self.properties["type"] == 3
+        return self.properties["is_edge"]
+
+    @property
+    def do_compact(self):
+        """Return True if this collection is compacted.
+
+        :returns: True if collection is compacted, False otherwise
+        :rtype: bool
+        :raises: ArangoCollectionPropertyError
+        """
+        return self.properties["do_compact"]
 
     @property
     def figures(self):
@@ -222,10 +241,12 @@ class Collection(object):
         :rtype: dict
         :raises: ArangoCollectionPropertyError
         """
-        res = self._client.get("/_api/collection/{}/figures".format(self.name))
+        res = self._api.get(
+            "/_api/collection/{}/figures".format(self.name)
+        )
         if res.status_code != 200:
             raise ArangoCollectionPropertyError(res)
-        return res.obj["figures"]
+        return uncamelify(res.obj["figures"])
 
     @property
     def revision(self):
@@ -235,54 +256,58 @@ class Collection(object):
         :rtype: str
         :raises: ArangoCollectionPropertyError
         """
-        res = self._client.get("/_api/collection/{}/revision".format(self.name))
+        res = self._api.get(
+            "/_api/collection/{}/revision".format(self.name)
+        )
         if res.status_code != 200:
             raise ArangoCollectionPropertyError(res)
         return res.obj["revision"]
 
-    def truncate(self):
-        """Remove all documents from this collection.
-
-        :raises: ArangoCollectionTruncateError
-        """
-        res = self._client.put(
-            "/_api/collection/{}/truncate".format(self.name)
-        )
-        if res.status_code != 200:
-            raise ArangoCollectionTruncateError(res)
-
     def load(self):
         """Load this collection into memory.
 
+        :returns: the status of the collection
+        :rtype: str
         :raises: ArangoCollectionLoadError
         """
-        res = self._client.put(
+        res = self._api.put(
             "/_api/collection/{}/load".format(self.name)
         )
         if res.status_code != 200:
             raise ArangoCollectionLoadError(res)
+        return self.collection_status.get(
+            res.obj["status"],
+            "corrupted ({})".format(res.obj["status"])
+        )
 
     def unload(self):
         """Unload this collection from memory.
 
+        :returns: the status of the collection
+        :rtype: str
         :raises: ArangoCollectionUnloadError
         """
-        res = self._client.put(
+        res = self._api.put(
             "/_api/collection/{}/unload".format(self.name)
         )
         if res.status_code != 200:
             raise ArangoCollectionUnloadError(res)
+        return self.collection_status.get(
+            res.obj["status"],
+            "corrupted ({})".format(res.obj["status"])
+        )
 
     def rotate_journal(self):
         """Rotate the journal of this collection.
 
         :raises: ArangoCollectionRotateJournalError
         """
-        res = self._client.put(
+        res = self._api.put(
             "/_api/collection/{}/rotate".format(self.name)
         )
         if res.status_code != 200:
             raise ArangoCollectionRotateJournalError(res)
+        return res.obj["result"]
 
     def checksum(self, with_rev=False, with_data=False):
         """Return the checksum for this collection.
@@ -292,10 +317,10 @@ class Collection(object):
         :param with_data: include the data in checksum calculation
         :type with_data: bool
         :returns: the checksum
-        :rtype: str
+        :rtype: int
         :raises: ArangoCollectionGetChecksumError
         """
-        res = self._client.get(
+        res = self._api.get(
             "/_api/collection/{}/checksum".format(self.name),
             params={"withRevision": with_rev, "withData": with_data}
         )
@@ -303,235 +328,652 @@ class Collection(object):
             raise ArangoCollectionGetChecksumError(res)
         return res.obj["checksum"]
 
-    ############################
-    # Handling Documents/Edges #
-    ############################
+    def truncate(self):
+        """Remove all documents from this collection.
+
+        :raises: ArangoCollectionTruncateError
+        """
+        res = self._api.put(
+            "/_api/collection/{}/truncate".format(self.name)
+        )
+        if res.status_code != 200:
+            raise ArangoCollectionTruncateError(res)
+
+    def contains(self, key):
+        """Return True if the document exists in this collection.
+
+        :param key: the document key
+        :type key: str
+        :returns: True if the document exists, else False
+        :rtype: bool
+        :raises: ArangoDocumentGetError
+        """
+        res = self._api.head(
+            "/_api/{}/{}/{}".format(self._type, self.name, key)
+        )
+        if res.status_code == 200:
+            return True
+        elif res.status_code == 404:
+            return False
+        else:
+            raise ArangoDocumentGetError(res)
+
+    ######################
+    # Handling Documents #
+    ######################
 
     def get(self, key, rev=None, match=True):
-        """Return the document/edge of the given key.
+        """Return the document of the given key.
 
         If the document revision ``rev`` is specified, it is compared against
         the revision of the retrieved document. If ``match`` is set to True
-        and the revisions do NOT match, or if ``match is set to False and the
-        revisions DO match, an ``ArangoRevisionMismatchError`` is thrown.
+        and the revisions do NOT match, or if ``match`` is set to False and the
+        revisions DO match, ``ArangoDocumentRevisionError`` is thrown.
 
-        :param key: the document/edge key
+        :param key: the document key
         :type key: str
-        :param rev: the document/edge revision
+        :param rev: the document revision
         :type rev: str
-        :param match: whether the revision must match or not
+        :param match: whether the revision should match or not
         :type match: bool
-        :returns: the requested document/edge.
-        :rtype: dict
-        :raises:
-            ArangoRevisionMisMatchError,
-            ArangoDocumentGetError,
-            ArangoEdgeGetError
+        :returns: the requested document or None
+        :rtype: dict or None
+        :raises: ArangoRevisionMisMatchError, ArangoDocumentGetError
         """
-        res = self._client.get(
+        res = self._api.get(
             "/_api/{}/{}/{}".format(self._type, self.name, key),
             headers={
                 "If-Match" if match else "If-None-Match": rev
             } if rev else {}
         )
-        if res.status_code == 412:
-            raise ArangoRevisionMismatchError(res)
+        if res.status_code in {412, 304}:
+            raise ArangoDocumentRevisionError(res)
+        elif res.status_code == 404:
+            return None
         elif res.status_code != 200:
-            if self.is_edge:
-                raise ArangoEdgeGetError(res)
             raise ArangoDocumentGetError(res)
-
         return res.obj
 
     def add(self, data, wait_for_sync=False):
-        """Create the given document/edge in this collection.
+        """Add the given document to this collection.
 
-        If ``data`` contains ``_key`` attribute, use its value as the key
-        of the document. If this collection is an edge collection, ``data`` must
-        contain the ``_from`` and ``_to`` attributes with valid document handles
-        as values.
+        If  ``data`` contains the ``_key`` attribute, use the value of the
+        attribute as the key of the document.
 
-        :param data: the body of the new document/edge
+        If this collection is an edge collection, ``data`` must contain the
+        ``_from`` and ``_to`` attributes with valid document handles as values.
+
+        :param data: the body of the new document
         :type data: dict
         :param wait_for_sync: wait for add to sync to disk
         :type wait_for_sync: bool
-        :returns: the id, rev and key of the new document/edge
+        :returns: the id, rev and key of the new document
         :rtype: bool
-        :raises: ArangoDocumentCreateError, ArangoEdgeAddError
+        :raises: ArangoDocumentInvalidError, ArangoDocumentAddError
         """
-        if self.is_edge:
+        if self._type == "edge":
             if "_from" not in data:
-                raise ArangoEdgeInvalidError("the '_from' key is missing")
+                raise ArangoDocumentInvalidError("missing the '_from' key")
             if "_to" not in data:
-                raise ArangoEdgeInvalidError("the '_to' key is missing")
-        params = {
-            "collection": self.name,
-            "waitForSync": wait_for_sync,
-        }
-        if self.is_edge:
-            params["from"] = data["_from"]
-            params["to"] = data["_to"]
-
-        res = self._client.post(
+                raise ArangoDocumentInvalidError("missing the '_to' key")
+            params = {
+                "collection": self.name,
+                "waitForSync": wait_for_sync,
+                "from": data["_from"],
+                "to": data["_to"]
+            }
+        else:
+            params = {
+                "collection": self.name,
+                "waitForSync": wait_for_sync
+            }
+        res = self._api.post(
             "/_api/{}".format(self._type),
             data=data,
             params=params
         )
         if res.status_code not in {201, 202}:
-            if self.is_edge:
-                raise ArangoEdgeAddError(res)
-            raise ArangoDocumentCreateError(res)
+            raise ArangoDocumentAddError(res)
+        del res.obj["error"]
+        return res.obj
 
-        return filter_keys(res.obj, ["error"])
+    def replace(self, key, data, rev=None, wait_for_sync=False):
+        """Replace the specified document in this collection.
 
-    def replace(self, data, wait_for_sync=False):
-        """Replace the document/edge in this collection.
+        If the ``_key`` attribute is present in ``data``, it is ignored. The
+        value of ``key`` is always used.
 
-        If ``data`` contains the ``_rev`` attribute, its value is compared
-        against the revision of the target document/edge. If there is a
-        mismatch between the values an ``ArangoRevisionMismatchError`` is
-        thrown.
+        If ``rev`` is provided and the ``_rev`` attribute is also present
+        in ``data``, the value of the former is preferred. If the revision
+        is given it is compared against that of the target document. If the
+        values differ an exception is thrown.
 
         The ``_from`` and ``_to`` attributes are immutable, and they are
         ignored if present in ``data``.
 
-        :param data: the body of the new document/edge
+        :param key: the document key
+        :type key: str
+        :param data: the new document body
         :rtype data: dict
+        :param rev: the document revision
+        :type rev: str or None
         :param wait_for_sync: wait for the replace to sync to disk
         :type wait_for_sync: bool
-        :returns: the id, rev and key of the new document/edge
+        :returns: the id, rev and key of the replaced document
         :rtype: dict
-        :raises:
-            ArangoRevisionMismatchError,
-            ArangoDocumentReplaceError,
-            ArangoEdgeReplaceError
+        :raises: ArangoDocumentReplaceError
         """
-        if "_key" not in data:
-            if self.is_edge:
-                raise ArangoEdgeInvalidError("'_key' is missing")
-            raise ArangoDocumentInvalidError("'_key' is missing")
-
         params = {"waitForSync": wait_for_sync}
-        if "_rev" in data:
+        if rev is not None:
+            params["rev"] = rev
+            params["policy"] = "error"
+        elif "_rev" in data:
             params["rev"] = data["_rev"]
             params["policy"] = "error"
 
-        res = self._client.put(
-            "/_api/{}/{}/{}".format(self._type, self.name, data["_key"]),
+        res = self._api.put(
+            "/_api/{}/{}/{}".format(self._type, self.name, key),
             data=data,
             params=params
         )
-        if res.status_code == 412:
-            raise ArangoRevisionMismatchError(res)
-        elif res.status_code not in {201, 202}:
-            if self.is_edge:
-                raise ArangoEdgeReplaceError(res)
+        if res.status_code not in {201, 202}:
             raise ArangoDocumentReplaceError(res)
+        del res.obj["error"]
+        return res.obj
 
-        return filter_keys(res.obj, ["error"])
+    def update(self, key, data, rev=None, keep_none=True, wait_for_sync=False):
+        """Update the specified document in this collection.
 
-    def patch(self, data, keep_none=True, wait_for_sync=False):
-        """Patch the document/edge in this collection.
+        If the ``_key`` attribute is present in ``data``, it is ignored. The
+        value of ``key`` is always used.
 
-        If ``data`` contains the ``_rev`` attribute, its value is compared
-        against the revision of the target document/edge. If there is a
-        mismatch between the values, an ``ArangoRevisionMismatchError`` is
-        thrown.
+        If ``rev`` is provided and the ``_rev`` attribute is also present
+        in ``data``, the value of the former is preferred. If the revision
+        is given it is compared against that of the target document. If the
+        values differ an exception is thrown.
 
-        If ``keep_none`` is set to True, then attributes with None as values
-        are retained. Otherwise they are removed from the document/edge.
+        If ``keep_none`` is set to True, then attributes with ``None``
+        values are retained. Otherwise, they are removed from the document.
 
         The ``_from`` and ``_to`` attributes are immutable, and they are
         ignored if provided in ``data``.
 
-        :param data: the body of the document/edge to patch
+        :param key: the document key
+        :type key: str
+        :param data: the body of the document to update with
         :type data: dict
+        :param rev: the document revision
+        :type rev: str or None
         :param keep_none: whether to keep the items with value None
         :type keep_none: bool
-        :param wait_for_sync: wait for the replace to sync to disk
+        :param wait_for_sync: wait for the update to sync to disk
         :type wait_for_sync: bool
-        :returns: the id, rev and key of the new document/edge
+        :returns: the id, rev and key of the new document
         :rtype: dict
-        :raises:
-            ArangoRevisionMismatchError,
-            ArangoDocumentPatchError,
-            ArangoEdgeUpdateError
+        :raises: ArangoDocumentUpdateError
         """
-        if "_key" not in data:
-            if self.is_edge:
-                raise ArangoEdgeInvalidError("'_key' is missing")
-            raise ArangoDocumentInvalidError("'_key' is missing")
-
         params = {
             "waitForSync": wait_for_sync,
             "keepNull": keep_none
         }
-        if "_rev" in data:
+        if rev is not None:
+            params["rev"] = rev
+            params["policy"] = "error"
+        elif "_rev" in data:
             params["rev"] = data["_rev"]
             params["policy"] = "error"
 
-        res = self._client.patch(
-            "/_api/{}/{}/{}".format(self._type, self.name, data["_key"]),
+        res = self._api.patch(
+            "/_api/{}/{}/{}".format(self._type, self.name, key),
             data=data,
             params=params
         )
-        if res.status_code == 412:
-            raise ArangoRevisionMismatchError(res)
-        elif res.status_code not in {201, 202}:
-            if self.is_edge:
-                raise ArangoEdgeUpdateError(res)
-            raise ArangoDocumentPatchError(res)
+        if res.status_code not in {201, 202}:
+            raise ArangoDocumentUpdateError(res)
+        del res.obj["error"]
+        return res.obj
 
-        return filter_keys(res.obj, ["error"])
+    def remove(self, key, rev=None, wait_for_sync=False):
+        """Remove the specified document from this collection.
 
-    def delete(self, key, rev=None, wait_for_sync=False):
-        """Delete the document/edge in this collection.
+        If the ``_key`` attribute is present in ``data``, it is ignored. The
+        value of ``key`` is always used.
 
-        If the document revision ``rev`` is specified, it is compared against
-        the revision of the target document. If there is a mismatch between
-        the values, an ArangoRevisionMismatchError is thrown.
+        If ``rev`` is provided and the ``_rev`` attribute is also present
+        in ``data``, the value of the former is preferred. If the revision
+        is given it is compared against that of the target document. If the
+        values differ an exception is thrown.
 
-        :param key: the key of the document/edge to delete
+        :param key: the key of the document/edge to remove
         :type key: str
-        :param wait_for_sync: wait for the delete to sync to disk
+        :param wait_for_sync: wait for the remove to sync to disk
         :type wait_for_sync: bool
-        :raises:
-            ArangoRevisionMismatchError,
-            ArangoDocumentDeleteError,
-            ArangoEdgeRemoveError
+        :returns: the id, rev and key of the deleted document
+        :rtype: dict
+        :raises: ArangoDocumentRemoveError
         """
         params = {"waitForSync": wait_for_sync}
         if rev is not None:
             params["rev"] = rev
             params["policy"] = "error"
 
-        res = self._client.delete(
+        res = self._api.delete(
             "/_api/{}/{}/{}".format(self._type, self.name, key),
             params=params
         )
         if res.status_code not in {200, 202}:
-            if self.is_edge:
-                raise ArangoEdgeRemoveError(res)
-            raise ArangoDocumentPatchError(res)
+            raise ArangoDocumentRemoveError(res)
+        del res.obj["error"]
+        return res.obj
 
-    def bulk_import(self, data, complete=True, details=True):
-        """Import documents/edges into this collection in bulk.
+    ##################
+    # Simple Queries #
+    ##################
 
-        :param data: list of documents/edges (dict) to import
-        :type data: list
-        :param complete: entire import fails if any document/edge is invalid
+    def first(self, count=1):
+        """Return the first ``count`` number of documents in this collection.
+
+        :param count: the number of documents to return
+        :type count: int
+        :returns: the list of documents
+        :rtype: list
+        :raises: ArangoSimpleQueryFirstError
+        """
+        res = self._api.put(
+            "/_api/simple/first",
+            data={"collection": self.name, "count": count}
+        )
+        if res.status_code != 200:
+            raise ArangoSimpleQueryFirstError(res)
+        return res.obj["result"]
+
+    def last(self, count=1):
+        """Return the last ``count`` number of documents in this collection.
+
+        :param count: the number of documents to return
+        :type count: int
+        :returns: the list of documents
+        :rtype: list
+        :raises: ArangoSimpleQueryLastError
+        """
+        res = self._api.put(
+            "/_api/simple/last",
+            data={"collection": self.name, "count": count}
+        )
+        if res.status_code != 200:
+            raise ArangoSimpleQueryLastError(res)
+        return res.obj["result"]
+
+    def all(self, skip=None, limit=None):
+        """Return all documents in this collection.
+
+        ``skip`` is applied before ``limit`` if both are provided.
+
+        :param skip: the number of documents to skip
+        :type skip: int
+        :param limit: maximum number of documents to return
+        :type limit: int
+        :returns: the list of all documents
+        :rtype: list
+        :raises: ArangoSimpleQueryAllError
+        """
+        data = {"collection": self.name}
+        if skip is not None:
+            data["skip"] = skip
+        if limit is not None:
+            data["limit"] = limit
+        res = self._api.put("/_api/simple/all", data=data)
+        if res.status_code != 201:
+            raise ArangoSimpleQueryAllError(res)
+        return self.cursor(res)
+
+    def any(self):
+        """Return a random document from this collection.
+
+        :returns: the randomly chosen document
+        :rtype: dict
+        :raises: ArangoSimpleQueryAnyError
+        """
+        res = self._api.put(
+            "/_api/simple/any",
+            data={"collection": self.name}
+        )
+        if res.status_code != 200:
+            raise ArangoSimpleQueryAnyError(res)
+        return res.obj["document"]
+
+    def get_first_example(self, example):
+        """Return the first document matching the given example.
+
+        :param example: the example document
+        :type example: dict
+        :returns: the first document
+        :rtype: dict
+        :raises: ArangoSimpleQueryFirstExampleError
+        """
+        data = {"collection": self.name, "example": example}
+        res = self._api.put("/_api/simple/first-example", data=data)
+        if res.status_code == 404:
+            return
+        elif res.status_code != 200:
+            raise ArangoSimpleQueryFirstExampleError(res)
+        return res.obj["document"]
+
+    def get_by_example(self, example, skip=None, limit=None):
+        """Return all documents matching the given example.
+
+        ``skip`` is applied before ``limit`` if both are provided.
+
+        :param example: the example document
+        :type example: dict
+        :param skip: the number of documents to skip
+        :type skip: int
+        :param limit: maximum number of documents to return
+        :type limit: int
+        :returns: the list of documents
+        :rtype: list
+        :raises: ArangoSimpleQueryGetByExampleError
+        """
+        data = {"collection": self.name, "example": example}
+        if skip is not None:
+            data["skip"] = skip
+        if limit is not None:
+            data["limit"] = limit
+        res = self._api.put("/_api/simple/by-example", data=data)
+        if res.status_code != 201:
+            raise ArangoSimpleQueryGetByExampleError(res)
+        return self.cursor(res)
+
+    def replace_by_example(self, example, new_value, limit=None,
+                           wait_for_sync=False):
+        """Replace all documents matching the given example.
+
+        ``skip`` is applied before ``limit`` if both are provided.
+
+        :param example: the example document
+        :type example: dict
+        :param new_value: the new document
+        :type new_value: dict
+        :param limit: maximum number of documents to return
+        :type limit: int
+        :param wait_for_sync: wait for the replace to sync to disk
+        :type wait_for_sync: bool
+        :returns: the number of documents replaced
+        :rtype: int
+        :raises: ArangoSimpleQueryReplaceByExampleError
+        """
+        data = {
+            "collection": self.name,
+            "example": example,
+            "newValue": new_value,
+            "waitForSync": wait_for_sync,
+        }
+        if limit is not None:
+            data["limit"] = limit
+        res = self._api.put("/_api/simple/replace-by-example", data=data)
+        if res.status_code != 200:
+            raise ArangoSimpleQueryReplaceByExampleError(res)
+        return res.obj["replaced"]
+
+    def update_by_example(self, example, new_value, keep_none=True, limit=None,
+                          wait_for_sync=False):
+        """Update all documents matching the given example.
+
+        :param example: the example document
+        :type example: dict
+        :param new_value: the new document to update with
+        :type new_value: dict
+        :param keep_none: whether or not to keep the None values
+        :type keep_none: bool
+        :param limit: maximum number of documents to return
+        :type limit: int
+        :param wait_for_sync: wait for the update to sync to disk
+        :type wait_for_sync: bool
+        :returns: the number of documents updated
+        :rtype: int
+        :raises: ArangoSimpleQueryUpdateByExampleError
+        """
+        data = {
+            "collection": self.name,
+            "example": example,
+            "newValue": new_value,
+            "keepNull": keep_none,
+            "waitForSync": wait_for_sync,
+        }
+        if limit is not None:
+            data["limit"] = limit
+        res = self._api.put("/_api/simple/update-by-example", data=data)
+        if res.status_code != 200:
+            raise ArangoSimpleQueryUpdateByExampleError(res)
+        return res.obj["updated"]
+
+    def remove_by_example(self, example, limit=None, wait_for_sync=False):
+        """Delete all documents matching the given example.
+
+        :param example: the example document
+        :type example: dict
+        :param limit: maximum number of documents to return
+        :type limit: int
+        :param wait_for_sync: wait for the remove to sync to disk
+        :type wait_for_sync: bool
+        :returns: the number of documents deleted
+        :rtype: int
+        :raises: ArangoSimpleQueryDeleteByExampleError
+        """
+        data = {
+            "collection": self.name,
+            "example": example,
+            "waitForSync": wait_for_sync,
+        }
+        if limit is not None:
+            data["limit"] = limit
+        res = self._api.put("/_api/simple/remove-by-example", data=data)
+        if res.status_code != 200:
+            raise ArangoSimpleQueryDeleteByExampleError(res)
+        return res.obj["deleted"]
+
+    def range(self, attribute, left, right, closed=True, skip=None, limit=None):
+        """Return all the documents within a given range.
+
+        In order to execute this query a skiplist index must be present on the
+        queried attribute.
+
+        :param attribute: the attribute path with a skip-list index
+        :type attribute: str
+        :param left: the lower bound
+        :type left: int
+        :param right: the upper bound
+        :type right: int
+        :param closed: whether or not to include left and right, or just left
+        :type closed: bool
+        :param skip: the number of documents to skip
+        :type skip: int
+        :param limit: maximum number of documents to return
+        :type limit: int
+        :returns: the list of documents
+        :rtype: list
+        :raises: ArangoSimpleQueryRangeError
+        """
+        data = {
+            "collection": self.name,
+            "attribute": attribute,
+            "left": left,
+            "right": right,
+            "closed": closed
+        }
+        if skip is not None:
+            data["skip"] = skip
+        if limit is not None:
+            data["limit"] = limit
+        res = self._api.put("/_api/simple/range", data=data)
+        if res.status_code != 201:
+            raise ArangoSimpleQueryRangeError(res)
+        return self.cursor(res)
+
+    def near(self, latitude, longitude, distance=None, skip=None, limit=None,
+             geo=None):
+        """Return all the documents near the given coordinate.
+
+        By default number of documents returned is 100. The returned list is
+        sorted based on the distance, with the nearest document being the first
+        in the list. Documents of equal dinstance are ordered randomly.
+
+        In order to execute this query a geo index must be defined for the
+        collection. If there are more than one geo-spatial index, the ``geo``
+        argument can be used to select a particular index.
+
+        if ``distance`` is given, return the distance (in meters) to the
+        coordinate in a new attribute whose key is the value of the argument.
+
+        :param latitude: the latitude of the coordinate
+        :type latitude: int
+        :param longitude: the longitude of the coordinate
+        :type longitude: int
+        :param distance: return the distance to the coordinate in this key
+        :type distance: str
+        :param skip: the number of documents to skip
+        :type skip: int
+        :param limit: maximum number of documents to return
+        :type limit: int
+        :param geo: the identifier of the geo-index to use
+        :type geo: str
+        :returns: the list of documents that are near the coordinate
+        :rtype: list
+        :raises: ArangoSimpleQueryNearError
+        """
+        data = {
+            "collection": self.name,
+            "latitude": latitude,
+            "longitude": longitude
+        }
+        if distance is not None:
+            data["distance"] = distance
+        if skip is not None:
+            data["skip"] = skip
+        if limit is not None:
+            data["limit"] = limit
+        if geo is not None:
+            data["geo"] = geo
+
+        res = self._api.put("/_api/simple/near", data=data)
+        if res.status_code != 201:
+            raise ArangoSimpleQueryNearError(res)
+        return self.cursor(res)
+
+    def within(self, latitude, longitude, radius, distance=None,
+               skip=None, limit=None, geo=None):
+        """Return all documents within the radius around the coordinate.
+
+        The returned list is sorted by distance from the coordinate. In order
+        to execute this query a geo index must be defined for the collection.
+        If there are more than one geo-spatial index, the ``geo`` argument can
+        be used to select a particular index.
+
+        if ``distance`` is given, return the distance (in meters) to the
+        coordinate in a new attribute whose key is the value of the argument.
+
+        :param latitude: the latitude of the coordinate
+        :type latitude: int
+        :param longitude: the longitude of the coordinate
+        :type longitude: int
+        :param radius: the maximum radius (in meters)
+        :type radius: int
+        :param distance: return the distance to the coordinate in this key
+        :type distance: str
+        :param skip: the number of documents to skip
+        :type skip: int
+        :param limit: maximum number of documents to return
+        :type limit: int
+        :param geo: the identifier of the geo-index to use
+        :type geo: str
+        :returns: the list of documents are within the radius
+        :rtype: list
+        :raises: ArangoSimpleQueryWithinError
+        """
+        data = {
+            "collection": self.name,
+            "latitude": latitude,
+            "longitude": longitude,
+            "radius": radius
+        }
+        if distance is not None:
+            data["distance"] = distance
+        if skip is not None:
+            data["skip"] = skip
+        if limit is not None:
+            data["limit"] = limit
+        if geo is not None:
+            data["geo"] = geo
+
+        res = self._api.put("/_api/simple/within", data=data)
+        if res.status_code != 201:
+            return ArangoSimpleQueryWithinError(res)
+        return self.cursor(res)
+
+    def fulltext(self, attribute, query, skip=None, limit=None,
+                 index=None):
+        """Return all documents that match the specified fulltext ``query``.
+
+        In order to execute this query a fulltext index must be define for the
+        collection and the specified attribute.
+
+        :param attribute: the attribute path with a fulltext index
+        :type attribute: str
+        :param query: the fulltext query
+        :type query: str
+        :param skip: the number of documents to skip
+        :type skip: int
+        :param limit: maximum number of documents to return
+        :type limit: int
+        :returns: the list of documents
+        :rtype: list
+        :raises: ArangoSimpleQueryFullTextError
+        """
+        data = {
+            "collection": self.name,
+            "attribute": attribute,
+            "query": query,
+        }
+        if skip is not None:
+            data["skip"] = skip
+        if limit is not None:
+            data["limit"] = limit
+        if index is not None:
+            data["index"] = index
+        res = self._api.put("/_api/simple/fulltext", data=data)
+        if res.status_code != 201:
+            return ArangoSimpleQueryFullTextError(res)
+        return self.cursor(res)
+
+    ####################
+    # Batch Operations #
+    ####################
+
+    def bulk_import(self, documents, complete=True, details=True):
+        """Import documents into this collection in bulk.
+
+        If ``complete`` is set to a value other than True, valid documents
+        will be imported while invalid ones are rejected, meaning only some of
+        the uploaded documents might have been imported.
+
+        If ``details`` parameter is set to True, the response will also contain
+        ``details`` attribute which is a list of detailed error messages.
+
+        :param documents: list of documents to import
+        :type documents: list
+        :param complete: entire import fails if any document is invalid
         :type complete: bool
-        :param details: return details about invalid documents/edges
+        :param details: return details about invalid documents
         :type details: bool
-        :returns: the bulk import results
+        :returns: the import results
         :rtype: dict
         :raises: ArangoCollectionBulkImportError
         """
-        res = self._client.post(
-            "_api/import",
-            data=data,
+        res = self._api.post(
+            "/_api/import",
+            data="\r\n".join([json.dumps(d) for d in documents]),
             params={
-                "type": self._type,
+                "type": "documents",
                 "collection": self.name,
                 "complete": complete,
                 "details": details
@@ -548,25 +990,27 @@ class Collection(object):
 
     @property
     def indexes(self):
-        """Return the details of this collection's indexes.
+        """Return the details on the indexes of this collection.
 
-        :returns: the indexes of this collection
+        :returns: the index details
         :rtype: dict
         :raises: ArangoIndexListError
         """
-        res = self._client.get(
+        res = self._api.get(
             "/_api/index?collection={}".format(self.name)
         )
         if res.status_code != 200:
             raise ArangoIndexListError(res)
-        return {
-            index_id.split("/", 1)[1]: details for
-            index_id, details in res.obj["identifiers"].items()
-        }
+
+        indexes = {}
+        for index_id, details in res.obj["identifiers"].items():
+            del details["id"]
+            indexes[index_id.split("/", 1)[1]] = uncamelify(details)
+        return indexes
 
     def _add_index(self, data):
-        """Helper method for adding indexes."""
-        res = self._client.post(
+        """Helper method for adding new indexes."""
+        res = self._api.post(
             "/_api/index?collection={}".format(self.name),
             data=data
         )
@@ -623,17 +1067,18 @@ class Collection(object):
                       ignore_none=None):
         """Add a geo index to this collection
 
-        If ``fields`` is a list with one attribute path ``location``, then
-        a geo-spatial index on all documents is created using ``location`` as
-        path to the coordinates. The value of the attribute must be a list
-        with at least two double values. The list must contain the latitude
-        (first value) and the longitude (second value). All documents without
-        the attribute paths or with invalid values are ignored.
+        If ``fields`` is a list with ONE attribute path, then a geo-spatial
+        index on all documents is created using the value at the path as the
+        coordinates. The value must be a list with at least two doubles. The
+        list must contain the latitude (first value) and the longitude (second
+        value). All documents without the attribute paths or with invalid values
+        are ignored.
 
-        If it is a list with two attribute paths ``latitude`` and ``longitude``,
-        then a geo-spatial index on all documents is created using the two
-        attributes (their values must be doubles). All documents without the
-        attribute paths or with invalid values are ignored.
+        If ``fields`` is a list with TWO attribute paths (i.e. lattitude and
+        longitude, in that order) then a geo-spatial index on all documents is
+        created using the two attributes (again, their values must be doubles).
+        All documents without the attribute paths or with invalid values are
+        ignored.
 
         :param fields: the attribute paths to index (length must be <= 2)
         :type fields: list
@@ -642,7 +1087,7 @@ class Collection(object):
         :param unique: whether or not to create a geo-spatial constraint
         :type unique: bool or None
         :param ignore_none: ignore docs with None in latitude/longitude
-        :type ignore_non: bool or None
+        :type ignore_none: bool or None
         :raises: ArangoIndexAddError
         """
         data = {"type": "geo", "fields": fields}
@@ -659,13 +1104,12 @@ class Collection(object):
 
         A fulltext index can be used to find words, or prefixes of words inside
         documents. A fulltext index can be set on one attribute only, and will
-        index all words contained in documents that have a textual value in
-        this attribute. Only words with a (specifiable) minimum length are
-        indexed. Word tokenization is done using the word boundary analysis
-        provided by libicu, which is taking into account the selected language
-        provided at server start. Words are indexed in their lower-cased form.
-        The index supports complete match queries (full words) and prefix
-        queries.
+        index all words contained in documents that have a textual value in this
+        attribute. Only words with a (specifiable) minimum length are indexed.
+        Word tokenization is done using the word boundary analysis provided by
+        libicu, which is taking into account the selected language provided at
+        server start. Words are indexed in their lower-cased form. The index
+        supports complete match queries (full words) and prefix queries.
 
         :param fields: the attribute paths to index (length must be 1)
         :type fields: list
@@ -681,11 +1125,11 @@ class Collection(object):
     def remove_index(self, index_id):
         """Delete an index from this collection.
 
-        :param index_id: the ID of the index to delete
+        :param index_id: the ID of the index to remove
         :type index_id: str
         :raises: ArangoIndexRemoveError
         """
-        res = self._client.delete(
+        res = self._api.delete(
             "/_api/index/{}/{}".format(self.name, index_id)
         )
         if res.status_code != 200:

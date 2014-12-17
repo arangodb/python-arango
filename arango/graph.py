@@ -2,16 +2,17 @@
 from arango.exceptions import *
 
 class Graph(object):
-    """A wrapper for ArangoDB graph API.
+    """A wrapper for ArangoDB graph specific API.
 
     :param name: the name of the graph
     :type name: str
-    :param client: the http client
+    :param api: ArangoDB API object
+    :type api: arango.api.ArangoAPI
     """
 
-    def __init__(self, name, client):
+    def __init__(self, name, api):
         self.name = name
-        self._client = client
+        self._api = api
 
     @property
     def properties(self):
@@ -21,7 +22,7 @@ class Graph(object):
         :rtype: dict
         :raises: ArangoGraphPropertiesError
         """
-        res = self._client.get(
+        res = self._api.get(
             "/_api/gharial/{}".format(self.name)
         )
         if res.status_code != 200:
@@ -50,7 +51,7 @@ class Graph(object):
         :rtype: list
         :raises: ArangoVertexCollectionListError
         """
-        res = self._client.get(
+        res = self._api.get(
             "/_api/gharial/{}/vertex".format(self.name)
         )
         if res.status_code != 200:
@@ -66,7 +67,7 @@ class Graph(object):
         :rtype: list
         :raises: ArangoVertexCollectionAddError
         """
-        res = self._client.post(
+        res = self._api.post(
             "/_api/gharial/{}/vertex".format(self.name),
             data={"collection": col_name}
         )
@@ -85,7 +86,7 @@ class Graph(object):
         :rtype: list
         :raises: ArangoVertexCollectionRemoveError
         """
-        res = self._client.delete(
+        res = self._api.delete(
             "/_api/gharial/{}/vertex/{}".format(self.name, col_name),
             params={"dropCollection": drop_collection}
         )
@@ -124,7 +125,7 @@ class Graph(object):
         :rtype: list
         :raises: ArangoEdgeDefinitionAddError
         """
-        res = self._client.post(
+        res = self._api.post(
             "/_api/gharial/{}/edge".format(self.name),
             data=edge_definition
         )
@@ -151,7 +152,7 @@ class Graph(object):
         :rtype: list
         :raises: ArangoEdgeDefinitionReplaceError
         """
-        res = self._client.post(
+        res = self._api.post(
             "/_api/gharial/{}/edge/{}".format(self.name, edge_col_name),
             data=edge_definition
         )
@@ -160,7 +161,7 @@ class Graph(object):
         return self.edge_definitions
 
     def remove_edge_definition(self, edge_col_name, drop_collection=False):
-        """Remove an edge definition from this graph.
+        """Remove the specified edge definition from this graph.
 
         :param edge_col_name: the name of the edge collection to remove
         :type edge_col_name: str
@@ -170,7 +171,7 @@ class Graph(object):
         :rtype: list
         :raises: ArangoEdgeDefinitionRemoveError
         """
-        res = self._client.delete(
+        res = self._api.delete(
             "/_api/gharial/{}/edge/{}".format(self.name, edge_col_name),
             params={"dropCollection": drop_collection}
         )
@@ -198,7 +199,7 @@ class Graph(object):
         :rtype: dict
         :raises: ArangoVertexGetError
         """
-        res = self._client.get(
+        res = self._api.get(
             "/_api/gharial/{}/vertex/{}/{}".format(
                 self.name, col_name, key
             ),
@@ -221,7 +222,7 @@ class Graph(object):
         :rtype: dict
         :raises: ArangoVertexAddError
         """
-        res = self._client.post(
+        res = self._api.post(
             "_api/gharial/{}/vertex/{}".format(self.name, col_name),
             params={"waitForSync": wait_for_sync},
             data=data
@@ -255,7 +256,7 @@ class Graph(object):
         if "_rev" in data:
             params["rev"] = data["_rev"]
 
-        res = self._client.patch(
+        res = self._api.patch(
             "_api/gharial/{}/vertex/{}/{}".format(
                 self.name, col_name, data["_key"]
             ),
@@ -284,7 +285,7 @@ class Graph(object):
         params = {"waitForSync": wait_for_sync}
         if "_rev" in data:
             params["rev"] = data["_rev"]
-        res = self._client.put(
+        res = self._api.put(
             "_api/gharial/{}/vertex/{}/{}".format(
                 self.name, col_name, data["_key"]
             ),
@@ -306,7 +307,7 @@ class Graph(object):
         :type rev: str
         :raises: ArangoVertexRemoveError
         """
-        res = self._client.delete(
+        res = self._api.delete(
             "/_api/gharial/{}/vertex/{}/{}".format(
                 self.name, col_name, key
             ),
@@ -335,7 +336,7 @@ class Graph(object):
         :rtype: dict
         :raises: ArangoEdgeGetError
         """
-        res = self._client.get(
+        res = self._api.get(
             "/_api/gharial/{}/edge/{}/{}".format(
                 self.name,
                 edge_col_name,
@@ -364,7 +365,7 @@ class Graph(object):
             raise ArangoEdgeInvalidError("the '_from' key is missing")
         if "_to" not in data:
             raise ArangoEdgeInvalidError("the '_to' key is missing")
-        res = self._client.post(
+        res = self._api.post(
             "/_api/gharial/{}/edge/{}".format(self.name, col_name),
             params={"waitForSync": wait_for_sync},
             data=data
@@ -398,7 +399,7 @@ class Graph(object):
         if "_rev" in data:
             params["rev"] = data["_rev"]
 
-        res = self._client.patch(
+        res = self._api.patch(
             "/_api/gharial/{}/edge/{}/{}".format(
                 self.name,
                 col_name,
@@ -429,7 +430,7 @@ class Graph(object):
         params = {"waitForSync": wait_for_sync}
         if "_rev" in data:
             params["rev"] = data["_rev"]
-        res = self._client.put(
+        res = self._api.put(
             "_api/gharial/{}/edge/{}/{}".format(
                 self.name, col_name, data["_key"]
             ),
@@ -451,7 +452,7 @@ class Graph(object):
         :type rev: str or None
         :raises: ArangoEdgeRemoveError
         """
-        res = self._client.delete(
+        res = self._api.delete(
             "/_api/gharial/{}/edge/{}/{}".format(
                 self.name, col_name, key
             ),

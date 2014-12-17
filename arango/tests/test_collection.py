@@ -1,68 +1,121 @@
-"""Tests for ArangoDB Collections."""
+"""Tests for managing ArangoDB collections."""
 
 import unittest
+
 from arango import Arango
+from arango.exceptions import *
+from arango.tests.test_utils import (
+    get_next_col_name,
+    get_next_db_name
+)
 
+class CollectionManagementTest(unittest.TestCase):
 
-class CollectionTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.arango = Arango()
+        cls.db_name = get_next_db_name(cls.arango)
+        cls.db = cls.arango.add_database(cls.db_name)
 
-    def setUp(self):
-        self.arango = Arango()
+    @classmethod
+    def tearDownClass(cls):
+        cls.arango.remove_database(cls.db_name)
 
-    def test_collection_basic_add_rename_remove(self):
-        # Add a new test collection
-        col_num = 0
-        while "col_{}".format(col_num) in self.arango.collections:
-            col_num += 1
-        col_name = "col_{}".format(col_num)
-        self.arango.add_collection(col_name)
-        self.assertIn(col_name, self.arango.collections)
-        col_id = self.arango.collection(col_name).id
+    def test_add_collection(self):
+        col_name = get_next_col_name(self.db)
+        self.db.add_collection(col_name)
+        self.assertIn(col_name, self.db.collections["all"])
 
-        # Rename the test collection
-        while "col_{}".format(col_num) in self.arango.collections:
-            col_num += 1
-        new_col_name = "col_{}".format(col_num)
-        self.arango.rename_collection(col_name, new_col_name)
-        self.assertNotIn(col_name, self.arango.collections)
-        self.assertIn(new_col_name, self.arango.collections)
-        self.assertEqual(self.arango.collection(new_col_name).id, col_id)
+    def test_rename_collection(self):
+        # Add a new collection
+        col_name = get_next_col_name(self.db)
+        self.db.add_collection(col_name)
+        col_id = self.db.collection(col_name).id
+        # Rename the collection
+        new_col_name = get_next_col_name(self.db)
+        self.db.rename_collection(col_name, new_col_name)
+        self.assertNotIn(col_name, self.db.collections["all"])
+        self.assertIn(new_col_name, self.db.collections["all"])
+        # Ensure it is the same collection by checking the ID
+        self.assertEqual(self.db.collection(new_col_name).id, col_id)
 
-        # Remove the test collection
-        self.arango.remove_collection(new_col_name)
-        self.assertNotIn(new_col_name, self.arango.collections)
+    def test_remove_collection(self):
+        # Add a new collection
+        col_name = get_next_col_name(self.db)
+        self.db.add_collection(col_name)
+        self.assertIn(col_name, self.db.collections["all"])
+        # Remove the collection and ensure that it's gone
+        self.db.remove_collection(col_name)
+        self.assertNotIn(col_name, self.db.collections)
 
-    def test_collection_properties(self):
-        # Add a new test collection
-        col_num = 0
-        while "col_{}".format(col_num) in self.arango.collections:
-            col_num += 1
-        col_name = "col_{}".format(col_num)
-        self.arango.add_collection(col_name)
-        col = self.arango.collection(col_name)
-
-        self.assertEqual(col.status, "new")
+    def test_collection_add_with_config(self):
+        # Add a new collection with custom defined properties
+        col_name = get_next_col_name(self.db)
+        col = self.db.add_collection(
+            name=col_name,
+            wait_for_sync=True,
+            do_compact=False,
+            journal_size=7774208,
+            is_system=False,
+            is_volatile=False,
+            key_generator_type="autoincrement",
+            allow_user_keys=False,
+            key_increment=9,
+            key_offset=100,
+            is_edge=True,
+            number_of_shards=2,
+            shard_keys=["test_attr"],
+        )
+        # Ensure that the new collection's properties are set correctly
         self.assertEqual(col.name, col_name)
-        self.assertEqual(col.is_edge, False)
-        self.assertEqual(col.is_system, False)
-        self.assertEqual(col.is_volatile, False)
-
-        self.assertTrue(isinstance(col.properties, dict))
+        self.assertTrue(col.revision, "0")
+        self.assertEqual(col.status, "loaded")
+        self.assertEqual(col.journal_size, 7774208)
+        self.assertEqual(col.checksum(), 0)
+        self.assertEqual(
+            col.key_options,
+            {
+                "allow_user_keys": False,
+                "increment": 9,
+                "offset": 100,
+                "type": "autoincrement"
+            }
+        )
+        self.assertFalse(col.is_system)
+        self.assertFalse(col.is_volatile)
+        self.assertFalse(col.do_compact)
+        self.assertTrue(col.wait_for_sync)
+        self.assertTrue(col.is_edge)
         self.assertTrue(isinstance(col.id, str))
-        self.assertTrue(isinstance(col.key_options, dict))
-        self.assertTrue(isinstance(col.journal_size, int))
+        self.assertTrue(isinstance(col.figures, dict))
 
-        self.arango.remove_collection(new_col_name)
+    def test_collection_setters(self):
+        # Add a new collection with predefined properties
+        col = self.db.add_collection(
+            name=get_next_col_name(self.db),
+            wait_for_sync=False,
+            journal_size=7774208
+        )
+        self.assertFalse(col.wait_for_sync)
+        self.assertEqual(col.journal_size, 7774208)
+        # Change the properties of the graph and ensure that it went through
+        col.wait_for_sync = True
+        col.journal_size = 8884208
+        self.assertTrue(col.wait_for_sync)
+        self.assertEqual(col.journal_size, 8884208)
 
-    def test_collection_count(self):
+    def test_collection_load_unload(self):
+        col = self.db.add_collection(get_next_col_name(self.db))
+        self.assertEqual(col.unload(), "unloaded")
+        self.assertEqual(col.load(), "loaded")
 
+    def test_collection_rotate_journal(self):
+        col = self.db.add_collection(get_next_col_name(self.db))
+        self.assertRaises(
+            ArangoCollectionRotateJournalError,
+            col.rotate_journal
+        )
 
-
-def add_test_collection(arango):
-    col_num = 0
-    while "col_{}".format(col_num) in arango.collections:
-        col_num += 1
-    return "col_{}".format(col_num)
 
 if __name__ == "__main__":
     unittest.main()
