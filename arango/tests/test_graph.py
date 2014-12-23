@@ -9,7 +9,7 @@ from arango.tests.test_utils import (
     get_next_db_name
 )
 
-class CollectionManagementTest(unittest.TestCase):
+class GraphManagementTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -21,7 +21,7 @@ class CollectionManagementTest(unittest.TestCase):
     def tearDownClass(cls):
         cls.arango.remove_database(cls.db_name)
 
-    def test_add_collection(self):
+    def test_add_graph(self):
         col_name = get_next_col_name(self.db)
         self.db.add_collection(col_name)
         self.assertIn(col_name, self.db.collections["all"])

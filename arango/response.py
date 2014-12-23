@@ -2,8 +2,6 @@
 
 import json
 
-from arango.utils import unicode_to_str
-
 
 class ArangoResponse(object):
     """ArangoDB HTTP Response.
@@ -17,4 +15,4 @@ class ArangoResponse(object):
     def __init__(self, status_code, text=""):
         self.status_code = status_code
         self.text = text
-        self.obj = unicode_to_str(json.loads(text)) if text else None
+        self.obj = json.loads(text) if text else None

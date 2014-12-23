@@ -272,7 +272,7 @@ class ArangoSimpleQueryUpdateByExampleError(ArangoRequestError):
     """Failed to execute the ``update-by-example`` simple query."""
 
 
-class ArangoSimpleQueryDeleteByExampleError(ArangoRequestError):
+class ArangoSimpleQueryRemoveByExampleError(ArangoRequestError):
     """Failed to execute the ``remove-by-example`` simple query."""
 
 

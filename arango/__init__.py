@@ -180,9 +180,3 @@ if __name__ == "__main__":
         #"from": ["col02"],
         #"to": ["col03"]
     #}
-
-    #a.delete_aql_function("myfunctions::temperature::celsiustofahrenheit")
-    #a.create_aql_function(
-        #"myfunctions::temperature::celsiustofahrenheit",
-        #"function (celsius) { return celsius * 1.8 + 32; }"
-    #)

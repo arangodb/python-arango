@@ -630,7 +630,7 @@ class Collection(object):
     def any(self):
         """Return a random document from this collection.
 
-        :returns: the randomly chosen document
+        :returns: the random document
         :rtype: dict
         :raises: ArangoSimpleQueryAnyError
         """
@@ -643,11 +643,11 @@ class Collection(object):
         return res.obj["document"]
 
     def get_first_example(self, example):
-        """Return the first document matching the given example.
+        """Return the first document matching the given example document body.
 
-        :param example: the example document
+        :param example: the example document body
         :type example: dict
-        :returns: the first document
+        :returns: the first matching document
         :rtype: dict
         :raises: ArangoSimpleQueryFirstExampleError
         """
@@ -660,17 +660,17 @@ class Collection(object):
         return res.obj["document"]
 
     def get_by_example(self, example, skip=None, limit=None):
-        """Return all documents matching the given example.
+        """Return all documents matching the given example document body.
 
         ``skip`` is applied before ``limit`` if both are provided.
 
-        :param example: the example document
+        :param example: the example document body
         :type example: dict
         :param skip: the number of documents to skip
         :type skip: int
         :param limit: maximum number of documents to return
         :type limit: int
-        :returns: the list of documents
+        :returns: the list of matching documents
         :rtype: list
         :raises: ArangoSimpleQueryGetByExampleError
         """
@@ -683,6 +683,38 @@ class Collection(object):
         if res.status_code != 201:
             raise ArangoSimpleQueryGetByExampleError(res)
         return self.cursor(res)
+
+    def update_by_example(self, example, new_value, keep_none=True, limit=None,
+                          wait_for_sync=False):
+        """Update all documents matching the given example document body.
+
+        :param example: the example document body
+        :type example: dict
+        :param new_value: the new document body to update with
+        :type new_value: dict
+        :param keep_none: whether or not to keep the None values
+        :type keep_none: bool
+        :param limit: maximum number of documents to return
+        :type limit: int
+        :param wait_for_sync: wait for the update to sync to disk
+        :type wait_for_sync: bool
+        :returns: the number of documents updated
+        :rtype: int
+        :raises: ArangoSimpleQueryUpdateByExampleError
+        """
+        data = {
+            "collection": self.name,
+            "example": example,
+            "newValue": new_value,
+            "keepNull": keep_none,
+            "waitForSync": wait_for_sync,
+        }
+        if limit is not None:
+            data["limit"] = limit
+        res = self._api.put("/_api/simple/update-by-example", data=data)
+        if res.status_code != 200:
+            raise ArangoSimpleQueryUpdateByExampleError(res)
+        return res.obj["updated"]
 
     def replace_by_example(self, example, new_value, limit=None,
                            wait_for_sync=False):
@@ -715,40 +747,8 @@ class Collection(object):
             raise ArangoSimpleQueryReplaceByExampleError(res)
         return res.obj["replaced"]
 
-    def update_by_example(self, example, new_value, keep_none=True, limit=None,
-                          wait_for_sync=False):
-        """Update all documents matching the given example.
-
-        :param example: the example document
-        :type example: dict
-        :param new_value: the new document to update with
-        :type new_value: dict
-        :param keep_none: whether or not to keep the None values
-        :type keep_none: bool
-        :param limit: maximum number of documents to return
-        :type limit: int
-        :param wait_for_sync: wait for the update to sync to disk
-        :type wait_for_sync: bool
-        :returns: the number of documents updated
-        :rtype: int
-        :raises: ArangoSimpleQueryUpdateByExampleError
-        """
-        data = {
-            "collection": self.name,
-            "example": example,
-            "newValue": new_value,
-            "keepNull": keep_none,
-            "waitForSync": wait_for_sync,
-        }
-        if limit is not None:
-            data["limit"] = limit
-        res = self._api.put("/_api/simple/update-by-example", data=data)
-        if res.status_code != 200:
-            raise ArangoSimpleQueryUpdateByExampleError(res)
-        return res.obj["updated"]
-
     def remove_by_example(self, example, limit=None, wait_for_sync=False):
-        """Delete all documents matching the given example.
+        """Remove all documents matching the given example.
 
         :param example: the example document
         :type example: dict
@@ -756,9 +756,9 @@ class Collection(object):
         :type limit: int
         :param wait_for_sync: wait for the remove to sync to disk
         :type wait_for_sync: bool
-        :returns: the number of documents deleted
+        :returns: the number of documents remove
         :rtype: int
-        :raises: ArangoSimpleQueryDeleteByExampleError
+        :raises: ArangoSimpleQueryRemoveByExampleError
         """
         data = {
             "collection": self.name,
@@ -769,7 +769,7 @@ class Collection(object):
             data["limit"] = limit
         res = self._api.put("/_api/simple/remove-by-example", data=data)
         if res.status_code != 200:
-            raise ArangoSimpleQueryDeleteByExampleError(res)
+            raise ArangoSimpleQueryRemoveByExampleError(res)
         return res.obj["deleted"]
 
     def range(self, attribute, left, right, closed=True, skip=None, limit=None):
@@ -810,8 +810,8 @@ class Collection(object):
             raise ArangoSimpleQueryRangeError(res)
         return self.cursor(res)
 
-    def near(self, latitude, longitude, distance=None, skip=None, limit=None,
-             geo=None):
+    def near(self, latitude, longitude, distance=None, radius=None, skip=None,
+             limit=None, geo=None):
         """Return all the documents near the given coordinate.
 
         By default number of documents returned is 100. The returned list is
@@ -860,8 +860,10 @@ class Collection(object):
             raise ArangoSimpleQueryNearError(res)
         return self.cursor(res)
 
-    def within(self, latitude, longitude, radius, distance=None,
-               skip=None, limit=None, geo=None):
+    # TODO this endpoint does not seem to work
+    # Come back to this and check that it works in the next version of ArangoDB
+    def within(self, latitude, longitude, radius, distance=None, skip=None,
+               limit=None, geo=None):
         """Return all documents within the radius around the coordinate.
 
         The returned list is sorted by distance from the coordinate. In order
@@ -910,12 +912,14 @@ class Collection(object):
             return ArangoSimpleQueryWithinError(res)
         return self.cursor(res)
 
-    def fulltext(self, attribute, query, skip=None, limit=None,
-                 index=None):
+    def fulltext(self, attribute, query, skip=None, limit=None, index=None):
         """Return all documents that match the specified fulltext ``query``.
 
-        In order to execute this query a fulltext index must be define for the
+        In order to execute this query a fulltext index must be defined for the
         collection and the specified attribute.
+
+        For more information on fulltext queries please refer to:
+        https://docs.arangodb.com/SimpleQueries/FulltextQueries.html
 
         :param attribute: the attribute path with a fulltext index
         :type attribute: str
@@ -1064,7 +1068,7 @@ class Collection(object):
         self._add_index(data)
 
     def add_geo_index(self, fields, geo_json=None, unique=None,
-                      ignore_none=None):
+                      ignore_null=None):
         """Add a geo index to this collection
 
         If ``fields`` is a list with ONE attribute path, then a geo-spatial
@@ -1086,8 +1090,8 @@ class Collection(object):
         :type geo_json: bool or None
         :param unique: whether or not to create a geo-spatial constraint
         :type unique: bool or None
-        :param ignore_none: ignore docs with None in latitude/longitude
-        :type ignore_none: bool or None
+        :param ignore_null: ignore docs with None in latitude/longitude
+        :type ignore_null: bool or None
         :raises: ArangoIndexAddError
         """
         data = {"type": "geo", "fields": fields}
@@ -1095,8 +1099,8 @@ class Collection(object):
             data["geoJson"] = geo_json
         if unique is not None:
             data["unique"] = unique
-        if ignore_none is not None:
-            data["ignore_none"] = ignore_none
+        if ignore_null is not None:
+            data["ignore_null"] = ignore_null
         self._add_index(data)
 
     def add_fulltext_index(self, fields, min_length=None):
@@ -1110,6 +1114,8 @@ class Collection(object):
         libicu, which is taking into account the selected language provided at
         server start. Words are indexed in their lower-cased form. The index
         supports complete match queries (full words) and prefix queries.
+
+        Fulltext index cannot be unique.
 
         :param fields: the attribute paths to index (length must be 1)
         :type fields: list

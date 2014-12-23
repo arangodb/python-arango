@@ -32,8 +32,8 @@ class DatabaseManagementTest(unittest.TestCase):
         db = self.arango.database("_system")
         self.assertEqual(db.name, "_system")
         self.assertTrue(isinstance(db.properties, dict))
-        self.assertTrue(isinstance(db.id, str))
-        self.assertTrue(isinstance(db.path, str))
+        self.assertTrue(isinstance(db.id, basestring))
+        self.assertTrue(isinstance(db.path, basestring))
         self.assertEqual(db.is_system, True)
 
 

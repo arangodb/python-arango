@@ -325,7 +325,7 @@ class Database(object):
             raise ArangoAQLFunctionAddError(res)
         return self.aql_functions
 
-    def remove_aql_function(self, name, group=True):
+    def remove_aql_function(self, name, group=None):
         """Remove an existing AQL function.
 
         If ``group`` is set to True, then the function name provided in
@@ -343,7 +343,7 @@ class Database(object):
         """
         res = self._api.delete(
             "/_api/aqlfunction/{}".format(name),
-            params={"group": group}
+            params={"group": group} if group is not None else {}
         )
         if res.status_code != 200:
             raise ArangoAQLFunctionRemoveError(res)
