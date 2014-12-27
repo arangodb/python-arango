@@ -1,5 +1,8 @@
 """ArangoDB Graph."""
+
+from arango.utils import uncamelify
 from arango.exceptions import *
+
 
 class Graph(object):
     """A wrapper for ArangoDB graph specific API.
@@ -27,7 +30,27 @@ class Graph(object):
         )
         if res.status_code != 200:
             raise ArangoGraphPropertiesError(res)
-        return res.obj["graph"]
+        return uncamelify(res.obj["graph"])
+
+    @property
+    def id(self):
+        """Return the ID of this graph.
+
+        :returns: the ID of this graph
+        :rtype: str
+        :raises: ArangoGraphPropertiesError
+        """
+        return self.properties["_id"]
+
+    @property
+    def revision(self):
+        """Return the revision of this graph.
+
+        :returns: the revision of this graph
+        :rtype: str
+        :raises: ArangoGraphPropertiesError
+        """
+        return self.properties["_rev"]
 
     ###############################
     # Handling Vertex Collections #
@@ -41,7 +64,7 @@ class Graph(object):
         :rtype: list
         :raises: ArangoGraphPropertiesError
         """
-        return self.properties["orphanCollections"]
+        return self.properties["orphan_collections"]
 
     @property
     def vertex_collections(self):
@@ -106,7 +129,7 @@ class Graph(object):
         :rtype: list
         :raises: ArangoGraphPropertiesError
         """
-        return self.properties["edgeDefinitions"]
+        return self.properties["edge_definitions"]
 
     def add_edge_definition(self, edge_definition):
         """Add a edge definition to this graph.
@@ -131,7 +154,7 @@ class Graph(object):
         )
         if res.status_code != 201:
             raise ArangoEdgeDefinitionAddError(res)
-        return self.edge_definitions
+        return res.obj["graph"]["edgeDefinitions"]
 
     def replace_edge_definition(self, edge_col_name, edge_definition):
         """Replace an edge definition in this graph.
@@ -144,7 +167,7 @@ class Graph(object):
         }
         The object must contain valid collection names.
 
-        :param edge_col_name: the name of the edge collection (e.g. edge_col01)
+        :param edge_col_name: the name of the edge collection
         :type edge_col_name: str
         :param edge_definition: the new edge definition object
         :type edge_definition: dict
@@ -152,13 +175,13 @@ class Graph(object):
         :rtype: list
         :raises: ArangoEdgeDefinitionReplaceError
         """
-        res = self._api.post(
+        res = self._api.put(
             "/_api/gharial/{}/edge/{}".format(self.name, edge_col_name),
             data=edge_definition
         )
         if res.status_code != 200:
             raise ArangoEdgeDefinitionReplaceError(res)
-        return self.edge_definitions
+        return res.obj["graph"]["edgeDefinitions"]
 
     def remove_edge_definition(self, edge_col_name, drop_collection=False):
         """Remove the specified edge definition from this graph.
@@ -177,7 +200,7 @@ class Graph(object):
         )
         if res.status_code != 200:
             raise ArangoEdgeDefinitionRemoveError(res)
-        return self.edge_definitions
+        return res.obj["graph"]["edgeDefinitions"]
 
     #####################
     # Handling Vertices #

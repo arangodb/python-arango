@@ -46,9 +46,9 @@ def get_next_graph_name(arango):
     :rtype: str
     """
     num = 0
-    while "graph{}".format(num) in arango.collections["all"]:
+    while "graph{}".format(num) in arango.graphs:
         num += 1
-    return "col{}".format(num)
+    return "graph{}".format(num)
 
 
 def strip_system_keys(obj):

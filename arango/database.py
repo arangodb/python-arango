@@ -392,7 +392,7 @@ class Database(object):
         res = self._api.get("/_api/gharial")
         if res.status_code not in (200, 202):
             raise ArangoGraphListError(res)
-        return {graph["_key"]: graph for graph in res.obj["graphs"]}
+        return [graph["_key"] for graph in res.obj["graphs"]]
 
     def graph(self, name):
         """Return the Graph object of the specified name.
@@ -425,8 +425,8 @@ class Database(object):
         :type edge_definitions: list
         :param orphan_collections: names of additional vertex collections
         :type orphan_collections: list
-        :returns: the details on the new graph
-        :rtype: dict
+        :returns: the graph object
+        :rtype: arango.graph.Graph
         :raises: ArangoGraphAddError
         """
         data = {"name": name}
@@ -439,7 +439,7 @@ class Database(object):
         if res.status_code != 201:
             raise ArangoGraphAddError(res)
         self._update_graph_cache()
-        return res.obj["graph"]
+        return self.graph(name)
 
     def remove_graph(self, name):
         """Delete the graph of the given name from this database.

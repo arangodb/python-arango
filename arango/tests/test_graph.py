@@ -5,6 +5,7 @@ import unittest
 from arango import Arango
 from arango.exceptions import *
 from arango.tests.test_utils import (
+    get_next_graph_name,
     get_next_col_name,
     get_next_db_name
 )
@@ -22,101 +23,168 @@ class GraphManagementTest(unittest.TestCase):
         cls.arango.remove_database(cls.db_name)
 
     def test_add_graph(self):
-        col_name = get_next_col_name(self.db)
-        self.db.add_collection(col_name)
-        self.assertIn(col_name, self.db.collections["all"])
+        graph_name = get_next_graph_name(self.db)
+        self.db.add_graph(graph_name)
+        self.assertIn(graph_name, self.db.graphs)
 
-    def test_rename_collection(self):
+    def test_remove_graph(self):
         # Add a new collection
-        col_name = get_next_col_name(self.db)
-        self.db.add_collection(col_name)
-        col_id = self.db.collection(col_name).id
-        # Rename the collection
-        new_col_name = get_next_col_name(self.db)
-        self.db.rename_collection(col_name, new_col_name)
-        self.assertNotIn(col_name, self.db.collections["all"])
-        self.assertIn(new_col_name, self.db.collections["all"])
-        # Ensure it is the same collection by checking the ID
-        self.assertEqual(self.db.collection(new_col_name).id, col_id)
-
-    def test_remove_collection(self):
-        # Add a new collection
-        col_name = get_next_col_name(self.db)
-        self.db.add_collection(col_name)
-        self.assertIn(col_name, self.db.collections["all"])
+        graph_name = get_next_graph_name(self.db)
+        self.db.add_graph(graph_name)
+        self.assertIn(graph_name, self.db.graphs)
         # Remove the collection and ensure that it's gone
-        self.db.remove_collection(col_name)
-        self.assertNotIn(col_name, self.db.collections)
+        self.db.remove_graph(graph_name)
+        self.assertNotIn(graph_name, self.db.graphs)
 
-    def test_collection_add_with_config(self):
-        # Add a new collection with custom defined properties
-        col_name = get_next_col_name(self.db)
-        col = self.db.add_collection(
-            name=col_name,
-            wait_for_sync=True,
-            do_compact=False,
-            journal_size=7774208,
-            is_system=False,
-            is_volatile=False,
-            key_generator_type="autoincrement",
-            allow_user_keys=False,
-            key_increment=9,
-            key_offset=100,
-            is_edge=True,
-            number_of_shards=2,
-            shard_keys=["test_attr"],
+    def test_add_graph_with_defined_cols(self):
+        # Create the orphan collection
+        orphan_col_name = get_next_col_name(self.db)
+        self.db.add_collection(orphan_col_name)
+        # Create the vertex collection
+        vertex_col_name = get_next_col_name(self.db)
+        self.db.add_collection(vertex_col_name)
+        # Create the edge collection
+        edge_col_name = get_next_col_name(self.db)
+        self.db.add_collection(edge_col_name, is_edge=True)
+        # Create the graph
+        graph_name = get_next_graph_name(self.db)
+        graph = self.db.add_graph(
+            name=graph_name,
+            edge_definitions=[{
+                "collection" : edge_col_name,
+                "from" : [vertex_col_name],
+                "to": [vertex_col_name]
+            }],
+            orphan_collections=[orphan_col_name]
         )
-        # Ensure that the new collection's properties are set correctly
-        self.assertEqual(col.name, col_name)
-        self.assertTrue(col.revision, "0")
-        self.assertEqual(col.status, "loaded")
-        self.assertEqual(col.journal_size, 7774208)
-        self.assertEqual(col.checksum(), 0)
+        self.assertIn(graph_name, self.db.graphs)
         self.assertEqual(
-            col.key_options,
+            graph.orphan_collections,
+            [orphan_col_name]
+        )
+        self.assertEqual(
+            graph.edge_definitions,
+            [{
+                "collection": edge_col_name,
+                "from": [vertex_col_name],
+                "to": [vertex_col_name]
+            }]
+        )
+        self.assertEqual(
+            sorted(graph.vertex_collections),
+            sorted([orphan_col_name, vertex_col_name])
+        )
+        properties = graph.properties
+        del properties["_rev"]
+        del properties["_id"]
+        self.assertEqual(
+            properties,
             {
-                "allow_user_keys": False,
-                "increment": 9,
-                "offset": 100,
-                "type": "autoincrement"
+                "name": graph_name,
+                "edge_definitions": [
+                    {
+                        "collection": edge_col_name,
+                        "from": [vertex_col_name],
+                        "to": [vertex_col_name]
+                    }
+                ],
+                "orphan_collections": [orphan_col_name]
             }
         )
-        self.assertFalse(col.is_system)
-        self.assertFalse(col.is_volatile)
-        self.assertFalse(col.do_compact)
-        self.assertTrue(col.wait_for_sync)
-        self.assertTrue(col.is_edge)
-        self.assertTrue(isinstance(col.id, basestring))
-        self.assertTrue(isinstance(col.figures, dict))
 
-    def test_collection_setters(self):
-        # Add a new collection with predefined properties
-        col = self.db.add_collection(
-            name=get_next_col_name(self.db),
-            wait_for_sync=False,
-            journal_size=7774208
+    def test_add_and_remove_vertex_collection(self):
+        # Create the vertex collection
+        vertex_col_name = get_next_col_name(self.db)
+        self.db.add_collection(vertex_col_name)
+        # Create the graph
+        graph_name = get_next_graph_name(self.db)
+        graph = self.db.add_graph(graph_name)
+        self.assertIn(graph_name, self.db.graphs)
+        self.assertEqual(graph.vertex_collections, [])
+        # Add the vertex collection to the graph
+        graph.add_vertex_collection(vertex_col_name)
+        self.assertEqual(
+            graph.vertex_collections,
+            [vertex_col_name]
         )
-        self.assertFalse(col.wait_for_sync)
-        self.assertEqual(col.journal_size, 7774208)
-        # Change the properties of the graph and ensure that it went through
-        col.wait_for_sync = True
-        col.journal_size = 8884208
-        self.assertTrue(col.wait_for_sync)
-        self.assertEqual(col.journal_size, 8884208)
+        # Remove the vertex collection (completely)
+        graph.remove_vertex_collection(
+            col_name=vertex_col_name,
+            drop_collection=True
+        )
+        self.assertEqual(graph.vertex_collections,[])
+        self.assertNotIn(vertex_col_name, self.db.collections["all"])
 
-    def test_collection_load_unload(self):
-        col = self.db.add_collection(get_next_col_name(self.db))
-        self.assertIn(col.unload(), {"unloaded", "unloading"})
-        self.assertIn(col.load(), {"loaded", "loading"})
+    def test_add_and_remove_edge_definition(self):
+        # Create the edge and vertex collections
+        vertex_col_name = get_next_col_name(self.db)
+        self.db.add_collection(vertex_col_name)
+        edge_col_name = get_next_col_name(self.db)
+        self.db.add_collection(edge_col_name, is_edge=True)
+        # Create the graph
+        graph_name = get_next_graph_name(self.db)
+        graph = self.db.add_graph(graph_name)
+        # Add the edge definition to the graph
+        edge_definition = {
+            "collection" : edge_col_name,
+            "from" : [vertex_col_name],
+            "to": [vertex_col_name]
+        }
+        graph.add_edge_definition(edge_definition)
+        self.assertEqual(
+            graph.edge_definitions,
+            [edge_definition]
+        )
+        graph.remove_edge_definition(
+            edge_col_name,
+            drop_collection=True
+        )
+        self.assertEqual(graph.edge_definitions, [])
+        self.assertNotIn(edge_col_name, self.db.collections["all"])
 
-    def test_collection_rotate_journal(self):
-        col = self.db.add_collection(get_next_col_name(self.db))
-        self.assertRaises(
-            ArangoCollectionRotateJournalError,
-            col.rotate_journal
+    def test_replace_edge_definition(self):
+        # Create edge and vertex collection set 1
+        vertex_col_name = get_next_col_name(self.db)
+        self.db.add_collection(vertex_col_name)
+        edge_col_name = get_next_col_name(self.db)
+        self.db.add_collection(edge_col_name, is_edge=True)
+
+        # Create edge and vertex collection set 2
+        vertex_col_name_2 = get_next_col_name(self.db)
+        self.db.add_collection(vertex_col_name_2)
+        edge_col_name_2 = get_next_col_name(self.db)
+        self.db.add_collection(edge_col_name_2, is_edge=True)
+
+        # Create the graph
+        graph_name = get_next_graph_name(self.db)
+        graph = self.db.add_graph(graph_name)
+
+        # Add the edge definition to the graph
+        edge_definition = {
+            "collection" : edge_col_name,
+            "from" : [vertex_col_name],
+            "to": [vertex_col_name]
+        }
+        graph.add_edge_definition(edge_definition)
+        self.assertEqual(
+            graph.edge_definitions,
+            [edge_definition]
         )
 
+        # Replace the edge definition 1 with 2
+        edge_definition_2 = {
+            "collection": edge_col_name,
+            "from": [vertex_col_name_2],
+            "to": [vertex_col_name_2]
+        }
+        graph.replace_edge_definition(
+            edge_col_name,
+            edge_definition_2
+        )
+        self.assertEqual(
+            graph.edge_definitions,
+            [edge_definition_2]
+        )
 
 if __name__ == "__main__":
     unittest.main()
-
