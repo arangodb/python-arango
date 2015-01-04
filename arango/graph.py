@@ -81,28 +81,28 @@ class Graph(object):
             raise ArangoVertexCollectionListError(res)
         return res.obj["collections"]
 
-    def add_vertex_collection(self, col_name):
+    def add_vertex_collection(self, collection_name):
         """Add a vertex collection to this graph.
 
-        :param col_name: the name of the vertex collection to add
-        :type col_name: str
+        :param collection_name: the name of the vertex collection to add
+        :type collection_name: str
         :returns: the updated list of the vertex collection names
         :rtype: list
         :raises: ArangoVertexCollectionAddError
         """
         res = self._api.post(
             "/_api/gharial/{}/vertex".format(self.name),
-            data={"collection": col_name}
+            data={"collection": collection_name}
         )
         if res.status_code != 201:
             raise ArangoVertexCollectionAddError(res)
         return self.vertex_collections
 
-    def remove_vertex_collection(self, col_name, drop_collection=False):
+    def remove_vertex_collection(self, collection_name, drop_collection=False):
         """Remove a vertex collection from this graph.
 
-        :param col_name: the name of the vertex collection to remove
-        :type col_name: str
+        :param collection_name: the name of the vertex collection to remove
+        :type collection_name: str
         :param drop_collection: whether or not to drop the collection also
         :type drop_collection: bool
         :returns: the updated list of the vertex collection names
@@ -110,7 +110,7 @@ class Graph(object):
         :raises: ArangoVertexCollectionRemoveError
         """
         res = self._api.delete(
-            "/_api/gharial/{}/vertex/{}".format(self.name, col_name),
+            "/_api/gharial/{}/vertex/{}".format(self.name, collection_name),
             params={"dropCollection": drop_collection}
         )
         if res.status_code != 200:
@@ -156,7 +156,7 @@ class Graph(object):
             raise ArangoEdgeDefinitionAddError(res)
         return res.obj["graph"]["edgeDefinitions"]
 
-    def replace_edge_definition(self, edge_col_name, edge_definition):
+    def replace_edge_definition(self, edge_collection_name, edge_definition):
         """Replace an edge definition in this graph.
 
         An edge definition looks like this:
@@ -167,8 +167,8 @@ class Graph(object):
         }
         The object must contain valid collection names.
 
-        :param edge_col_name: the name of the edge collection
-        :type edge_col_name: str
+        :param edge_collection_name: the name of the edge collection
+        :type edge_collection_name: str
         :param edge_definition: the new edge definition object
         :type edge_definition: dict
         :returns: the updated list of edge definitions
@@ -176,18 +176,19 @@ class Graph(object):
         :raises: ArangoEdgeDefinitionReplaceError
         """
         res = self._api.put(
-            "/_api/gharial/{}/edge/{}".format(self.name, edge_col_name),
+            "/_api/gharial/{}/edge/{}".format(self.name, edge_collection_name),
             data=edge_definition
         )
         if res.status_code != 200:
             raise ArangoEdgeDefinitionReplaceError(res)
         return res.obj["graph"]["edgeDefinitions"]
 
-    def remove_edge_definition(self, edge_col_name, drop_collection=False):
+    def remove_edge_definition(self, edge_collection_name,
+                               drop_collection=False):
         """Remove the specified edge definition from this graph.
 
-        :param edge_col_name: the name of the edge collection to remove
-        :type edge_col_name: str
+        :param edge_collection_name: the name of the edge collection to remove
+        :type edge_collection_name: str
         :param drop_collection: whether or not to drop the collection also
         :type drop_collection: bool
         :returns: the updated list of edge definitions
@@ -195,7 +196,7 @@ class Graph(object):
         :raises: ArangoEdgeDefinitionRemoveError
         """
         res = self._api.delete(
-            "/_api/gharial/{}/edge/{}".format(self.name, edge_col_name),
+            "/_api/gharial/{}/edge/{}".format(self.name, edge_collection_name),
             params={"dropCollection": drop_collection}
         )
         if res.status_code != 200:
@@ -206,15 +207,13 @@ class Graph(object):
     # Handling Vertices #
     #####################
 
-    def get_vertex(self, col_name, key, rev=None):
-        """Return the vertex from the specified vertex collection.
+    def get_vertex(self, vertex_collection_name, key, rev=None):
+        """Return the vertex of the specified ID.
 
-        If the revision ``rev`` is specified, it is compared against
-        the revision of the retrieved vertex.
+        If the vertex revision ``rev`` is specified, the revision of the
+        retrieved vertex must match against it.
 
-        :param col_name: the name of the collection
-        :type col_name: str
-        :param key: the vertex key
+        :param key: the vertex ID ("collection/key")
         :type key: str
         :param rev: the vertex revision
         :type rev: str
@@ -224,7 +223,7 @@ class Graph(object):
         """
         res = self._api.get(
             "/_api/gharial/{}/vertex/{}/{}".format(
-                self.name, col_name, key
+                self.name, vertex_collection_name, key
             ),
             params={"rev": rev} if rev is not None else {}
         )
@@ -232,21 +231,30 @@ class Graph(object):
             raise ArangoVertexGetError(res)
         return res.obj["vertex"]
 
-    def add_vertex(self, col_name, data, wait_for_sync=False):
+    def add_vertex(self, vertex_collection_name, key=None, data=None,
+                   wait_for_sync=False):
         """Add a new vertex to the specified vertex collection.
 
-        :param col_name: the name of the vertex collection
-        :type col_name: str
+        :param vertex_collection_name: the name of the vertex collection
+        :type vertex_collection_name: str
         :param data: the body of the new vertex
         :type data: dict
+        :param key: the key of the new vertex (must not be in use)
+        :type key: str
         :param wait_for_sync: wait for the add to sync to disk
         :type wait_for_sync: bool
         :return: the id, rev and key of the new vertex
         :rtype: dict
         :raises: ArangoVertexAddError
         """
+        if data is None:
+            data = {}
+        if key is not None:
+            data["_key"] = key
         res = self._api.post(
-            "_api/gharial/{}/vertex/{}".format(self.name, col_name),
+            "/_api/gharial/{}/vertex/{}".format(
+                self.name, vertex_collection_name
+            ),
             params={"waitForSync": wait_for_sync},
             data=data
         )
@@ -254,13 +262,19 @@ class Graph(object):
             raise ArangoVertexAddError(res)
         return res.obj["vertex"]
 
-    def update_vertex(self, col_name, data, keep_none=True,
-                      wait_for_sync=False):
+    def update_vertex(self, vertex_collection_name, key, data, rev=None,
+                      keep_none=True, wait_for_sync=False):
         """Update a vertex in the specified vertex collection.
 
-        :param col_name: the name of the vertex collection
-        :type col_name: str
-        :param data: the body of the vertex to update
+        If ``rev`` is provided and the ``_rev`` attribute is in ``data``,
+        the value of the former is preferred. If the revision is given it must
+        match against that of the target document.
+
+        :param vertex_collection_name: name of the vertex collection
+        :type vertex_collection_name: str
+        :param key: the vertex key
+        :type key: str
+        :param data: the body of the vertex to update with
         :type data: dict
         :param keep_none: whether or not to keep the keys with value None
         :type keep_none: bool
@@ -270,18 +284,18 @@ class Graph(object):
         :rtype: dict
         :raises: ArangoVertexUpdateError
         """
-        if "_key" not in data:
-            ArangoVertexInvalidError("'_key' is missing")
         params = {
             "waitForSync": wait_for_sync,
             "keepNull": keep_none
         }
-        if "_rev" in data:
+        if rev is not None:
+            params["rev"] = rev
+        elif "_rev" in data:
             params["rev"] = data["_rev"]
 
         res = self._api.patch(
-            "_api/gharial/{}/vertex/{}/{}".format(
-                self.name, col_name, data["_key"]
+            "/_api/gharial/{}/vertex/{}/{}".format(
+                self.name, vertex_collection_name, key
             ),
             params=params,
             data=data
@@ -290,11 +304,14 @@ class Graph(object):
             raise ArangoVertexUpdateError(res)
         return res.obj["vertex"]
 
-    def replace_vertex(self, col_name, data, wait_for_sync=False):
+    def replace_vertex(self, vertex_collection_name, key, data, rev=None,
+                       wait_for_sync=False):
         """Replace a vertex in the specified vertex collection.
 
-        :param col_name: the name of the vertex collection
-        :type col_name: str
+        :param vertex_collection_name: name of the vertex collection
+        :type vertex_collection_name: str
+        :param key: the vertex key
+        :type key: str
         :param data: the body of the vertex to replace
         :type data: dict
         :param wait_for_sync: wait for replace to sync to disk
@@ -303,14 +320,14 @@ class Graph(object):
         :rtype: dict
         :raises: ArangoVertexReplaceError
         """
-        if "_key" not in data:
-            ArangoVertexInvalidError("'_key' is missing")
         params = {"waitForSync": wait_for_sync}
-        if "_rev" in data:
+        if rev is not None:
+            params["rev"] = rev
+        elif "_rev" in data:
             params["rev"] = data["_rev"]
         res = self._api.put(
-            "_api/gharial/{}/vertex/{}/{}".format(
-                self.name, col_name, data["_key"]
+            "/_api/gharial/{}/vertex/{}/{}".format(
+                self.name, vertex_collection_name, key
             ),
             params=params,
             data=data
@@ -319,11 +336,11 @@ class Graph(object):
             raise ArangoVertexReplaceError(res)
         return res.obj["vertex"]
 
-    def remove_vertex(self, col_name, key, rev=None):
+    def remove_vertex(self, vertex_collection_name, key, rev=None):
         """Remove a vertex from the specified vertex collection.
 
-        :param col_name: the name of the collection
-        :type col_name: str
+        :param vertex_collection_name: name of the vertex collection
+        :type vertex_collection_name: str
         :param key: the vertex key
         :type key: str
         :param rev: the vertex revision
@@ -332,27 +349,27 @@ class Graph(object):
         """
         res = self._api.delete(
             "/_api/gharial/{}/vertex/{}/{}".format(
-                self.name, col_name, key
+                self.name, vertex_collection_name, key
             ),
             params={"rev": rev} if rev is not None else {}
         )
-        if res.status_code != 200:
+        if res.status_code not in {200, 202}:
             raise ArangoVertexRemoveError(res)
 
     ##################
     # Handling Edges #
     ##################
 
-    def get_edge(self, edge_col_name, edge_key, rev=None):
+    def get_edge(self, edge_collection_name, key, rev=None):
         """Return the edge from the edge collection in this graph
 
-        If the revision ``rev`` is specified, it is compared against
+        If the revision ``rev`` is specified, it must match against
         the revision of the retrieved edge.
 
-        :param edge_col_name: the name of the edge collection
-        :type edge_col_name: str
-        :param edge_key: the edge key
-        :type edge_key: str
+        :param edge_collection_name: the name of the edge collection
+        :type edge_collection_name: str
+        :param key: the vertex key
+        :type key: str
         :param rev: the edge revision
         :type rev: str
         :returns: the edge object
@@ -361,9 +378,7 @@ class Graph(object):
         """
         res = self._api.get(
             "/_api/gharial/{}/edge/{}/{}".format(
-                self.name,
-                edge_col_name,
-                edge_key
+                self.name, edge_collection_name, key
             ),
             params={} if rev is None else {"rev": rev}
         )
@@ -371,25 +386,37 @@ class Graph(object):
             raise ArangoEdgeGetError(res)
         return res.obj["edge"]
 
-    def add_edge(self, col_name, data, wait_for_sync=False):
-        """Add a new edge to the specified edge collection.
+    def add_edge(self, edge_collection_name, from_vertex_id, to_vertex_id,
+                 key=None, data=None, wait_for_sync=False):
+        """Add a new edge to the specified edge collection of this graph.
 
-        :param col_name: the name of the edge collection
-        :type col_name: str
-        :param data: the body of the new edge
-        :type data: dict
+        The ``from_vertex`` and ``to_vertex`` must be valid vertex IDs
+        ("collection/key").
+
+        :param edge_collection_name: the name of the edge collection
+        :type edge_collection_name: str
+        :param from_vertex_id: the ID ("collection/key") of the from vertex
+        :type from_vertex_id: str
+        :param to_vertex_id: the ID ("collection/key") of the to vertex
+        :type to_vertex_id: str
+        :param key: the key for the edge (must not be in use)
+        :type key: str
         :param wait_for_sync: wait for the add to sync to disk
         :type wait_for_sync: bool
         :return: the id, rev and key of the new edge
         :rtype: dict
         :raises: ArangoEdgeAddError
         """
-        if "_from" not in data:
-            raise ArangoEdgeInvalidError("the '_from' key is missing")
-        if "_to" not in data:
-            raise ArangoEdgeInvalidError("the '_to' key is missing")
+        if data is None:
+            data = {}
+        data["_from"] = from_vertex_id
+        data["_to"] = to_vertex_id
+        if key is not None:
+            data["_key"] = key
         res = self._api.post(
-            "/_api/gharial/{}/edge/{}".format(self.name, col_name),
+            "/_api/gharial/{}/edge/{}".format(
+                self.name, edge_collection_name
+            ),
             params={"waitForSync": wait_for_sync},
             data=data
         )
@@ -397,12 +424,14 @@ class Graph(object):
             raise ArangoEdgeAddError(res)
         return res.obj["edge"]
 
-    def update_edge(self, col_name, data, keep_none=True,
-                    wait_for_sync=False):
+    def update_edge(self, edge_collection_name, key, data, rev=None,
+                    keep_none=True, wait_for_sync=False):
         """Update an edge in the specified edge collection.
 
-        :param col_name: the name of the edge collection
-        :type col_name: str
+        :param edge_collection_name: the name of the edge collection
+        :type edge_collection_name: str
+        :param key: the key for the edge (must not be in use)
+        :type key: str
         :param data: the body of the edge to update with
         :type data: dict
         :param keep_none: whether or not to keep the keys with value None
@@ -413,8 +442,6 @@ class Graph(object):
         :rtype: dict
         :raises: ArangoEdgeUpdateError
         """
-        if "_key" not in data:
-            ArangoEdgeInvalidError("'_key' is missing")
         params = {
             "waitForSync": wait_for_sync,
             "keepNull": keep_none
@@ -424,9 +451,7 @@ class Graph(object):
 
         res = self._api.patch(
             "/_api/gharial/{}/edge/{}/{}".format(
-                self.name,
-                col_name,
-                data["_key"]
+                self.name, edge_collection_name, key
             ),
             params=params,
             data=data
@@ -435,11 +460,14 @@ class Graph(object):
             raise ArangoEdgeUpdateError(res)
         return res.obj["edge"]
 
-    def replace_edge(self, col_name, data, wait_for_sync=False):
+    def replace_edge(self, edge_collection_name, key, data,
+                     wait_for_sync=False):
         """Replace an edge in the specified edge collection.
 
-        :param col_name: the name of the edge collection
-        :type col_name: str
+        :param edge_collection_name: the name of the edge collection
+        :type edge_collection_name: str
+        :param key: the key for the edge (must not be in use)
+        :type key: str
         :param data: the body of the edge to replace with
         :type data: dict
         :param wait_for_sync: wait for the replace to sync to disk
@@ -448,14 +476,12 @@ class Graph(object):
         :rtype: dict
         :raises: ArangoEdgeReplaceError
         """
-        if "_key" not in data:
-            ArangoEdgeInvalidError("'_key' is missing")
         params = {"waitForSync": wait_for_sync}
         if "_rev" in data:
             params["rev"] = data["_rev"]
         res = self._api.put(
-            "_api/gharial/{}/edge/{}/{}".format(
-                self.name, col_name, data["_key"]
+            "/_api/gharial/{}/edge/{}/{}".format(
+                self.name, edge_collection_name, key
             ),
             params=params,
             data=data
@@ -464,12 +490,12 @@ class Graph(object):
             raise ArangoEdgeReplaceError(res)
         return res.obj["edge"]
 
-    def remove_edge(self, col_name, key, rev=None):
-        """Remove an edge from the specified edge collection.
+    def remove_edge(self, edge_collection_name, key, rev=None):
+        """Remove an edge from the graph.
 
-        :param col_name: the name of the edge collection
-        :type col_name: str
-        :param key: the edge key
+        :param edge_collection_name: the name of the edge collection
+        :type edge_collection_name: str
+        :param key: the key for the edge (must not be in use)
         :type key: str
         :param rev: the edge revision
         :type rev: str or None
@@ -477,9 +503,9 @@ class Graph(object):
         """
         res = self._api.delete(
             "/_api/gharial/{}/edge/{}/{}".format(
-                self.name, col_name, key
+                self.name, edge_collection_name, key
             ),
             params={} if rev is None else {"rev": rev}
         )
-        if res.status_code != 200:
+        if res.status_code not in {200, 202}:
             raise ArangoEdgeRemoveError(res)

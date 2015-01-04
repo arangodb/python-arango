@@ -168,15 +168,3 @@ class Arango(object):
 if __name__ == "__main__":
     a = Arango()
     print a.version
-
-    #edge_definition01 = {
-        #"collection": "edge_col",
-        #"from": ["col01"],
-        #"to": ["col01"]
-    #}
-
-    #edge_definition02 = {
-        #"collection": "edge_col02",
-        #"from": ["col02"],
-        #"to": ["col03"]
-    #}
