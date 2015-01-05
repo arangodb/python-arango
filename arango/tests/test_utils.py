@@ -25,7 +25,7 @@ def get_next_col_name(arango):
     The names generated look like "col0", "col1" ...
 
     :param arango: the arango connection object
-    :type arango: arango.Arango
+    :type arango: arango.database.Database
     :returns: the next available collection name
     :rtype: str
     """
@@ -36,12 +36,12 @@ def get_next_col_name(arango):
 
 
 def get_next_graph_name(arango):
-    """Generate and return the next available collection naem.
+    """Generate and return the next available collection name.
 
-    The names generated looke like "graph0", "graph1" ...
+    The names generated look like "graph0", "graph1" ...
 
     :param arango: the arango connection object
-    :type arango: arango.Arango
+    :type arango: arango.database.Database
     :returns: the next available graph name
     :rtype: str
     """

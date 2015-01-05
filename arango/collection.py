@@ -15,7 +15,7 @@ class Collection(object):
     :type api: arango.api.ArangoAPI
     """
 
-    collection_status = {
+    COLLECTION_STATUS = {
         1: "new",
         2: "unloaded",
         3: "loaded",
@@ -131,7 +131,7 @@ class Collection(object):
             "id": res.obj["id"],
             "name": res.obj["name"],
             "is_edge": res.obj["type"] == 3,
-            "status": self.collection_status.get(
+            "status": self.COLLECTION_STATUS.get(
                 res.obj["status"],
                 "corrupted ({})".format(res.obj["status"])
             ),
@@ -275,7 +275,7 @@ class Collection(object):
         )
         if res.status_code != 200:
             raise ArangoCollectionLoadError(res)
-        return self.collection_status.get(
+        return self.COLLECTION_STATUS.get(
             res.obj["status"],
             "corrupted ({})".format(res.obj["status"])
         )
@@ -292,7 +292,7 @@ class Collection(object):
         )
         if res.status_code != 200:
             raise ArangoCollectionUnloadError(res)
-        return self.collection_status.get(
+        return self.COLLECTION_STATUS.get(
             res.obj["status"],
             "corrupted ({})".format(res.obj["status"])
         )

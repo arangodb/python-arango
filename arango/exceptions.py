@@ -229,7 +229,11 @@ class ArangoIndexRemoveError(ArangoRequestError):
 # Queries #
 ###########
 
-class ArangoQueryParseError(ArangoRequestError):
+class ArangoQueryExplainError(ArangoRequestError):
+    """Failed to explain the query."""
+
+
+class ArangoQueryValidateError(ArangoRequestError):
     """Failed to validate the query."""
 
 

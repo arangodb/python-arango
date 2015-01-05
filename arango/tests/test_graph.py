@@ -3,24 +3,22 @@
 import unittest
 
 from arango import Arango
-from arango.exceptions import *
 from arango.tests.test_utils import (
     get_next_graph_name,
     get_next_col_name,
     get_next_db_name
 )
 
+
 class GraphManagementTest(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.arango = Arango()
-        cls.db_name = get_next_db_name(cls.arango)
-        cls.db = cls.arango.add_database(cls.db_name)
+    def setUp(self):
+        self.arango = Arango()
+        self.db_name = get_next_db_name(self.arango)
+        self.db = self.arango.add_database(self.db_name)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.arango.remove_database(cls.db_name)
+    def tearDown(self):
+        self.arango.remove_database(self.db_name)
 
     def test_add_graph(self):
         graph_name = get_next_graph_name(self.db)
@@ -51,8 +49,8 @@ class GraphManagementTest(unittest.TestCase):
         graph = self.db.add_graph(
             name=graph_name,
             edge_definitions=[{
-                "collection" : edge_col_name,
-                "from" : [vertex_col_name],
+                "collection": edge_col_name,
+                "from": [vertex_col_name],
                 "to": [vertex_col_name]
             }],
             orphan_collections=[orphan_col_name]
@@ -109,10 +107,10 @@ class GraphManagementTest(unittest.TestCase):
         )
         # Remove the vertex collection (completely)
         graph.remove_vertex_collection(
-            col_name=vertex_col_name,
+            collection_name=vertex_col_name,
             drop_collection=True
         )
-        self.assertEqual(graph.vertex_collections,[])
+        self.assertEqual(graph.vertex_collections, [])
         self.assertNotIn(vertex_col_name, self.db.collections["all"])
 
     def test_add_and_remove_edge_definition(self):
@@ -126,11 +124,15 @@ class GraphManagementTest(unittest.TestCase):
         graph = self.db.add_graph(graph_name)
         # Add the edge definition to the graph
         edge_definition = {
-            "collection" : edge_col_name,
-            "from" : [vertex_col_name],
+            "collection": edge_col_name,
+            "from": [vertex_col_name],
             "to": [vertex_col_name]
         }
-        graph.add_edge_definition(edge_definition)
+        graph.add_edge_definition(
+            edge_col_name,
+            [vertex_col_name],
+            [vertex_col_name]
+        )
         self.assertEqual(
             graph.edge_definitions,
             [edge_definition]
@@ -161,11 +163,15 @@ class GraphManagementTest(unittest.TestCase):
 
         # Add the edge definition to the graph
         edge_definition = {
-            "collection" : edge_col_name,
-            "from" : [vertex_col_name],
+            "collection": edge_col_name,
+            "from": [vertex_col_name],
             "to": [vertex_col_name]
         }
-        graph.add_edge_definition(edge_definition)
+        graph.add_edge_definition(
+            edge_col_name,
+            [vertex_col_name],
+            [vertex_col_name]
+        )
         self.assertEqual(
             graph.edge_definitions,
             [edge_definition]
@@ -179,7 +185,8 @@ class GraphManagementTest(unittest.TestCase):
         }
         graph.replace_edge_definition(
             edge_col_name,
-            edge_definition_2
+            [vertex_col_name_2],
+            [vertex_col_name_2]
         )
         self.assertEqual(
             graph.edge_definitions,

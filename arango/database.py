@@ -115,19 +115,53 @@ class Database(object):
     # Queries #
     ###########
 
-    def explain_query(self, query):
-        pass
+    def explain_query(self, query, all_plans=False, max_plans=None,
+                      optimizer_rules=None):
+        """Explain the AQL query.
 
-    def parse_query(self, query):
+        This method does not execute the query, but only inspect it and
+        return meta information about it.
+
+        If ``all_plans`` is set to True, all possible execution plans are
+        returned. Otherwise only the optimal plan is returned.
+
+        For more information on optimizer_rules, please refer to:
+        https://docs.arangodb.com/HttpAqlQuery/README.html
+
+        :param query: the AQL query to explain
+        :type query: str
+        :param all_plans: whether or not to return all execution plans
+        :type all_plans: bool
+        :param max_plans: maximum number of plans the optimizer generates
+        :type max_plans: None or int
+        :param optimizer_rules: list of optimizer rules
+        :type optimizer_rules: list
+        :returns: the query plan
+        :rtype: dict
+        :raises: ArangoQueryExplainError
+        """
+        options = {"allPlans": all_plans}
+        if max_plans is not None:
+            options["maxNumberOfPlans"] = max_plans
+        if optimizer_rules is not None:
+            options["optimizer"] = {"rules": optimizer_rules}
+        res = self._api.post(
+            "/_api/explain", data={"query": query, "options": options}
+        )
+        if res.status_code != 200:
+            raise ArangoQueryExplainError(res)
+        return res.obj["plan"]
+
+    def validate_query(self, query):
         """Validate the AQL query.
 
         :param query: the AQL query to validate
         :type query: str
-        :raises: ArangoQueryParseError
+        :raises: ArangoQueryValidateError
         """
         res = self._api.post("/_api/query", data={"query": query})
         if res.status_code != 200:
-            raise ArangoQueryParseError(res)
+            raise ArangoQueryValidateError(res)
 
     def execute_query(self, query, count=None, batch_size=None, ttl=None,
                       bind_vars=None, options=None, full_count=None,
@@ -452,66 +486,3 @@ class Database(object):
         if res.status_code != 200:
             raise ArangoGraphRemoveError(res)
         self._update_graph_cache()
-
-    def execute_traversal(self, start_vertex, edge_collection=None,
-            graph_name=None, direction=None, strategy=None,
-            order=None, item_order=None, uniqueness=None,
-            max_iterations=None, min_depth=None, max_depth=None,
-            init=None, filter=None, visitor=None, expander=None,
-            sort=None):
-        """Execute a graph traversal and return the visited vertices.
-
-        Either ``edge_collection`` and ``graph_name`` should be provided.
-        If both are set, the value ``graph_name`` is preferred.
-
-        For more details on ``init``, ``filter``, ``visitor``, ``expander``
-        and ``sort`` please refer to the ArangoDB HTTP API documentation:
-        https://docs.arangodb.com/HttpTraversal/README.html
-
-        :param start_vertex: the ID of the start vertex (e.g. "col/key")
-        :type start_vertex: str
-        :param edge_collection: the name of the edge collection
-        :type edge_collection: str
-        :param graph_name: the name of the graph that contains the edges
-        :type graph_name: str
-        :param direction: traversal direction ("outbound/inbound/any")
-        :type direction: str
-        :param strategy: ``depthfirst`` or ``breadthfirst``
-        :type strategy: str
-        :param order: ``preorder`` or ``postorder``
-        :type order: str
-        :param item_order: ``forward`` or ``backward``
-        :type item_order: str
-        :param uniqueness: uniqueness of vertices and edges visited
-        :type uniqueness: dict
-        :param max_iterations: max number of iterations in each traversal
-        :type max_iterations: int
-        :param min_depth: minimum traversal depth
-        :type min_depth: int
-        :param max_depth: maximum traversal depth
-        :type max_depth: int
-        :param init: custom init function in Javascript
-        :type init: str
-        :param filter: custom filter function in Javascript
-        :type filter: str
-        :param visitor: custom visitor function in Javascript
-        :type visitor: str
-        :param expander: custom expander function in Javascript
-        :type expander: str
-        :param sort: custom sorting function in Javascript
-        :type sort: str
-        :returns:
-        :rtype: dict
-        :raises: ArangoGraphTraversalError
-        """
-        res = self._api.post(
-            "/_api/traversal",
-            params = {
-                camelify(arg): val
-                for arg, val in locals().iteritems()
-                if val is not None
-            }
-        )
-        if res.status_code != 200:
-            raise ArangoGraphTraversalError(res)
-        return res.obj["result"]
