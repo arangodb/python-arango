@@ -11,15 +11,13 @@ from arango.tests.test_utils import (
 
 class CollectionManagementTest(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.arango = Arango()
-        cls.db_name = get_next_db_name(cls.arango)
-        cls.db = cls.arango.add_database(cls.db_name)
+    def setUp(self):
+        self.arango = Arango()
+        self.db_name = get_next_db_name(self.arango)
+        self.db = self.arango.add_database(self.db_name)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.arango.remove_database(cls.db_name)
+    def tearDown(self):
+        self.arango.remove_database(self.db_name)
 
     def test_add_collection(self):
         col_name = get_next_col_name(self.db)

@@ -4,9 +4,9 @@ import json
 
 from arango.utils import camelify, uncamelify
 from arango.exceptions import *
+from arango.cursor import CursorFactory
 
-
-class Collection(object):
+class Collection(CursorFactory):
     """A wrapper around ArangoDB collection specific API.
 
     :param name: the name of this collection
@@ -74,30 +74,6 @@ class Collection(object):
         :raises: ArangoDocumentGetError
         """
         return self.contains(key)
-
-    #TODO remove duplicate code (also in database.py)
-    def cursor(self, res):
-        """Continuously read from the ArangoDB cursor and yield the items.
-
-        :param res: ArangoDB response object
-        :type res: arango.response.ArangoResponse
-        :raises: ArangoQueryExecuteError, ArangoCursorDeleteError
-        """
-        for item in res.obj["result"]:
-            yield item
-        cursor_id = None
-        while res.obj["hasMore"]:
-            if cursor_id is None:
-                cursor_id = res.obj["id"]
-            res = self._api.put("/_api/cursor/{}".format(cursor_id))
-            if res.status_code != 200:
-                raise ArangoQueryExecuteError(res)
-            for item in res.obj["result"]:
-                yield item
-        if cursor_id is not None:
-            res = self._api.delete("/api/cursor/{}".format(cursor_id))
-            if res.status_code != 202:
-                raise ArangoCursorDeleteError(res)
 
     @property
     def count(self):

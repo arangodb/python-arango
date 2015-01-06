@@ -5,9 +5,10 @@ from arango.batch import Batch
 from arango.graph import Graph
 from arango.collection import Collection
 from arango.exceptions import *
+from arango.cursor import CursorFactory
 
 
-class Database(object):
+class Database(CursorFactory):
     """A wrapper around database specific API.
 
     :param name: the name of this database
@@ -44,29 +45,6 @@ class Database(object):
             self._graph_cache[graph_name] = Graph(
                 name=graph_name, api=self._api
             )
-
-    #TODO remove duplicate code (also in collection.py)
-    def cursor(self, res):
-        """Continuously read from the cursor and yield the result.
-
-        :param res: ArangoDB response object
-        :type res: arango.response.ArangoResponse
-        """
-        for item in res.obj["result"]:
-            yield item
-        cursor_id = None
-        while res.obj["hasMore"]:
-            if cursor_id is None:
-                cursor_id = res.obj["id"]
-            res = self._api.put("/_api/cursor/{}".format(cursor_id))
-            if res.status_code != 200:
-                raise ArangoQueryExecuteError(res)
-            for item in res.obj["result"]:
-                yield item
-        if cursor_id is not None:
-            res = self._api.delete("/api/cursor/{}".format(cursor_id))
-            if res.status_code != 202:
-                raise ArangoCursorDeleteError(res)
 
     @property
     def properties(self):
@@ -136,8 +114,8 @@ class Database(object):
         :type max_plans: None or int
         :param optimizer_rules: list of optimizer rules
         :type optimizer_rules: list
-        :returns: the query plan
-        :rtype: dict
+        :returns: the query plan or list of plans (if all_plans is True)
+        :rtype: dict or list
         :raises: ArangoQueryExplainError
         """
         options = {"allPlans": all_plans}
@@ -150,7 +128,11 @@ class Database(object):
         )
         if res.status_code != 200:
             raise ArangoQueryExplainError(res)
-        return res.obj["plan"]
+        if "plan" in res.obj:
+            return uncamelify(res.obj["plan"])
+        else:
+            return uncamelify(res.obj["plans"])
+
 
     def validate_query(self, query):
         """Validate the AQL query.
@@ -163,17 +145,53 @@ class Database(object):
         if res.status_code != 200:
             raise ArangoQueryValidateError(res)
 
-    def execute_query(self, query, count=None, batch_size=None, ttl=None,
-                      bind_vars=None, options=None, full_count=None,
-                      max_plans=None, optimizer_rules=None):
+    def execute_query(self, query, count=False, batch_size=None, ttl=None,
+                      bind_vars=None, full_count=None, max_plans=None,
+                      optimizer_rules=None):
         """Execute the AQL query and return the result.
+
+        For more information on ``full_count`` please refer to:
+        https://docs.arangodb.com/HttpAqlQueryCursor/AccessingCursors.html
 
         :param query: the AQL query to execute
         :type query: str
+        :param count: whether or not the document count should be returned
+        :type count: bool
+        :param batch_size: maximum number of documents in one roundtrip
+        :type batch_size: int
+        :param ttl: time-to-live for the cursor (in seconds)
+        :type ttl: int
+        :param bind_vars: key/value list of bind parameters
+        :type bind_vars: list
+        :param full_count: whether or not to include count before last LIMIT
+        :param max_plans: maximum number of plans the optimizer generates
+        :type max_plans: None or int
+        :param optimizer_rules: list of optimizer rules
+        :type optimizer_rules: list
         :returns: the cursor from executing the query
         :raises: ArangoQueryExecuteError, ArangoCursorDeleteError
         """
-        data = {"query": query}
+        options = {}
+        if full_count is not None:
+            options["fullCount"] = full_count
+        if max_plans is not None:
+            options["maxNumberOfPlans"] = max_plans
+        if optimizer_rules is not None:
+            options["optimizer"] = {"rules": optimizer_rules}
+
+        data = {
+            "query": query,
+            "count": count,
+        }
+        if batch_size is not None:
+            data["batchSize"] = batch_size
+        if ttl is not None:
+            data["ttl"] = ttl
+        if bind_vars is not None:
+            data["bindVars"] = bind_vars
+        if options:
+            data["options"] = options
+
         res = self._api.post("/_api/cursor", data=data)
         if res.status_code != 201:
             raise ArangoQueryExecuteError(res)

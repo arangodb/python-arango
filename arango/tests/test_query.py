@@ -11,26 +11,72 @@ from arango.tests.test_utils import (
 
 class ArangoDBQueryTest(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.arango = Arango()
-        cls.db_name = get_next_db_name(cls.arango)
-        cls.db = cls.arango.add_database(cls.db_name)
+    def setUp(self):
+        self.arango = Arango()
+        self.db_name = get_next_db_name(self.arango)
+        self.db = self.arango.add_database(self.db_name)
+        self.col_name = get_next_col_name(self.db)
+        self.db.add_collection(self.col_name)
 
-    @classmethod
-    def tearDownClass(cls):
-        cls.arango.remove_database(cls.db_name)
+    def tearDown(self):
+        self.arango.remove_database(self.db_name)
 
     def test_explain_query(self):
-        pass
+        self.assertRaises(
+            ArangoQueryValidateError,
+            self.db.validate_query,
+            "THIS IS AN INVALID QUERY"
+        )
+        plans = self.db.explain_query(
+            "FOR d IN {} RETURN d".format(self.col_name),
+            all_plans=True,
+            optimizer_rules=["-all", "+use-index-range"]
+        )
+        for plan in plans:
+            self.assertGreaterEqual(
+                set(plan),
+                {
+                    "collections",
+                    "estimated_cost",
+                    "estimated_nr_items",
+                    "nodes",
+                    "rules",
+                    "variables"
+                }
+            )
 
     def test_validate_query(self):
-        pass
+        self.assertRaises(
+            ArangoQueryValidateError,
+            self.db.validate_query,
+            "THIS IS AN INVALID QUERY"
+        )
+        self.assertEqual(
+            None,
+            self.db.validate_query(
+                "FOR d IN {} RETURN d".format(self.col_name)
+            ),
+        )
 
     def test_execute_query(self):
-        pass
+        collection = self.db.collection(self.col_name)
+        collection.bulk_import([
+            {"_key": "doc01"},
+            {"_key": "doc02"},
+            {"_key": "doc03"},
+        ])
+        res = self.db.execute_query(
+            "FOR d IN {} RETURN d".format(self.col_name),
+            count=True,
+            batch_size=1,
+            ttl=10,
+            optimizer_rules=["+all"]
+        )
+        self.assertEqual(
+            sorted([doc["_key"] for doc in list(res)]),
+            ["doc01", "doc02", "doc03"]
+        )
 
 
 if __name__ == "__main__":
     unittest.main()
-
