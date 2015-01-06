@@ -551,8 +551,8 @@ class Graph(object):
         :type max_depth: int
         :param init: custom init function in Javascript
         :type init: str
-        :param filter: custom filter function in Javascript
-        :type filter: str
+        :param filters: custom filter function in Javascript
+        :type filters: str
         :param visitor: custom visitor function in Javascript
         :type visitor: str
         :param expander: custom expander function in Javascript

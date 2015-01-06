@@ -4,7 +4,7 @@ import unittest
 
 from arango import Arango
 from arango.exceptions import *
-from arango.tests.test_utils import (
+from arango.tests.utils import (
     get_next_col_name,
     get_next_db_name,
     strip_system_keys,
@@ -35,61 +35,61 @@ class DocumentManagementTest(unittest.TestCase):
 
     def test_add_document(self):
         self.assertEqual(len(self.col), 0)
-        self.col.add({"_key": "test_doc"})
+        self.col.add_document({"_key": "test_doc"})
         self.assertEqual(len(self.col), 1)
         self.assertIn("test_doc", self.col)
 
     def test_remove_document(self):
-        rev = self.col.add({"_key": "test_doc"})["_rev"]
+        rev = self.col.add_document({"_key": "test_doc"})["_rev"]
         self.assertEqual(len(self.col), 1)
         self.assertRaises(
             ArangoDocumentRemoveError,
-            self.col.remove,
+            self.col.remove_document,
             "test_doc",
             rev="wrong_revision"
         )
-        self.col.remove("test_doc", rev=rev)
+        self.col.remove_document("test_doc", rev=rev)
         self.assertEqual(len(self.col), 0)
         self.assertNotIn("test_doc", self.col)
 
     def test_replace_document(self):
-        rev = self.col.add({
+        rev = self.col.add_document({
             "_key": "test_doc",
             "value": 1,
             "value2": 2,
         })["_rev"]
         self.assertRaises(
             ArangoDocumentReplaceError,
-            self.col.replace,
+            self.col.replace_document,
             "test_doc",
             {"value": 2},
             rev="wrong_revision"
         )
-        self.col.replace("test_doc", {"value": 2}, rev=rev)
+        self.col.replace_document("test_doc", {"value": 2}, rev=rev)
         self.assertEqual(self.col["test_doc"]["value"], 2)
         self.assertNotIn("value2", self.col["test_doc"])
 
     def test_update_document(self):
-        rev = self.col.add({
+        rev = self.col.add_document({
             "_key": "test_doc",
             "value": 1,
             "value2": 2,
         })["_rev"]
         self.assertRaises(
             ArangoDocumentUpdateError,
-            self.col.update,
+            self.col.update_document,
             "test_doc",
             {"value": 2},
             "wrong_revision"
         )
-        self.col.update("test_doc", {"value": 2}, rev=rev)
+        self.col.update_document("test_doc", {"value": 2}, rev=rev)
         self.assertEqual(self.col["test_doc"]["value"], 2)
         self.assertEqual(self.col["test_doc"]["value2"], 2)
 
     def test_truncate(self):
-        self.col.add({"_key": "test_doc_01"})
-        self.col.add({"_key": "test_doc_02"})
-        self.col.add({"_key": "test_doc_03"})
+        self.col.add_document({"_key": "test_doc_01"})
+        self.col.add_document({"_key": "test_doc_02"})
+        self.col.add_document({"_key": "test_doc_03"})
         self.assertEqual(len(self.col), 3)
         self.col.truncate()
         self.assertEqual(len(self.col), 0)

@@ -1,6 +1,6 @@
 """ArangoDB Database."""
 
-from arango.utils import camelify, uncamelify
+from arango.utils import uncamelify
 from arango.batch import Batch
 from arango.graph import Graph
 from arango.collection import Collection
@@ -18,6 +18,7 @@ class Database(CursorFactory):
     """
 
     def __init__(self, name, api):
+        super(Database, self).__init__(api)
         self.name = name
         self._api = api
         self._collection_cache = {}
@@ -133,7 +134,6 @@ class Database(CursorFactory):
         else:
             return uncamelify(res.obj["plans"])
 
-
     def validate_query(self, query):
         """Validate the AQL query.
 
@@ -157,7 +157,7 @@ class Database(CursorFactory):
         :type query: str
         :param count: whether or not the document count should be returned
         :type count: bool
-        :param batch_size: maximum number of documents in one roundtrip
+        :param batch_size: maximum number of documents in one round trip
         :type batch_size: int
         :param ttl: time-to-live for the cursor (in seconds)
         :type ttl: int

@@ -6,6 +6,7 @@ from arango.utils import camelify, uncamelify
 from arango.exceptions import *
 from arango.cursor import CursorFactory
 
+
 class Collection(CursorFactory):
     """A wrapper around ArangoDB collection specific API.
 
@@ -24,6 +25,7 @@ class Collection(CursorFactory):
     }
 
     def __init__(self, name, api):
+        super(Collection, self).__init__(api)
         self.name = name
         self._api = api
         self._type = "edge" if self.is_edge else "document"
@@ -62,7 +64,7 @@ class Collection(CursorFactory):
         """
         if not isinstance(key, str):
             raise TypeError("Expecting a str.")
-        return self.get(key)
+        return self.get_document(key)
 
     def __contains__(self, key):
         """Return True if the document exists in this collection.
@@ -338,7 +340,7 @@ class Collection(CursorFactory):
     # Handling Documents #
     ######################
 
-    def get(self, key, rev=None, match=True):
+    def get_document(self, key, rev=None, match=True):
         """Return the document of the given key.
 
         If the document revision ``rev`` is specified, it is compared against
@@ -370,7 +372,7 @@ class Collection(CursorFactory):
             raise ArangoDocumentGetError(res)
         return res.obj
 
-    def add(self, data, wait_for_sync=False):
+    def add_document(self, data, wait_for_sync=False):
         """Add the given document to this collection.
 
         If  ``data`` contains the ``_key`` attribute, use the value of the
@@ -413,7 +415,7 @@ class Collection(CursorFactory):
         del res.obj["error"]
         return res.obj
 
-    def replace(self, key, data, rev=None, wait_for_sync=False):
+    def replace_document(self, key, data, rev=None, wait_for_sync=False):
         """Replace the specified document in this collection.
 
         If the ``_key`` attribute is present in ``data``, it is ignored. The
@@ -457,7 +459,8 @@ class Collection(CursorFactory):
         del res.obj["error"]
         return res.obj
 
-    def update(self, key, data, rev=None, keep_none=True, wait_for_sync=False):
+    def update_document(self, key, data, rev=None, keep_none=True,
+                        wait_for_sync=False):
         """Update the specified document in this collection.
 
         If the ``_key`` attribute is present in ``data``, it is ignored. The
@@ -509,7 +512,7 @@ class Collection(CursorFactory):
         del res.obj["error"]
         return res.obj
 
-    def remove(self, key, rev=None, wait_for_sync=False):
+    def remove_document(self, key, rev=None, wait_for_sync=False):
         """Remove the specified document from this collection.
 
         If the ``_key`` attribute is present in ``data``, it is ignored. The
@@ -792,7 +795,7 @@ class Collection(CursorFactory):
 
         By default number of documents returned is 100. The returned list is
         sorted based on the distance, with the nearest document being the first
-        in the list. Documents of equal dinstance are ordered randomly.
+        in the list. Documents of equal distance are ordered randomly.
 
         In order to execute this query a geo index must be defined for the
         collection. If there are more than one geo-spatial index, the ``geo``
@@ -824,6 +827,8 @@ class Collection(CursorFactory):
         }
         if distance is not None:
             data["distance"] = distance
+        if radius is not None:
+            data["radius"] = radius
         if skip is not None:
             data["skip"] = skip
         if limit is not None:
@@ -1054,7 +1059,7 @@ class Collection(CursorFactory):
         value). All documents without the attribute paths or with invalid values
         are ignored.
 
-        If ``fields`` is a list with TWO attribute paths (i.e. lattitude and
+        If ``fields`` is a list with TWO attribute paths (i.e. latitude and
         longitude, in that order) then a geo-spatial index on all documents is
         created using the two attributes (again, their values must be doubles).
         All documents without the attribute paths or with invalid values are

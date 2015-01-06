@@ -4,7 +4,7 @@ import unittest
 
 from arango import Arango
 from arango.exceptions import *
-from arango.tests.test_utils import (
+from arango.tests.utils import (
     get_next_graph_name,
     get_next_col_name,
     get_next_db_name
