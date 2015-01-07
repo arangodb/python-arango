@@ -9,6 +9,9 @@ class DatabaseManagementTest(unittest.TestCase):
     def setUp(self):
         self.arango = Arango()
 
+    def tearDown(self):
+        self.arango = None
+
     def test_database_add_and_remove(self):
         dbs = self.arango.databases["all"]
 

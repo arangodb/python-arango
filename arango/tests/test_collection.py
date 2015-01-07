@@ -110,7 +110,7 @@ class CollectionManagementTest(unittest.TestCase):
     def test_collection_rotate_journal(self):
         col = self.db.add_collection(get_next_col_name(self.db))
         self.assertRaises(
-            ArangoCollectionRotateJournalError,
+            CollectionRotateJournalError,
             col.rotate_journal
         )
 

@@ -43,7 +43,7 @@ class DocumentManagementTest(unittest.TestCase):
         rev = self.col.add_document({"_key": "test_doc"})["_rev"]
         self.assertEqual(len(self.col), 1)
         self.assertRaises(
-            ArangoDocumentRemoveError,
+            DocumentRemoveError,
             self.col.remove_document,
             "test_doc",
             rev="wrong_revision"
@@ -59,13 +59,19 @@ class DocumentManagementTest(unittest.TestCase):
             "value2": 2,
         })["_rev"]
         self.assertRaises(
-            ArangoDocumentReplaceError,
+            DocumentReplaceError,
             self.col.replace_document,
-            "test_doc",
-            {"value": 2},
-            rev="wrong_revision"
+            {
+                "_key": "test_doc",
+                "_rev": "wrong_revision",
+                "value": 2,
+            },
         )
-        self.col.replace_document("test_doc", {"value": 2}, rev=rev)
+        self.col.replace_document({
+            "_key": "test_doc",
+            "_rev": rev,
+            "value": 2
+        })
         self.assertEqual(self.col["test_doc"]["value"], 2)
         self.assertNotIn("value2", self.col["test_doc"])
 
@@ -76,15 +82,21 @@ class DocumentManagementTest(unittest.TestCase):
             "value2": 2,
         })["_rev"]
         self.assertRaises(
-            ArangoDocumentUpdateError,
+            DocumentUpdateError,
             self.col.update_document,
-            "test_doc",
-            {"value": 2},
-            "wrong_revision"
+            {
+                "_key": "test_doc",
+                "_rev": "wrong_revision",
+                "value": 2
+            },
         )
-        self.col.update_document("test_doc", {"value": 2}, rev=rev)
-        self.assertEqual(self.col["test_doc"]["value"], 2)
-        self.assertEqual(self.col["test_doc"]["value2"], 2)
+        self.col.update_document({
+            "_key": "test_doc",
+            "_rev": rev,
+            "new_value": 2
+        })
+        self.assertEqual(self.col["test_doc"]["value"], 1)
+        self.assertEqual(self.col["test_doc"]["new_value"], 2)
 
     def test_truncate(self):
         self.col.add_document({"_key": "test_doc_01"})
@@ -110,7 +122,7 @@ class DocumentManagementTest(unittest.TestCase):
         # This should fail because of the last document
         self.col.truncate()
         self.assertRaises(
-            ArangoCollectionBulkImportError,
+            CollectionBulkImportError,
             self.col.bulk_import,
             documents,
             complete=True

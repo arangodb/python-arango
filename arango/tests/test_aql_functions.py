@@ -36,7 +36,7 @@ class AQLFunctionManagementTest(unittest.TestCase):
 
     def test_add_invalid_aql_function(self):
         self.assertRaises(
-            ArangoAQLFunctionAddError,
+            AQLFunctionAddError,
             self.db.add_aql_function,
             "myfunctions::temperature::celsiustofahrenheit",
             "function (celsius) { invalid syntax }"

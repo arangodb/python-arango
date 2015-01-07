@@ -22,10 +22,10 @@ class CursorFactory(object):
                 cursor_id = res.obj["id"]
             res = self._api.put("/_api/cursor/{}".format(cursor_id))
             if res.status_code != 200:
-                raise ArangoQueryExecuteError(res)
+                raise QueryExecuteError(res)
             for item in res.obj["result"]:
                 yield item
         if cursor_id is not None:
             res = self._api.delete("/api/cursor/{}".format(cursor_id))
             if res.status_code not in {404, 202}:
-                raise ArangoCursorDeleteError(res)
+                raise CursorDeleteError(res)

@@ -142,14 +142,14 @@ class IndexManagementTest(unittest.TestCase):
 
     def test_add_geo_index_with_more_than_two_attrs(self):
         self.assertRaises(
-            ArangoIndexAddError,
+            IndexAddError,
             self.col.add_geo_index,
             fields=["attr1", "attr2", "attr3"]
         )
 
     def test_add_fulltext_index(self):
         self.assertRaises(
-            ArangoIndexAddError,
+            IndexAddError,
             self.col.add_fulltext_index,
             fields=["attr1", "attr2"]
         )

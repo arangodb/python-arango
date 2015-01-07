@@ -53,11 +53,11 @@ class Database(CursorFactory):
 
         :returns: the database properties
         :rtype: dict
-        :raises: ArangoDatabasePropertyError
+        :raises: DatabasePropertyError
         """
         res = self._api.get("/_api/database/current")
         if res.status_code != 200:
-            raise ArangoDatabasePropertyError(res)
+            raise DatabasePropertyError(res)
         return uncamelify(res.obj["result"])
 
     @property
@@ -66,7 +66,7 @@ class Database(CursorFactory):
 
         :returns: the database ID
         :rtype: str
-        :raises: ArangoDatabasePropertyError
+        :raises: DatabasePropertyError
         """
         return self.properties["id"]
 
@@ -76,7 +76,7 @@ class Database(CursorFactory):
 
         :returns: the file path of this database
         :rtype: str
-        :raises: ArangoDatabasePropertyError
+        :raises: DatabasePropertyError
         """
         return self.properties["path"]
 
@@ -86,7 +86,7 @@ class Database(CursorFactory):
 
         :returns: True if this is a system database, False otherwise
         :rtype: bool
-        :raises: ArangoDatabasePropertyError
+        :raises: DatabasePropertyError
         """
         return self.properties["is_system"]
 
@@ -117,7 +117,7 @@ class Database(CursorFactory):
         :type optimizer_rules: list
         :returns: the query plan or list of plans (if all_plans is True)
         :rtype: dict or list
-        :raises: ArangoQueryExplainError
+        :raises: QueryExplainError
         """
         options = {"allPlans": all_plans}
         if max_plans is not None:
@@ -128,7 +128,7 @@ class Database(CursorFactory):
             "/_api/explain", data={"query": query, "options": options}
         )
         if res.status_code != 200:
-            raise ArangoQueryExplainError(res)
+            raise QueryExplainError(res)
         if "plan" in res.obj:
             return uncamelify(res.obj["plan"])
         else:
@@ -139,11 +139,11 @@ class Database(CursorFactory):
 
         :param query: the AQL query to validate
         :type query: str
-        :raises: ArangoQueryValidateError
+        :raises: QueryValidateError
         """
         res = self._api.post("/_api/query", data={"query": query})
         if res.status_code != 200:
-            raise ArangoQueryValidateError(res)
+            raise QueryValidateError(res)
 
     def execute_query(self, query, count=False, batch_size=None, ttl=None,
                       bind_vars=None, full_count=None, max_plans=None,
@@ -169,7 +169,7 @@ class Database(CursorFactory):
         :param optimizer_rules: list of optimizer rules
         :type optimizer_rules: list
         :returns: the cursor from executing the query
-        :raises: ArangoQueryExecuteError, ArangoCursorDeleteError
+        :raises: QueryExecuteError, CursorDeleteError
         """
         options = {}
         if full_count is not None:
@@ -194,7 +194,7 @@ class Database(CursorFactory):
 
         res = self._api.post("/_api/cursor", data=data)
         if res.status_code != 201:
-            raise ArangoQueryExecuteError(res)
+            raise QueryExecuteError(res)
         return self.cursor(res)
 
     ########################
@@ -207,11 +207,11 @@ class Database(CursorFactory):
 
         :returns: the names of the collections
         :rtype: dict
-        :raises: ArangoCollectionListError
+        :raises: CollectionListError
         """
         res = self._api.get("/_api/collection")
         if res.status_code != 200:
-            raise ArangoCollectionListError(res)
+            raise CollectionListError(res)
 
         user_collections = []
         system_collections = []
@@ -237,7 +237,7 @@ class Database(CursorFactory):
         :type name: str
         :returns: the requested collection object
         :rtype: arango.collection.Collection
-        :raises: TypeError, ArangoCollectionNotFound
+        :raises: TypeError, CollectionNotFound
         """
         if not isinstance(name, str):
             raise TypeError("Expecting a str.")
@@ -246,7 +246,7 @@ class Database(CursorFactory):
         else:
             self._update_collection_cache()
             if name not in self._collection_cache:
-                raise ArangoCollectionNotFoundError(name)
+                raise CollectionNotFoundError(name)
             return self._collection_cache[name]
 
     def add_collection(self, name, wait_for_sync=False, do_compact=True,
@@ -282,7 +282,7 @@ class Database(CursorFactory):
         :type number_of_shards: int
         :param shard_keys: the attribute(s) used to determine the target shard
         :type shard_keys: list
-        :raises: ArangoCollectionAddError
+        :raises: CollectionAddError
         """
         key_options = {
             "type": key_generator_type,
@@ -310,7 +310,7 @@ class Database(CursorFactory):
 
         res = self._api.post("/_api/collection", data=data)
         if res.status_code != 200:
-            raise ArangoCollectionAddError(res)
+            raise CollectionAddError(res)
         self._update_collection_cache()
         return self.collection(name)
 
@@ -319,11 +319,11 @@ class Database(CursorFactory):
 
         :param name: the name of the collection to remove
         :type name: str
-        :raises: ArangoCollectionRemoveError
+        :raises: CollectionRemoveError
         """
         res = self._api.delete("/_api/collection/{}".format(name))
         if res.status_code != 200:
-            raise ArangoCollectionRemoveError(res)
+            raise CollectionRemoveError(res)
         self._update_collection_cache()
 
     def rename_collection(self, name, new_name):
@@ -333,14 +333,14 @@ class Database(CursorFactory):
         :type name: str
         :param new_name: the new name for the collection
         :type new_name: str
-        :raises: ArangoCollectionRenameError
+        :raises: CollectionRenameError
         """
         res = self._api.put(
             "/_api/collection/{}/rename".format(name),
             data={"name": new_name}
         )
         if res.status_code != 200:
-            raise ArangoCollectionRenameError(res)
+            raise CollectionRenameError(res)
         self._update_collection_cache()
 
     ##########################
@@ -353,11 +353,11 @@ class Database(CursorFactory):
 
         :returns: a mapping of AQL function names to its javascript code
         :rtype: dict
-        :raises: ArangoAQLFunctionListError
+        :raises: AQLFunctionListError
         """
         res = self._api.get("/_api/aqlfunction")
         if res.status_code != 200:
-            raise ArangoAQLFunctionListError(res)
+            raise AQLFunctionListError(res)
         return {func["name"]: func["code"]for func in res.obj}
 
     def add_aql_function(self, name, code):
@@ -369,12 +369,12 @@ class Database(CursorFactory):
         :type code: str
         :returns: the updated AQL functions
         :rtype: dict
-        :raises: ArangoAQLFunctionAddError
+        :raises: AQLFunctionAddError
         """
         data = {"name": name, "code": code}
         res = self._api.post("/_api/aqlfunction", data=data)
         if res.status_code not in (200, 201):
-            raise ArangoAQLFunctionAddError(res)
+            raise AQLFunctionAddError(res)
         return self.aql_functions
 
     def remove_aql_function(self, name, group=None):
@@ -391,14 +391,14 @@ class Database(CursorFactory):
         :param group: whether or not to treat name as a namespace prefix
         :returns: the updated AQL functions
         :rtype: dict
-        :raises: ArangoAQLFunctionRemoveError
+        :raises: AQLFunctionRemoveError
         """
         res = self._api.delete(
             "/_api/aqlfunction/{}".format(name),
             params={"group": group} if group is not None else {}
         )
         if res.status_code != 200:
-            raise ArangoAQLFunctionRemoveError(res)
+            raise AQLFunctionRemoveError(res)
         return self.aql_functions
 
     ################
@@ -418,7 +418,7 @@ class Database(CursorFactory):
         :type action: str
         :returns: the result from executing the transaction
         :rtype: dict
-        :raises: ArangoTransactionExecuteError
+        :raises: TransactionExecuteError
         """
         data = {
             collections: {} if collections is None else collections,
@@ -426,7 +426,7 @@ class Database(CursorFactory):
         }
         res = self._api.post("/_api/transaction", data=data)
         if res != 200:
-            raise ArangoTransactionExecuteError(res)
+            raise TransactionExecuteError(res)
         return res.obj["result"]
 
     ###################
@@ -439,11 +439,11 @@ class Database(CursorFactory):
 
         :returns: the graphs in this database
         :rtype: dict
-        :raises: ArangoGraphGetError
+        :raises: GraphGetError
         """
         res = self._api.get("/_api/gharial")
         if res.status_code not in (200, 202):
-            raise ArangoGraphListError(res)
+            raise GraphListError(res)
         return [graph["_key"] for graph in res.obj["graphs"]]
 
     def graph(self, name):
@@ -453,7 +453,7 @@ class Database(CursorFactory):
         :type name: str
         :returns: the requested graph object
         :rtype: arango.graph.Graph
-        :raises: TypeError, ArangoGraphNotFound
+        :raises: TypeError, GraphNotFound
         """
         if not isinstance(name, str):
             raise TypeError("Expecting a str.")
@@ -462,7 +462,7 @@ class Database(CursorFactory):
         else:
             self._update_graph_cache()
             if name not in self._graph_cache:
-                raise ArangoGraphNotFoundError(name)
+                raise GraphNotFoundError(name)
             return self._graph_cache[name]
 
     def add_graph(self, name, edge_definitions=None,
@@ -479,7 +479,7 @@ class Database(CursorFactory):
         :type orphan_collections: list
         :returns: the graph object
         :rtype: arango.graph.Graph
-        :raises: ArangoGraphAddError
+        :raises: GraphAddError
         """
         data = {"name": name}
         if edge_definitions is not None:
@@ -489,7 +489,7 @@ class Database(CursorFactory):
 
         res = self._api.post("/_api/gharial", data=data)
         if res.status_code != 201:
-            raise ArangoGraphAddError(res)
+            raise GraphAddError(res)
         self._update_graph_cache()
         return self.graph(name)
 
@@ -498,9 +498,9 @@ class Database(CursorFactory):
 
         :param name: the name of the graph to remove
         :type name: str
-        :raises: ArangoGraphRemoveError
+        :raises: GraphRemoveError
         """
         res = self._api.delete("/_api/gharial/{}".format(name))
         if res.status_code != 200:
-            raise ArangoGraphRemoveError(res)
+            raise GraphRemoveError(res)
         self._update_graph_cache()

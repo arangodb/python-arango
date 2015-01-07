@@ -88,11 +88,11 @@ class Arango(object):
 
         :returns: the version number
         :rtype: str
-        :raises: ArangoVersionError
+        :raises: VersionGetError
         """
         res = self._api.get("/_api/version")
         if res.status_code != 200:
-            raise ArangoVersionError(res)
+            raise VersionGetError(res)
         return res.obj["version"]
 
     @property
@@ -101,16 +101,16 @@ class Arango(object):
 
         :returns: the database names
         :rtype: dict
-        :raises: ArangoDatabaseListError
+        :raises: DatabaseListError
         """
         res = self._api.get("/_api/database/user")
         if res.status_code != 200:
-            raise ArangoDatabaseListError(res)
+            raise DatabaseListError(res)
         user_databases = res.obj["result"]
 
         res = self._api.get("/_api/database")
         if res.status_code != 200:
-            raise ArangoDatabaseListError(res)
+            raise DatabaseListError(res)
         all_databases = res.obj["result"]
 
         return {"all": all_databases, "user": user_databases}
@@ -124,14 +124,14 @@ class Arango(object):
 
         :returns: the database object
         :rtype: arango.database.Database
-        :raises: ArangoDatabaseNotFoundError
+        :raises: DatabaseNotFoundError
         """
         if name in self._database_cache:
             return self._database_cache[name]
         else:
             self._invalidate_database_cache()
             if name not in self._database_cache:
-                raise ArangoDatabaseNotFoundError(name)
+                raise DatabaseNotFoundError(name)
             return self._database_cache[name]
 
     def add_database(self, name, users=None):
@@ -143,12 +143,12 @@ class Arango(object):
         :type users: dict
         :returns: the Database object
         :rtype: arango.database.Database
-        :raises: ArangoDatabaseCreateError
+        :raises: DatabaseCreateError
         """
         data = {"name": name, "users": users} if users else {"name": name}
         res = self._api.post("/_api/database", data=data)
         if res.status_code != 201:
-            raise ArangoDatabaseAddError(res)
+            raise DatabaseAddError(res)
         self._invalidate_database_cache()
         return self.db(name)
 
@@ -157,11 +157,11 @@ class Arango(object):
 
         :param name: the name of the database to remove
         :type name: str
-        :raises: ArangoDatabaseDeleteError
+        :raises: DatabaseDeleteError
         """
         res = self._api.delete("/_api/database/{}".format(name))
         if res.status_code != 200:
-            raise ArangoDatabaseRemoveError(res)
+            raise DatabaseRemoveError(res)
         self._invalidate_database_cache()
 
 

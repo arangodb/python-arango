@@ -23,7 +23,7 @@ class ArangoDBQueryTest(unittest.TestCase):
 
     def test_explain_query(self):
         self.assertRaises(
-            ArangoQueryValidateError,
+            QueryValidateError,
             self.db.validate_query,
             "THIS IS AN INVALID QUERY"
         )
@@ -47,7 +47,7 @@ class ArangoDBQueryTest(unittest.TestCase):
 
     def test_validate_query(self):
         self.assertRaises(
-            ArangoQueryValidateError,
+            QueryValidateError,
             self.db.validate_query,
             "THIS IS AN INVALID QUERY"
         )

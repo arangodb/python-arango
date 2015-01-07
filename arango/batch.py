@@ -3,7 +3,7 @@ import json
 import re
 
 from arango.exceptions import (
-    ArangoBatchExecuteError
+    BatchExecuteError
 )
 
 
@@ -31,7 +31,7 @@ class Batch(object):
             data=data,
         )
         if res.status_code != 200:
-            raise ArangoBatchExecuteError(res)
+            raise BatchExecuteError(res)
         return res.obj
 
         #resp_body = resp.text.split("--{}--".format(self.MIME_BOUNDARY))[0]

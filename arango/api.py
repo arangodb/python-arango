@@ -50,7 +50,7 @@ class ArangoAPI(object):
             db = self.db_name,
         )
 
-    def head(self, path, params=None, headers=None):
+    def head(self, path, params=None, headers=None, batch=False):
         """Execute an HTTP HEAD method."""
         return self.client.head(
             url=self.url_prefix + path,
@@ -59,7 +59,7 @@ class ArangoAPI(object):
             auth=(self.username, self.password)
         )
 
-    def get(self, path, params=None, headers=None):
+    def get(self, path, params=None, headers=None, batch=False):
         """Execute an HTTP GET method."""
         return self.client.get(
             url=self.url_prefix + path,
@@ -68,7 +68,7 @@ class ArangoAPI(object):
             auth=(self.username, self.password),
         )
 
-    def put(self, path, data=None, params=None, headers=None):
+    def put(self, path, data=None, params=None, headers=None, batch=False):
         """Execute an HTTP PUT method."""
         return self.client.put(
             url=self.url_prefix + path,
@@ -78,7 +78,7 @@ class ArangoAPI(object):
             auth=(self.username, self.password)
         )
 
-    def post(self, path, data=None, params=None, headers=None):
+    def post(self, path, data=None, params=None, headers=None, batch=False):
         """Execute an HTTP POST method."""
         return self.client.post(
             url=self.url_prefix + path,
@@ -88,7 +88,7 @@ class ArangoAPI(object):
             auth=(self.username, self.password)
         )
 
-    def patch(self, path, data=None, params=None, headers=None):
+    def patch(self, path, data=None, params=None, headers=None, batch=False):
         """Execute an HTTP PATCH method."""
         return self.client.patch(
             url=self.url_prefix + path,
@@ -98,7 +98,7 @@ class ArangoAPI(object):
             auth=(self.username, self.password)
         )
 
-    def delete(self, path, params=None, headers=None):
+    def delete(self, path, params=None, headers=None, batch=False):
         """Execute an HTTP DELETE method."""
         return self.client.delete(
             url=self.url_prefix + path,
