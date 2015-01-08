@@ -28,7 +28,8 @@ a = Arango(host="localhost", port=8529)
 a.version
 
 # Getting the names of the databases
-a.databases
+a.databases["user"]
+a.databases["system"]
 
 # Obtaining database information
 a.db("_system").name  # or just a.name (if db is not specified it defaults to "_system")
