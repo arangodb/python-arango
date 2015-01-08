@@ -41,46 +41,47 @@ class EdgeManagementTest(unittest.TestCase):
         # Add a few test "from" vertices
         self.graph.add_vertex(
             self.from_col_name,
-            key="from01",
-            data={"value": 1}
+            data={"_key": "from01", "value": 1}
         )
         self.graph.add_vertex(
             self.from_col_name,
-            key="from02",
-            data={"value": 2}
+            data={"_key": "from02", "value": 2}
         )
         # Add a few test "to" vertices
         self.graph.add_vertex(
             self.to_col_name,
-            key="to01",
-            data={"value": 1}
+            data={"_key": "to01", "value": 1}
         )
         self.graph.add_vertex(
             self.to_col_name,
-            key="to02",
-            data={"value": 2}
+            data={"_key": "to02", "value": 2}
         )
         self.graph.add_vertex(
             self.to_col_name,
-            key="to03",
-            data={"value": 3}
+            data={"_key": "to03", "value": 3}
         )
 
         # Add a few test edges
         self.graph.add_edge(
             self.edge_col_name,
-            "{}/{}".format(self.from_col_name, "from01"),
-            "{}/{}".format(self.to_col_name, "to01"),
+            {
+                "_from": "{}/{}".format(self.from_col_name, "from01"),
+                "_to": "{}/{}".format(self.to_col_name, "to01"),
+            }
         )
         self.graph.add_edge(
             self.edge_col_name,
-            "{}/{}".format(self.from_col_name, "from02"),
-            "{}/{}".format(self.to_col_name, "to02"),
+            {
+                "_from": "{}/{}".format(self.from_col_name, "from02"),
+                "_to": "{}/{}".format(self.to_col_name, "to02"),
+            }
         )
         self.graph.add_edge(
             self.edge_col_name,
-            "{}/{}".format(self.from_col_name, "from02"),
-            "{}/{}".format(self.to_col_name, "to03"),
+            {
+                "_from": "{}/{}".format(self.from_col_name, "from02"),
+                "_to": "{}/{}".format(self.to_col_name, "to03"),
+            }
         )
 
     def tearDown(self):
@@ -88,16 +89,15 @@ class EdgeManagementTest(unittest.TestCase):
 
     def test_basic_traversal(self):
         visited = self.graph.execute_traversal(
-            self.from_col_name + "/from01",
+            "{}/{}".format(self.from_col_name, "from01"),
             direction="outbound"
         )["visited"]
-        print visited
         self.assertEqual(len(visited["paths"]), 2)
         self.assertEqual(
             [vertex["_id"] for vertex in visited["vertices"]],
             [
-                "{}/from01".format(self.from_col_name),
-                "{}/to01".format(self.to_col_name)
+                "{}/{}".format(self.from_col_name, "from01"),
+                "{}/{}".format(self.to_col_name, "to01"),
             ]
         )
 

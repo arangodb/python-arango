@@ -129,7 +129,7 @@ class DocumentInvalidError(Exception):
     """The document is invalid."""
 
 
-class DocumentRevisionError(ArangoRequestError):
+class RevisionMismatchError(ArangoRequestError):
     """There was a mismatch between expected and actual revision."""
 
 

@@ -38,18 +38,24 @@ class EdgeManagementTest(unittest.TestCase):
         # Add a few test vertices
         self.graph.add_vertex(
             self.vertex_col_name,
-            key="vertex01",
-            data={"value": 1}
+            data={
+                "_key": "vertex01",
+                "value": 1
+            }
         )
         self.graph.add_vertex(
             self.vertex_col_name,
-            key="vertex02",
-            data={"value": 2}
+            data={
+                "_key": "vertex02",
+                "value": 1
+            }
         )
         self.graph.add_vertex(
             self.vertex_col_name,
-            key="vertex03",
-            data={"value": 3}
+            data={
+                "_key": "vertex03",
+                "value": 1
+            }
         )
 
     def tearDown(self):
@@ -57,94 +63,99 @@ class EdgeManagementTest(unittest.TestCase):
 
     def test_add_edge(self):
         self.graph.add_edge(
-            collection_name=self.edge_col_name,
-            from_vertex_id="{}/{}".format(self.vertex_col_name, "vertex01"),
-            to_vertex_id="{}/{}".format(self.vertex_col_name, "vertex01"),
-            key="edge01",
-            data={"value": "foobar"}
+            self.edge_col_name,
+            data={
+                "_key": "edge01",
+                "_from": "{}/{}".format(self.vertex_col_name, "vertex01"),
+                "_to": "{}/{}".format(self.vertex_col_name, "vertex01"),
+                "value": "foobar"
+            }
         )
         self.assertEqual(self.edge_col.count, 1)
         self.assertEqual(
-            self.graph.get_edge(self.edge_col_name, "edge01")["value"],
+            self.graph.get_edge(
+                "{}/{}".format(self.edge_col_name, "edge01")
+            )["value"],
             "foobar"
         )
         self.assertEqual(
-            self.graph.get_edge(self.edge_col_name, "edge01")["_from"],
+            self.graph.get_edge(
+                "{}/{}".format(self.edge_col_name, "edge01")
+            )["_from"],
             "{}/{}".format(self.vertex_col_name, "vertex01")
         )
         self.assertEqual(
-            self.graph.get_edge(self.edge_col_name, "edge01")["_to"],
+            self.graph.get_edge(
+                "{}/{}".format(self.edge_col_name, "edge01")
+            )["_to"],
             "{}/{}".format(self.vertex_col_name, "vertex01")
         )
 
     def test_update_edge(self):
         self.graph.add_edge(
-            collection_name=self.edge_col_name,
-            from_vertex_id="{}/{}".format(self.vertex_col_name, "vertex01"),
-            to_vertex_id="{}/{}".format(self.vertex_col_name, "vertex01"),
-            key="edge01",
-            data={"value": 10}
+            self.edge_col_name,
+            data={
+                "_key": "edge01",
+                "_from": "{}/{}".format(self.vertex_col_name, "vertex01"),
+                "_to": "{}/{}".format(self.vertex_col_name, "vertex01"),
+                "value": 10
+            }
         )
         self.graph.update_edge(
-            collection_name=self.edge_col_name,
-            key="edge01",
+            "{}/{}".format(self.edge_col_name, "edge01"),
             data={"value": 20, "new_value": 30}
         )
         self.assertEqual(
             self.graph.get_edge(
-                self.edge_col_name,
-                key="edge01",
+                "{}/{}".format(self.edge_col_name, "edge01"),
             )["value"],
             20
         )
         self.assertEqual(
             self.graph.get_edge(
-                self.edge_col_name,
-                key="edge01",
+                "{}/{}".format(self.edge_col_name, "edge01"),
             )["new_value"],
             30
         )
 
     def test_replace_edge(self):
         self.graph.add_edge(
-            collection_name=self.edge_col_name,
-            from_vertex_id="{}/{}".format(self.vertex_col_name, "vertex01"),
-            to_vertex_id="{}/{}".format(self.vertex_col_name, "vertex01"),
-            key="edge01",
-            data={"value": 10}
+            self.edge_col_name,
+            data={
+                "_key": "edge01",
+                "_from": "{}/{}".format(self.vertex_col_name, "vertex01"),
+                "_to": "{}/{}".format(self.vertex_col_name, "vertex01"),
+                "value": 10
+            }
         )
         self.graph.replace_edge(
-            collection_name=self.edge_col_name,
-            key="edge01",
+            "{}/{}".format(self.edge_col_name, "edge01"),
             data={"new_value": 20}
         )
         self.assertNotIn(
             "value",
             self.graph.get_edge(
-                self.edge_col_name,
-                key="edge01",
+                "{}/{}".format(self.edge_col_name, "edge01")
             )
         )
         self.assertEqual(
             self.graph.get_edge(
-                self.edge_col_name,
-                key="edge01",
+                "{}/{}".format(self.edge_col_name, "edge01")
             )["new_value"],
             20
         )
 
     def test_remove_edge(self):
         self.graph.add_edge(
-            collection_name=self.edge_col_name,
-            from_vertex_id="{}/{}".format(self.vertex_col_name, "vertex01"),
-            to_vertex_id="{}/{}".format(self.vertex_col_name, "vertex01"),
-            key="edge01",
-            data={"value": 10}
+            self.edge_col_name,
+            data={
+                "_key": "edge01",
+                "_from": "{}/{}".format(self.vertex_col_name, "vertex01"),
+                "_to": "{}/{}".format(self.vertex_col_name, "vertex01"),
+                "value": 10
+            }
         )
-        self.graph.remove_edge(
-            collection_name=self.edge_col_name,
-            key="edge01",
-        )
+        self.graph.remove_edge("{}/{}".format(self.edge_col_name, "edge01"))
         self.assertNotIn("edge01", self.edge_col)
         self.assertEqual(len(self.edge_col), 0)
 

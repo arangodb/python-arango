@@ -346,17 +346,17 @@ class Collection(CursorFactory):
         If the document revision ``rev`` is specified, it is compared
         against the revision of the retrieved document. If ``match`` is set
         to True and the revisions do NOT match, or if ``match`` is set to
-        False and the revisions DO match, ``DocumentRevisionError`` is thrown.
+        False and the revisions DO match, ``RevisionMismatchError`` is thrown.
 
-        :param key: the document key
+        :param key: the key of the document to retrieve
         :type key: str
-        :param rev: the document revision
-        :type rev: str
+        :param rev: the document revision is compared against this value
+        :type rev: str or None
         :param match: whether or not the revision should match
         :type match: bool
-        :returns: the requested document or None
+        :returns: the requested document or None if not found
         :rtype: dict or None
-        :raises: ArangoRevisionMisMatchError, DocumentGetError
+        :raises: RevisionMismatchError, DocumentGetError
         """
         res = self._api.get(
             "/_api/{}/{}/{}".format(self._type, self.name, key),
@@ -365,7 +365,7 @@ class Collection(CursorFactory):
             } if rev else {}
         )
         if res.status_code in {412, 304}:
-            raise DocumentRevisionError(res)
+            raise RevisionMismatchError(res)
         elif res.status_code == 404:
             return None
         elif res.status_code != 200:
@@ -373,11 +373,9 @@ class Collection(CursorFactory):
         return res.obj
 
     def add_document(self, data, wait_for_sync=False):
-        """Add the given document to this collection.
+        """Add the new document to this collection.
 
-        If  ``data`` contains the ``_key`` attribute, use the value of the
-        attribute as the key of the document.
-
+        If ``data`` contains the ``_key`` key, its value must be free.
         If this collection is an edge collection, ``data`` must contain the
         ``_from`` and ``_to`` keys with valid vertex IDs as their values.
 
@@ -389,7 +387,14 @@ class Collection(CursorFactory):
         :rtype: bool
         :raises: DocumentInvalidError, DocumentAddError
         """
-        params={
+        if self._type is "edge":
+            if "_to" not in data:
+                raise DocumentInvalidError(
+                    "the new document data is missing the '_to' key")
+            if "_from" not in data:
+                raise DocumentInvalidError(
+                    "the new document data is missing the '_from' key")
+        params = {
             "collection": self.name,
             "waitForSync": wait_for_sync,
         }
@@ -408,110 +413,125 @@ class Collection(CursorFactory):
         del res.obj["error"]
         return res.obj
 
-    def replace_document(self, data, wait_for_sync=False):
+    def update_document(self, key, data, rev=None, keep_none=True,
+                        wait_for_sync=False):
+        """Update the specified document in this collection.
+
+        If ``keep_none`` is set to True, then attributes with values None
+        are retained. Otherwise, they are removed from the document.
+
+        If ``data`` contains the ``_key`` key, it is ignored.
+
+        If the ``_rev`` key is in ``data``, the revision of the target
+        document must match against its value. Otherwise a RevisionMismatch
+        error is thrown. If ``rev`` is also provided, its value is preferred.
+
+        The ``_from`` and ``_to`` attributes are immutable, and they are
+        ignored if present in ``data``
+
+        :param key: the key of the document to be updated
+        :type key: str
+        :param data: the body to update the document with
+        :type data: dict
+        :param rev: the document revision must match this value
+        :type rev: str or None
+        :param keep_none: whether or not to keep the items with value None
+        :type keep_none: bool
+        :param wait_for_sync: wait for the update to sync to disk
+        :type wait_for_sync: bool
+        :returns: the id, rev and key of the updated document
+        :rtype: dict
+        :raises: DocumentUpdateError
+        """
+        params = {
+            "waitForSync": wait_for_sync,
+            "keepNull": keep_none
+        }
+        if rev is not None:
+            params["rev"] = rev
+            params["policy"] = "error"
+        elif "_rev" in data:
+            params["rev"] = data["_rev"]
+            params["policy"] = "error"
+        res = self._api.patch(
+            "/_api/{}/{}/{}".format(self._type, self.name, key),
+            data=data,
+            params=params
+        )
+        if res.status_code == 412:
+            raise RevisionMismatchError(res)
+        if res.status_code not in {201, 202}:
+            raise DocumentUpdateError(res)
+        del res.obj["error"]
+        return res.obj
+
+    def replace_document(self, key, data, rev=None, wait_for_sync=False):
         """Replace the specified document in this collection.
 
-        The ``data`` must contain the ``_key`` attribute.
+        If ``data`` contains the ``_key`` key, it is ignored.
 
-        If ``_rev`` is defined in ``data``, its value must match that of the
-        target document.
+        If the ``_rev`` key is in ``data``, the revision of the target
+        document must match against its value. Otherwise a RevisionMismatch
+        error is thrown. If ``rev`` is also provided, its value is preferred.
 
-        The ``_from`` and ``_to`` attributes are immutable, and they are ignored
-        if present in ``data``.
+        The ``_from`` and ``_to`` attributes are immutable, and they are
+        ignored if present in ``data``.
 
-        :param data: the new document body
-        :rtype data: dict
+        :param key: the key of the document to be replaced
+        :type key: str
+        :param data: the body to replace the document with
+        :type data: dict
+        :param rev: the document revision must match this value
+        :type rev: str or None
         :param wait_for_sync: wait for the replace to sync to disk
         :type wait_for_sync: bool
         :returns: the id, rev and key of the replaced document
         :rtype: dict
         :raises: DocumentReplaceError
         """
-        if "_key" not in data:
-            raise DocumentInvalidError("missing the '_key' attribute")
         params = {"waitForSync": wait_for_sync}
-        if "_rev" in data:
+        if rev is not None:
+            params["rev"] = rev
+            params["policy"] = "error"
+        elif "_rev" in data:
             params["rev"] = data["_rev"]
             params["policy"] = "error"
-
         res = self._api.put(
-            "/_api/{}/{}/{}".format(self._type, self.name, data["_key"]),
-            data=data,
-            params=params
+            "/_api/{}/{}/{}".format(self._type, self.name, key),
+            params=params,
+            data=data
         )
-        if res.status_code not in {201, 202}:
+        if res.status_code == 412:
+            raise RevisionMismatchError(res)
+        elif res.status_code not in {201, 202}:
             raise DocumentReplaceError(res)
-        del res.obj["error"]
-        return res.obj
-
-    def update_document(self, data, keep_none=True, wait_for_sync=False):
-        """Update the specified document in this collection.
-
-        If ``keep_none`` is set to True, then attributes with values None
-        are retained. Otherwise, they are removed from the document.
-
-        The ``data`` must contain the ``_key`` attribute.
-
-        If ``_rev`` is defined in ``data``, its value must match that of
-        the target document.
-
-        The ``_from`` and ``_to`` attributes are immutable, and they are
-        ignored if present in ``data``.
-
-        :param data: the body of the document to update with
-        :type data: dict
-        :param keep_none: whether to keep the items with value None
-        :type keep_none: bool
-        :param wait_for_sync: wait for the update to sync to disk
-        :type wait_for_sync: bool
-        :returns: the id, rev and key of the new document
-        :rtype: dict
-        :raises: DocumentUpdateError
-        """
-        if "_key" not in data:
-            raise DocumentInvalidError("missing the '_key' attribute")
-        params = {
-            "waitForSync": wait_for_sync,
-            "keepNull": keep_none
-        }
-        if "_rev" in data:
-            params["rev"] = data["_rev"]
-            params["policy"] = "error"
-
-        res = self._api.patch(
-            "/_api/{}/{}/{}".format(self._type, self.name, data["_key"]),
-            data=data,
-            params=params
-        )
-        if res.status_code not in {201, 202}:
-            raise DocumentUpdateError(res)
         del res.obj["error"]
         return res.obj
 
     def remove_document(self, key, rev=None, wait_for_sync=False):
         """Remove the specified document from this collection.
 
-        If ``rev`` is given its value must match the revision of the target
-        document.
-
-        :param key: the key of the document/edge to remove
+        :param key: the key of the document to be removed
         :type key: str
+        :param rev: the document revision must match this value
+        :type rev: str or None
         :param wait_for_sync: wait for the remove to sync to disk
         :type wait_for_sync: bool
         :returns: the id, rev and key of the deleted document
         :rtype: dict
-        :raises: DocumentRemoveError
+        :raises: RevisionMismatchError, DocumentRemoveError
         """
         params = {"waitForSync": wait_for_sync}
         if rev is not None:
             params["rev"] = rev
             params["policy"] = "error"
-
         res = self._api.delete(
             "/_api/{}/{}/{}".format(self._type, self.name, key),
             params=params
         )
-        if res.status_code not in {200, 202}:
+        if res.status_code == 412:
+            raise RevisionMismatchError(res)
+        elif res.status_code not in {200, 202}:
             raise DocumentRemoveError(res)
         del res.obj["error"]
         return res.obj
