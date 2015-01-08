@@ -37,6 +37,14 @@ a.db("animals").id
 a.db("animals").path
 a.db("animals").is_system
 
+# Managing AQL functions
+test_db.aql_functions
+test_db.add_aql_function(
+  "myfunctions::temperature::celsiustofahrenheit",
+  "function (celsius) { return celsius * 1.8 + 32; }"
+)
+test_db.remove_aql_function("myfunctions::temperature::celsiustofahrenheit")
+
 # Managing collections
 test_db = a.db("test_db")
 test_db.collections  # list the collection names
@@ -66,14 +74,6 @@ test_col.rotate_journal()
 test_col.checksum()
 test_col.truncate()
 test_col.contains("a_document_key")
-
-# Managing AQL functions
-people.aql_functions
-people.add_aql_function(
-  "myfunctions::temperature::celsiustofahrenheit",
-  "function (celsius) { return celsius * 1.8 + 32; }"
-)
-people.remove_aql_function("myfunctions::temperature::celsiustofahrenheit")
 
 # Managing indexes of a particular collection
 test_col.indexes
