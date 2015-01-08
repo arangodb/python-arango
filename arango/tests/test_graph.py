@@ -107,7 +107,7 @@ class GraphManagementTest(unittest.TestCase):
         )
         # Remove the vertex collection (completely)
         graph.remove_vertex_collection(
-            collection_name=vertex_col_name,
+            vertex_col_name,
             drop_collection=True
         )
         self.assertEqual(graph.vertex_collections, [])

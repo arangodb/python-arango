@@ -61,17 +61,13 @@ class DocumentManagementTest(unittest.TestCase):
         self.assertRaises(
             DocumentReplaceError,
             self.col.replace_document,
-            {
-                "_key": "test_doc",
-                "_rev": "wrong_revision",
-                "value": 2,
-            },
+            "test_doc",
+            {"_rev": "wrong_revision", "value": 2},
         )
-        self.col.replace_document({
-            "_key": "test_doc",
-            "_rev": rev,
-            "value": 2
-        })
+        self.col.replace_document(
+            "test_doc",
+            {"_rev": rev, "value": 2}
+        )
         self.assertEqual(self.col["test_doc"]["value"], 2)
         self.assertNotIn("value2", self.col["test_doc"])
 
@@ -84,17 +80,13 @@ class DocumentManagementTest(unittest.TestCase):
         self.assertRaises(
             DocumentUpdateError,
             self.col.update_document,
-            {
-                "_key": "test_doc",
-                "_rev": "wrong_revision",
-                "value": 2
-            },
+            "test_doc",
+            {"_rev": "wrong_revision", "value": 2},
         )
-        self.col.update_document({
-            "_key": "test_doc",
-            "_rev": rev,
-            "new_value": 2
-        })
+        self.col.update_document(
+            "test_doc",
+            {"_rev": rev, "new_value": 2}
+        )
         self.assertEqual(self.col["test_doc"]["value"], 1)
         self.assertEqual(self.col["test_doc"]["new_value"], 2)
 
