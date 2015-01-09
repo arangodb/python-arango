@@ -326,6 +326,10 @@ class TransactionExecuteError(ArangoRequestError):
 # Batches #
 ###########
 
+class BatchInvalidError(Exception):
+    """The Batch request is malformed."""
+
+
 class BatchExecuteError(ArangoRequestError):
     """Failed to execute a batch request."""
 
@@ -334,7 +338,7 @@ class BatchExecuteError(ArangoRequestError):
 ##########
 
 class GraphNotFoundError(ArangoNotFoundError):
-    """Failed to find the grpah."""
+    """Failed to find the graph."""
 
 
 class GraphListError(ArangoRequestError):

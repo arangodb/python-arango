@@ -1,14 +1,14 @@
 """ArangoDB Database."""
 
 from arango.utils import uncamelify
-from arango.batch import Batch
+from arango.batch import BatchHandler
 from arango.graph import Graph
 from arango.collection import Collection
 from arango.exceptions import *
 from arango.cursor import CursorFactory
 
 
-class Database(CursorFactory):
+class Database(CursorFactory, BatchHandler):
     """A wrapper around database specific API.
 
     :param name: the name of this database
@@ -23,7 +23,6 @@ class Database(CursorFactory):
         self._api = api
         self._collection_cache = {}
         self._graph_cache = {}
-        self.batch = Batch(self._api)
 
     def _update_collection_cache(self):
         """Invalidate the collection cache."""

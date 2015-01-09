@@ -372,7 +372,7 @@ class Collection(CursorFactory):
             raise DocumentGetError(res)
         return res.obj
 
-    def add_document(self, data, wait_for_sync=False):
+    def add_document(self, data, wait_for_sync=False, batch=False):
         """Add the new document to this collection.
 
         If ``data`` contains the ``_key`` key, its value must be free.
@@ -402,12 +402,16 @@ class Collection(CursorFactory):
             params["from"] = data["_from"]
         if "_to" in data:
             params["to"] = data["_to"]
+        path = "/_api/{}".format(self._type)
 
-        res = self._api.post(
-            "/_api/{}".format(self._type),
-            data=data,
-            params=params
-        )
+        if batch:
+            return {
+                "method": "post",
+                "path": path,
+                "params": params,
+                "data": data
+            }
+        res = self._api.post(path=path, data=data, params=params)
         if res.status_code not in {201, 202}:
             raise DocumentAddError(res)
         del res.obj["error"]

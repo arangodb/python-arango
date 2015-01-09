@@ -1,29 +1,44 @@
-import logging
-import json
 import re
+import json
+import logging
+import inspect
 
 from arango.exceptions import (
+    BatchInvalidError,
     BatchExecuteError
 )
 
 
-class Batch(object):
+class BatchHandler(object):
 
-    def __init__(self, client):
-        self._client = client
+    def __init__(self, api):
+        self._api = api
 
-    def execute(self, parts):
+    def execute_batch(self, requests):
         data = ""
-        part_id = 1
-        for part in parts:
+        for content_id, request in enumerate(requests, start=1):
+            try:
+                func, args, kwargs = request
+                argspec = inspect.getargspec(func)[0]
+            except TypeError, ValueError:
+                raise BatchInvalidError(
+                    "malformed request at pos {}".format(content_id)
+                )
+            if "batch" not in inspect.getargspec(func)[0]:
+                raise BatchInvalidError(
+                    "ArangoDB method '{}' (at pos {}) does not support "
+                    "batch execution".format(func.__name__, content_id)
+                )
+            kwargs["batch"] = True
+            res = func(*args, **kwargs)
             data += "--XXXsubpartXXX\r\n"
             data += "Content-Type: application/x-arango-batchpart\r\n"
-            data += "Content-Id: {}\r\n\r\n".format(part_id)
-            data += "{}\r\n".format(stringify_request(**part))
-            part_id += 1
+            data += "Content-Id: {}\r\n\r\n".format(content_id)
+            data += "{}\r\n".format(stringify_request(**res))
         data += "--XXXsubpartXXX--\r\n\r\n"
+        print data
 
-        res = self._client.post(
+        res = self._api.post(
             "/_api/batch",
             headers={
               "Content-Type": "multipart/form-data; boundary=XXXsubpartXXX"
@@ -38,8 +53,15 @@ class Batch(object):
         #part_resps = resp_body.split("--{}{}".format(self.MIME_BOUNDARY, EOL))[1:]
 
 
-def stringify_request(method, path, headers=None, data=None):
-    request_string = "{} {} HTTP/1.1".format(method, path)
+def stringify_request(method, path, params=None, headers=None, data=None):
+    if params:
+        query = []
+        for k, v in params.items():
+            if not isinstance(v, basestring):
+                v = json.dumps(v)
+            query.append("{}={}".format(k, v))
+        path += "?" + "&".join(query)
+    request_string = "{} {} HTTP/1.1".format(method.upper(), path)
     if headers:
         for key, value in headers.iteritems():
             request_string += "\r\n{key}: {value}".format(

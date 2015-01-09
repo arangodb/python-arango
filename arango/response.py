@@ -15,4 +15,7 @@ class ArangoResponse(object):
     def __init__(self, status_code, text=""):
         self.status_code = status_code
         self.text = text
-        self.obj = json.loads(text) if text else None
+        try:
+            self.obj = json.loads(text) if text else None
+        except ValueError:
+            self.obj = text
