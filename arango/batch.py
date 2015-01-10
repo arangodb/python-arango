@@ -22,11 +22,11 @@ class BatchHandler(object):
                 argspec = inspect.getargspec(func)[0]
             except TypeError, ValueError:
                 raise BatchInvalidError(
-                    "malformed request at pos {}".format(content_id)
+                    "pos {}: malformed request".format(content_id)
                 )
             if "batch" not in inspect.getargspec(func)[0]:
                 raise BatchInvalidError(
-                    "ArangoDB method '{}' (at pos {}) does not support "
+                    "pos {}: ArangoDB method '{}' does not support "
                     "batch execution".format(func.__name__, content_id)
                 )
             kwargs["batch"] = True
@@ -36,8 +36,6 @@ class BatchHandler(object):
             data += "Content-Id: {}\r\n\r\n".format(content_id)
             data += "{}\r\n".format(stringify_request(**res))
         data += "--XXXsubpartXXX--\r\n\r\n"
-        print data
-
         res = self._api.post(
             "/_api/batch",
             headers={
@@ -47,11 +45,11 @@ class BatchHandler(object):
         )
         if res.status_code != 200:
             raise BatchExecuteError(res)
-        return res.obj
 
-        #resp_body = resp.text.split("--{}--".format(self.MIME_BOUNDARY))[0]
-        #part_resps = resp_body.split("--{}{}".format(self.MIME_BOUNDARY, EOL))[1:]
-
+        return [
+            json.loads(string) for string in res.obj.split("\r\n") if
+            string.startswith("{") and string.endswith("}")
+        ]
 
 def stringify_request(method, path, params=None, headers=None, data=None):
     if params:

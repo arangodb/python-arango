@@ -13,17 +13,10 @@ from arango.tests.utils import (
 
 class DocumentManagementTest(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.arango = Arango()
-        cls.db_name = get_next_db_name(cls.arango)
-        cls.db = cls.arango.add_database(cls.db_name)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.arango.remove_database(cls.db_name)
-
     def setUp(self):
+        self.arango = Arango()
+        self.db_name = get_next_db_name(self.arango)
+        self.db = self.arango.add_database(self.db_name)
         self.col_name = get_next_col_name(self.arango)
         self.col = self.arango.add_collection(self.col_name)
         self.col.add_geo_index(["coord"])
@@ -31,7 +24,7 @@ class DocumentManagementTest(unittest.TestCase):
         self.col.add_fulltext_index(["text"])
 
     def tearDown(self):
-        self.arango.remove_collection(self.col_name)
+        self.arango.remove_database(self.db_name)
 
     def test_add_document(self):
         self.assertEqual(len(self.col), 0)

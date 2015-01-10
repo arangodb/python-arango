@@ -2,7 +2,9 @@
 
 import unittest
 from arango import Arango
-
+from arango.tests.utils import (
+    get_next_db_name
+)
 
 class DatabaseManagementTest(unittest.TestCase):
 
@@ -13,13 +15,7 @@ class DatabaseManagementTest(unittest.TestCase):
         self.arango = None
 
     def test_database_add_and_remove(self):
-        dbs = self.arango.databases["all"]
-
-        # Add a new test database
-        db_num = 0
-        while "db_{}".format(db_num) in dbs:
-            db_num += 1
-        db_name = "db_{}".format(db_num)
+        db_name = get_next_db_name(self.arango)
         self.arango.add_database(db_name)
         self.assertIn(db_name, self.arango.databases["all"])
 
