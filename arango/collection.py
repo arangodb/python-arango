@@ -2,7 +2,7 @@
 
 import json
 
-from arango.utils import camelify, uncamelify
+from arango.utils import camelify, uncamelify, filter_keys
 from arango.exceptions import *
 from arango.cursor import CursorFactory
 
@@ -372,7 +372,7 @@ class Collection(CursorFactory):
             raise DocumentGetError(res)
         return res.obj
 
-    def add_document(self, data, wait_for_sync=False, batch=False):
+    def add_document(self, data, wait_for_sync=False, _batch=False):
         """Add the new document to this collection.
 
         If ``data`` contains the ``_key`` key, its value must be free.
@@ -383,6 +383,7 @@ class Collection(CursorFactory):
         :type data: dict
         :param wait_for_sync: wait for add to sync to disk
         :type wait_for_sync: bool
+        :param
         :returns: the id, rev and key of the new document
         :rtype: bool
         :raises: DocumentInvalidError, DocumentAddError
@@ -403,22 +404,21 @@ class Collection(CursorFactory):
         if "_to" in data:
             params["to"] = data["_to"]
         path = "/_api/{}".format(self._type)
-
-        if batch:
+        finish = lambda obj: filter_keys(obj, ["error"])
+        if _batch:
             return {
                 "method": "post",
                 "path": path,
+                "data": data,
                 "params": params,
-                "data": data
             }
         res = self._api.post(path=path, data=data, params=params)
         if res.status_code not in {201, 202}:
             raise DocumentAddError(res)
-        del res.obj["error"]
         return res.obj
 
     def update_document(self, key, data, rev=None, keep_none=True,
-                        wait_for_sync=False):
+                        wait_for_sync=False, _batch=False):
         """Update the specified document in this collection.
 
         If ``keep_none`` is set to True, then attributes with values None
@@ -457,6 +457,15 @@ class Collection(CursorFactory):
         elif "_rev" in data:
             params["rev"] = data["_rev"]
             params["policy"] = "error"
+        path = "/_api/{}/{}/{}".format(self._type, self.name, key)
+        finish = lambda obj: filter_keys(obj, ["error"])
+        if _batch:
+            return {
+                "method": "post",
+                "path": path,
+                "data": data,
+                "params": params,
+            }
         res = self._api.patch(
             "/_api/{}/{}/{}".format(self._type, self.name, key),
             data=data,
@@ -467,7 +476,7 @@ class Collection(CursorFactory):
         if res.status_code not in {201, 202}:
             raise DocumentUpdateError(res)
         del res.obj["error"]
-        return res.obj
+        return finish(res.obj)
 
     def replace_document(self, key, data, rev=None, wait_for_sync=False):
         """Replace the specified document in this collection.

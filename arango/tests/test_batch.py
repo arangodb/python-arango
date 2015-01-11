@@ -28,9 +28,6 @@ class BatchRequestTest(unittest.TestCase):
         print res
 
     def test_batch_replace(self):
-        res = self.db.execute_batch([
-
-        ])
         pass
 
     def test_batch_update(self):

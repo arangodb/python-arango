@@ -1,4 +1,5 @@
 
+# TODO Future implementation to replace the hacky _batch arguments
 class ArangoRequest(object):
 
     def __init__(self, api):

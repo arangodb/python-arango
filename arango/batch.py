@@ -2,6 +2,7 @@ import re
 import json
 import logging
 import inspect
+from urllib import urlencode
 
 from arango.exceptions import (
     BatchInvalidError,
@@ -24,12 +25,12 @@ class BatchHandler(object):
                 raise BatchInvalidError(
                     "pos {}: malformed request".format(content_id)
                 )
-            if "batch" not in inspect.getargspec(func)[0]:
+            if "_batch" not in inspect.getargspec(func)[0]:
                 raise BatchInvalidError(
                     "pos {}: ArangoDB method '{}' does not support "
                     "batch execution".format(func.__name__, content_id)
                 )
-            kwargs["batch"] = True
+            kwargs["_batch"] = True
             res = func(*args, **kwargs)
             data += "--XXXsubpartXXX\r\n"
             data += "Content-Type: application/x-arango-batchpart\r\n"
@@ -45,21 +46,14 @@ class BatchHandler(object):
         )
         if res.status_code != 200:
             raise BatchExecuteError(res)
-
         return [
             json.loads(string) for string in res.obj.split("\r\n") if
             string.startswith("{") and string.endswith("}")
         ]
 
 def stringify_request(method, path, params=None, headers=None, data=None):
-    if params:
-        query = []
-        for k, v in params.items():
-            if not isinstance(v, basestring):
-                v = json.dumps(v)
-            query.append("{}={}".format(k, v))
-        path += "?" + "&".join(query)
-    request_string = "{} {} HTTP/1.1".format(method.upper(), path)
+    path = path + "?" + urlencode(params) if params else path
+    request_string = "{} {} HTTP/1.1".format(method, path)
     if headers:
         for key, value in headers.iteritems():
             request_string += "\r\n{key}: {value}".format(
