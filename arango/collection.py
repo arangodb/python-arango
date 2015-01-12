@@ -395,6 +395,7 @@ class Collection(CursorFactory):
             if "_from" not in data:
                 raise DocumentInvalidError(
                     "the new document data is missing the '_from' key")
+        path = "/_api/{}".format(self._type)
         params = {
             "collection": self.name,
             "waitForSync": wait_for_sync,
@@ -403,8 +404,6 @@ class Collection(CursorFactory):
             params["from"] = data["_from"]
         if "_to" in data:
             params["to"] = data["_to"]
-        path = "/_api/{}".format(self._type)
-        finish = lambda obj: filter_keys(obj, ["error"])
         if _batch:
             return {
                 "method": "post",
@@ -447,6 +446,7 @@ class Collection(CursorFactory):
         :rtype: dict
         :raises: DocumentUpdateError
         """
+        path = "/_api/{}/{}/{}".format(self._type, self.name, key)
         params = {
             "waitForSync": wait_for_sync,
             "keepNull": keep_none
@@ -457,7 +457,6 @@ class Collection(CursorFactory):
         elif "_rev" in data:
             params["rev"] = data["_rev"]
             params["policy"] = "error"
-        path = "/_api/{}/{}/{}".format(self._type, self.name, key)
         if _batch:
             return {
                 "method": "patch",

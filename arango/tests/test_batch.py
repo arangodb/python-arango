@@ -72,6 +72,29 @@ class BatchRequestTest(unittest.TestCase):
         ])
         self.assertEqual(len(self.col), 0)
 
+    def test_batch_vertex_add(self):
+        pass
+
+    def test_batch_vertex_replace(self):
+        pass
+
+    def test_batch_vertex_update(self):
+        pass
+
+    def test_batch_vertex_remove(self):
+        pass
+
+    def test_batch_edge_add(self):
+        pass
+
+    def test_batch_edge_replace(self):
+        pass
+
+    def test_batch_edge_update(self):
+        pass
+
+    def test_batch_edge_remove(self):
+        pass
 
 if __name__ == "__main__":
     unittest.main()

@@ -238,7 +238,8 @@ class Graph(object):
             raise VertexGetError(res)
         return res.obj["vertex"]
 
-    def add_vertex(self, collection, data, wait_for_sync=False):
+    def add_vertex(self, collection, data, wait_for_sync=False,
+                   _batch=False):
         """Add a vertex to the specified vertex collection if this graph.
 
         If ``data`` contains the ``_key`` key, its value must be unused
@@ -254,19 +255,22 @@ class Graph(object):
         :rtype: dict
         :raises: VertexAddError
         """
-        res = self._api.post(
-            "/_api/gharial/{}/vertex/{}".format(
-                self.name, collection
-            ),
-            params={"waitForSync": wait_for_sync},
-            data=data
-        )
+        path = "/_api/gharial/{}/vertex/{}".format(self.name, collection)
+        params = {"waitForSync": wait_for_sync}
+        if _batch:
+            return {
+                "method": "post",
+                "path": path,
+                "data": data,
+                "params": params,
+            }
+        res = self._api.post(path=path, data=data, params=params)
         if res.status_code not in {201, 202}:
             raise VertexAddError(res)
         return res.obj["vertex"]
 
     def update_vertex(self, vertex_id, data, rev=None, keep_none=True,
-                      wait_for_sync=False):
+                      wait_for_sync=False, _batch=False):
         """Update a vertex of the specified ID in this graph.
 
         If ``keep_none`` is set to True, then attributes with values None
@@ -292,6 +296,7 @@ class Graph(object):
         :rtype: dict
         :raises: RevisionMismatchError, VertexUpdateError
         """
+        path = "/_api/gharial/{}/vertex/{}".format(self.name, vertex_id)
         params = {
             "waitForSync": wait_for_sync,
             "keepNull": keep_none
@@ -300,18 +305,22 @@ class Graph(object):
             params["rev"] = rev
         elif "_rev" in data:
             params["rev"] = data["_rev"]
-        res = self._api.patch(
-            "/_api/gharial/{}/vertex/{}".format(self.name, vertex_id),
-            params=params,
-            data=data
-        )
+        if _batch:
+            return {
+                "method": "patch",
+                "path": path,
+                "data": data,
+                "params": params,
+            }
+        res = self._api.patch(path=path, data=data, params=params)
         if res.status_code == 412:
             raise RevisionMismatchError(res)
         elif res.status_code not in {200, 202}:
             raise VertexUpdateError(res)
         return res.obj["vertex"]
 
-    def replace_vertex(self, vertex_id, data, rev=None, wait_for_sync=False):
+    def replace_vertex(self, vertex_id, data, rev=None, wait_for_sync=False,
+                       _batch=False):
         """Replace a vertex of the specified ID in this graph.
 
         If ``data`` contains the ``_key`` key, it is ignored.
@@ -332,23 +341,28 @@ class Graph(object):
         :rtype: dict
         :raises: RevisionMismatchError, VertexReplaceError
         """
+        path = "/_api/gharial/{}/vertex/{}".format(self.name, vertex_id)
         params = {"waitForSync": wait_for_sync}
         if rev is not None:
             params["rev"] = rev
         if "_rev" in data:
             params["rev"] = data["_rev"]
-        res = self._api.put(
-            "/_api/gharial/{}/vertex/{}".format(self.name, vertex_id),
-            params=params,
-            data=data
-        )
+        if _batch:
+            return {
+                "method": "put",
+                "path": path,
+                "data": data,
+                "params": params,
+            }
+        res = self._api.put(path=path, params=params, data=data)
         if res.status_code == 412:
             raise RevisionMismatchError(res)
         elif res.status_code not in {200, 202}:
             raise VertexReplaceError(res)
         return res.obj["vertex"]
 
-    def remove_vertex(self, vertex_id, rev=None, wait_for_sync=False):
+    def remove_vertex(self, vertex_id, rev=None, wait_for_sync=False,
+                      _batch=False):
         """Remove the vertex of the specified ID from this graph.
 
         :param vertex_id: the ID of the vertex to be removed
@@ -357,13 +371,18 @@ class Graph(object):
         :type rev: str or None
         :raises: RevisionMismatchError, VertexRemoveError
         """
+        path = "/_api/gharial/{}/vertex/{}".format(self.name, vertex_id)
         params={"waitForSync": wait_for_sync}
         if rev is not None:
             params["rev"] = rev
-        res = self._api.delete(
-            "/_api/gharial/{}/vertex/{}".format(self.name, vertex_id),
-            params=params
-        )
+        if _batch:
+            return {
+                "method": "delete",
+                "path": path,
+                "data": data,
+                "params": params,
+            }
+        res = self._api.delete(path=path, params=params)
         if res.status_code == 412:
             raise RevisionMismatchError(res)
         if res.status_code not in {200, 202}:
@@ -399,7 +418,7 @@ class Graph(object):
             raise EdgeGetError(res)
         return res.obj["edge"]
 
-    def add_edge(self, collection, data, wait_for_sync=False):
+    def add_edge(self, collection, data, wait_for_sync=False, _batch=False):
         """Add an edge to the specified edge collection of this graph.
 
         The ``data`` must contain ``_from`` and ``_to`` keys with valid
@@ -422,19 +441,22 @@ class Graph(object):
         if "_from" not in data:
             raise DocumentInvalidError(
                 "the new edge data is missing the '_from' key")
-        res = self._api.post(
-            "/_api/gharial/{}/edge/{}".format(
-                self.name, collection
-            ),
-            params={"waitForSync": wait_for_sync},
-            data=data
-        )
+        path = "/_api/gharial/{}/edge/{}".format(self.name, collection)
+        params = {"waitForSync": wait_for_sync}
+        if _batch:
+            return {
+                "method": "post",
+                "path": path,
+                "data": data,
+                "params": params,
+            }
+        res = self._api.post(path=path, data=data, params=params)
         if res.status_code not in {201, 202}:
             raise EdgeAddError(res)
         return res.obj["edge"]
 
     def update_edge(self, edge_id, data, rev=None, keep_none=True,
-                    wait_for_sync=False):
+                    wait_for_sync=False, _batch=False):
         """Update the edge of the specified ID in this graph.
 
         If ``keep_none`` is set to True, then attributes with values None
@@ -463,6 +485,7 @@ class Graph(object):
         :rtype: dict
         :raises: RevisionMismatchError, EdgeUpdateError
         """
+        path = "/_api/gharial/{}/edge/{}".format(self.name, edge_id)
         params = {
             "waitForSync": wait_for_sync,
             "keepNull": keep_none
@@ -471,18 +494,22 @@ class Graph(object):
             params["rev"] = rev
         elif "_rev" in data:
             params["rev"] = data["_rev"]
-        res = self._api.patch(
-            "/_api/gharial/{}/edge/{}".format(self.name, edge_id),
-            params=params,
-            data=data
-        )
+        if _batch:
+            return {
+                "method": "patch",
+                "path": path,
+                "data": data,
+                "params": params,
+            }
+        res = self._api.patch(path=path, data=data, params=params)
         if res.status_code == 412:
             raise RevisionMismatchError(res)
         elif res.status_code not in {200, 202}:
             raise EdgeUpdateError(res)
         return res.obj["edge"]
 
-    def replace_edge(self, edge_id, data, rev=None, wait_for_sync=False):
+    def replace_edge(self, edge_id, data, rev=None, wait_for_sync=False,
+                     _batch=False):
         """Replace the edge of the specified ID in this graph.
 
         If ``data`` contains the ``_key`` key, it is ignored.
@@ -506,23 +533,28 @@ class Graph(object):
         :rtype: dict
         :raises: RevisionMismatchError, EdgeReplaceError
         """
+        path = "/_api/gharial/{}/edge/{}".format(self.name, edge_id)
         params = {"waitForSync": wait_for_sync}
         if rev is not None:
             params["rev"] = rev
         elif "_rev" in data:
             params["rev"] = data["_rev"]
-        res = self._api.put(
-            "/_api/gharial/{}/edge/{}".format(self.name, edge_id),
-            params=params,
-            data=data
-        )
+        if _batch:
+            return {
+                "method": "put",
+                "path": path,
+                "data": data,
+                "params": params,
+            }
+        res = self._api.put(path=path, params=params, data=data)
         if res.status_code == 412:
             raise RevisionMismatchError(res)
         elif res.status_code not in {200, 202}:
             raise EdgeReplaceError(res)
         return res.obj["edge"]
 
-    def remove_edge(self, edge_id, rev=None, wait_for_sync=False):
+    def remove_edge(self, edge_id, rev=None, wait_for_sync=False,
+                    _batch=False):
         """Remove the edge of the specified ID from this graph.
 
         :param edge_id: the ID of the edge to be removed
@@ -531,13 +563,17 @@ class Graph(object):
         :type rev: str or None
         :raises: RevisionMismatchError, EdgeRemoveError
         """
+        path = "/_api/gharial/{}/edge/{}".format(self.name, edge_id)
         params = {"waitForSync": wait_for_sync}
+        if _batch:
+            return {
+                "method": "delete",
+                "path": path,
+                "params": params,
+            }
         if rev is not None:
             params["rev"] = rev
-        res = self._api.delete(
-            "/_api/gharial/{}/edge/{}".format(self.name, edge_id),
-            params=params
-        )
+        res = self._api.delete(path=path, params=params)
         if res.status_code == 412:
             raise RevisionMismatchError(res)
         elif res.status_code not in {200, 202}:
