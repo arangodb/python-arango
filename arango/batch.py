@@ -28,7 +28,7 @@ class BatchHandler(object):
             if "_batch" not in inspect.getargspec(func)[0]:
                 raise BatchInvalidError(
                     "pos {}: ArangoDB method '{}' does not support "
-                    "batch execution".format(func.__name__, content_id)
+                    "batch execution".format(content_id , func.__name__)
                 )
             kwargs["_batch"] = True
             res = func(*args, **kwargs)
@@ -50,6 +50,7 @@ class BatchHandler(object):
             json.loads(string) for string in res.obj.split("\r\n") if
             string.startswith("{") and string.endswith("}")
         ]
+
 
 def stringify_request(method, path, params=None, headers=None, data=None):
     path = path + "?" + urlencode(params) if params else path

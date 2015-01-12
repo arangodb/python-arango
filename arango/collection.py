@@ -458,27 +458,23 @@ class Collection(CursorFactory):
             params["rev"] = data["_rev"]
             params["policy"] = "error"
         path = "/_api/{}/{}/{}".format(self._type, self.name, key)
-        finish = lambda obj: filter_keys(obj, ["error"])
         if _batch:
             return {
-                "method": "post",
+                "method": "patch",
                 "path": path,
                 "data": data,
                 "params": params,
             }
-        res = self._api.patch(
-            "/_api/{}/{}/{}".format(self._type, self.name, key),
-            data=data,
-            params=params
-        )
+        res = self._api.patch(path=path, data=data, params=params)
         if res.status_code == 412:
             raise RevisionMismatchError(res)
         if res.status_code not in {201, 202}:
             raise DocumentUpdateError(res)
         del res.obj["error"]
-        return finish(res.obj)
+        return res.obj
 
-    def replace_document(self, key, data, rev=None, wait_for_sync=False):
+    def replace_document(self, key, data, rev=None, wait_for_sync=False,
+                         _batch=False):
         """Replace the specified document in this collection.
 
         If ``data`` contains the ``_key`` key, it is ignored.
@@ -509,11 +505,15 @@ class Collection(CursorFactory):
         elif "_rev" in data:
             params["rev"] = data["_rev"]
             params["policy"] = "error"
-        res = self._api.put(
-            "/_api/{}/{}/{}".format(self._type, self.name, key),
-            params=params,
-            data=data
-        )
+        path = "/_api/{}/{}/{}".format(self._type, self.name, key)
+        if _batch:
+            return {
+                "method": "put",
+                "path": path,
+                "data": data,
+                "params": params,
+            }
+        res = self._api.put(path=path, params=params, data=data)
         if res.status_code == 412:
             raise RevisionMismatchError(res)
         elif res.status_code not in {201, 202}:
@@ -521,7 +521,8 @@ class Collection(CursorFactory):
         del res.obj["error"]
         return res.obj
 
-    def remove_document(self, key, rev=None, wait_for_sync=False):
+    def remove_document(self, key, rev=None, wait_for_sync=False,
+                        _batch=False):
         """Remove the specified document from this collection.
 
         :param key: the key of the document to be removed
@@ -538,10 +539,14 @@ class Collection(CursorFactory):
         if rev is not None:
             params["rev"] = rev
             params["policy"] = "error"
-        res = self._api.delete(
-            "/_api/{}/{}/{}".format(self._type, self.name, key),
-            params=params
-        )
+        path = "/_api/{}/{}/{}".format(self._type, self.name, key)
+        if _batch:
+            return {
+                "method": "delete",
+                "path": path,
+                "params": params
+            }
+        res = self._api.delete(path=path, params=params)
         if res.status_code == 412:
             raise RevisionMismatchError(res)
         elif res.status_code not in {200, 202}:
