@@ -59,10 +59,10 @@ my_db.remove_aql_function("myfunctions::temperature::ctof")
 ## AQL Queries
 ```python
 # Retrieve the execution plan without executing it
-my_db.explain_query("FOR doc IN my_col doc")
+my_db.explain_query("FOR doc IN my_col RETURN doc")
 
 # Validate the AQL query without executing it
-my_db.validate_query("FOR doc IN my_col doc")
+my_db.validate_query("FOR doc IN my_col RETURN doc")
 
 # Execute the AQL query and iterate through the AQL cursor
 cursor = my_db.execute_query(
