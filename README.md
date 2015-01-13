@@ -1,4 +1,4 @@
-python-arango
+py-arango
 =============
 [![Build Status](https://travis-ci.org/Joowani/python-arango.svg?branch=master)](https://travis-ci.org/Joowani/python-arango)
 
@@ -6,7 +6,7 @@ Driver for ArangoDB REST API
 
 ## Overview
 
-python-arango is a driver for ArangoDB (https://www.arangodb.com/) REST API
+py-arango is a driver for ArangoDB (https://www.arangodb.com/) REST API
 
 ## Installation (will also be in PyPi soon)
 
