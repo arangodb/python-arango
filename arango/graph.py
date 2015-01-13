@@ -379,7 +379,6 @@ class Graph(object):
             return {
                 "method": "delete",
                 "path": path,
-                "data": data,
                 "params": params,
             }
         res = self._api.delete(path=path, params=params)

@@ -12,17 +12,10 @@ from arango.tests.utils import (
 
 class VertexManagementTest(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.arango = Arango()
-        cls.db_name = get_next_db_name(cls.arango)
-        cls.db = cls.arango.add_database(cls.db_name)
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.arango.remove_database(cls.db_name)
-
     def setUp(self):
+        self.arango = Arango()
+        self.db_name = get_next_db_name(self.arango)
+        self.db = self.arango.add_database(self.db_name)
         self.col_name = get_next_col_name(self.db)
         self.col = self.db.add_collection(self.col_name)
         # Create the vertex collection
@@ -30,7 +23,9 @@ class VertexManagementTest(unittest.TestCase):
         self.vertex_col = self.db.add_collection(self.vertex_col_name)
         # Create the edge collection
         self.edge_col_name = get_next_col_name(self.db)
-        self.edge_col = self.db.add_collection(self.edge_col_name, is_edge=True)
+        self.edge_col = self.db.add_collection(
+            self.edge_col_name, is_edge=True
+        )
         # Create the graph
         self.graph_name = get_next_graph_name(self.db)
         self.graph = self.db.add_graph(
@@ -43,9 +38,7 @@ class VertexManagementTest(unittest.TestCase):
         )
 
     def tearDown(self):
-        self.db.remove_graph(self.graph_name)
-        self.db.remove_collection(self.vertex_col_name)
-        self.db.remove_collection(self.edge_col_name)
+        self.arango.remove_database(cls.db_name)
 
     def test_add_vertex(self):
         self.graph.add_vertex(
