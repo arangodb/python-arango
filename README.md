@@ -1,6 +1,7 @@
 py-arango
 =============
 [![Build Status](https://travis-ci.org/Joowani/py-arango.svg?branch=master)](https://travis-ci.org/Joowani/py-arango)
+[![Documentation Status](https://readthedocs.org/projects/py-arango/badge/?version=latest)](https://readthedocs.org/projects/py-arango/?badge=latest)
 
 Driver for ArangoDB REST API
 
