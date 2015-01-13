@@ -241,7 +241,7 @@ my_graph.orphan_collections
 ```
 
 
-## Vertice
+## Vertices
 ```python
 # Add new vertices
 my_graph.add_vertex("vcol01", {"_key": "v01", "value": 1})
@@ -280,7 +280,7 @@ my_graph.update_edge("ecol01/e01", {"value": 3})
 my_graph.remove_edge("ecol01/e01")
 ```
 
-## Traversals
+## Graph Traversals
 ```python
 # Execute a graph traversal
 results = my_graph.execute_traversal(
