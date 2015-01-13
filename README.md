@@ -349,6 +349,26 @@ self.db.execute_batch([
 ])
 ```
 
+## Transactions
+```python
+# Execute a transaction
+action = """
+  function () {
+      var db = require('internal').db;
+      db.col01.save({ _key: 'doc01'});
+      db.col02.save({ _key: 'doc02'});
+      return 'success!';
+  }
+"""
+res = self.arango.execute_transaction(
+    action=action,
+    read_collections=["col01","col02"],
+    write_collections=["col01", "col02"],
+    wait_for_sync=True,
+    lock_timeout=10000
+)
+```
+
 ## Running System Tests (requires ArangoDB on localhost)
 ```bash
 nosetests
