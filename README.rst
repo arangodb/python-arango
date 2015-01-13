@@ -10,6 +10,12 @@ Overview
 
 py-arango is a driver for ArangoDB (https://www.arangodb.com/) REST API
 
+Documentation
+-------------
+
+http://py-arango.readthedocs.org/en/latest/
+
+
 Installation (will also be in PyPi soon)
 ----------------------------------------
 
