@@ -5,6 +5,7 @@
 
 Welcome to py-arango's documentation!
 =====================================
+.. include:: ../README.rst
 
 Contents:
 
