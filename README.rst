@@ -16,9 +16,15 @@ Documentation
 http://py-arango.readthedocs.org/en/latest/
 
 
-Installation (will also be in PyPi soon)
+Installation
 ----------------------------------------
+- Stable
 
+.. code:: bash
+
+    sudo pip install py-arango 
+
+- Latest
 .. code:: bash
 
     git clone https://github.com/Joowani/py-arango.git
