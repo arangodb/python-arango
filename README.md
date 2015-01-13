@@ -92,7 +92,7 @@ my_db.rename_collection("new_col", "my_col")
 # Remove a collection from the database
 my_db.remove_collection("my_col")
 
-# Retrieve collection information
+# Retrieve the collection information
 my_col = a.db("my_db").collection("my_col")
 len(my_col) == my_col.count
 my_col.properties
@@ -231,7 +231,7 @@ my_graph.add_edge_definition(
   to_vertex_collections=["vcol02"],
 )
 
-# Retrieve graph information
+# Retrieve the graph information
 my_graph.properties
 my_graph.id
 my_graph.revision
@@ -298,7 +298,7 @@ results.get("paths")
 
 ## Batch Requests 
 ```python
-# NOTE: only (add/update/replace/remove) methods (documents/vertices/edges) are supported at the moment
+# NOTE: only (add/update/replace/remove) methods for (documents/vertices/edges) are supported at the moment
 
 # Execute a batch documents request
 my_db.execute_batch([
