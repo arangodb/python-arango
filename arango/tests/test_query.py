@@ -77,6 +77,26 @@ class ArangoDBQueryTest(unittest.TestCase):
             ["doc01", "doc02", "doc03"]
         )
 
+    def test_execute_query_2(self):
+        collection = self.db.collection(self.col_name)
+        collection.bulk_import([
+            {"_key": "doc01", "value": 1},
+            {"_key": "doc02", "value": 2},
+            {"_key": "doc03", "value": 3},
+        ])
+        res = self.db.execute_query(
+            "FOR d IN {} FILTER d.value == @value RETURN d".format(
+                self.col_name
+            ),
+            bind_vars={
+                "value": 1
+            }
+        )
+        self.assertEqual(
+            sorted([doc["_key"] for doc in list(res)]),
+            ["doc01"]
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

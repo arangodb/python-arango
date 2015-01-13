@@ -38,7 +38,7 @@ class VertexManagementTest(unittest.TestCase):
         )
 
     def tearDown(self):
-        self.arango.remove_database(cls.db_name)
+        self.arango.remove_database(self.db_name)
 
     def test_add_vertex(self):
         self.graph.add_vertex(
