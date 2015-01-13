@@ -92,7 +92,7 @@ my_db.rename_collection("new_col", "my_col")
 # Remove a collection from the database
 my_db.remove_collection("my_col")
 
-# Retrieve the collection information
+# Retrieve collection information
 my_col = a.db("my_db").collection("my_col")
 len(my_col) == my_col.count
 my_col.properties
@@ -131,7 +131,7 @@ my_col.contains("a_document_key")
 ```python
 my_col = a.collection("my_col")
 
-# List all the indexes in collection "my_col"
+# List the indexes in collection "my_col"
 my_col.indexes
 
 # Add a unique hash index attributes "attr1" and "attr2"
@@ -231,7 +231,7 @@ my_graph.add_edge_definition(
   to_vertex_collections=["vcol02"],
 )
 
-# Retrieve the graph information
+# Retrieve graph information
 my_graph.properties
 my_graph.id
 my_graph.revision
@@ -289,10 +289,10 @@ results = my_graph.execute_traversal(
   strategy="depthfirst"
 )
 
-# Get the visited nodes in order
+# Return the visited nodes in order
 results.get("visited")
 
-# Get the paths traversed
+# Return the paths traversed in order
 results.get("paths")
 ```
 
@@ -300,7 +300,7 @@ results.get("paths")
 ```python
 # NOTE: only (add/update/replace/remove) methods for (documents/vertices/edges) are supported at the moment
 
-# Execute a batch documents request
+# Execute a batch request for managing documents
 my_db.execute_batch([
     (
         my_col.add_document,                # method name
@@ -329,7 +329,7 @@ my_db.execute_batch([
     ),
 ])
 
-# Execute a batch vertex requests
+# Execute a batch request for managing vertexes
 self.db.execute_batch([
     (
         my_graph.add_vertex,
@@ -362,7 +362,7 @@ action = """
 """
 res = my_db.execute_transaction(
     action=action,
-    read_collections=["col01","col02"],
+    read_collections=["col01", "col02"],
     write_collections=["col01", "col02"],
     wait_for_sync=True,
     lock_timeout=10000
@@ -379,7 +379,7 @@ res = my_db.execute_transaction(
 7. Misc. Functions
 8. General Handling
 
-## Running System Tests (requires ArangoDB on localhost)
+## Running Tests (requires ArangoDB on localhost)
 ```bash
 nosetests
 ```
