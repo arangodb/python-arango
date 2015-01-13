@@ -16,56 +16,75 @@ cd python-arango
 python2.7 setup.py install
 ```
 
-## Usage
-
+## Initializing ArangoDB Connection
 ```python
 from arango import Arango
 
 # Initialize ArangoDB connection
 a = Arango(host="localhost", port=8529)
+```
 
-# Getting the version of ArangoDB
-a.version
-
-# Getting the names of the databases
+## Databases
+```python
+# List the database names
 a.databases["user"]
 a.databases["system"]
 
-# Obtaining database information
-a.db("_system").name  # or just a.name (if db is not specified it defaults to "_system")
-a.db("animals").collections
-a.db("animals").id
-a.db("animals").path
-a.db("animals").is_system
+# Retrieve database information
+a.db("_system").name
+a.name  # if db is not specified default database "_system" is used
+a.db("db01").collections
+a.db("db02").id
+a.db("db03").path
+a.db("dbXX").is_system
+```
 
-# Managing AQL functions
+## AQL Functions
+```python
+my_db = a.db("my_db")
+# List the AQL functions that's defined in databse "my_db"
 my_db.aql_functions
+# Add a new AQL function
 my_db.add_aql_function(
-  "myfunctions::temperature::celsiustofahrenheit",
+  "myfunctions::temperature::ctof",
   "function (celsius) { return celsius * 1.8 + 32; }"
 )
-my_db.remove_aql_function("myfunctions::temperature::celsiustofahrenheit")
+# Remove a AQL function
+my_db.remove_aql_function("myfunctions::temperature::ctof")
+```
 
-# Queries
+## AQL Queries
+```python
+# Retrieve the execution plan without executing it
 my_db.explain_query("FOR doc IN my_col doc")
+# Validate the AQL query without executing it
 my_db.validate_query("FOR doc IN my_col doc")
+# Execute the AQL query and iterate through the AQL cursor
 cursor = my_db.execute_query(
   "FOR d IN my_col FILTER d.value == @val RETURN d",
   bind_vars={"val": "foobar"}
 )
-for doc in cursor:
+for doc in cursor:  # the cursor is deleted when the generator is exhausted
   print doc
+```
 
-# Managing collections
+## Collections
+```python
 my_db = a.db("my_db")
-my_db.collections  # list the collection names
+# List the collection names in "my_db"
+my_db.collections
+# Add a new collection
 my_db.add_collection("new_col")
+# Add a new edge collection
+my_db.add_collection("new_ecol", is_edge=True)
+# Rename a collection
 my_db.rename_collection("new_col", "my_col")
+# Remove a collection from the database
 my_db.remove_collection("my_col")
 
-# Retrieving collection information
-my_col = a.db("my_db").collection("my_col") # or a.db("my_db").col("my_col")
-len(my_col)  # or my_col.count
+# Retrieve collection information
+my_col = a.db("my_db").collection("my_col")
+len(my_col) == my_col.count
 my_col.properties
 my_col.id
 my_col.status
@@ -78,23 +97,49 @@ my_col.do_compact
 my_col.figures
 my_col.revision
 
-# Collection specific methods
+# Load the collection into memory
 my_col.load()
+# Unload the collection from memory
 my_col.unload()
+# Rotate the collection journal
 my_col.rotate_journal()
+# Return the checksum of the collection
 my_col.checksum()
+# Remove all documents in the collection
 my_col.truncate()
+# Check if a document exists in the collection
 my_col.contains("a_document_key")
+"a_document_key" in my_col
+```
 
-# Managing indexes of a particular collection
+## Indexes
+
+```python
+my_col = a.collection("my_col")
+
+# List all the indexes in collection "my_col"
 my_col.indexes
+
+# Add a unique hash index attributes "attr1" and "attr2"
 my_col.add_hash_index(fields=["attr1", "attr2"], unique=True)
+
+# Add a cap constraint
 my_col.add_cap_constraint(size=10, byte_size=40000)
+
+# Add a unique skiplist index on attributes "attr1" and "attr2"
 my_col.add_skiplist_index(["attr1", "attr2"], unique=True)
+
+# Examples of adding a geo-spatial index on 1 or 2 attributes
 my_col.add_geo_index(fields=["coordinates"])
 my_col.add_geo_index(fields=["longitude", "latitude"])
-my_col.add_fulltext_index(fields=["attr1"], min_length=10)
 
+# Add a fulltext index on attribute "attr1"
+my_col.add_fulltext_index(fields=["attr1"], min_length=10)
+```
+
+## Documents
+
+```python
 # Managing documents in a particular collection
 my_col = a.db("my_db").collection("my_col")
 my_col.get_document("doc01")
@@ -105,6 +150,7 @@ my_col.remove_document("doc01")
 for doc in my_col:
     new_value = doc["value"] + 1
     my_col.update_document(doc["_key"], {"new_value": new_value})
+```
 
 # Simple collection-specific queries
 my_col.first(5)                         # return the first 5 documents
@@ -123,9 +169,8 @@ my_col.near(latitude=100, longitude=20, radius=15)    # return all docs near (re
 # Managing Graphs
 my_db = a.db("my_db")
 my_db.graphs  # list all the graphs in the database
-my_db.add_graph("my_graph")
+my_graph = my_db.add_graph("my_graph")
 
-my_graph = my_db.graph("my_graph")
 # Adding vertex collections to a graph
 my_db.add_collection("vcol01")
 my_db.add_collection("vcol02")
@@ -177,7 +222,7 @@ results = my_graph.execute_traversal(
 results.get("visited")
 results.get("paths")
 
-# Batch Requests (only add, update, replace and remove methods supported)
+# Batch Requests (only add, update, replace and remove methods are supported atm)
 my_db.execute_batch([
     (
         my_col.add_document,                # method name

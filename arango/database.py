@@ -404,27 +404,41 @@ class Database(CursorFactory, BatchHandler):
     # Transactions #
     ################
 
-    def execute_transaction(self, collections=None, action=None):
+    # TODO deal with optional attribute "params"
+    def execute_transaction(self, action, read_collections=None,
+                            write_collections=None, wait_for_sync=False,
+                            lock_timeout=None):
         """Execute the transaction and return the result.
 
-        The ``collections`` dict can only have keys ``write`` or ``read``
-        with str or list as values. The values must be name(s) of collections
-        that exist in this database.
+        Setting the ``lock_timeout`` to 0 will make ArangoDB not time out
+        waiting for a lock.
 
-        :param collections: the collections read/modified
-        :type collections: dict
-        :param action: the ArangoDB commands (in javascript) to be executed
+        :param action: the javascript commands to be executed
         :type action: str
-        :returns: the result from executing the transaction
+        :param read_collections: the collections read
+        :type read_collections: str or list or None
+        :param write_collections: the collections written to
+        :type write_collections: str or list or None
+        :param wait_for_sync: wait for the transaction to sync to disk
+        :type wait_for_sync: bool
+        :param lock_timeout: timeout for waiting on collection locks
+        :type lock_timeout: int or None
+        :returns: the results of the execution
         :rtype: dict
         :raises: TransactionExecuteError
         """
-        data = {
-            collections: {} if collections is None else collections,
-            action: "" if action is None else ""
+        path = "/_api/transaction"
+        data = {"collections": {}, "action": action}
+        if read_collections is not None:
+            data["collections"]["read"] = read_collections
+        if write_collections is not None:
+            data["collections"]["write"] = write_collections
+        params = {
+            "waitForSync": wait_for_sync,
+            "lockTimeout": lock_timeout,
         }
-        res = self._api.post("/_api/transaction", data=data)
-        if res != 200:
+        res = self._api.post(path=path, data=data, params=params)
+        if res.status_code != 200:
             raise TransactionExecuteError(res)
         return res.obj["result"]
 
