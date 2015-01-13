@@ -383,9 +383,8 @@ class Collection(CursorFactory):
         :type data: dict
         :param wait_for_sync: wait for add to sync to disk
         :type wait_for_sync: bool
-        :param
         :returns: the id, rev and key of the new document
-        :rtype: bool
+        :rtype: dict
         :raises: DocumentInvalidError, DocumentAddError
         """
         if self._type is "edge":
