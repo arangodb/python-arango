@@ -176,7 +176,7 @@ for doc in my_col:
     my_col.update_document(doc["_key"], {"new_value": new_value})
 ```
 
-## Simple (Collection-Specific) Queries
+## Simple Queries (Collection-Specific) 
 ```python
 # Return the first 5 documents in collection "my_col"
 my_col.first(5)           
