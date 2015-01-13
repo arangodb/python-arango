@@ -27,23 +27,45 @@ a = Arango(host="localhost", port=8529)
 ## Databases
 ```python
 # List the database names
+a.databases
 a.databases["user"]
 a.databases["system"]
 
-# Retrieve database information
-a.db("_system").name
-a.name  # if db is not specified default database "_system" is used
+# Get information on the default database ("_system")
+a.name          # equivalent to a.db("_system").name
+a.collections   # equivalent to a.db("_system").collections
+a.id            # equivalent to a.db("_system").id
+a.path          # equivalent to a.db("_system").path
+a.is_system     # equivalent to a.db("_system").is_system
+
+# Get information on a specific database
 a.db("db01").collections
 a.db("db02").id
 a.db("db03").path
 a.db("dbXX").is_system
+
+# Create a new database
+a.add_database("my_db")
+
+# Remove a database
+a.remove_database("my_db")
+
+# Working with database "_system"
+a.add_collection("my_col")
+a.col("my_col").add_document({"value" : 1})
+a.{whatever}
+
+# Working with database "my_db"
+a.db("my_db").add_collection("my_col")
+a.db("my_db").col("my_col").add_document({"value": 1})
+a.db("my_db").{whatever}
 ```
 
 ## AQL Functions
 ```python
 my_db = a.db("my_db")
 
-# List the AQL functions that's defined in database "my_db"
+# List the AQL functions defined in database "my_db"
 my_db.aql_functions
 
 # Add a new AQL function
@@ -52,16 +74,16 @@ my_db.add_aql_function(
   "function (celsius) { return celsius * 1.8 + 32; }"
 )
 
-# Remove a AQL function
+# Remove an AQL function
 my_db.remove_aql_function("myfunctions::temperature::ctof")
 ```
 
 ## AQL Queries
 ```python
-# Retrieve the execution plan without executing it
+# Retrieve the execution plan without actually executing it
 my_db.explain_query("FOR doc IN my_col RETURN doc")
 
-# Validate the AQL query without executing it
+# Validate the AQL query without actually executing it
 my_db.validate_query("FOR doc IN my_col RETURN doc")
 
 # Execute the AQL query and iterate through the AQL cursor
@@ -79,6 +101,9 @@ my_db = a.db("my_db")
 
 # List the collection names in "my_db"
 my_db.collections
+my_db.collections["user"]
+my_db.collecitons["system"]
+my_db.collections["all"]
 
 # Add a new collection
 my_db.add_collection("new_col")
@@ -93,7 +118,7 @@ my_db.rename_collection("new_col", "my_col")
 my_db.remove_collection("my_col")
 
 # Retrieve collection information
-my_col = a.db("my_db").collection("my_col")
+my_col = a.db("my_db").col("my_col")
 len(my_col) == my_col.count
 my_col.properties
 my_col.id
@@ -107,6 +132,10 @@ my_col.do_compact
 my_col.figures
 my_col.revision
 
+# Modify collection properties (only the modifiable ones)
+my_col.wait_for_sync = False
+my_col.journal_size = new_journal_size
+
 # Load the collection into memory
 my_col.load()
 
@@ -117,7 +146,7 @@ my_col.unload()
 my_col.rotate_journal()
 
 # Return the checksum of the collection
-my_col.checksum()
+my_col.checksum(with_rev=True, with_data=True)
 
 # Remove all documents in the collection
 my_col.truncate()
@@ -129,12 +158,12 @@ my_col.contains("a_document_key")
 
 ## Indexes
 ```python
-my_col = a.collection("my_col")
+my_col = a.collection("my_col")  # or a.col("mycol")
 
 # List the indexes in collection "my_col"
 my_col.indexes
 
-# Add a unique hash index attributes "attr1" and "attr2"
+# Add a unique hash index on attributes "attr1" and "attr2"
 my_col.add_hash_index(fields=["attr1", "attr2"], unique=True)
 
 # Add a cap constraint
@@ -143,7 +172,7 @@ my_col.add_cap_constraint(size=10, byte_size=40000)
 # Add a unique skiplist index on attributes "attr1" and "attr2"
 my_col.add_skiplist_index(["attr1", "attr2"], unique=True)
 
-# Examples of adding a geo-spatial index on 1 or 2 attributes
+# Examples of adding a geo-spatial index on 1 (or 2) coordinate attributes
 my_col.add_geo_index(fields=["coordinates"])
 my_col.add_geo_index(fields=["longitude", "latitude"])
 
@@ -185,10 +214,11 @@ my_col.first(5)
 my_col.last(3)                          
 
 # Return all documents (cursor generator object)
-my_col.all()     
+my_col.all()
+list(my_col.all())
 
 # Return a random document
-my_col.any()        
+my_col.any()  
 
 # Return first document whose "value" is 1
 my_col.get_first_example({"value": 1})
@@ -198,11 +228,10 @@ my_col.get_by_example({"value": 1})
 
 # Update all documents whose "value" is 1 with a new attribute
 my_col.update_by_example(               
-  {"value": 1},
-  new_value={"new_attr": 1}
+  {"value": 1}, new_value={"new_attr": 1}
 )
 
-# Return all docs within a radius around a given coordinate (requires geo-index)
+# Return all documents within a radius around a given coordinate (requires geo-index)
 my_col.within(latitude=100, longitude=20, radius=15)
 
 # Return all documents near a given coordinate (requires geo-index)
@@ -212,8 +241,10 @@ my_col.near(latitude=100, longitude=20)
 ## Graphs
 ```python
 my_db = a.db("my_db")
+
 # List all the graphs in the database
-my_db.graphs  
+my_db.graphs
+
 # Add a new graph
 my_graph = my_db.add_graph("my_graph")
 
@@ -243,7 +274,7 @@ my_graph.orphan_collections
 
 ## Vertices
 ```python
-# Add new vertices
+# Add new vertices (again if "_key" is not given it's auto-generated)
 my_graph.add_vertex("vcol01", {"_key": "v01", "value": 1})
 my_graph.add_vertex("vcol02", {"_key": "v01", "value": 1})
 
@@ -261,20 +292,21 @@ my_graph.remove_vertex("vol01/v01")
 ```python
 # Add a new edge
 my_graph.add_edge(
-  "ecol01",
+  "ecol01",  # edge collection name
   {
     "_key": "e01",
     "_from": "vcol01/v01",  # must abide the edge definition
     "_to": "vcol02/v01",    # must abide the edge definition
-    "value": 1,
+    "foo": 1,
+    "bar": 2,
   }
 )
 
 # Replace an edge
-my_graph.replace_edge("ecol01/e01", {"new_value": 2})
+my_graph.replace_edge("ecol01/e01", {"baz": 2})
 
 # Update an edge
-my_graph.update_edge("ecol01/e01", {"value": 3})
+my_graph.update_edge("ecol01/e01", {"foo": 3})
 
 # Remove an edge
 my_graph.remove_edge("ecol01/e01")
@@ -282,6 +314,8 @@ my_graph.remove_edge("ecol01/e01")
 
 ## Graph Traversals
 ```python
+my_graph = a.db("my_db").graph("my_graph")
+
 # Execute a graph traversal
 results = my_graph.execute_traversal(
   start_vertex="vcol01/v01",
