@@ -360,7 +360,7 @@ action = """
       return 'success!';
   }
 """
-res = self.arango.execute_transaction(
+res = my_db.execute_transaction(
     action=action,
     read_collections=["col01","col02"],
     write_collections=["col01", "col02"],
@@ -368,6 +368,16 @@ res = self.arango.execute_transaction(
     lock_timeout=10000
 )
 ```
+
+## To Do
+1. Tasks
+2. Monitoring
+3. User Management
+4. Async Result
+5. Endpoints
+6. Sharding
+7. Misc. Functions
+8. General Handling
 
 ## Running System Tests (requires ArangoDB on localhost)
 ```bash
