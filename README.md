@@ -1,6 +1,6 @@
 py-arango
 =============
-[![Build Status](https://travis-ci.org/Joowani/python-arango.svg?branch=master)](https://travis-ci.org/Joowani/python-arango)
+[![Build Status](https://travis-ci.org/Joowani/py-arango.svg?branch=master)](https://travis-ci.org/Joowani/py-arango)
 
 Driver for ArangoDB REST API
 
@@ -11,8 +11,8 @@ py-arango is a driver for ArangoDB (https://www.arangodb.com/) REST API
 ## Installation (will also be in PyPi soon)
 
 ```bash
-git clone https://github.com/Joowani/python-arango.git
-cd python-arango
+git clone https://github.com/Joowani/py-arango.git
+cd py-arango
 python2.7 setup.py install
 ```
 
