@@ -8,7 +8,7 @@ Driver for ArangoDB REST API
 Overview
 --------
 
-py-arango is a driver for ArangoDB (https://www.arangodb.com/) REST API
+py-arango is a Python (2.7) driver for ArangoDB (https://www.arangodb.com/)
 
 Documentation
 -------------
