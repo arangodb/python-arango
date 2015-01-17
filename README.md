@@ -28,6 +28,8 @@ Installation
 sudo pip install py-arango 
 ~~~~
 
+-   Latest
+
 ~~~~ {.sourceCode .bash}
 git clone https://github.com/Joowani/py-arango.git 
 cd py-arango
