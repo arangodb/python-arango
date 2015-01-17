@@ -28,10 +28,11 @@ Installation
 sudo pip install py-arango 
 ~~~~
 
-- Latest .. code:: bash
-
-> git clone <https://github.com/Joowani/py-arango.git> cd py-arango
-> python2.7 setup.py install
+~~~~ {.sourceCode .bash}
+git clone https://github.com/Joowani/py-arango.git 
+cd py-arango
+python2.7 setup.py install
+~~~~
 
 Initializing Connection
 -----------------------
