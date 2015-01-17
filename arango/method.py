@@ -1,4 +1,5 @@
 
+
 # TODO Future implementation to replace the hacky _batch arguments
 class ArangoRequest(object):
 
@@ -16,10 +17,10 @@ class ArangoRequest(object):
 
     def __call__(self, *args, **kwargs):
         request = self.request_info(*args, **kwargs)
-        method = getattr(self._api, request["method"])
+        http_method = getattr(self._api, request["method"])
         method_kwargs = {}
         for component in ["path", "params", "data", "headers"]:
             if component in request:
                 method_kwargs[component] = request[component]
-        endpoint = request["endpoint"]
-        return handle_response(http_method(**method_kwargs))
+        method_kwargs["endpoint"] = request["endpoint"]
+        return self.handle_response(http_method(**method_kwargs))

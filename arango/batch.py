@@ -1,6 +1,4 @@
-import re
 import json
-import logging
 import inspect
 from urllib import urlencode
 
@@ -20,15 +18,14 @@ class BatchHandler(object):
         for content_id, request in enumerate(requests, start=1):
             try:
                 func, args, kwargs = request
-                argspec = inspect.getargspec(func)[0]
-            except TypeError, ValueError:
+            except (TypeError, ValueError):
                 raise BatchInvalidError(
                     "pos {}: malformed request".format(content_id)
                 )
             if "_batch" not in inspect.getargspec(func)[0]:
                 raise BatchInvalidError(
                     "pos {}: ArangoDB method '{}' does not support "
-                    "batch execution".format(content_id , func.__name__)
+                    "batch execution".format(content_id, func.__name__)
                 )
             kwargs["_batch"] = True
             res = func(*args, **kwargs)
@@ -40,7 +37,7 @@ class BatchHandler(object):
         res = self._api.post(
             "/_api/batch",
             headers={
-              "Content-Type": "multipart/form-data; boundary=XXXsubpartXXX"
+                "Content-Type": "multipart/form-data; boundary=XXXsubpartXXX"
             },
             data=data,
         )

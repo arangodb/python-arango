@@ -9,6 +9,7 @@ from arango.tests.utils import (
     get_next_db_name
 )
 
+
 class ArangoDBQueryTest(unittest.TestCase):
 
     def setUp(self):

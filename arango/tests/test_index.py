@@ -97,8 +97,8 @@ class IndexManagementTest(unittest.TestCase):
             ignore_null=False
         )
         self.assertEquals(
-             sorted(self.col.indexes.values()),
-             sorted([
+            sorted(self.col.indexes.values()),
+            sorted([
                 {
                     "type": "primary",
                     "fields": ["_key"],
@@ -123,8 +123,8 @@ class IndexManagementTest(unittest.TestCase):
             ignore_null=False
         )
         self.assertEquals(
-             sorted(self.col.indexes.values()),
-             sorted([
+            sorted(self.col.indexes.values()),
+            sorted([
                 {
                     "type": "primary",
                     "fields": ["_key"],
@@ -158,8 +158,8 @@ class IndexManagementTest(unittest.TestCase):
             min_length=10,
         )
         self.assertEquals(
-             sorted(self.col.indexes.values()),
-             sorted([
+            sorted(self.col.indexes.values()),
+            sorted([
                 {
                     "type": "primary",
                     "fields": ["_key"],

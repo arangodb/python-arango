@@ -17,8 +17,8 @@ class DocumentManagementTest(unittest.TestCase):
         self.arango = Arango()
         self.db_name = get_next_db_name(self.arango)
         self.db = self.arango.add_database(self.db_name)
-        self.col_name = get_next_col_name(self.arango)
-        self.col = self.arango.add_collection(self.col_name)
+        self.col_name = get_next_col_name(self.db)
+        self.col = self.db.add_collection(self.col_name)
         self.col.add_geo_index(["coord"])
         self.col.add_skiplist_index(["value"])
         self.col.add_fulltext_index(["text"])
@@ -199,8 +199,8 @@ class DocumentManagementTest(unittest.TestCase):
         self.assertIn(
             strip_system_keys(self.col.get_first_example({"value": 1})),
             [
-                {"name": "test_doc_01", "value" :1},
-                {"name": "test_doc_02", "value" :1}
+                {"name": "test_doc_01", "value": 1},
+                {"name": "test_doc_02", "value": 1}
             ]
         )
 
@@ -213,7 +213,7 @@ class DocumentManagementTest(unittest.TestCase):
         self.assertEqual(
             sorted(strip_system_keys(self.col.get_by_example({"value": 1}))),
             sorted([
-                {"name": "test_doc_01", "value" :1},
+                {"name": "test_doc_01", "value": 1},
                 {"name": "test_doc_02", "value": 1},
             ])
         )
@@ -296,10 +296,10 @@ class DocumentManagementTest(unittest.TestCase):
 
     def test_near(self):
         self.col.bulk_import([
-             {"name": "test_doc_01", "coord": [1,1]},
-             {"name": "test_doc_02", "coord": [1,4]},
-             {"name": "test_doc_03", "coord": [4,1]},
-             {"name": "test_doc_03", "coord": [4,4]},
+            {"name": "test_doc_01", "coord": [1, 1]},
+            {"name": "test_doc_02", "coord": [1, 4]},
+            {"name": "test_doc_03", "coord": [4, 1]},
+            {"name": "test_doc_03", "coord": [4, 4]},
         ])
         self.assertEqual(
             strip_system_keys(
@@ -310,39 +310,16 @@ class DocumentManagementTest(unittest.TestCase):
                 )
             ),
             [
-                {"name": "test_doc_01", "coord": [1,1]}
+                {"name": "test_doc_01", "coord": [1, 1]}
             ]
         )
 
-    # TODO enable when the endpoint is fixed
-    #def test_within(self):
-        #self.col.bulk_import([
-            #{"name": "test_doc_01", "coord": [1,1]},
-            #{"name": "test_doc_02", "coord": [1,4]},
-            #{"name": "test_doc_03", "coord": [4,1]},
-            #{"name": "test_doc_03", "coord": [4,4]},
-        #])
-        #self.assertEqual(
-            #strip_system_keys(
-                #self.col.within(
-                    #latitude=0,
-                    #longitude=0,
-                    #radius=3.5,
-                #)
-            #),
-            #[
-                #{"name": "test_doc_01", "coord": [1,1]},
-                #{"name": "test_doc_02", "coord": [1,4]},
-                #{"name": "test_doc_03", "coord": [4,1]},
-            #]
-        #)
-
     def test_fulltext(self):
         self.col.bulk_import([
-             {"name": "test_doc_01", "text": "Hello World!"},
-             {"name": "test_doc_02", "text": "foo"},
-             {"name": "test_doc_03", "text": "bar"},
-             {"name": "test_doc_03", "text": "baz"},
+            {"name": "test_doc_01", "text": "Hello World!"},
+            {"name": "test_doc_02", "text": "foo"},
+            {"name": "test_doc_03", "text": "bar"},
+            {"name": "test_doc_03", "text": "baz"},
         ])
         self.assertEqual(
             strip_system_keys(self.col.fulltext("text", "foo,|bar")),

@@ -160,8 +160,8 @@ class Database(CursorFactory, BatchHandler):
         :type batch_size: int
         :param ttl: time-to-live for the cursor (in seconds)
         :type ttl: int
-        :param bind_vars: key/value list of bind parameters
-        :type bind_vars: list
+        :param bind_vars: key-value pairs of bind parameters
+        :type bind_vars: dict
         :param full_count: whether or not to include count before last LIMIT
         :param max_plans: maximum number of plans the optimizer generates
         :type max_plans: None or int

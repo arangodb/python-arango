@@ -9,6 +9,7 @@ from arango.tests.utils import (
     get_next_db_name
 )
 
+
 # TODO add more tests
 class EdgeManagementTest(unittest.TestCase):
 

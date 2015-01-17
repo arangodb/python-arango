@@ -2,7 +2,7 @@
 
 import json
 
-from arango.utils import camelify, uncamelify, filter_keys
+from arango.utils import camelify, uncamelify
 from arango.exceptions import *
 from arango.cursor import CursorFactory
 

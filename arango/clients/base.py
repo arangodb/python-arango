@@ -2,8 +2,6 @@
 
 from abc import ABCMeta, abstractmethod
 
-from arango.response import ArangoResponse
-
 
 class BaseArangoClient(object):
     """Base ArangoDB HTTP client."""

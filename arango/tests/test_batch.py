@@ -8,6 +8,7 @@ from arango.tests.utils import (
     get_next_graph_name,
 )
 
+
 class BatchRequestTest(unittest.TestCase):
 
     def setUp(self):
@@ -28,8 +29,8 @@ class BatchRequestTest(unittest.TestCase):
         self.graph = self.db.add_graph(
             name=self.graph_name,
             edge_definitions=[{
-                "collection" : self.edge_col_name,
-                "from" : [self.vertex_col_name],
+                "collection": self.edge_col_name,
+                "from": [self.vertex_col_name],
                 "to": [self.vertex_col_name]
             }],
         )

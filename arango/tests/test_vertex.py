@@ -3,12 +3,12 @@
 import unittest
 
 from arango import Arango
-from arango.exceptions import *
 from arango.tests.utils import (
     get_next_graph_name,
     get_next_col_name,
     get_next_db_name
 )
+
 
 class VertexManagementTest(unittest.TestCase):
 
@@ -31,8 +31,8 @@ class VertexManagementTest(unittest.TestCase):
         self.graph = self.db.add_graph(
             name=self.graph_name,
             edge_definitions=[{
-                "collection" : self.edge_col_name,
-                "from" : [self.vertex_col_name],
+                "collection": self.edge_col_name,
+                "from": [self.vertex_col_name],
                 "to": [self.vertex_col_name]
             }],
         )
@@ -107,7 +107,6 @@ class VertexManagementTest(unittest.TestCase):
         )
         self.assertNotIn("vertex01", self.vertex_col)
         self.assertEqual(len(self.vertex_col), 0)
-
 
 
 if __name__ == "__main__":
