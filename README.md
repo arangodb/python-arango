@@ -24,32 +24,32 @@ Installation
 
 -   Stable
 
-~~~~ {.sourceCode .bash}
+```bash
 sudo pip install py-arango 
-~~~~
+```
 
 -   Latest
 
-~~~~ {.sourceCode .bash}
+```bash
 git clone https://github.com/Joowani/py-arango.git 
 cd py-arango
 python2.7 setup.py install
-~~~~
+```
 
 Initializing Connection
 -----------------------
 
-~~~~ {.sourceCode .python}
+```python
 from arango import Arango
 
 # Initialize ArangoDB connection
 a = Arango(host="localhost", port=8529)
-~~~~
+```
 
 Databases
 ---------
 
-~~~~ {.sourceCode .python}
+```python
 # List the database names
 a.databases
 a.databases["user"]
@@ -83,12 +83,12 @@ a.{whatever}
 a.db("my_db").add_collection("my_col")
 a.db("my_db").col("my_col").add_document({"value": 1})
 a.db("my_db").{whatever}
-~~~~
+```
 
 AQL Functions
 -------------
 
-~~~~ {.sourceCode .python}
+```python
 my_db = a.db("my_db")
 
 # List the AQL functions defined in database "my_db"
@@ -102,12 +102,12 @@ my_db.add_aql_function(
 
 # Remove an AQL function
 my_db.remove_aql_function("myfunctions::temperature::ctof")
-~~~~
+```
 
 AQL Queries
 -----------
 
-~~~~ {.sourceCode .python}
+```python
 # Retrieve the execution plan without actually executing it
 my_db.explain_query("FOR doc IN my_col RETURN doc")
 
@@ -121,12 +121,12 @@ cursor = my_db.execute_query(
 )
 for doc in cursor:  # the cursor is deleted when the generator is exhausted
   print doc
-~~~~
+```
 
 Collections
 -----------
 
-~~~~ {.sourceCode .python}
+```python
 my_db = a.db("my_db")
 
 # List the collection names in "my_db"
@@ -184,12 +184,12 @@ my_col.truncate()
 # Check if a document exists in the collection
 my_col.contains("a_document_key")
 "a_document_key" in my_col
-~~~~
+```
 
 Indexes
 -------
 
-~~~~ {.sourceCode .python}
+```python
 my_col = a.collection("my_col")  # or a.col("mycol")
 
 # List the indexes in collection "my_col"
@@ -210,12 +210,12 @@ my_col.add_geo_index(fields=["longitude", "latitude"])
 
 # Add a fulltext index on attribute "attr1"
 my_col.add_fulltext_index(fields=["attr1"], min_length=10)
-~~~~
+```
 
 Documents
 ---------
 
-~~~~ {.sourceCode .python}
+```python
 my_col = a.db("my_db").collection("my_col")
 
 # Retrieve a document by its key
@@ -237,12 +237,12 @@ my_col.remove_document("doc01")
 for doc in my_col:
     new_value = doc["value"] + 1
     my_col.update_document(doc["_key"], {"new_value": new_value})
-~~~~
+```
 
 Simple Queries (Collection-Specific)
 ------------------------------------
 
-~~~~ {.sourceCode .python}
+```python
 # Return the first 5 documents in collection "my_col"
 my_col.first(5)           
 
@@ -272,12 +272,12 @@ my_col.within(latitude=100, longitude=20, radius=15)
 
 # Return all documents near a given coordinate (requires geo-index)
 my_col.near(latitude=100, longitude=20) 
-~~~~
+```
 
 Graphs
 ------
 
-~~~~ {.sourceCode .python}
+```python
 my_db = a.db("my_db")
 
 # List all the graphs in the database
@@ -307,12 +307,12 @@ my_graph.revision
 my_graph.edge_definitions
 my_graph.vertex_collections
 my_graph.orphan_collections
-~~~~
+```
 
 Vertices
 --------
 
-~~~~ {.sourceCode .python}
+```python
 # Add new vertices (again if "_key" is not given it's auto-generated)
 my_graph.add_vertex("vcol01", {"_key": "v01", "value": 1})
 my_graph.add_vertex("vcol02", {"_key": "v01", "value": 1})
@@ -325,12 +325,12 @@ my_graph.update_vertex("vol02/v01", {"new_value": 3})
 
 # Remove a vertex
 my_graph.remove_vertex("vol01/v01")
-~~~~
+```
 
 Edges
 -----
 
-~~~~ {.sourceCode .python}
+```python
 # Add a new edge
 my_graph.add_edge(
   "ecol01",  # edge collection name
@@ -351,12 +351,12 @@ my_graph.update_edge("ecol01/e01", {"foo": 3})
 
 # Remove an edge
 my_graph.remove_edge("ecol01/e01")
-~~~~
+```
 
 Graph Traversals
 ----------------
 
-~~~~ {.sourceCode .python}
+```python
 my_graph = a.db("my_db").graph("my_graph")
 
 # Execute a graph traversal
@@ -371,12 +371,12 @@ results.get("visited")
 
 # Return the paths traversed in order
 results.get("paths")
-~~~~
+```
 
 Batch Requests
 --------------
 
-~~~~ {.sourceCode .python}
+```python
 # NOTE: only (add/update/replace/remove) methods for (documents/vertices/edges) are supported at the moment
 
 # Execute a batch request for managing documents
@@ -426,12 +426,12 @@ self.db.execute_batch([
         {"wait_for_sync": True}
     ),
 ])
-~~~~
+```
 
 Transactions
 ------------
 
-~~~~ {.sourceCode .python}
+```python
 # Execute a transaction
 action = """
   function () {
@@ -448,7 +448,7 @@ res = my_db.execute_transaction(
     wait_for_sync=True,
     lock_timeout=10000
 )
-~~~~
+```
 
 To Do
 -----
@@ -465,6 +465,6 @@ To Do
 Running Tests (requires ArangoDB on localhost)
 ----------------------------------------------
 
-~~~~ {.sourceCode .bash}
+```bash
 nosetests
-~~~~
+```
