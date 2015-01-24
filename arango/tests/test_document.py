@@ -149,10 +149,9 @@ class DocumentManagementTest(unittest.TestCase):
             strip_system_keys(self.col.last(1)),
             [{"name": "test_doc_03"}]
         )
-        self.assertEqual(
-            sorted(strip_system_keys(self.col.last(2))),
-            sorted([{"name": "test_doc_03"}, {"name": "test_doc_02"}])
-        )
+        docs = strip_system_keys(self.col.last(2))
+        self.assertIn({"name": "test_doc_03"}, docs)
+        self.assertIn({"name": "test_doc_02"}, docs)
 
     def test_all(self):
         self.assertEqual(list(self.col.all()), [])
@@ -162,14 +161,11 @@ class DocumentManagementTest(unittest.TestCase):
             {"name": "test_doc_03"}
         ])
         self.assertEqual(len(self.col), 3)
-        self.assertEqual(
-            sorted(strip_system_keys(self.col.all())),
-            sorted([
-                {"name": "test_doc_01"},
-                {"name": "test_doc_02"},
-                {"name": "test_doc_03"}
-            ])
-        )
+
+        docs = strip_system_keys(self.col.all())
+        self.assertIn({"name": "test_doc_01"}, docs)
+        self.assertIn({"name": "test_doc_02"}, docs)
+        self.assertIn({"name": "test_doc_03"}, docs)
 
     def test_any(self):
         self.assertEqual(strip_system_keys(self.col.all()), [])
@@ -210,13 +206,9 @@ class DocumentManagementTest(unittest.TestCase):
             {"name": "test_doc_02", "value": 1},
             {"name": "test_doc_03", "value": 3}
         ])
-        self.assertEqual(
-            sorted(strip_system_keys(self.col.get_by_example({"value": 1}))),
-            sorted([
-                {"name": "test_doc_01", "value": 1},
-                {"name": "test_doc_02", "value": 1},
-            ])
-        )
+        docs = strip_system_keys(self.col.get_by_example({"value": 1}))
+        self.assertIn({"name": "test_doc_01", "value": 1}, docs)
+        self.assertIn({"name": "test_doc_02", "value": 1}, docs)
         self.assertEqual(
             strip_system_keys(self.col.get_by_example({"value": 2})), []
         )
@@ -231,14 +223,10 @@ class DocumentManagementTest(unittest.TestCase):
             {"name": "test_doc_03", "value": 3}
         ])
         self.col.update_by_example({"value": 1}, {"value": 2})
-        self.assertEqual(
-            sorted(strip_system_keys(self.col.all())),
-            sorted([
-                {"name": "test_doc_01", "value": 2},
-                {"name": "test_doc_02", "value": 2},
-                {"name": "test_doc_03", "value": 3}
-            ])
-        )
+        docs = strip_system_keys(self.col.all())
+        self.assertIn({"name": "test_doc_01", "value": 2}, docs)
+        self.assertIn({"name": "test_doc_02", "value": 2}, docs)
+        self.assertIn({"name": "test_doc_03", "value": 3}, docs)
 
     def test_replace_by_example(self):
         self.col.bulk_import([
@@ -247,14 +235,10 @@ class DocumentManagementTest(unittest.TestCase):
             {"name": "test_doc_03", "value": 3}
         ])
         self.col.replace_by_example({"value": 1}, {"foo": "bar"})
-        self.assertEqual(
-            sorted(strip_system_keys(self.col.all())),
-            sorted([
-                {"foo": "bar"},
-                {"foo": "bar"},
-                {"name": "test_doc_03", "value": 3}
-            ])
-        )
+
+        docs = strip_system_keys(self.col.all())
+        self.assertIn({"foo": "bar"}, docs)
+        self.assertIn({"name": "test_doc_03", "value": 3}, docs)
 
     def test_remove_by_example(self):
         self.col.bulk_import([

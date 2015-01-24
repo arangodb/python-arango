@@ -66,6 +66,7 @@ class DatabaseRemoveError(ArangoRequestError):
 # Collections #
 ###############
 
+
 class CollectionCorruptedError(Exception):
     """The collection is corrupted (unknown status)."""
 
@@ -124,6 +125,7 @@ class CollectionBulkImportError(ArangoRequestError):
 #############
 # Documents #
 #############
+
 
 class DocumentInvalidError(Exception):
     """The document is invalid."""
@@ -229,6 +231,7 @@ class IndexRemoveError(ArangoRequestError):
 # Queries #
 ###########
 
+
 class QueryExplainError(ArangoRequestError):
     """Failed to explain the query."""
 
@@ -259,6 +262,7 @@ class AQLFunctionRemoveError(ArangoRequestError):
 ##################
 # Simple Queries #
 ##################
+
 
 class SimpleQueryGetByExampleError(ArangoRequestError):
     """Failed to execute the ``by-example`` simple query."""
@@ -319,12 +323,14 @@ class SimpleQueryError(ArangoRequestError):
 # Transactions #
 ################
 
+
 class TransactionExecuteError(ArangoRequestError):
     """Failed to execute a transaction."""
 
 ###########
 # Batches #
 ###########
+
 
 class BatchInvalidError(Exception):
     """The Batch request is malformed."""
@@ -336,6 +342,7 @@ class BatchExecuteError(ArangoRequestError):
 ##########
 # Graphs #
 ##########
+
 
 class GraphNotFoundError(ArangoNotFoundError):
     """Failed to find the graph."""
@@ -368,6 +375,7 @@ class GraphTraversalError(ArangoRequestError):
 # Vertex Collections #
 ######################
 
+
 class VertexCollectionListError(ArangoRequestError):
     """Failed to list the vertex collections."""
 
@@ -382,6 +390,7 @@ class VertexCollectionRemoveError(ArangoRequestError):
 ################################
 # Edge Collections/Definitions #
 ################################
+
 
 class EdgeDefinitionListError(ArangoRequestError):
     """Failed to list the edge collections."""

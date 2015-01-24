@@ -1,7 +1,9 @@
 import json
 import inspect
-from urllib import urlencode
-
+try:
+    from urllib import urlencode
+except ImportError:
+    from urllib.parse import urlencode
 from arango.exceptions import (
     BatchInvalidError,
     BatchExecuteError
@@ -53,7 +55,7 @@ def stringify_request(method, path, params=None, headers=None, data=None):
     path = path + "?" + urlencode(params) if params else path
     request_string = "{} {} HTTP/1.1".format(method, path)
     if headers:
-        for key, value in headers.iteritems():
+        for key, value in headers.items():
             request_string += "\r\n{key}: {value}".format(
                 key=key, value=value
             )

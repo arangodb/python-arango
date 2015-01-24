@@ -4,6 +4,20 @@ import re
 import collections
 
 
+def is_string(obj):
+    """Return True if ``obj`` is an instance of str or unicode (python 2 only)
+
+    :param obj: the object to check
+    :type obj: object
+    :returns: True if obj is an instance of str or unicode else False
+    :rtype: bool
+    """
+    try:
+        return isinstance(obj, basestring)
+    except NameError:
+        return isinstance(obj, str)
+
+
 def unicode_to_str(obj):
     """Convert any unicode in ``obj`` to str and return it.
 
@@ -12,7 +26,7 @@ def unicode_to_str(obj):
     :returns: the sanitized object
     :rtype: object
     """
-    if isinstance(obj, basestring):
+    if is_string(obj):
         return str(obj)
     elif isinstance(obj, collections.Mapping):
         return dict(map(unicode_to_str, obj.items()))
@@ -31,7 +45,7 @@ def camelify(obj):
     :returns: the camelified object
     :rtype: object
     """
-    if isinstance(obj, basestring):
+    if is_string(obj):
         words = obj.split("_")
         return words[0] + "".join(word.title() for word in words[1:])
     elif isinstance(obj, collections.Mapping):
@@ -51,7 +65,7 @@ def uncamelify(obj):
     :returns: the uncamelified object
     :rtype: object
     """
-    if isinstance(obj, basestring):
+    if is_string(obj):
         return re.sub('(?!^)([A-Z]+)', r'_\1', obj).lower()
     elif isinstance(obj, collections.Mapping):
         return dict(map(uncamelify, obj.items()))

@@ -372,7 +372,7 @@ class Graph(object):
         :raises: RevisionMismatchError, VertexRemoveError
         """
         path = "/_api/gharial/{}/vertex/{}".format(self.name, vertex_id)
-        params={"waitForSync": wait_for_sync}
+        params = {"waitForSync": wait_for_sync}
         if rev is not None:
             params["rev"] = rev
         if _batch:
@@ -584,8 +584,8 @@ class Graph(object):
 
     def execute_traversal(self, start_vertex, direction=None,
             strategy=None, order=None, item_order=None, uniqueness=None,
-            max_iterations=None, min_depth=None, max_depth=None,
-            init=None, filters=None, visitor=None, expander=None, sort=None):
+            max_iterations=None, min_depth=None, max_depth=None, init=None,
+            filters=None, visitor=None, expander=None, sort=None):
         """Execute a graph traversal and return the visited vertices.
 
         For more details on ``init``, ``filter``, ``visitor``, ``expander``
