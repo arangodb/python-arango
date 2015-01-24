@@ -4,10 +4,12 @@ import unittest
 
 from arango import Arango
 from arango.exceptions import *
+from arango.utils import is_string
 from arango.tests.utils import (
     get_next_col_name,
     get_next_db_name
 )
+
 
 class CollectionManagementTest(unittest.TestCase):
 
@@ -84,7 +86,7 @@ class CollectionManagementTest(unittest.TestCase):
         self.assertFalse(col.do_compact)
         self.assertTrue(col.wait_for_sync)
         self.assertTrue(col.is_edge)
-        self.assertTrue(isinstance(col.id, basestring))
+        self.assertTrue(is_string(col.id))
         self.assertTrue(isinstance(col.figures, dict))
 
     def test_collection_setters(self):
@@ -117,4 +119,3 @@ class CollectionManagementTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

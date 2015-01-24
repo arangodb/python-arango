@@ -60,9 +60,9 @@ def strip_system_keys(obj):
     :rtype: list or dict
     """
     if isinstance(obj, collections.Mapping):
-        return {k: v for k, v in obj.iteritems() if not k.startswith("_")}
+        return {k: v for k, v in obj.items() if not k.startswith("_")}
     elif isinstance(obj, collections.Iterable):
         return [
-            {k: v for k, v in document.iteritems() if not k.startswith("_")}
+            {k: v for k, v in document.items() if not k.startswith("_")}
             for document in obj
         ]

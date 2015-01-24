@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 setup(
     name="py-arango",
     description="Python Driver for ArangoDB",
-    version="1.1.1",
+    version="1.2.0",
     author="Joohwan Oh",
     author_email="joowani88@gmail.com",
     url="https://github.com/Joowani/py-arango",

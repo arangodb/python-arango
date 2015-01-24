@@ -3,6 +3,7 @@
 import json
 
 from arango.clients.default import DefaultArangoClient
+from arango.utils import is_string
 
 
 class ArangoAPI(object):
@@ -44,13 +45,13 @@ class ArangoAPI(object):
         :rtype: str
         """
         return "{protocol}://{host}:{port}/_db/{db}".format(
-            protocol = self.protocol,
-            host = self.host,
-            port = self.port,
-            db = self.db_name,
+            protocol=self.protocol,
+            host=self.host,
+            port=self.port,
+            db=self.db_name,
         )
 
-    def head(self, path, params=None, headers=None, batch=False):
+    def head(self, path, params=None, headers=None):
         """Execute an HTTP HEAD method."""
         return self.client.head(
             url=self.url_prefix + path,
@@ -59,7 +60,7 @@ class ArangoAPI(object):
             auth=(self.username, self.password)
         )
 
-    def get(self, path, params=None, headers=None, batch=False):
+    def get(self, path, params=None, headers=None):
         """Execute an HTTP GET method."""
         return self.client.get(
             url=self.url_prefix + path,
@@ -68,37 +69,37 @@ class ArangoAPI(object):
             auth=(self.username, self.password),
         )
 
-    def put(self, path, data=None, params=None, headers=None, batch=False):
+    def put(self, path, data=None, params=None, headers=None):
         """Execute an HTTP PUT method."""
         return self.client.put(
             url=self.url_prefix + path,
-            data=data if isinstance(data, basestring) else json.dumps(data),
+            data=data if is_string(data) else json.dumps(data),
             params=params,
             headers=headers,
             auth=(self.username, self.password)
         )
 
-    def post(self, path, data=None, params=None, headers=None, batch=False):
+    def post(self, path, data=None, params=None, headers=None):
         """Execute an HTTP POST method."""
         return self.client.post(
             url=self.url_prefix + path,
-            data=data if isinstance(data, basestring) else json.dumps(data),
+            data=data if is_string(data) else json.dumps(data),
             params=params,
             headers=headers,
             auth=(self.username, self.password)
         )
 
-    def patch(self, path, data=None, params=None, headers=None, batch=False):
+    def patch(self, path, data=None, params=None, headers=None):
         """Execute an HTTP PATCH method."""
         return self.client.patch(
             url=self.url_prefix + path,
-            data=data if isinstance(data, basestring) else json.dumps(data),
+            data=data if is_string(data) else json.dumps(data),
             params=params,
             headers=headers,
             auth=(self.username, self.password)
         )
 
-    def delete(self, path, params=None, headers=None, batch=False):
+    def delete(self, path, params=None, headers=None):
         """Execute an HTTP DELETE method."""
         return self.client.delete(
             url=self.url_prefix + path,

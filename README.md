@@ -11,7 +11,7 @@ Driver for ArangoDB REST API
 Overview
 --------
 
-py-arango is a Python (2.7) driver for ArangoDB
+py-arango is a Python (2.7, 3.4) driver for ArangoDB
 (<https://www.arangodb.com/>)
 
 Documentation
@@ -25,13 +25,13 @@ Installation
 -   Stable
 
 ```bash
-sudo pip install py-arango 
+sudo pip install py-arango
 ```
 
 -   Latest
 
 ```bash
-git clone https://github.com/Joowani/py-arango.git 
+git clone https://github.com/Joowani/py-arango.git
 cd py-arango
 python2.7 setup.py install
 ```
@@ -244,17 +244,17 @@ Simple Queries (Collection-Specific)
 
 ```python
 # Return the first 5 documents in collection "my_col"
-my_col.first(5)           
+my_col.first(5)
 
 # Return the last 3 documents
-my_col.last(3)                          
+my_col.last(3)
 
 # Return all documents (cursor generator object)
 my_col.all()
 list(my_col.all())
 
 # Return a random document
-my_col.any()  
+my_col.any()
 
 # Return first document whose "value" is 1
 my_col.get_first_example({"value": 1})
@@ -263,7 +263,7 @@ my_col.get_first_example({"value": 1})
 my_col.get_by_example({"value": 1})
 
 # Update all documents whose "value" is 1 with a new attribute
-my_col.update_by_example(               
+my_col.update_by_example(
   {"value": 1}, new_value={"new_attr": 1}
 )
 
@@ -271,7 +271,7 @@ my_col.update_by_example(
 my_col.within(latitude=100, longitude=20, radius=15)
 
 # Return all documents near a given coordinate (requires geo-index)
-my_col.near(latitude=100, longitude=20) 
+my_col.near(latitude=100, longitude=20)
 ```
 
 Graphs

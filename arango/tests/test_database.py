@@ -1,18 +1,18 @@
 """Tests for ArangoDB Databases."""
 
 import unittest
+
 from arango import Arango
+from arango.utils import is_string
 from arango.tests.utils import (
     get_next_db_name
 )
+
 
 class DatabaseManagementTest(unittest.TestCase):
 
     def setUp(self):
         self.arango = Arango()
-
-    def tearDown(self):
-        self.arango = None
 
     def test_database_add_and_remove(self):
         db_name = get_next_db_name(self.arango)
@@ -31,8 +31,8 @@ class DatabaseManagementTest(unittest.TestCase):
         db = self.arango.database("_system")
         self.assertEqual(db.name, "_system")
         self.assertTrue(isinstance(db.properties, dict))
-        self.assertTrue(isinstance(db.id, basestring))
-        self.assertTrue(isinstance(db.path, basestring))
+        self.assertTrue(is_string(db.id))
+        self.assertTrue(is_string(db.path))
         self.assertEqual(db.is_system, True)
 
 
