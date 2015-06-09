@@ -2,7 +2,7 @@ language: python
 python:
     - "2.7"
 before_install:
-    - "sh setup_arangodb_2.3.sh"
+    - "sh setup_arangodb_2.5.sh"
 install:
     - "pip install ."
 script: nosetests
