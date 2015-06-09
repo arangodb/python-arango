@@ -3,6 +3,7 @@
 import json
 
 from arango.clients.default import DefaultArangoClient
+from arango.clients.session import SessionArangoClient
 from arango.utils import is_string
 
 
@@ -33,6 +34,7 @@ class ArangoAPI(object):
         self.username = username
         self.password = password
         self.db_name = db_name
+        # self.client = SessionArangoClient() if client is None else client
         self.client = DefaultArangoClient() if client is None else client
 
     @property

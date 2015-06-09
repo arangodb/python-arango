@@ -7,7 +7,6 @@ from arango.clients.base import BaseArangoClient
 
 
 class SessionArangoClient(BaseArangoClient):
-
     def __init__(self):
         self.s = requests.Session()
 
@@ -67,3 +66,6 @@ class SessionArangoClient(BaseArangoClient):
             auth=auth,
         )
         return ArangoResponse(res.status_code, res.text)
+
+    def close(self):
+        self.s.close()
