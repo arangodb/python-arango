@@ -8,6 +8,9 @@ class BaseArangoClient(object):
 
     __metaclass__ = ABCMeta
 
+    def session_based(self):
+        return hasattr(self, 'close')
+
     @abstractmethod
     def head(self, url, params=None, headers=None, auth=None):
         """HTTP HEAD method.
