@@ -1009,18 +1009,22 @@ class Collection(CursorFactory):
         if res.status_code not in {200, 201}:
             raise IndexAddError(res)
 
-    def add_hash_index(self, fields, unique=None):
+    def add_hash_index(self, fields, unique=None, sparse=None):
         """Add a new hash index to this collection.
 
         :param fields: the attribute paths to index
         :type fields: list
         :param unique: whether or not the index is unique
         :type unique: bool or None
+        :param sparse: whether to index attr values of null
+        :type sparse: bool or None
         :raises: IndexAddError
         """
         data = {"type": "hash", "fields": fields}
         if unique is not None:
             data["unique"] = unique
+        if sparse is not None:
+            data["sparse"] = sparse
         self._add_index(data)
 
     def add_cap_constraint(self, size=None, byte_size=None):
@@ -1039,7 +1043,7 @@ class Collection(CursorFactory):
             data["byteSize"] = byte_size
         self._add_index(data)
 
-    def add_skiplist_index(self, fields, unique=None):
+    def add_skiplist_index(self, fields, unique=None, sparse=None):
         """Add a new skiplist index to this collection.
 
         A skiplist index is used to find ranges of documents (e.g. time).
@@ -1048,11 +1052,15 @@ class Collection(CursorFactory):
         :type fields: list
         :param unique: whether or not the index is unique
         :type unique: bool or None
+        :param sparse: whether to index attr values of null
+        :type sparse: bool or None
         :raises: IndexAddError
         """
         data = {"type": "skiplist", "fields": fields}
         if unique is not None:
             data["unique"] = unique
+        if sparse is not None:
+            data["sparse"] = sparse
         self._add_index(data)
 
     def add_geo_index(self, fields, geo_json=None, unique=None,
