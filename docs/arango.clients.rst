@@ -20,6 +20,14 @@ arango.clients.default module
     :undoc-members:
     :show-inheritance:
 
+arango.clients.session module
+-----------------------------
+
+.. automodule:: arango.clients.session
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------
