@@ -3,32 +3,25 @@ py-arango
 
 [![Build
 Status](https://travis-ci.org/Joowani/py-arango.svg?branch=master)](https://travis-ci.org/Joowani/py-arango)
-[![Documentation
-Status](https://readthedocs.org/projects/py-arango/badge/?version=latest)](https://readthedocs.org/projects/py-arango/?badge=latest)
 
-Driver for ArangoDB REST API
+Python Driver for ArangoDB REST API
 
 Overview
 --------
 
-py-arango is a Python (2.7, 3.4) driver for ArangoDB
+py-arango is a Python 2.7 & 3.4 driver for ArangoDB
 (<https://www.arangodb.com/>)
-
-Documentation
--------------
-
-<http://py-arango.readthedocs.org/en/latest/>
 
 Installation
 ------------
 
--   Stable
+-   Stable (ArangoDB Version 2.5)
 
 ```bash
 sudo pip install py-arango
 ```
 
--   Latest
+-   Latest (ArangoDB Version 2.5)
 
 ```bash
 git clone https://github.com/Joowani/py-arango.git
