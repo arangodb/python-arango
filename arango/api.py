@@ -35,7 +35,7 @@ class ArangoAPI(object):
         self.password = password
         self.db_name = db_name
         # self.client = SessionArangoClient() if client is None else client
-        self.client = DefaultArangoClient() if client is None else client
+        self.client = SessionArangoClient() if client is None else client
 
     @property
     def url_prefix(self):
