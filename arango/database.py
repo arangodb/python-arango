@@ -404,10 +404,9 @@ class Database(CursorFactory, BatchHandler):
     # Transactions #
     ################
 
-    # TODO deal with optional attribute "params"
     def execute_transaction(self, action, read_collections=None,
-                            write_collections=None, wait_for_sync=False,
-                            lock_timeout=None):
+                            write_collections=None, params=None,
+                            wait_for_sync=False, lock_timeout=None):
         """Execute the transaction and return the result.
 
         Setting the ``lock_timeout`` to 0 will make ArangoDB not time out
@@ -419,6 +418,8 @@ class Database(CursorFactory, BatchHandler):
         :type read_collections: str or list or None
         :param write_collections: the collections written to
         :type write_collections: str or list or None
+        :param params: Parameters for the function in action
+        :type params: list or dict or None
         :param wait_for_sync: wait for the transaction to sync to disk
         :type wait_for_sync: bool
         :param lock_timeout: timeout for waiting on collection locks
@@ -433,11 +434,13 @@ class Database(CursorFactory, BatchHandler):
             data["collections"]["read"] = read_collections
         if write_collections is not None:
             data["collections"]["write"] = write_collections
-        params = {
+        if params is not None:
+            data["params"] = params
+        http_params = {
             "waitForSync": wait_for_sync,
             "lockTimeout": lock_timeout,
         }
-        res = self._api.post(path=path, data=data, params=params)
+        res = self._api.post(path=path, data=data, params=http_params)
         if res.status_code != 200:
             raise TransactionExecuteError(res)
         return res.obj["result"]
