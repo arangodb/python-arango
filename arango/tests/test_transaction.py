@@ -44,5 +44,33 @@ class BatchRequestTest(unittest.TestCase):
         self.assertIn("doc02", self.col02)
 
 
+    def test_execute_transaction_params(self):
+        action = """
+            function (params) {
+                var db = require('internal').db;
+                db.%s.save({ _key: 'doc11', val: params.val1 });
+                db.%s.save({ _key: 'doc12', val: params.val2 });
+                return 'success!';
+            }
+        """ % (self.col_name01, self.col_name02)
+
+        params = {"val1": 1, "val2": 2}
+
+        res = self.db.execute_transaction(
+            action=action,
+            read_collections=[self.col_name01, self.col_name02],
+            write_collections=[self.col_name01, self.col_name02],
+            params=params,
+            wait_for_sync=True,
+            lock_timeout=10000
+        )
+
+        self.assertEqual(res, "success!")
+        self.assertIn("doc11", self.col01)
+        self.assertIn("doc12", self.col02)
+        self.assertEqual(self.col01["doc11"]["val"], params["val1"])
+        self.assertEqual(self.col02["doc12"]["val"], params["val2"])
+
+
 if __name__ == "__main__":
     unittest.main()
