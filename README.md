@@ -1,9 +1,6 @@
 py-arango
 =========
 
-[![Build
-Status](https://travis-ci.org/Joowani/py-arango.svg?branch=master)](https://travis-ci.org/Joowani/py-arango)
-
 Python Driver for ArangoDB REST API
 
 Overview
