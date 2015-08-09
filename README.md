@@ -1,4 +1,4 @@
-py-arango
+python-arango
 =========
 
 Python Driver for ArangoDB REST API
