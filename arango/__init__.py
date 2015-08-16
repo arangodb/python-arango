@@ -1,58 +1,67 @@
-"""ArangoDB Connection."""
+"""ArangoDB Top-Level API."""
 
 from arango.database import Database
-from arango.api import ArangoAPI
+from arango.api import API
 from arango.exceptions import *
+from arango.constants import HTTP_OK, LOG_LEVELS
+from arango.clients import DefaultArangoClient
+from arango.utils import uncamelify
 
 
 class Arango(object):
-    """A wrapper around ArangoDB API.
-
-    :param protocol: the internet transfer protocol (default: http)
-    :type protocol: str
-    :param host: ArangoDB host (default: localhost)
-    :type host: str
-    :param port: ArangoDB port (default: 8529)
-    :type port: int
-    :param username: the username
-    :type username: str
-    :param password: the password
-    :type password: str
-    :param client: the custom client object
-    :type client: arango.clients.base.BaseArangoClient
-    :raises: ArangoConnectionError
-    """
+    """Wrapper for ArangoDB's top-level API."""
 
     def __init__(self, protocol="http", host="localhost", port=8529,
                  username="root", password="", client=None):
-        self._protocol = protocol
-        self._host = host
-        self._port = port
-        self._username = username
-        self._password = password
-        self._client = client
-        self._api = ArangoAPI(
-            protocol=self._protocol,
-            host=self._host,
-            port=self._port,
-            username=self._username,
-            password=self._password,
-            client=self._client,
+        """Initialize the wrapper object.
+
+        :param protocol: the internet transfer protocol (default: 'http')
+        :type protocol: str
+        :param host: ArangoDB host (default: 'localhost')
+        :type host: str
+        :param port: ArangoDB port (default: 8529)
+        :type port: int or str
+        :param username: ArangoDB username (default: 'root')
+        :type username: str
+        :param password: ArangoDB password (default: '')
+        :type password: str
+        :param client: HTTP client for this wrapper to use
+        :type client: arango.clients.base.BaseArangoClient or None
+        :raises: ArangoConnectionError
+        """
+        self.protocol = protocol
+        self.host = host
+        self.port = port
+        self.username = username
+        self.password = password
+
+        # Initialize the ArangoDB HTTP Client if not given
+        if client is not None:
+            self.client = client
+        else:
+            client_init_data = {"auth": (self.username, self.password)}
+            self.client = DefaultArangoClient(client_init_data)
+
+        # Initialize the ArangoDB API wrapper object
+        self.api = API(
+            protocol=self.protocol,
+            host=self.host,
+            port=self.port,
+            username=self.username,
+            password=self.password,
+            client=self.client,
         )
-        # Check the connection by requesting a header of the version endpoint
-        res = self._api.head("/_api/version")
-        if res.status_code != 200:
-            raise ArangoConnectionError(
-                "Failed to connect to '{host}' ({status}: {reason})".format(
-                    host=self._host,
-                    status=res.status_code,
-                    reason=res.reason
-                )
-            )
+
+        # Check the connection by requesting a header
+        res = self.api.head("/_api/version")
+        if res.status_code not in HTTP_OK:
+            raise ArangoConnectionError(res)
+
         # Cache for Database objects
         self._database_cache = {}
-        # Default database (i.e. "_system")
-        self._default_database = Database("_system", self._api)
+
+        # Default ArangoDB database wrapper object
+        self._default_database = Database("_system", self.api)
 
     def __getattr__(self, attr):
         """Call __getattr__ of the default database."""
@@ -71,14 +80,14 @@ class Arango(object):
         for db_name in real_dbs - cached_dbs:
             self._database_cache[db_name] = Database(
                 name=db_name,
-                api=ArangoAPI(
-                    protocol=self._protocol,
-                    host=self._host,
-                    port=self._port,
-                    username=self._username,
-                    password=self._password,
-                    db_name=db_name,
-                    client=self._client
+                api=API(
+                    protocol=self.protocol,
+                    host=self.host,
+                    port=self.port,
+                    username=self.username,
+                    password=self.password,
+                    database=db_name,
+                    client=self.client
                 )
             )
 
@@ -90,10 +99,14 @@ class Arango(object):
         :rtype: str
         :raises: VersionGetError
         """
-        res = self._api.get("/_api/version")
-        if res.status_code != 200:
+        res = self.api.get("/_api/version")
+        if res.status_code not in HTTP_OK:
             raise VersionGetError(res)
         return res.obj["version"]
+
+    #############
+    # Databases #
+    #############
 
     @property
     def databases(self):
@@ -103,13 +116,15 @@ class Arango(object):
         :rtype: dict
         :raises: DatabaseListError
         """
-        res = self._api.get("/_api/database/user")
-        if res.status_code != 200:
+        # Get the current user's databases
+        res = self.api.get("/_api/database/user")
+        if res.status_code not in HTTP_OK:
             raise DatabaseListError(res)
         user_databases = res.obj["result"]
 
-        res = self._api.get("/_api/database")
-        if res.status_code != 200:
+        # Get all databases
+        res = self.api.get("/_api/database")
+        if res.status_code not in HTTP_OK:
             raise DatabaseListError(res)
         all_databases = res.obj["result"]
 
@@ -134,8 +149,8 @@ class Arango(object):
                 raise DatabaseNotFoundError(name)
             return self._database_cache[name]
 
-    def add_database(self, name, users=None):
-        """Add a new database.
+    def create_database(self, name, users=None):
+        """Create a new database.
 
         :param name: the name of the new database
         :type name: str
@@ -146,24 +161,243 @@ class Arango(object):
         :raises: DatabaseCreateError
         """
         data = {"name": name, "users": users} if users else {"name": name}
-        res = self._api.post("/_api/database", data=data)
-        if res.status_code != 201:
-            raise DatabaseAddError(res)
+        res = self.api.post("/_api/database", data=data)
+        if res.status_code not in HTTP_OK:
+            raise DatabaseCreateError(res)
         self._invalidate_database_cache()
         return self.db(name)
 
-    def remove_database(self, name):
+    def delete_database(self, name, safe_delete=False):
         """Remove the database of the specified name.
 
-        :param name: the name of the database to remove
+        :param name: the name of the database to delete
         :type name: str
+        :param safe_delete: whether to execute a safe delete (ignore 404)
+        :type safe_delete: bool
         :raises: DatabaseDeleteError
         """
-        res = self._api.delete("/_api/database/{}".format(name))
-        if res.status_code != 200:
-            raise DatabaseRemoveError(res)
+        res = self.api.delete("/_api/database/{}".format(name))
+        if res.status_code not in HTTP_OK:
+            if not (res.status_code == 404 and safe_delete):
+                raise DatabaseDeleteError(res)
         self._invalidate_database_cache()
 
+    #########
+    # Users #
+    #########
+
+    @property
+    def users(self):
+        """Return the details on all users.
+
+        :returns: a dictionary mapping user names to their information
+        :rtype: dict
+        :raises: UserGetAllError
+        """
+        res = self.api.get("/_api/user")
+        if res.status_code not in HTTP_OK:
+            raise UserGetAllError(res)
+        # Uncamelify key(s) for consistent style
+        result = {}
+        for record in res.obj["result"]:
+            result[record["user"]] = {
+                "change_password": record.get("changePassword"),
+                "active": record.get("active"),
+                "extra": record.get("extra"),
+            }
+        return result
+
+    def create_user(self, username, password, active=None, extra=None,
+                    change_password=None):
+        data = {"user": username, "passwd": password}
+        if active is not None:
+            data["active"] = active
+        if extra is not None:
+            data["extra"] = extra
+        if change_password is not None:
+            data["changePassword"] = change_password
+
+        res = self.api.post("/_api/user", data=data)
+        if res.status_code not in HTTP_OK:
+            raise UserCreateError(res)
+        return {
+            "active": res.obj.get("active"),
+            "change_password": res.obj.get("changePassword"),
+            "extra": res.obj.get("extra"),
+        }
+
+    def update_user(self, username, password=None, active=None, extra=None,
+                    change_password=None):
+        data = {}
+        if password is not None:
+            data["password"] = password
+        if active is not None:
+            data["active"] = active
+        if extra is not None:
+            data["extra"] = extra
+        if change_password is not None:
+            data["changePassword"] = change_password
+
+        res = self.api.patch(
+            "/_api/user/{user}".format(user=username), data=data
+        )
+        if res.status_code not in HTTP_OK:
+            raise UserUpdateError(res)
+        return {
+            "active": res.obj.get("active"),
+            "change_password": res.obj.get("changePassword"),
+            "extra": res.obj.get("extra"),
+        }
+
+    def replace_user(self, username, password, active=None, extra=None,
+                     change_password=None):
+        data = {"user": username, "password": password}
+        if active is not None:
+            data["active"] = active
+        if extra is not None:
+            data["extra"] = extra
+        if change_password is not None:
+            data["changePassword"] = change_password
+
+        res = self.api.put(
+            "/_api/user/{user}".format(user=username), data=data
+        )
+        if res.status_code not in HTTP_OK:
+            raise UserReplaceError(res)
+        return {
+            "active": res.obj.get("active"),
+            "change_password": res.obj.get("changePassword"),
+            "extra": res.obj.get("extra"),
+        }
+
+    def delete_user(self, username, safe_delete=False):
+        res = self.api.delete("/_api/user/{user}".format(user=username))
+        if res.status_code not in HTTP_OK:
+            if not (res.status_code == 404 and safe_delete):
+                raise UserDeleteError(res)
+        return True
+
+    ##############
+    # Monitoring #
+    ##############
+
+    def read_log(self, upto=None, level=None, start=None, size=None,
+                 offset=None, search=None, sort=None):
+        """Read global log from the server
+
+        The parameters ``upto`` and ``level`` are mutually exclusive.
+        The values for ``upto`` and ``level`` must be one of:
+
+        'fatal' or 0
+        'error' or 1
+        'warning' or 2
+        'info' or 3 (default)
+        'debug' or 4
+
+        The parameters ``offset`` and ``size`` can be used for pagination.
+        The values for ``sort`` must be one of 'asc' or 'desc'.
+
+        :param upto: return entries up to this level
+        :type upto: str or int or None
+        :param level: return entries of this level only
+        :type level: str or int or None
+        :param start: return entries whose id >= to the given value
+        :type start: int or None
+        :param size: restrict the result to the given value
+        :type size: int or None
+        :param offset: return entries skipping the given number
+        :type offset: int or None
+        :param search: return only the entires containing the given text
+        :type search: str or None
+        :param sort: sort the entries according to their lid values
+        :type sort: str or None
+        :returns: the server log
+        :rtype: dict
+        :raises: LogGetError
+        """
+        params = {}
+        if upto is not None:
+            params["upto"] = upto
+        if level is not None:
+            params["level"] = level
+        if start is not None:
+            params["start"] = start
+        if size is not None:
+            params["size"] = size
+        if offset is not None:
+            params["offset"] = offset
+        if search is not None:
+            params["search"] = search
+        if sort is not None:
+            params["sort"] = sort
+        res = self.api.get("/_admin/log")
+        if res.status_code not in HTTP_OK:
+            LogGetError(res)
+        return res.obj
+
+    def reload_routing_info(self):
+        """Reload the routing information from the collection ``routing``.
+
+        :returns: True if the operation succeeds
+        :rtype: bool
+        :raises: RoutingInfoReloadError
+        """
+        res = self.api.post("/_admin/routing/reload")
+        if res.status_code not in HTTP_OK:
+            raise RountingInfoReloadError(res)
+        return True
+
+    @property
+    def statistics(self):
+        """Return the statisics information.
+
+        :returns: the statistics information
+        :rtype: dict
+        :raises: StatisticsGetError
+        """
+        res = self.api.get("/_admin/statistics")
+        if res.status_code not in HTTP_OK:
+            raise StatisticsGetError(res)
+        del res.obj["code"]
+        del res.obj["error"]
+        return res.obj
+
+    @property
+    def statistics_description(self):
+        """Return the description of the statistics from self.statistics.
+
+        :returns: the statistics description
+        :rtype: dict
+        :raises: StatisticsDescriptionError
+        """
+        res = self.api.get("/_admin/statistics-description")
+        if res.status_code not in HTTP_OK:
+            raise StatisticsDescriptionGetError(res)
+        del res.obj["code"]
+        del res.obj["error"]
+        return res.obj
+
+    @property
+    def server_role(self):
+        """Return the role of the server in cluster
+
+        Possible return values are:
+
+        COORDINATOR: the server is a coordinator in a cluster
+        PRIMARY:     the server is a primary database server in a cluster
+        SECONDARY:   the server is a secondary database server in a cluster
+        UNDEFINED:   in a cluster, UNDEFINED is returned if the server role
+                     cannot be determined. On a single server, UNDEFINED is
+                     the only possible return value.
+
+        :returns: the server role
+        :rtype: str
+        :raises: ServerRoleGetError
+        """
+        res = self.api.get("/_admin/server/role")
+        if res.status_code not in HTTP_OK:
+            raise ServerRoleGetError(res)
+        return res.obj["role"]
 
 if __name__ == "__main__":
     a = Arango()

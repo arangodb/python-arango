@@ -1,4 +1,4 @@
-python-arango
+Python-Arango
 =========
 
 Python Driver for ArangoDB REST API
@@ -6,23 +6,23 @@ Python Driver for ArangoDB REST API
 Overview
 --------
 
-py-arango is a Python 2.7 & 3.4 driver for ArangoDB
+python-arango is a Python 2.7 & 3.4 driver for ArangoDB
 (<https://www.arangodb.com/>)
 
 Installation
 ------------
 
--   Stable (ArangoDB Version 2.5)
+-   Stable (Supports ArangoDB Version 2.6)
 
 ```bash
-sudo pip install py-arango
+sudo pip install python-arango
 ```
 
--   Latest (ArangoDB Version 2.5)
+-   Latest (Supports ArangoDB Version 2.6)
 
 ```bash
-git clone https://github.com/Joowani/py-arango.git
-cd py-arango
+git clone https://github.com/Joowani/python-arango.git
+cd python-arango
 python2.7 setup.py install
 ```
 
@@ -33,65 +33,74 @@ Initializing Connection
 from arango import Arango
 
 # Initialize ArangoDB connection
-a = Arango(host="localhost", port=8529)
+conn = Arango(host="localhost", port=8529)
 ```
 
 Databases
 ---------
 
 ```python
-# List the database names
-a.databases
-a.databases["user"]
-a.databases["system"]
-
-# Get information on the default database ("_system")
-a.name          # equivalent to a.db("_system").name
-a.collections   # equivalent to a.db("_system").collections
-a.id            # equivalent to a.db("_system").id
-a.path          # equivalent to a.db("_system").path
-a.is_system     # equivalent to a.db("_system").is_system
-
-# Get information on a specific database
-a.db("db01").collections
-a.db("db02").id
-a.db("db03").path
-a.db("dbXX").is_system
+# Listing the databases
+conn.databases
+conn.databases["user"]
+conn.databases["system"]
 
 # Create a new database
-a.add_database("my_db")
+conn.create_database("my_database")
 
-# Remove a database
-a.remove_database("my_db")
+# Delete a database
+conn.delete_database("my_database")
 
-# Working with database "_system"
-a.add_collection("my_col")
-a.col("my_col").add_document({"value" : 1})
-a.{whatever}
+# Retrieving information on the default ("_system") database
+conn.name           # equivalent to conn.db("_system").name
+conn.collections    # equivalent to conn.db("_system").collections
+conn.id             # equivalent to conn.db("_system").id
+conn.path           # equivalent to conn.db("_system").path
+conn.is_system      # equivalent to conn.db("_system").is_system
+conn.is_edge        # equivalent to conn.db("_system").is_system
+conn.is_volatile    # equivalent to conn.db("_system").is_system
 
-# Working with database "my_db"
-a.db("my_db").add_collection("my_col")
-a.db("my_db").col("my_col").add_document({"value": 1})
-a.db("my_db").{whatever}
+# Get information on a specific database
+conn.db("db01").name
+conn.db("db01").collections
+conn.db("db02").id
+conn.db("db03").path
+conn.db("db04").is_system
+
+# Working with the default ("_system") database
+conn.create_collection("my_collection")
+conn.aql_functions
+conn.*
+
+# Working with a specific database (e.g. "my_database")
+conn.db("my_database").create_collection("my_collection")
+conn.db("my_database").aql_functions
+conn.db("my_database").*
 ```
+
+User Management
+---------------
+
+Monitoring
+----------
 
 AQL Functions
 -------------
 
 ```python
-my_db = a.db("my_db")
+my_database = conn.db("my_database")
 
-# List the AQL functions defined in database "my_db"
-my_db.aql_functions
+# List the AQL functions defined in database "my_database"
+my_database.aql_functions
 
-# Add a new AQL function
-my_db.add_aql_function(
+# Create a new AQL function
+my_database.create_aql_function(
   "myfunctions::temperature::ctof",
   "function (celsius) { return celsius * 1.8 + 32; }"
 )
 
-# Remove an AQL function
-my_db.remove_aql_function("myfunctions::temperature::ctof")
+# Delete an AQL function
+my_database.delete_aql_function("myfunctions::temperature::ctof")
 ```
 
 AQL Queries
@@ -99,14 +108,14 @@ AQL Queries
 
 ```python
 # Retrieve the execution plan without actually executing it
-my_db.explain_query("FOR doc IN my_col RETURN doc")
+my_database.explain_query("FOR doc IN my_collection RETURN doc")
 
 # Validate the AQL query without actually executing it
-my_db.validate_query("FOR doc IN my_col RETURN doc")
+my_database.validate_query("FOR doc IN my_collection RETURN doc")
 
 # Execute the AQL query and iterate through the AQL cursor
-cursor = my_db.execute_query(
-  "FOR d IN my_col FILTER d.value == @val RETURN d",
+cursor = my_database.execute_query(
+  "FOR d IN my_collection FILTER d.value == @val RETURN d",
   bind_vars={"val": "foobar"}
 )
 for doc in cursor:  # the cursor is deleted when the generator is exhausted
@@ -117,174 +126,174 @@ Collections
 -----------
 
 ```python
-my_db = a.db("my_db")
+my_database = conn.db("my_database")
 
-# List the collection names in "my_db"
-my_db.collections
-my_db.collections["user"]
-my_db.collecitons["system"]
-my_db.collections["all"]
+# List the collections in "my_database"
+my_database.collections
+my_database.collections["user"]
+my_database.collecitons["system"]
+my_database.collections["all"]
 
-# Add a new collection
-my_db.add_collection("new_col")
+# Create a new collection
+my_database.create_collection("new_collection")
 
-# Add a new edge collection
-my_db.add_collection("new_ecol", is_edge=True)
+# Create a new edge collection
+my_database.create_collection("new_ecol", is_edge=True)
 
 # Rename a collection
-my_db.rename_collection("new_col", "my_col")
+my_database.rename_collection("new_collection", "my_collection")
 
-# Remove a collection from the database
-my_db.remove_collection("my_col")
+# Delete a collection from the database
+my_database.delete_collection("my_collection")
 
 # Retrieve collection information
-my_col = a.db("my_db").col("my_col")
-len(my_col) == my_col.count
-my_col.properties
-my_col.id
-my_col.status
-my_col.key_options
-my_col.wait_for_sync
-my_col.journal_size
-my_col.is_system
-my_col.is_edge
-my_col.do_compact
-my_col.figures
-my_col.revision
+my_collection = conn.db("my_database").col("my_collection")
+len(my_collection) == my_collection.count
+my_collection.properties
+my_collection.id
+my_collection.status
+my_collection.key_options
+my_collection.wait_for_sync
+my_collection.journal_size
+my_collection.is_system
+my_collection.is_edge
+my_collection.do_compact
+my_collection.figures
+my_collection.revision
 
-# Modify collection properties (only the modifiable ones)
-my_col.wait_for_sync = False
-my_col.journal_size = new_journal_size
+# Update collection properties (only the modifiable ones)
+my_collection.wait_for_sync = False
+my_collection.journal_size = new_journal_size
 
 # Load the collection into memory
-my_col.load()
+my_collection.load()
 
 # Unload the collection from memory
-my_col.unload()
+my_collection.unload()
 
 # Rotate the collection journal
-my_col.rotate_journal()
+my_collection.rotate_journal()
 
 # Return the checksum of the collection
-my_col.checksum(with_rev=True, with_data=True)
+my_collection.checksum(with_rev=True, with_data=True)
 
-# Remove all documents in the collection
-my_col.truncate()
+# Delete all documents in the collection
+my_collection.truncate()
 
 # Check if a document exists in the collection
-my_col.contains("a_document_key")
-"a_document_key" in my_col
+my_collection.contains("a_document_key")
+"a_document_key" in my_collection
 ```
 
 Indexes
 -------
 
 ```python
-my_col = a.collection("my_col")  # or a.col("mycol")
+my_collection = conn.collection("my_collection")  # or conn.col("mycol")
 
-# List the indexes in collection "my_col"
-my_col.indexes
+# List the indexes in collection "my_collection"
+my_collection.indexes
 
-# Add a unique hash index on attributes "attr1" and "attr2"
-my_col.add_hash_index(fields=["attr1", "attr2"], unique=True)
+# Create a unique hash index on attributes "attr1" and "attr2"
+my_collection.create_hash_index(fields=["attr1", "attr2"], unique=True)
 
-# Add a cap constraint
-my_col.add_cap_constraint(size=10, byte_size=40000)
+# Create a cap constraint
+my_collection.create_cap_constraint(size=10, byte_size=40000)
 
-# Add a unique skiplist index on attributes "attr1" and "attr2"
-my_col.add_skiplist_index(["attr1", "attr2"], unique=True)
+# Create a unique skiplist index on attributes "attr1" and "attr2"
+my_collection.create_skiplist_index(["attr1", "attr2"], unique=True)
 
-# Examples of adding a geo-spatial index on 1 (or 2) coordinate attributes
-my_col.add_geo_index(fields=["coordinates"])
-my_col.add_geo_index(fields=["longitude", "latitude"])
+# Examples of creating a geo-spatial index on 1 (or 2) coordinate attributes
+my_collection.create_geo_index(fields=["coordinates"])
+my_collection.create_geo_index(fields=["longitude", "latitude"])
 
-# Add a fulltext index on attribute "attr1"
-my_col.add_fulltext_index(fields=["attr1"], min_length=10)
+# Create a fulltext index on attribute "attr1"
+my_collection.create_fulltext_index(fields=["attr1"], min_length=10)
 ```
 
 Documents
 ---------
 
 ```python
-my_col = a.db("my_db").collection("my_col")
+my_collection = conn.db("my_database").collection("my_collection")
 
 # Retrieve a document by its key
-my_col.get_document("doc01")
+my_collection.document("doc01")
 
-# Add a new document ("_key" attribute is optional)
-my_col.add_document({"_key": "doc01", "value": 1})
+# Create a new document ("_key" attribute is optional)
+my_collection.create_document({"_key": "doc01", "value": 1})
 
 # Replace a document
-my_col.replace_document("doc01", {"value": 2})
+my_collection.replace_document("doc01", {"value": 2})
 
 # Update a document
-my_col.update_document("doc01", {"another_value": 3})
+my_collection.update_document("doc01", {"another_value": 3})
 
-# Remove a document
-my_col.remove_document("doc01")
+# Delete a document
+my_collection.delete_document("doc01")
 
 # Iterate through the documents in a collection and update them
-for doc in my_col:
+for doc in my_collection:
     new_value = doc["value"] + 1
-    my_col.update_document(doc["_key"], {"new_value": new_value})
+    my_collection.update_document(doc["_key"], {"new_value": new_value})
 ```
 
 Simple Queries (Collection-Specific)
 ------------------------------------
 
 ```python
-# Return the first 5 documents in collection "my_col"
-my_col.first(5)
+# Return the first 5 documents in collection "my_collection"
+my_collection.first(5)
 
 # Return the last 3 documents
-my_col.last(3)
+my_collection.last(3)
 
 # Return all documents (cursor generator object)
-my_col.all()
-list(my_col.all())
+my_collection.all()
+list(my_collection.all())
 
 # Return a random document
-my_col.any()
+my_collection.any()
 
 # Return first document whose "value" is 1
-my_col.get_first_example({"value": 1})
+my_collection.get_first_example({"value": 1})
 
 # Return all documents whose "value" is 1
-my_col.get_by_example({"value": 1})
+my_collection.get_by_example({"value": 1})
 
 # Update all documents whose "value" is 1 with a new attribute
-my_col.update_by_example(
+my_collection.update_by_example(
   {"value": 1}, new_value={"new_attr": 1}
 )
 
 # Return all documents within a radius around a given coordinate (requires geo-index)
-my_col.within(latitude=100, longitude=20, radius=15)
+my_collection.within(latitude=100, longitude=20, radius=15)
 
 # Return all documents near a given coordinate (requires geo-index)
-my_col.near(latitude=100, longitude=20)
+my_collection.near(latitude=100, longitude=20)
 ```
 
 Graphs
 ------
 
 ```python
-my_db = a.db("my_db")
+my_database = conn.db("my_database")
 
 # List all the graphs in the database
-my_db.graphs
+my_database.graphs
 
-# Add a new graph
-my_graph = my_db.add_graph("my_graph")
+# Create a new graph
+my_graph = my_database.create_graph("my_graph")
 
-# Add new vertex collections to a graph
-my_db.add_collection("vcol01")
-my_db.add_collection("vcol02")
-my_graph.add_vertex_collection("vcol01")
-my_graph.add_vertex_collection("vcol02")
+# Create new vertex collections to a graph
+my_database.create_collection("vcol01")
+my_database.create_collection("vcol02")
+my_graph.create_vertex_collection("vcol01")
+my_graph.create_vertex_collection("vcol02")
 
-# Add a new edge definition to a graph
-my_db.add_collection("ecol01", is_edge=True)
-my_graph.add_edge_definition(
+# Create a new edge definition to a graph
+my_database.create_collection("ecol01", is_edge=True)
+my_graph.create_edge_definition(
   edge_collection="ecol01",
   from_vertex_collections=["vcol01"],
   to_vertex_collections=["vcol02"],
@@ -303,9 +312,9 @@ Vertices
 --------
 
 ```python
-# Add new vertices (again if "_key" is not given it's auto-generated)
-my_graph.add_vertex("vcol01", {"_key": "v01", "value": 1})
-my_graph.add_vertex("vcol02", {"_key": "v01", "value": 1})
+# Create new vertices (again if "_key" is not given it's auto-generated)
+my_graph.create_vertex("vcol01", {"_key": "v01", "value": 1})
+my_graph.create_vertex("vcol02", {"_key": "v01", "value": 1})
 
 # Replace a vertex
 my_graph.replace_vertex("vol01/v01", {"value": 2})
@@ -313,16 +322,16 @@ my_graph.replace_vertex("vol01/v01", {"value": 2})
 # Update a vertex
 my_graph.update_vertex("vol02/v01", {"new_value": 3})
 
-# Remove a vertex
-my_graph.remove_vertex("vol01/v01")
+# Delete a vertex
+my_graph.delete_vertex("vol01/v01")
 ```
 
 Edges
 -----
 
 ```python
-# Add a new edge
-my_graph.add_edge(
+# Create a new edge
+my_graph.create_edge(
   "ecol01",  # edge collection name
   {
     "_key": "e01",
@@ -339,15 +348,15 @@ my_graph.replace_edge("ecol01/e01", {"baz": 2})
 # Update an edge
 my_graph.update_edge("ecol01/e01", {"foo": 3})
 
-# Remove an edge
-my_graph.remove_edge("ecol01/e01")
+# Delete an edge
+my_graph.delete_edge("ecol01/e01")
 ```
 
 Graph Traversals
 ----------------
 
 ```python
-my_graph = a.db("my_db").graph("my_graph")
+my_graph = conn.db("my_database").graph("my_graph")
 
 # Execute a graph traversal
 results = my_graph.execute_traversal(
@@ -367,32 +376,32 @@ Batch Requests
 --------------
 
 ```python
-# NOTE: only (add/update/replace/remove) methods for (documents/vertices/edges) are supported at the moment
+# NOTE: only (create/update/replace/delete) methods for (documents/vertices/edges) are supported at the moment
 
 # Execute a batch request for managing documents
-my_db.execute_batch([
+my_database.execute_batch([
     (
-        my_col.add_document,                # method name
+        my_collection.create_document,                # method name
         [{"_key": "doc04", "value": 1}],    # args
         {"wait_for_sync": True}             # kwargs
     ),
     (
-        my_col.update_document,
+        my_collection.update_document,
         ["doc01", {"value": 2}],
         {"wait_for_sync": True}
     ),
     (
-        my_col.replace_document,
+        my_collection.replace_document,
         ["doc02", {"new_value": 3}],
         {"wait_for_sync": True}
     ),
     (
-        my_col.remove_document,
+        my_collection.delete_document,
         ["doc03"],
         {"wait_for_sync": True}
     ),
     (
-        my_col.add_document,
+        my_collection.create_document,
         [{"_key": "doc05", "value": 5}],
         {"wait_for_sync": True}
     ),
@@ -401,17 +410,17 @@ my_db.execute_batch([
 # Execute a batch request for managing vertexes
 self.db.execute_batch([
     (
-        my_graph.add_vertex,
+        my_graph.create_vertex,
         ["vcol01", {"_key": "v01", "value": 1}],
         {"wait_for_sync": True}
     ),
     (
-        my_graph.add_vertex,
+        my_graph.create_vertex,
         ["vcol01", {"_key": "v02", "value": 2}],
         {"wait_for_sync": True}
     ),
     (
-        my_graph.add_vertex,
+        my_graph.create_vertex,
         ["vcol01", {"_key": "v03", "value": 3}],
         {"wait_for_sync": True}
     ),
@@ -431,7 +440,7 @@ action = """
       return 'success!';
   }
 """
-res = my_db.execute_transaction(
+res = my_database.execute_transaction(
     action=action,
     read_collections=["col01", "col02"],
     write_collections=["col01", "col02"],
@@ -444,13 +453,11 @@ To Do
 -----
 
 1.  Tasks
-2.  Monitoring
-3.  User Management
-4.  Async Result
-5.  Endpoints
-6.  Sharding
-7.  Misc. Functions
-8.  General Handling
+2.  Async Result
+3.  Endpoints
+4.  Sharding
+5.  Misc. Functions
+6.  General Handling
 
 Running Tests (requires ArangoDB on localhost)
 ----------------------------------------------

@@ -1,26 +1,29 @@
 """ArangoDB Database."""
 
-from arango.utils import uncamelify
-from arango.batch import BatchHandler
+import json
+import inspect
+
+
+from arango.utils import uncamelify, stringify_request
 from arango.graph import Graph
 from arango.collection import Collection
+from arango.cursor import arango_cursor
+from arango.constants import HTTP_OK
 from arango.exceptions import *
-from arango.cursor import CursorFactory
 
 
-class Database(CursorFactory, BatchHandler):
+class Database(object):
     """A wrapper around database specific API.
 
     :param name: the name of this database
     :type name: str
     :param api: ArangoDB API object
-    :type api: arango.api.ArangoAPI
+    :type api: arango.api.API
     """
 
     def __init__(self, name, api):
-        super(Database, self).__init__(api)
         self.name = name
-        self._api = api
+        self.api = api
         self._collection_cache = {}
         self._graph_cache = {}
 
@@ -32,7 +35,7 @@ class Database(CursorFactory, BatchHandler):
             del self._collection_cache[col_name]
         for col_name in real_cols - cached_cols:
             self._collection_cache[col_name] = Collection(
-                name=col_name, api=self._api
+                name=col_name, api=self.api
             )
 
     def _update_graph_cache(self):
@@ -43,7 +46,7 @@ class Database(CursorFactory, BatchHandler):
             del self._graph_cache[graph_name]
         for graph_name in real_graphs - cached_graphs:
             self._graph_cache[graph_name] = Graph(
-                name=graph_name, api=self._api
+                name=graph_name, api=self.api
             )
 
     @property
@@ -54,8 +57,8 @@ class Database(CursorFactory, BatchHandler):
         :rtype: dict
         :raises: DatabasePropertyError
         """
-        res = self._api.get("/_api/database/current")
-        if res.status_code != 200:
+        res = self.api.get("/_api/database/current")
+        if res.status_code not in HTTP_OK:
             raise DatabasePropertyError(res)
         return uncamelify(res.obj["result"])
 
@@ -116,18 +119,18 @@ class Database(CursorFactory, BatchHandler):
         :type optimizer_rules: list
         :returns: the query plan or list of plans (if all_plans is True)
         :rtype: dict or list
-        :raises: QueryExplainError
+        :raises: AQLQueryExplainError
         """
         options = {"allPlans": all_plans}
         if max_plans is not None:
             options["maxNumberOfPlans"] = max_plans
         if optimizer_rules is not None:
             options["optimizer"] = {"rules": optimizer_rules}
-        res = self._api.post(
+        res = self.api.post(
             "/_api/explain", data={"query": query, "options": options}
         )
-        if res.status_code != 200:
-            raise QueryExplainError(res)
+        if res.status_code not in HTTP_OK:
+            raise AQLQueryExplainError(res)
         if "plan" in res.obj:
             return uncamelify(res.obj["plan"])
         else:
@@ -138,11 +141,11 @@ class Database(CursorFactory, BatchHandler):
 
         :param query: the AQL query to validate
         :type query: str
-        :raises: QueryValidateError
+        :raises: AQLQueryValidateError
         """
-        res = self._api.post("/_api/query", data={"query": query})
-        if res.status_code != 200:
-            raise QueryValidateError(res)
+        res = self.api.post("/_api/query", data={"query": query})
+        if res.status_code not in HTTP_OK:
+            raise AQLQueryValidateError(res)
 
     def execute_query(self, query, count=False, batch_size=None, ttl=None,
                       bind_vars=None, full_count=None, max_plans=None,
@@ -168,7 +171,7 @@ class Database(CursorFactory, BatchHandler):
         :param optimizer_rules: list of optimizer rules
         :type optimizer_rules: list
         :returns: the cursor from executing the query
-        :raises: QueryExecuteError, CursorDeleteError
+        :raises: AQLQueryExecuteError, CursorDeleteError
         """
         options = {}
         if full_count is not None:
@@ -191,14 +194,14 @@ class Database(CursorFactory, BatchHandler):
         if options:
             data["options"] = options
 
-        res = self._api.post("/_api/cursor", data=data)
-        if res.status_code != 201:
-            raise QueryExecuteError(res)
-        return self.cursor(res)
+        res = self.api.post("/_api/cursor", data=data)
+        if res.status_code not in HTTP_OK:
+            raise AQLQueryExecuteError(res)
+        return arango_cursor(self.api, res)
 
-    ########################
-    # Handling Collections #
-    ########################
+    ###############
+    # Collections #
+    ###############
 
     @property
     def collections(self):
@@ -208,8 +211,8 @@ class Database(CursorFactory, BatchHandler):
         :rtype: dict
         :raises: CollectionListError
         """
-        res = self._api.get("/_api/collection")
-        if res.status_code != 200:
+        res = self.api.get("/_api/collection")
+        if res.status_code not in HTTP_OK:
             raise CollectionListError(res)
 
         user_collections = []
@@ -248,12 +251,13 @@ class Database(CursorFactory, BatchHandler):
                 raise CollectionNotFoundError(name)
             return self._collection_cache[name]
 
-    def add_collection(self, name, wait_for_sync=False, do_compact=True,
-                       journal_size=None, is_system=False, is_volatile=False,
-                       key_generator_type="traditional", allow_user_keys=True,
-                       key_increment=None, key_offset=None, is_edge=False,
-                       number_of_shards=None, shard_keys=None):
-        """Add a new collection to this database.
+    def create_collection(self, name, wait_for_sync=False, do_compact=True,
+                          journal_size=None, is_system=False, is_edge=False,
+                          is_volatile=False, key_generator_type="traditional",
+                          shard_keys=None, allow_user_keys=True,
+                          key_offset=None, key_increment=None,
+                          number_of_shards=None):
+        """Create a new collection to this database.
 
         :param name: name of the new collection
         :type name: str
@@ -281,7 +285,7 @@ class Database(CursorFactory, BatchHandler):
         :type number_of_shards: int
         :param shard_keys: the attribute(s) used to determine the target shard
         :type shard_keys: list
-        :raises: CollectionAddError
+        :raises: CollectionCreateError
         """
         key_options = {
             "type": key_generator_type,
@@ -307,22 +311,22 @@ class Database(CursorFactory, BatchHandler):
         if shard_keys is not None:
             data["shardKeys"] = shard_keys
 
-        res = self._api.post("/_api/collection", data=data)
-        if res.status_code != 200:
-            raise CollectionAddError(res)
+        res = self.api.post("/_api/collection", data=data)
+        if res.status_code not in HTTP_OK:
+            raise CollectionCreateError(res)
         self._update_collection_cache()
         return self.collection(name)
 
-    def remove_collection(self, name):
-        """Remove the specified collection from this database.
+    def delete_collection(self, name):
+        """Delete the specified collection from this database.
 
-        :param name: the name of the collection to remove
+        :param name: the name of the collection to delete
         :type name: str
-        :raises: CollectionRemoveError
+        :raises: CollectionDeleteError
         """
-        res = self._api.delete("/_api/collection/{}".format(name))
-        if res.status_code != 200:
-            raise CollectionRemoveError(res)
+        res = self.api.delete("/_api/collection/{}".format(name))
+        if res.status_code not in HTTP_OK:
+            raise CollectionDeleteError(res)
         self._update_collection_cache()
 
     def rename_collection(self, name, new_name):
@@ -334,50 +338,98 @@ class Database(CursorFactory, BatchHandler):
         :type new_name: str
         :raises: CollectionRenameError
         """
-        res = self._api.put(
+        res = self.api.put(
             "/_api/collection/{}/rename".format(name),
             data={"name": new_name}
         )
-        if res.status_code != 200:
+        if res.status_code not in HTTP_OK:
             raise CollectionRenameError(res)
         self._update_collection_cache()
 
-    ##########################
-    # Handling AQL Functions #
-    ##########################
+    ##################
+    # Batch Requests #
+    ##################
+
+    def execute_batch(self, requests):
+        """Execute ArangoDB API calls in a batch.
+
+        :param requests: ArangoDB requests
+        :type requests: list
+        :raises: BatchInvalidError, BatchExecuteError
+        """
+
+        data = ""
+        for content_id, request in enumerate(requests, start=1):
+            try:
+                func, args, kwargs = request
+            except (TypeError, ValueError):
+                raise BatchInvalidError(
+                    "pos {}: malformed request".format(content_id)
+                )
+            if "_batch" not in inspect.getargspec(func)[0]:
+                raise BatchInvalidError(
+                    "pos {}: ArangoDB method '{}' does not support "
+                    "batch execution".format(content_id, func.__name__)
+                )
+            kwargs["_batch"] = True
+            res = func(*args, **kwargs)
+            data += "--XXXsubpartXXX\r\n"
+            data += "Content-Type: application/x-arango-batchpart\r\n"
+            data += "Content-Id: {}\r\n\r\n".format(content_id)
+            data += "{}\r\n".format(stringify_request(**res))
+        data += "--XXXsubpartXXX--\r\n\r\n"
+        res = self.api.post(
+            "/_api/batch",
+            headers={
+                "Content-Type": "multipart/form-data; boundary=XXXsubpartXXX"
+            },
+            data=data,
+        )
+        if res.status_code not in HTTP_OK:
+            raise BatchExecuteError(res)
+        if res.obj is None:
+            return []
+        return [
+            json.loads(string) for string in res.obj.split("\r\n") if
+            string.startswith("{") and string.endswith("}")
+        ]
+
+    #################
+    # AQL Functions #
+    #################
 
     @property
     def aql_functions(self):
-        """Return the AQL functions defined in this database.
+        """List the AQL functions defined in this database.
 
         :returns: a mapping of AQL function names to its javascript code
         :rtype: dict
         :raises: AQLFunctionListError
         """
-        res = self._api.get("/_api/aqlfunction")
-        if res.status_code != 200:
+        res = self.api.get("/_api/aqlfunction")
+        if res.status_code not in HTTP_OK:
             raise AQLFunctionListError(res)
         return {func["name"]: func["code"]for func in res.obj}
 
-    def add_aql_function(self, name, code):
-        """Add a new AQL function.
+    def create_aql_function(self, name, code):
+        """Create a new AQL function.
 
-        :param name: the name of the new AQL function to add
+        :param name: the name of the new AQL function to create
         :type name: str
         :param code: the stringified javascript code of the new function
         :type code: str
         :returns: the updated AQL functions
         :rtype: dict
-        :raises: AQLFunctionAddError
+        :raises: AQLFunctionCreateError
         """
         data = {"name": name, "code": code}
-        res = self._api.post("/_api/aqlfunction", data=data)
+        res = self.api.post("/_api/aqlfunction", data=data)
         if res.status_code not in (200, 201):
-            raise AQLFunctionAddError(res)
+            raise AQLFunctionCreateError(res)
         return self.aql_functions
 
-    def remove_aql_function(self, name, group=None):
-        """Remove an existing AQL function.
+    def delete_aql_function(self, name, group=None):
+        """Delete the AQL function of the given name.
 
         If ``group`` is set to True, then the function name provided in
         ``name`` is treated as a namespace prefix, and all functions in
@@ -385,19 +437,19 @@ class Database(CursorFactory, BatchHandler):
         function name provided in ``name`` must be fully qualified,
         including any namespaces.
 
-        :param name: the name of the AQL function to remove
+        :param name: the name of the AQL function to delete
         :type name: str
         :param group: whether or not to treat name as a namespace prefix
         :returns: the updated AQL functions
         :rtype: dict
-        :raises: AQLFunctionRemoveError
+        :raises: AQLFunctionDeleteError
         """
-        res = self._api.delete(
+        res = self.api.delete(
             "/_api/aqlfunction/{}".format(name),
             params={"group": group} if group is not None else {}
         )
-        if res.status_code != 200:
-            raise AQLFunctionRemoveError(res)
+        if res.status_code not in HTTP_OK:
+            raise AQLFunctionDeleteError(res)
         return self.aql_functions
 
     ################
@@ -440,14 +492,14 @@ class Database(CursorFactory, BatchHandler):
             "waitForSync": wait_for_sync,
             "lockTimeout": lock_timeout,
         }
-        res = self._api.post(path=path, data=data, params=http_params)
-        if res.status_code != 200:
+        res = self.api.post(path=path, data=data, params=http_params)
+        if res.status_code not in HTTP_OK:
             raise TransactionExecuteError(res)
         return res.obj["result"]
 
-    ###################
-    # Handling Graphs #
-    ###################
+    ##########
+    # Graphs #
+    ##########
 
     @property
     def graphs(self):
@@ -457,7 +509,7 @@ class Database(CursorFactory, BatchHandler):
         :rtype: dict
         :raises: GraphGetError
         """
-        res = self._api.get("/_api/gharial")
+        res = self.api.get("/_api/gharial")
         if res.status_code not in (200, 202):
             raise GraphListError(res)
         return [graph["_key"] for graph in res.obj["graphs"]]
@@ -481,9 +533,9 @@ class Database(CursorFactory, BatchHandler):
                 raise GraphNotFoundError(name)
             return self._graph_cache[name]
 
-    def add_graph(self, name, edge_definitions=None,
-                  orphan_collections=None):
-        """Add a new graph in this database.
+    def create_graph(self, name, edge_definitions=None,
+                     orphan_collections=None):
+        """Create a new graph in this database.
 
         # TODO expand on edge_definitions and orphan_collections
 
@@ -495,7 +547,7 @@ class Database(CursorFactory, BatchHandler):
         :type orphan_collections: list
         :returns: the graph object
         :rtype: arango.graph.Graph
-        :raises: GraphAddError
+        :raises: GraphCreateError
         """
         data = {"name": name}
         if edge_definitions is not None:
@@ -503,20 +555,20 @@ class Database(CursorFactory, BatchHandler):
         if orphan_collections is not None:
             data["orphanCollections"] = orphan_collections
 
-        res = self._api.post("/_api/gharial", data=data)
-        if res.status_code != 201:
-            raise GraphAddError(res)
+        res = self.api.post("/_api/gharial", data=data)
+        if res.status_code not in HTTP_OK:
+            raise GraphCreateError(res)
         self._update_graph_cache()
         return self.graph(name)
 
-    def remove_graph(self, name):
+    def delete_graph(self, name):
         """Delete the graph of the given name from this database.
 
-        :param name: the name of the graph to remove
+        :param name: the name of the graph to delete
         :type name: str
-        :raises: GraphRemoveError
+        :raises: GraphDeleteError
         """
-        res = self._api.delete("/_api/gharial/{}".format(name))
-        if res.status_code != 200:
-            raise GraphRemoveError(res)
+        res = self.api.delete("/_api/gharial/{}".format(name))
+        if res.status_code not in HTTP_OK:
+            raise GraphDeleteError(res)
         self._update_graph_cache()

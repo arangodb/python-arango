@@ -1,9 +1,9 @@
 language: python
-sudo: required
+sudo: false
 python:
     - "2.7"
 before_install:
-    - "sh setup_arangodb_2.5.sh"
+    - "sh scripts/setup_arangodb_2.5.sh"
 install:
     - "pip install ."
 script: nosetests

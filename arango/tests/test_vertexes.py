@@ -11,24 +11,25 @@ from arango.tests.utils import (
 
 
 class VertexManagementTest(unittest.TestCase):
+    """Tests for managing ArangoDB vertices."""
 
     def setUp(self):
         self.arango = Arango()
         self.db_name = get_next_db_name(self.arango)
-        self.db = self.arango.add_database(self.db_name)
+        self.db = self.arango.create_database(self.db_name)
         self.col_name = get_next_col_name(self.db)
-        self.col = self.db.add_collection(self.col_name)
+        self.col = self.db.create_collection(self.col_name)
         # Create the vertex collection
         self.vertex_col_name = get_next_col_name(self.db)
-        self.vertex_col = self.db.add_collection(self.vertex_col_name)
+        self.vertex_col = self.db.create_collection(self.vertex_col_name)
         # Create the edge collection
         self.edge_col_name = get_next_col_name(self.db)
-        self.edge_col = self.db.add_collection(
+        self.edge_col = self.db.create_collection(
             self.edge_col_name, is_edge=True
         )
         # Create the graph
         self.graph_name = get_next_graph_name(self.db)
-        self.graph = self.db.add_graph(
+        self.graph = self.db.create_graph(
             name=self.graph_name,
             edge_definitions=[{
                 "collection": self.edge_col_name,
@@ -36,12 +37,12 @@ class VertexManagementTest(unittest.TestCase):
                 "to": [self.vertex_col_name]
             }],
         )
+        # Test database cleaup
+        self.addCleanup(self.arango.delete_database,
+                        name=self.db_name, safe_delete=True)
 
-    def tearDown(self):
-        self.arango.remove_database(self.db_name)
-
-    def test_add_vertex(self):
-        self.graph.add_vertex(
+    def test_create_vertex(self):
+        self.graph.create_vertex(
             self.vertex_col_name,
             data={"_key": "vertex01", "value": 10}
         )
@@ -54,7 +55,7 @@ class VertexManagementTest(unittest.TestCase):
         )
 
     def test_update_vertex(self):
-        self.graph.add_vertex(
+        self.graph.create_vertex(
             self.vertex_col_name,
             data={"_key": "vertex01", "value": 10}
         )
@@ -76,7 +77,7 @@ class VertexManagementTest(unittest.TestCase):
         )
 
     def test_replace_vertex(self):
-        self.graph.add_vertex(
+        self.graph.create_vertex(
             self.vertex_col_name,
             data={"_key": "vertex01", "value": 10}
         )
@@ -97,12 +98,12 @@ class VertexManagementTest(unittest.TestCase):
             30
         )
 
-    def test_remove_vertex(self):
-        self.graph.add_vertex(
+    def test_delete_vertex(self):
+        self.graph.create_vertex(
             self.vertex_col_name,
             data={"_key": "vertex01", "value": 10}
         )
-        self.graph.remove_vertex(
+        self.graph.delete_vertex(
             "{}/{}".format(self.vertex_col_name, "vertex01")
         )
         self.assertNotIn("vertex01", self.vertex_col)

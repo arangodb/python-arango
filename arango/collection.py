@@ -4,31 +4,24 @@ import json
 
 from arango.utils import camelify, uncamelify
 from arango.exceptions import *
-from arango.cursor import CursorFactory
+from arango.cursor import arango_cursor
+from arango.constants import COLLECTION_STATUSES, HTTP_OK
 
 
-class Collection(CursorFactory):
-    """A wrapper around ArangoDB collection specific API.
-
-    :param name: the name of this collection
-    :type name: str
-    :param api: ArangoDB API object
-    :type api: arango.api.ArangoAPI
-    """
-
-    COLLECTION_STATUS = {
-        1: "new",
-        2: "unloaded",
-        3: "loaded",
-        4: "unloading",
-        5: "deleted",
-    }
+class Collection(object):
+    """Wrapper for ArangoDB's collection-specific API."""
 
     def __init__(self, name, api):
-        super(Collection, self).__init__(api)
+        """Initialize the wrapper object.
+
+        :param name: the name of this collection
+        :type name: str
+        :param api: ArangoDB API object
+        :type api: arango.api.API
+        """
         self.name = name
-        self._api = api
-        self._type = "edge" if self.is_edge else "document"
+        self.api = api
+        self.type = "edge" if self.is_edge else "document"
 
     def __iter__(self):
         """Iterate through the documents in this collection."""
@@ -39,22 +32,22 @@ class Collection(CursorFactory):
         return self.count
 
     def __setattr__(self, attr, value):
-        """Modify the properties of this collection.
+        """Update the properties of this collection.
 
-        Only ``wait_for_sync`` and ``journal_size`` are mutable.
+        Only ``wait_for_sync`` and ``journal_size`` attributes are mutable.
         """
         if attr in {"wait_for_sync", "journal_size"}:
-            res = self._api.put(
+            res = self.api.put(
                 "/_api/collection/{}/properties".format(self.name),
                 data={camelify(attr): value}
             )
-            if res.status_code != 200:
-                raise CollectionModifyError(res)
+            if res.status_code not in HTTP_OK:
+                raise CollectionUpdateError(res)
         else:
             super(Collection, self).__setattr__(attr, value)
 
     def __getitem__(self, key):
-        """Return the document from this collection.
+        """Return the document of the given key from this collection.
 
         :param key: the document key
         :type key: str
@@ -64,14 +57,14 @@ class Collection(CursorFactory):
         """
         if not isinstance(key, str):
             raise TypeError("Expecting a str.")
-        return self.get_document(key)
+        return self.document(key)
 
     def __contains__(self, key):
         """Return True if the document exists in this collection.
 
         :param key: the document key
         :type key: str
-        :returns: True if the document exists, else False
+        :returns: True if the document exists, False otherwise
         :rtype: bool
         :raises: DocumentGetError
         """
@@ -83,13 +76,13 @@ class Collection(CursorFactory):
 
         :returns: the number of documents
         :rtype: int
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
-        res = self._api.get(
+        res = self.api.get(
             "/_api/collection/{}/count".format(self.name)
         )
-        if res.status_code != 200:
-            raise CollectionPropertyError(res)
+        if res.status_code not in HTTP_OK:
+            raise CollectionGetError(res)
         return res.obj["count"]
 
     @property
@@ -98,18 +91,18 @@ class Collection(CursorFactory):
 
         :returns: the collection's id, status, key_options etc.
         :rtype: dict
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
-        res = self._api.get(
+        res = self.api.get(
             "/_api/collection/{}/properties".format(self.name)
         )
-        if res.status_code != 200:
-            raise CollectionPropertyError(res)
+        if res.status_code not in HTTP_OK:
+            raise CollectionGetError(res)
         return {
             "id": res.obj["id"],
             "name": res.obj["name"],
             "is_edge": res.obj["type"] == 3,
-            "status": self.COLLECTION_STATUS.get(
+            "status": COLLECTION_STATUSES.get(
                 res.obj["status"],
                 "corrupted ({})".format(res.obj["status"])
             ),
@@ -127,7 +120,7 @@ class Collection(CursorFactory):
 
         :returns: the ID of this collection
         :rtype: str
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
         return self.properties["id"]
 
@@ -137,7 +130,7 @@ class Collection(CursorFactory):
 
         :returns: the collection status
         :rtype: str
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
         return self.properties["status"]
 
@@ -147,7 +140,7 @@ class Collection(CursorFactory):
 
         :returns: the key options of this collection
         :rtype: dict
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
         return self.properties["key_options"]
 
@@ -157,7 +150,7 @@ class Collection(CursorFactory):
 
         :returns: True if collection waits for sync, False otherwise
         :rtype: bool
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
         return self.properties["wait_for_sync"]
 
@@ -167,7 +160,7 @@ class Collection(CursorFactory):
 
         :returns: the journal size of this collection
         :rtype: str
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
         return self.properties["journal_size"]
 
@@ -177,7 +170,7 @@ class Collection(CursorFactory):
 
         :returns: True if the collection is volatile, False otherwise
         :rtype: bool
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
         return self.properties["is_volatile"]
 
@@ -187,7 +180,7 @@ class Collection(CursorFactory):
 
         :returns: True if system collection, False otherwise
         :rtype: bool
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
         return self.properties["is_system"]
 
@@ -197,7 +190,7 @@ class Collection(CursorFactory):
 
         :returns: True if edge collection, False otherwise
         :rtype: bool
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
         return self.properties["is_edge"]
 
@@ -207,7 +200,7 @@ class Collection(CursorFactory):
 
         :returns: True if collection is compacted, False otherwise
         :rtype: bool
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
         return self.properties["do_compact"]
 
@@ -217,13 +210,13 @@ class Collection(CursorFactory):
 
         :returns: the statistics of this collection
         :rtype: dict
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
-        res = self._api.get(
+        res = self.api.get(
             "/_api/collection/{}/figures".format(self.name)
         )
-        if res.status_code != 200:
-            raise CollectionPropertyError(res)
+        if res.status_code not in HTTP_OK:
+            raise CollectionGetError(res)
         return uncamelify(res.obj["figures"])
 
     @property
@@ -232,13 +225,13 @@ class Collection(CursorFactory):
 
         :returns: the collection revision (etag)
         :rtype: str
-        :raises: CollectionPropertyError
+        :raises: CollectionGetError
         """
-        res = self._api.get(
+        res = self.api.get(
             "/_api/collection/{}/revision".format(self.name)
         )
-        if res.status_code != 200:
-            raise CollectionPropertyError(res)
+        if res.status_code not in HTTP_OK:
+            raise CollectionGetError(res)
         return res.obj["revision"]
 
     def load(self):
@@ -248,12 +241,12 @@ class Collection(CursorFactory):
         :rtype: str
         :raises: CollectionLoadError
         """
-        res = self._api.put(
+        res = self.api.put(
             "/_api/collection/{}/load".format(self.name)
         )
-        if res.status_code != 200:
+        if res.status_code not in HTTP_OK:
             raise CollectionLoadError(res)
-        return self.COLLECTION_STATUS.get(
+        return COLLECTION_STATUSES.get(
             res.obj["status"],
             "corrupted ({})".format(res.obj["status"])
         )
@@ -265,12 +258,12 @@ class Collection(CursorFactory):
         :rtype: str
         :raises: CollectionUnloadError
         """
-        res = self._api.put(
+        res = self.api.put(
             "/_api/collection/{}/unload".format(self.name)
         )
-        if res.status_code != 200:
+        if res.status_code not in HTTP_OK:
             raise CollectionUnloadError(res)
-        return self.COLLECTION_STATUS.get(
+        return COLLECTION_STATUSES.get(
             res.obj["status"],
             "corrupted ({})".format(res.obj["status"])
         )
@@ -280,10 +273,10 @@ class Collection(CursorFactory):
 
         :raises: CollectionRotateJournalError
         """
-        res = self._api.put(
+        res = self.api.put(
             "/_api/collection/{}/rotate".format(self.name)
         )
-        if res.status_code != 200:
+        if res.status_code not in HTTP_OK:
             raise CollectionRotateJournalError(res)
         return res.obj["result"]
 
@@ -298,23 +291,23 @@ class Collection(CursorFactory):
         :rtype: int
         :raises: CollectionGetChecksumError
         """
-        res = self._api.get(
+        res = self.api.get(
             "/_api/collection/{}/checksum".format(self.name),
             params={"withRevision": with_rev, "withData": with_data}
         )
-        if res.status_code != 200:
-            raise CollectionGetChecksumError(res)
+        if res.status_code not in HTTP_OK:
+            raise CollectionGetError(res)
         return res.obj["checksum"]
 
     def truncate(self):
-        """Remove all documents from this collection.
+        """Delete all documents from this collection.
 
         :raises: CollectionTruncateError
         """
-        res = self._api.put(
+        res = self.api.put(
             "/_api/collection/{}/truncate".format(self.name)
         )
-        if res.status_code != 200:
+        if res.status_code not in HTTP_OK:
             raise CollectionTruncateError(res)
 
     def contains(self, key):
@@ -326,8 +319,8 @@ class Collection(CursorFactory):
         :rtype: bool
         :raises: DocumentGetError
         """
-        res = self._api.head(
-            "/_api/{}/{}/{}".format(self._type, self.name, key)
+        res = self.api.head(
+            "/_api/{}/{}/{}".format(self.type, self.name, key)
         )
         if res.status_code == 200:
             return True
@@ -336,17 +329,17 @@ class Collection(CursorFactory):
         else:
             raise DocumentGetError(res)
 
-    ######################
-    # Handling Documents #
-    ######################
+    #############
+    # Documents #
+    #############
 
-    def get_document(self, key, rev=None, match=True):
+    def document(self, key, rev=None, match=True):
         """Return the document of the given key.
 
         If the document revision ``rev`` is specified, it is compared
         against the revision of the retrieved document. If ``match`` is set
         to True and the revisions do NOT match, or if ``match`` is set to
-        False and the revisions DO match, ``RevisionMismatchError`` is thrown.
+        False and the revisions DO match, ``DocumentRevisionError`` is thrown.
 
         :param key: the key of the document to retrieve
         :type key: str
@@ -356,24 +349,24 @@ class Collection(CursorFactory):
         :type match: bool
         :returns: the requested document or None if not found
         :rtype: dict or None
-        :raises: RevisionMismatchError, DocumentGetError
+        :raises: DocumentRevisionError, DocumentGetError
         """
-        res = self._api.get(
-            "/_api/{}/{}/{}".format(self._type, self.name, key),
+        res = self.api.get(
+            "/_api/{}/{}/{}".format(self.type, self.name, key),
             headers={
                 "If-Match" if match else "If-None-Match": rev
             } if rev else {}
         )
         if res.status_code in {412, 304}:
-            raise RevisionMismatchError(res)
+            raise DocumentRevisionError(res)
         elif res.status_code == 404:
             return None
-        elif res.status_code != 200:
+        elif res.status_code not in HTTP_OK:
             raise DocumentGetError(res)
         return res.obj
 
-    def add_document(self, data, wait_for_sync=False, _batch=False):
-        """Add the new document to this collection.
+    def create_document(self, data, wait_for_sync=False, _batch=False):
+        """Create a new document to this collection.
 
         If ``data`` contains the ``_key`` key, its value must be free.
         If this collection is an edge collection, ``data`` must contain the
@@ -381,20 +374,20 @@ class Collection(CursorFactory):
 
         :param data: the body of the new document
         :type data: dict
-        :param wait_for_sync: wait for add to sync to disk
+        :param wait_for_sync: wait for create to sync to disk
         :type wait_for_sync: bool
         :returns: the id, rev and key of the new document
         :rtype: dict
-        :raises: DocumentInvalidError, DocumentAddError
+        :raises: DocumentInvalidError, DocumentCreateError
         """
-        if self._type is "edge":
+        if self.type is "edge":
             if "_to" not in data:
                 raise DocumentInvalidError(
                     "the new document data is missing the '_to' key")
             if "_from" not in data:
                 raise DocumentInvalidError(
                     "the new document data is missing the '_from' key")
-        path = "/_api/{}".format(self._type)
+        path = "/_api/{}".format(self.type)
         params = {
             "collection": self.name,
             "waitForSync": wait_for_sync,
@@ -410,9 +403,9 @@ class Collection(CursorFactory):
                 "data": data,
                 "params": params,
             }
-        res = self._api.post(path=path, data=data, params=params)
-        if res.status_code not in {201, 202}:
-            raise DocumentAddError(res)
+        res = self.api.post(path=path, data=data, params=params)
+        if res.status_code not in HTTP_OK:
+            raise DocumentCreateError(res)
         return res.obj
 
     def update_document(self, key, data, rev=None, keep_none=True,
@@ -420,12 +413,12 @@ class Collection(CursorFactory):
         """Update the specified document in this collection.
 
         If ``keep_none`` is set to True, then attributes with values None
-        are retained. Otherwise, they are removed from the document.
+        are retained. Otherwise, they are deleted from the document.
 
         If ``data`` contains the ``_key`` key, it is ignored.
 
         If the ``_rev`` key is in ``data``, the revision of the target
-        document must match against its value. Otherwise a RevisionMismatch
+        document must match against its value. Otherwise a DocumentRevision
         error is thrown. If ``rev`` is also provided, its value is preferred.
 
         The ``_from`` and ``_to`` attributes are immutable, and they are
@@ -445,7 +438,7 @@ class Collection(CursorFactory):
         :rtype: dict
         :raises: DocumentUpdateError
         """
-        path = "/_api/{}/{}/{}".format(self._type, self.name, key)
+        path = "/_api/{}/{}/{}".format(self.type, self.name, key)
         params = {
             "waitForSync": wait_for_sync,
             "keepNull": keep_none
@@ -463,10 +456,10 @@ class Collection(CursorFactory):
                 "data": data,
                 "params": params,
             }
-        res = self._api.patch(path=path, data=data, params=params)
+        res = self.api.patch(path=path, data=data, params=params)
         if res.status_code == 412:
-            raise RevisionMismatchError(res)
-        if res.status_code not in {201, 202}:
+            raise DocumentRevisionError(res)
+        if res.status_code not in HTTP_OK:
             raise DocumentUpdateError(res)
         del res.obj["error"]
         return res.obj
@@ -478,7 +471,7 @@ class Collection(CursorFactory):
         If ``data`` contains the ``_key`` key, it is ignored.
 
         If the ``_rev`` key is in ``data``, the revision of the target
-        document must match against its value. Otherwise a RevisionMismatch
+        document must match against its value. Otherwise a DocumentRevision
         error is thrown. If ``rev`` is also provided, its value is preferred.
 
         The ``_from`` and ``_to`` attributes are immutable, and they are
@@ -503,7 +496,7 @@ class Collection(CursorFactory):
         elif "_rev" in data:
             params["rev"] = data["_rev"]
             params["policy"] = "error"
-        path = "/_api/{}/{}/{}".format(self._type, self.name, key)
+        path = "/_api/{}/{}/{}".format(self.type, self.name, key)
         if _batch:
             return {
                 "method": "put",
@@ -511,44 +504,44 @@ class Collection(CursorFactory):
                 "data": data,
                 "params": params,
             }
-        res = self._api.put(path=path, params=params, data=data)
+        res = self.api.put(path=path, params=params, data=data)
         if res.status_code == 412:
-            raise RevisionMismatchError(res)
-        elif res.status_code not in {201, 202}:
+            raise DocumentRevisionError(res)
+        elif res.status_code not in HTTP_OK:
             raise DocumentReplaceError(res)
         del res.obj["error"]
         return res.obj
 
-    def remove_document(self, key, rev=None, wait_for_sync=False,
+    def delete_document(self, key, rev=None, wait_for_sync=False,
                         _batch=False):
-        """Remove the specified document from this collection.
+        """Delete the specified document from this collection.
 
-        :param key: the key of the document to be removed
+        :param key: the key of the document to be deleted
         :type key: str
         :param rev: the document revision must match this value
         :type rev: str or None
-        :param wait_for_sync: wait for the remove to sync to disk
+        :param wait_for_sync: wait for the delete to sync to disk
         :type wait_for_sync: bool
         :returns: the id, rev and key of the deleted document
         :rtype: dict
-        :raises: RevisionMismatchError, DocumentRemoveError
+        :raises: DocumentRevisionError, DocumentDeleteError
         """
         params = {"waitForSync": wait_for_sync}
         if rev is not None:
             params["rev"] = rev
             params["policy"] = "error"
-        path = "/_api/{}/{}/{}".format(self._type, self.name, key)
+        path = "/_api/{}/{}/{}".format(self.type, self.name, key)
         if _batch:
             return {
                 "method": "delete",
                 "path": path,
                 "params": params
             }
-        res = self._api.delete(path=path, params=params)
+        res = self.api.delete(path=path, params=params)
         if res.status_code == 412:
-            raise RevisionMismatchError(res)
+            raise DocumentRevisionError(res)
         elif res.status_code not in {200, 202}:
-            raise DocumentRemoveError(res)
+            raise DocumentDeleteError(res)
         del res.obj["error"]
         return res.obj
 
@@ -565,11 +558,11 @@ class Collection(CursorFactory):
         :rtype: list
         :raises: SimpleQueryFirstError
         """
-        res = self._api.put(
+        res = self.api.put(
             "/_api/simple/first",
             data={"collection": self.name, "count": count}
         )
-        if res.status_code != 200:
+        if res.status_code not in HTTP_OK:
             raise SimpleQueryFirstError(res)
         return res.obj["result"]
 
@@ -582,11 +575,11 @@ class Collection(CursorFactory):
         :rtype: list
         :raises: SimpleQueryLastError
         """
-        res = self._api.put(
+        res = self.api.put(
             "/_api/simple/last",
             data={"collection": self.name, "count": count}
         )
-        if res.status_code != 200:
+        if res.status_code not in HTTP_OK:
             raise SimpleQueryLastError(res)
         return res.obj["result"]
 
@@ -608,10 +601,10 @@ class Collection(CursorFactory):
             data["skip"] = skip
         if limit is not None:
             data["limit"] = limit
-        res = self._api.put("/_api/simple/all", data=data)
-        if res.status_code != 201:
+        res = self.api.put("/_api/simple/all", data=data)
+        if res.status_code not in HTTP_OK:
             raise SimpleQueryAllError(res)
-        return self.cursor(res)
+        return arango_cursor(self.api, res)
 
     def any(self):
         """Return a random document from this collection.
@@ -620,11 +613,11 @@ class Collection(CursorFactory):
         :rtype: dict
         :raises: SimpleQueryAnyError
         """
-        res = self._api.put(
+        res = self.api.put(
             "/_api/simple/any",
             data={"collection": self.name}
         )
-        if res.status_code != 200:
+        if res.status_code not in HTTP_OK:
             raise SimpleQueryAnyError(res)
         return res.obj["document"]
 
@@ -634,14 +627,14 @@ class Collection(CursorFactory):
         :param example: the example document body
         :type example: dict
         :returns: the first matching document
-        :rtype: dict
+        :rtype: dict or None
         :raises: SimpleQueryFirstExampleError
         """
         data = {"collection": self.name, "example": example}
-        res = self._api.put("/_api/simple/first-example", data=data)
+        res = self.api.put("/_api/simple/first-example", data=data)
         if res.status_code == 404:
-            return
-        elif res.status_code != 200:
+            return None
+        elif res.status_code not in HTTP_OK:
             raise SimpleQueryFirstExampleError(res)
         return res.obj["document"]
 
@@ -665,10 +658,10 @@ class Collection(CursorFactory):
             data["skip"] = skip
         if limit is not None:
             data["limit"] = limit
-        res = self._api.put("/_api/simple/by-example", data=data)
-        if res.status_code != 201:
+        res = self.api.put("/_api/simple/by-example", data=data)
+        if res.status_code not in HTTP_OK:
             raise SimpleQueryGetByExampleError(res)
-        return self.cursor(res)
+        return arango_cursor(self.api, res)
 
     def update_by_example(self, example, new_value, keep_none=True, limit=None,
                           wait_for_sync=False):
@@ -697,8 +690,8 @@ class Collection(CursorFactory):
         }
         if limit is not None:
             data["limit"] = limit
-        res = self._api.put("/_api/simple/update-by-example", data=data)
-        if res.status_code != 200:
+        res = self.api.put("/_api/simple/update-by-example", data=data)
+        if res.status_code not in HTTP_OK:
             raise SimpleQueryUpdateByExampleError(res)
         return res.obj["updated"]
 
@@ -728,8 +721,8 @@ class Collection(CursorFactory):
         }
         if limit is not None:
             data["limit"] = limit
-        res = self._api.put("/_api/simple/replace-by-example", data=data)
-        if res.status_code != 200:
+        res = self.api.put("/_api/simple/replace-by-example", data=data)
+        if res.status_code not in HTTP_OK:
             raise SimpleQueryReplaceByExampleError(res)
         return res.obj["replaced"]
 
@@ -740,11 +733,11 @@ class Collection(CursorFactory):
         :type example: dict
         :param limit: maximum number of documents to return
         :type limit: int
-        :param wait_for_sync: wait for the remove to sync to disk
+        :param wait_for_sync: wait for the delete to sync to disk
         :type wait_for_sync: bool
-        :returns: the number of documents remove
+        :returns: the number of documents deleted
         :rtype: int
-        :raises: SimpleQueryRemoveByExampleError
+        :raises: SimpleQueryDeleteByExampleError
         """
         data = {
             "collection": self.name,
@@ -753,12 +746,13 @@ class Collection(CursorFactory):
         }
         if limit is not None:
             data["limit"] = limit
-        res = self._api.put("/_api/simple/remove-by-example", data=data)
-        if res.status_code != 200:
-            raise SimpleQueryRemoveByExampleError(res)
+        res = self.api.put("/_api/simple/remove-by-example", data=data)
+        if res.status_code not in HTTP_OK:
+            raise SimpleQueryDeleteByExampleError(res)
         return res.obj["deleted"]
 
-    def range(self, attribute, left, right, closed=True, skip=None, limit=None):
+    def range(self, attribute, left, right, closed=True, skip=None,
+              limit=None):
         """Return all the documents within a given range.
 
         In order to execute this query a skiplist index must be present on the
@@ -791,10 +785,10 @@ class Collection(CursorFactory):
             data["skip"] = skip
         if limit is not None:
             data["limit"] = limit
-        res = self._api.put("/_api/simple/range", data=data)
-        if res.status_code != 201:
+        res = self.api.put("/_api/simple/range", data=data)
+        if res.status_code not in HTTP_OK:
             raise SimpleQueryRangeError(res)
-        return self.cursor(res)
+        return arango_cursor(self.api, res)
 
     def near(self, latitude, longitude, distance=None, radius=None, skip=None,
              limit=None, geo=None):
@@ -843,13 +837,12 @@ class Collection(CursorFactory):
         if geo is not None:
             data["geo"] = geo
 
-        res = self._api.put("/_api/simple/near", data=data)
-        if res.status_code != 201:
+        res = self.api.put("/_api/simple/near", data=data)
+        if res.status_code not in HTTP_OK:
             raise SimpleQueryNearError(res)
-        return self.cursor(res)
+        return arango_cursor(self.api, res)
 
     # TODO this endpoint does not seem to work
-    # Come back to this and check that it works in the next version of ArangoDB
     def within(self, latitude, longitude, radius, distance=None, skip=None,
                limit=None, geo=None):
         """Return all documents within the radius around the coordinate.
@@ -895,10 +888,10 @@ class Collection(CursorFactory):
         if geo is not None:
             data["geo"] = geo
 
-        res = self._api.put("/_api/simple/within", data=data)
-        if res.status_code != 201:
-            return SimpleQueryWithinError(res)
-        return self.cursor(res)
+        res = self.api.put("/_api/simple/within", data=data)
+        if res.status_code not in HTTP_OK:
+            raise SimpleQueryWithinError(res)
+        return arango_cursor(self.api, res)
 
     def fulltext(self, attribute, query, skip=None, limit=None, index=None):
         """Return all documents that match the specified fulltext ``query``.
@@ -932,14 +925,53 @@ class Collection(CursorFactory):
             data["limit"] = limit
         if index is not None:
             data["index"] = index
-        res = self._api.put("/_api/simple/fulltext", data=data)
-        if res.status_code != 201:
-            return SimpleQueryFullTextError(res)
-        return self.cursor(res)
+        res = self.api.put("/_api/simple/fulltext", data=data)
+        if res.status_code not in HTTP_OK:
+            raise SimpleQueryFullTextError(res)
+        return arango_cursor(self.api, res)
 
-    ####################
-    # Batch Operations #
-    ####################
+    def lookup_by_keys(self, keys):
+        """Return all documents whose key is in ``keys``.
+
+        :param keys: keys of documents to lookup
+        :type keys: list
+        :returns: the list of documents
+        :rtype: list
+        :raises: SimpleQueryLookupByKeysError
+        """
+        data = {
+            "collection": self.name,
+            "keys": keys,
+        }
+        res = self.api.put("/_api/simple/lookup-by-keys", data=data)
+        if res.status_code not in HTTP_OK:
+            raise SimpleQueryLookupByKeysError(res)
+        return res.obj["documents"]
+
+    def remove_by_keys(self, keys):
+        """Remove all documents whose key is in ``keys``.
+
+        :param keys: keys of documents to delete
+        :type keys: list
+        :returns: the number of documents deleted
+        :rtype: dict
+        :raises: SimpleQueryDeleteByKeysError
+        """
+        data = {
+            "collection": self.name,
+            "keys": keys,
+        }
+        res = self.api.put("/_api/simple/remove-by-keys", data=data)
+        if res.status_code not in HTTP_OK:
+            raise SimpleQueryDeleteByKeysError(res)
+        return {
+            "removed": res.obj["removed"],
+            "ignored": res.obj["ignored"],
+        }
+
+    ###############
+    # Bulk Import #
+    ###############
 
     def bulk_import(self, documents, complete=True, details=True):
         """Import documents into this collection in bulk.
@@ -959,9 +991,9 @@ class Collection(CursorFactory):
         :type details: bool
         :returns: the import results
         :rtype: dict
-        :raises: CollectionBulkImportError
+        :raises: BulkImportError
         """
-        res = self._api.post(
+        res = self.api.post(
             "/_api/import",
             data="\r\n".join([json.dumps(d) for d in documents]),
             params={
@@ -971,14 +1003,64 @@ class Collection(CursorFactory):
                 "details": details
             }
         )
-        if res.status_code != 201:
-            raise CollectionBulkImportError(res)
+        if res.status_code not in HTTP_OK:
+            raise BulkImportError(res)
         del res.obj["error"]
         return res.obj
 
-    ####################
-    # Handling Indexes #
-    ####################
+    ##########
+    # Export #
+    ##########
+
+    # TODO look into this endpoint for better documentation and testing
+    def export(self, flush=None, flush_wait=None, count=None, batch_size=None,
+               limit=None, ttl=None, restrict=None):
+        """"Export all documents from this collection using a cursor.
+
+        :param flush: trigger a WAL flush operation prior to the export
+        :type flush: bool or None
+        :param flush_wait: the max wait time in sec for flush operation
+        :type flush_wait: int or None
+        :param count: whether the count is returned in an attribute of result
+        :type count: bool or None
+        :param batch_size: the max number of result documents in one roundtrip
+        :type batch_size: int or None
+        :param limit: the max number of documents to be included in the cursor
+        :type limit: int or None
+        :param ttl: time-to-live for the cursor on the server
+        :type ttl: int or None
+        :param restrict: object with attributes to be excluded/included
+        :type restrict: dict
+        :return: the generator of documents in this collection
+        :rtype: generator
+        :raises: CollectionExportError
+        """
+        params = {"collection": self.name}
+        options = {}
+        if flush is not None:
+            options["flush"] = flush
+        if flush_wait is not None:
+            options["flushWait"] = flush_wait
+        if count is not None:
+            options["count"] = count
+        if batch_size is not None:
+            options["batchSize"] = batch_size
+        if limit is not None:
+            options["limit"] = limit
+        if ttl is not None:
+            options["ttl"] = ttl
+        if restrict is not None:
+            options["restrict"] = restrict
+        data = {"options": options} if options else {}
+
+        res = self.api.post("/_api/export", params=params, data=data)
+        if res.status_code not in HTTP_OK:
+            raise CollectionExportError(res)
+        return arango_cursor(self.api, res)
+
+    ###########
+    # Indexes #
+    ###########
 
     @property
     def indexes(self):
@@ -988,10 +1070,10 @@ class Collection(CursorFactory):
         :rtype: dict
         :raises: IndexListError
         """
-        res = self._api.get(
+        res = self.api.get(
             "/_api/index?collection={}".format(self.name)
         )
-        if res.status_code != 200:
+        if res.status_code not in HTTP_OK:
             raise IndexListError(res)
 
         indexes = {}
@@ -1000,17 +1082,18 @@ class Collection(CursorFactory):
             indexes[index_id.split("/", 1)[1]] = uncamelify(details)
         return indexes
 
-    def _add_index(self, data):
-        """Helper method for adding new indexes."""
-        res = self._api.post(
+    def _create_index(self, data):
+        """Helper method for creating new indexes."""
+        res = self.api.post(
             "/_api/index?collection={}".format(self.name),
             data=data
         )
-        if res.status_code not in {200, 201}:
-            raise IndexAddError(res)
+        if res.status_code not in HTTP_OK:
+            raise IndexCreateError(res)
+        return res.obj
 
-    def add_hash_index(self, fields, unique=None, sparse=None):
-        """Add a new hash index to this collection.
+    def create_hash_index(self, fields, unique=None, sparse=None):
+        """Create a new hash index to this collection.
 
         :param fields: the attribute paths to index
         :type fields: list
@@ -1018,33 +1101,33 @@ class Collection(CursorFactory):
         :type unique: bool or None
         :param sparse: whether to index attr values of null
         :type sparse: bool or None
-        :raises: IndexAddError
+        :raises: IndexCreateError
         """
         data = {"type": "hash", "fields": fields}
         if unique is not None:
             data["unique"] = unique
         if sparse is not None:
             data["sparse"] = sparse
-        self._add_index(data)
+        return self._create_index(data)
 
-    def add_cap_constraint(self, size=None, byte_size=None):
-        """Add a cap constraint to this collection.
+    def create_cap_constraint(self, size=None, byte_size=None):
+        """Create a cap constraint to this collection.
 
         :param size: the number for documents allowed in this collection
         :type size: int or None
         :param byte_size: the max size of the active document data (> 16384)
         :type byte_size: int or None
-        :raises: IndexAddError
+        :raises: IndexCreateError
         """
         data = {"type": "cap"}
         if size is not None:
             data["size"] = size
         if byte_size is not None:
             data["byteSize"] = byte_size
-        self._add_index(data)
+        return self._create_index(data)
 
-    def add_skiplist_index(self, fields, unique=None, sparse=None):
-        """Add a new skiplist index to this collection.
+    def create_skiplist_index(self, fields, unique=None, sparse=None):
+        """Create a new skiplist index to this collection.
 
         A skiplist index is used to find ranges of documents (e.g. time).
 
@@ -1054,25 +1137,25 @@ class Collection(CursorFactory):
         :type unique: bool or None
         :param sparse: whether to index attr values of null
         :type sparse: bool or None
-        :raises: IndexAddError
+        :raises: IndexCreateError
         """
         data = {"type": "skiplist", "fields": fields}
         if unique is not None:
             data["unique"] = unique
         if sparse is not None:
             data["sparse"] = sparse
-        self._add_index(data)
+        return self._create_index(data)
 
-    def add_geo_index(self, fields, geo_json=None, unique=None,
-                      ignore_null=None):
-        """Add a geo index to this collection
+    def create_geo_index(self, fields, geo_json=None, unique=None,
+                         ignore_null=None):
+        """Create a geo index to this collection
 
         If ``fields`` is a list with ONE attribute path, then a geo-spatial
         index on all documents is created using the value at the path as the
         coordinates. The value must be a list with at least two doubles. The
         list must contain the latitude (first value) and the longitude (second
-        value). All documents without the attribute paths or with invalid values
-        are ignored.
+        value). All documents without the attribute paths or with invalid
+        values are ignored.
 
         If ``fields`` is a list with TWO attribute paths (i.e. latitude and
         longitude, in that order) then a geo-spatial index on all documents is
@@ -1088,7 +1171,7 @@ class Collection(CursorFactory):
         :type unique: bool or None
         :param ignore_null: ignore docs with None in latitude/longitude
         :type ignore_null: bool or None
-        :raises: IndexAddError
+        :raises: IndexCreateError
         """
         data = {"type": "geo", "fields": fields}
         if geo_json is not None:
@@ -1097,14 +1180,14 @@ class Collection(CursorFactory):
             data["unique"] = unique
         if ignore_null is not None:
             data["ignore_null"] = ignore_null
-        self._add_index(data)
+        return self._create_index(data)
 
-    def add_fulltext_index(self, fields, min_length=None):
-        """Add a fulltext index to this collection.
+    def create_fulltext_index(self, fields, min_length=None):
+        """Create a fulltext index to this collection.
 
         A fulltext index can be used to find words, or prefixes of words inside
         documents. A fulltext index can be set on one attribute only, and will
-        index all words contained in documents that have a textual value in this
+        index all words contained in documents with a textual value in this
         attribute. Only words with a (specifiable) minimum length are indexed.
         Word tokenization is done using the word boundary analysis provided by
         libicu, which is taking into account the selected language provided at
@@ -1117,22 +1200,23 @@ class Collection(CursorFactory):
         :type fields: list
         :param min_length: minimum character length of words to index
         :type min_length: int
-        :raises: IndexAddError
+        :raises: IndexCreateError
         """
         data = {"type": "fulltext", "fields": fields}
         if min_length is not None:
             data["minLength"] = min_length
-        self._add_index(data)
+        return self._create_index(data)
 
-    def remove_index(self, index_id):
+    def delete_index(self, index_id):
         """Delete an index from this collection.
 
-        :param index_id: the ID of the index to remove
+        :param index_id: the ID of the index to delete
         :type index_id: str
-        :raises: IndexRemoveError
+        :raises: IndexDeleteError
         """
-        res = self._api.delete(
+        res = self.api.delete(
             "/_api/index/{}/{}".format(self.name, index_id)
         )
-        if res.status_code != 200:
-            raise IndexRemoveError(res)
+        if res.status_code not in HTTP_OK:
+            raise IndexDeleteError(res)
+        return res.obj
