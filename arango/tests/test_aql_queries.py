@@ -1,9 +1,11 @@
-"""Tests for ArangoDB queries."""
+"""Tests for ArangoDB AQL queries."""
 
 import unittest
 
 from arango import Arango
-from arango.exceptions import *
+from arango.exceptions import (
+    AQLQueryValidateError,
+)
 from arango.tests.utils import (
     get_next_col_name,
     get_next_db_name
@@ -11,20 +13,22 @@ from arango.tests.utils import (
 
 
 class ArangoDBQueryTest(unittest.TestCase):
+    """Tests for ArangoDB AQL queries."""
 
     def setUp(self):
         self.arango = Arango()
         self.db_name = get_next_db_name(self.arango)
-        self.db = self.arango.add_database(self.db_name)
+        self.db = self.arango.create_database(self.db_name)
         self.col_name = get_next_col_name(self.db)
-        self.db.add_collection(self.col_name)
+        self.db.create_collection(self.col_name)
 
-    def tearDown(self):
-        self.arango.remove_database(self.db_name)
+        # Test database cleaup
+        self.addCleanup(self.arango.delete_database,
+                        name=self.db_name, safe_delete=True)
 
     def test_explain_query(self):
         self.assertRaises(
-            QueryValidateError,
+            AQLQueryValidateError,
             self.db.validate_query,
             "THIS IS AN INVALID QUERY"
         )
@@ -48,7 +52,7 @@ class ArangoDBQueryTest(unittest.TestCase):
 
     def test_validate_query(self):
         self.assertRaises(
-            QueryValidateError,
+            AQLQueryValidateError,
             self.db.validate_query,
             "THIS IS AN INVALID QUERY"
         )
@@ -61,7 +65,7 @@ class ArangoDBQueryTest(unittest.TestCase):
 
     def test_execute_query(self):
         collection = self.db.collection(self.col_name)
-        collection.bulk_import([
+        collection.import_documents([
             {"_key": "doc01"},
             {"_key": "doc02"},
             {"_key": "doc03"},
@@ -80,7 +84,7 @@ class ArangoDBQueryTest(unittest.TestCase):
 
     def test_execute_query_2(self):
         collection = self.db.collection(self.col_name)
-        collection.bulk_import([
+        collection.import_documents([
             {"_key": "doc01", "value": 1},
             {"_key": "doc02", "value": 2},
             {"_key": "doc03", "value": 3},

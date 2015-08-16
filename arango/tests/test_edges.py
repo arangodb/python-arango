@@ -11,23 +11,24 @@ from arango.tests.utils import (
 
 
 class EdgeManagementTest(unittest.TestCase):
+    """Tests for managing ArangoDB edges."""
 
     def setUp(self):
         # Create the test database
         self.arango = Arango()
         self.db_name = get_next_db_name(self.arango)
-        self.db = self.arango.add_database(self.db_name)
+        self.db = self.arango.create_database(self.db_name)
         # Create the test vertex collection
         self.vertex_col_name = get_next_col_name(self.db)
-        self.vertex_col = self.db.add_collection(self.vertex_col_name)
+        self.vertex_col = self.db.create_collection(self.vertex_col_name)
         # Create the test edge collection
         self.edge_col_name = get_next_col_name(self.db)
-        self.edge_col = self.db.add_collection(
+        self.edge_col = self.db.create_collection(
             self.edge_col_name, is_edge=True
         )
         # Create the test graph
         self.graph_name = get_next_graph_name(self.db)
-        self.graph = self.db.add_graph(
+        self.graph = self.db.create_graph(
             name=self.graph_name,
             edge_definitions=[{
                 "collection": self.edge_col_name,
@@ -35,22 +36,22 @@ class EdgeManagementTest(unittest.TestCase):
                 "to": [self.vertex_col_name]
             }],
         )
-        # Add a few test vertices
-        self.graph.add_vertex(
+        # Create a few test vertices
+        self.graph.create_vertex(
             self.vertex_col_name,
             data={
                 "_key": "vertex01",
                 "value": 1
             }
         )
-        self.graph.add_vertex(
+        self.graph.create_vertex(
             self.vertex_col_name,
             data={
                 "_key": "vertex02",
                 "value": 1
             }
         )
-        self.graph.add_vertex(
+        self.graph.create_vertex(
             self.vertex_col_name,
             data={
                 "_key": "vertex03",
@@ -58,11 +59,12 @@ class EdgeManagementTest(unittest.TestCase):
             }
         )
 
-    def tearDown(self):
-        self.arango.remove_database(self.db_name)
+        # Test database cleaup
+        self.addCleanup(self.arango.delete_database,
+                        name=self.db_name, safe_delete=True)
 
-    def test_add_edge(self):
-        self.graph.add_edge(
+    def test_create_edge(self):
+        self.graph.create_edge(
             self.edge_col_name,
             data={
                 "_key": "edge01",
@@ -92,7 +94,7 @@ class EdgeManagementTest(unittest.TestCase):
         )
 
     def test_update_edge(self):
-        self.graph.add_edge(
+        self.graph.create_edge(
             self.edge_col_name,
             data={
                 "_key": "edge01",
@@ -119,7 +121,7 @@ class EdgeManagementTest(unittest.TestCase):
         )
 
     def test_replace_edge(self):
-        self.graph.add_edge(
+        self.graph.create_edge(
             self.edge_col_name,
             data={
                 "_key": "edge01",
@@ -145,8 +147,8 @@ class EdgeManagementTest(unittest.TestCase):
             20
         )
 
-    def test_remove_edge(self):
-        self.graph.add_edge(
+    def test_delete_edge(self):
+        self.graph.create_edge(
             self.edge_col_name,
             data={
                 "_key": "edge01",
@@ -155,7 +157,7 @@ class EdgeManagementTest(unittest.TestCase):
                 "value": 10
             }
         )
-        self.graph.remove_edge("{}/{}".format(self.edge_col_name, "edge01"))
+        self.graph.delete_edge("{}/{}".format(self.edge_col_name, "edge01"))
         self.assertNotIn("edge01", self.edge_col)
         self.assertEqual(len(self.edge_col), 0)
 

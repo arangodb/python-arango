@@ -2,20 +2,30 @@
 
 from arango.utils import uncamelify
 from arango.exceptions import *
+from arango.constants import HTTP_OK
 
 
 class Graph(object):
-    """A wrapper for ArangoDB graph specific API.
+    """Wrapper for ArangoDB's graph-specific APIs:
 
-    :param name: the name of the graph
-    :type name: str
-    :param api: ArangoDB API object
-    :type api: arango.api.ArangoAPI
+    1. Graph Properties
+    2. Vertex Collection Management
+    3. Edge Definition Management
+    4. Vertex Management
+    5. Edge Management
+    6. Graph Traversals
     """
 
     def __init__(self, name, api):
+        """Initialize the wrapper object.
+
+        :param name: the name of the graph
+        :type name: str
+        :param api: ArangoDB API object
+        :type api: arango.api.API
+        """
         self.name = name
-        self._api = api
+        self.api = api
 
     @property
     def properties(self):
@@ -25,11 +35,11 @@ class Graph(object):
         :rtype: dict
         :raises: GraphPropertiesError
         """
-        res = self._api.get(
+        res = self.api.get(
             "/_api/gharial/{}".format(self.name)
         )
-        if res.status_code != 200:
-            raise GraphPropertiesError(res)
+        if res.status_code not in HTTP_OK:
+            raise GraphPropertyError(res)
         return uncamelify(res.obj["graph"])
 
     @property
@@ -52,9 +62,9 @@ class Graph(object):
         """
         return self.properties["_rev"]
 
-    ###############################
-    # Handling Vertex Collections #
-    ###############################
+    ################################
+    # Vertex Collection Management #
+    ################################
 
     @property
     def orphan_collections(self):
@@ -74,53 +84,53 @@ class Graph(object):
         :rtype: list
         :raises: VertexCollectionListError
         """
-        res = self._api.get(
+        res = self.api.get(
             "/_api/gharial/{}/vertex".format(self.name)
         )
-        if res.status_code != 200:
+        if res.status_code not in HTTP_OK:
             raise VertexCollectionListError(res)
         return res.obj["collections"]
 
-    def add_vertex_collection(self, collection):
-        """Add a vertex collection to this graph.
+    def create_vertex_collection(self, collection):
+        """Create a vertex collection to this graph.
 
-        :param collection: the name of the vertex collection to add
+        :param collection: the name of the vertex collection to create
         :type collection: str
         :returns: the updated list of the vertex collection names
         :rtype: list
-        :raises: VertexCollectionAddError
+        :raises: VertexCollectionCreateError
         """
-        res = self._api.post(
+        res = self.api.post(
             "/_api/gharial/{}/vertex".format(self.name),
             data={"collection": collection}
         )
-        if res.status_code != 201:
-            raise VertexCollectionAddError(res)
+        if res.status_code not in HTTP_OK:
+            raise VertexCollectionCreateError(res)
         return self.vertex_collections
 
-    def remove_vertex_collection(self, collection,
+    def delete_vertex_collection(self, collection,
                                  drop_collection=False):
-        """Remove a vertex collection from this graph.
+        """Delete a vertex collection from this graph.
 
-        :param collection: the name of the vertex collection to remove
+        :param collection: the name of the vertex collection to delete
         :type collection: str
         :param drop_collection: whether or not to drop the collection also
         :type drop_collection: bool
         :returns: the updated list of the vertex collection names
         :rtype: list
-        :raises: VertexCollectionRemoveError
+        :raises: VertexCollectionDeleteError
         """
-        res = self._api.delete(
+        res = self.api.delete(
             "/_api/gharial/{}/vertex/{}".format(self.name, collection),
             params={"dropCollection": drop_collection}
         )
-        if res.status_code != 200:
-            raise VertexCollectionRemoveError(res)
+        if res.status_code not in HTTP_OK:
+            raise VertexCollectionDeleteError(res)
         return self.vertex_collections
 
-    #############################
-    # Handling Edge Definitions #
-    #############################
+    ##############################
+    # Edge Definition Management #
+    ##############################
 
     @property
     def edge_definitions(self):
@@ -132,10 +142,9 @@ class Graph(object):
         """
         return self.properties["edge_definitions"]
 
-    def add_edge_definition(self, edge_collection,
-                            from_vertex_collections,
-                            to_vertex_collections):
-        """Add a edge definition to this graph.
+    def create_edge_definition(self, edge_collection, from_vertex_collections,
+                               to_vertex_collections):
+        """Create a edge definition to this graph.
 
         :param edge_collection: the name of the edge collection
         :type edge_collection: str
@@ -145,9 +154,9 @@ class Graph(object):
         :type to_vertex_collections: list
         :returns: the updated list of edge definitions
         :rtype: list
-        :raises: EdgeDefinitionAddError
+        :raises: EdgeDefinitionCreateError
         """
-        res = self._api.post(
+        res = self.api.post(
             "/_api/gharial/{}/edge".format(self.name),
             data={
                 "collection": edge_collection,
@@ -155,8 +164,8 @@ class Graph(object):
                 "to": to_vertex_collections
             }
         )
-        if res.status_code != 201:
-            raise EdgeDefinitionAddError(res)
+        if res.status_code not in HTTP_OK:
+            raise EdgeDefinitionCreateError(res)
         return res.obj["graph"]["edgeDefinitions"]
 
     def replace_edge_definition(self, edge_collection,
@@ -174,7 +183,7 @@ class Graph(object):
         :rtype: list
         :raises: EdgeDefinitionReplaceError
         """
-        res = self._api.put(
+        res = self.api.put(
             "/_api/gharial/{}/edge/{}".format(
                 self.name, edge_collection
             ),
@@ -184,32 +193,32 @@ class Graph(object):
                 "to": to_vertex_collections
             }
         )
-        if res.status_code != 200:
+        if res.status_code not in HTTP_OK:
             raise EdgeDefinitionReplaceError(res)
         return res.obj["graph"]["edgeDefinitions"]
 
-    def remove_edge_definition(self, collection,
+    def delete_edge_definition(self, collection,
                                drop_collection=False):
-        """Remove the specified edge definition from this graph.
+        """Delete the specified edge definition from this graph.
 
-        :param collection: the name of the edge collection to remove
+        :param collection: the name of the edge collection to delete
         :type collection: str
         :param drop_collection: whether or not to drop the collection also
         :type drop_collection: bool
         :returns: the updated list of edge definitions
         :rtype: list
-        :raises: EdgeDefinitionRemoveError
+        :raises: EdgeDefinitionDeleteError
         """
-        res = self._api.delete(
+        res = self.api.delete(
             "/_api/gharial/{}/edge/{}".format(self.name, collection),
             params={"dropCollection": drop_collection}
         )
-        if res.status_code != 200:
-            raise EdgeDefinitionRemoveError(res)
+        if res.status_code not in HTTP_OK:
+            raise EdgeDefinitionDeleteError(res)
         return res.obj["graph"]["edgeDefinitions"]
 
     #####################
-    # Handling Vertices #
+    # Vertex Management #
     #####################
 
     def get_vertex(self, vertex_id, rev=None):
@@ -224,23 +233,23 @@ class Graph(object):
         :type rev: str or None
         :returns: the requested vertex or None if not found
         :rtype: dict or None
-        :raises: RevisionMismatchError, VertexGetError
+        :raises: VertexRevisionError, VertexGetError
         """
-        res = self._api.get(
+        res = self.api.get(
             "/_api/gharial/{}/vertex/{}".format(self.name, vertex_id),
             params={"rev": rev} if rev is not None else {}
         )
         if res.status_code == 412:
-            raise RevisionMismatchError(res)
+            raise VertexRevisionError(res)
         elif res.status_code == 404:
             return None
-        elif res.status_code != 200:
+        elif res.status_code not in HTTP_OK:
             raise VertexGetError(res)
         return res.obj["vertex"]
 
-    def add_vertex(self, collection, data, wait_for_sync=False,
-                   _batch=False):
-        """Add a vertex to the specified vertex collection if this graph.
+    def create_vertex(self, collection, data, wait_for_sync=False,
+                      _batch=False):
+        """Create a vertex to the specified vertex collection if this graph.
 
         If ``data`` contains the ``_key`` key, its value must be unused
         in the collection.
@@ -249,11 +258,11 @@ class Graph(object):
         :type collection: str
         :param data: the body of the new vertex
         :type data: dict
-        :param wait_for_sync: wait for the add to sync to disk
+        :param wait_for_sync: wait for the create to sync to disk
         :type wait_for_sync: bool
         :return: the id, rev and key of the new vertex
         :rtype: dict
-        :raises: VertexAddError
+        :raises: VertexCreateError
         """
         path = "/_api/gharial/{}/vertex/{}".format(self.name, collection)
         params = {"waitForSync": wait_for_sync}
@@ -264,9 +273,9 @@ class Graph(object):
                 "data": data,
                 "params": params,
             }
-        res = self._api.post(path=path, data=data, params=params)
-        if res.status_code not in {201, 202}:
-            raise VertexAddError(res)
+        res = self.api.post(path=path, data=data, params=params)
+        if res.status_code not in HTTP_OK:
+            raise VertexCreateError(res)
         return res.obj["vertex"]
 
     def update_vertex(self, vertex_id, data, rev=None, keep_none=True,
@@ -274,12 +283,12 @@ class Graph(object):
         """Update a vertex of the specified ID in this graph.
 
         If ``keep_none`` is set to True, then attributes with values None
-        are retained. Otherwise, they are removed from the vertex.
+        are retained. Otherwise, they are deleted from the vertex.
 
         If ``data`` contains the ``_key`` key, it is ignored.
 
         If the ``_rev`` key is in ``data``, the revision of the target
-        vertex must match against its value. Otherwise a RevisionMismatch
+        vertex must match against its value. Otherwise a VertexRevision
         error is thrown. If ``rev`` is also provided, its value is preferred.
 
         :param vertex_id: the ID of the vertex to be updated
@@ -294,7 +303,7 @@ class Graph(object):
         :type wait_for_sync: bool
         :return: the id, rev and key of the updated vertex
         :rtype: dict
-        :raises: RevisionMismatchError, VertexUpdateError
+        :raises: VertexRevisionError, VertexUpdateError
         """
         path = "/_api/gharial/{}/vertex/{}".format(self.name, vertex_id)
         params = {
@@ -312,9 +321,9 @@ class Graph(object):
                 "data": data,
                 "params": params,
             }
-        res = self._api.patch(path=path, data=data, params=params)
+        res = self.api.patch(path=path, data=data, params=params)
         if res.status_code == 412:
-            raise RevisionMismatchError(res)
+            raise VertexRevisionError(res)
         elif res.status_code not in {200, 202}:
             raise VertexUpdateError(res)
         return res.obj["vertex"]
@@ -326,7 +335,7 @@ class Graph(object):
         If ``data`` contains the ``_key`` key, it is ignored.
 
         If the ``_rev`` key is in ``data``, the revision of the target
-        vertex must match against its value. Otherwise a RevisionMismatch
+        vertex must match against its value. Otherwise a VertexRevision
         error is thrown. If ``rev`` is also provided, its value is preferred.
 
         :param vertex_id: the ID of the vertex to be replaced
@@ -339,7 +348,7 @@ class Graph(object):
         :type wait_for_sync: bool
         :return: the id, rev and key of the replaced vertex
         :rtype: dict
-        :raises: RevisionMismatchError, VertexReplaceError
+        :raises: VertexRevisionError, VertexReplaceError
         """
         path = "/_api/gharial/{}/vertex/{}".format(self.name, vertex_id)
         params = {"waitForSync": wait_for_sync}
@@ -354,22 +363,22 @@ class Graph(object):
                 "data": data,
                 "params": params,
             }
-        res = self._api.put(path=path, params=params, data=data)
+        res = self.api.put(path=path, params=params, data=data)
         if res.status_code == 412:
-            raise RevisionMismatchError(res)
+            raise VertexRevisionError(res)
         elif res.status_code not in {200, 202}:
             raise VertexReplaceError(res)
         return res.obj["vertex"]
 
-    def remove_vertex(self, vertex_id, rev=None, wait_for_sync=False,
+    def delete_vertex(self, vertex_id, rev=None, wait_for_sync=False,
                       _batch=False):
-        """Remove the vertex of the specified ID from this graph.
+        """Delete the vertex of the specified ID from this graph.
 
-        :param vertex_id: the ID of the vertex to be removed
+        :param vertex_id: the ID of the vertex to be deleted
         :type vertex_id: str
         :param rev: the vertex revision must match this value
         :type rev: str or None
-        :raises: RevisionMismatchError, VertexRemoveError
+        :raises: VertexRevisionError, VertexDeleteError
         """
         path = "/_api/gharial/{}/vertex/{}".format(self.name, vertex_id)
         params = {"waitForSync": wait_for_sync}
@@ -381,15 +390,15 @@ class Graph(object):
                 "path": path,
                 "params": params,
             }
-        res = self._api.delete(path=path, params=params)
+        res = self.api.delete(path=path, params=params)
         if res.status_code == 412:
-            raise RevisionMismatchError(res)
+            raise VertexRevisionError(res)
         if res.status_code not in {200, 202}:
-            raise VertexRemoveError(res)
+            raise VertexDeleteError(res)
 
-    ##################
-    # Handling Edges #
-    ##################
+    ###################
+    # Edge Management #
+    ###################
 
     def get_edge(self, edge_id, rev=None):
         """Return the edge of the specified ID in this graph.
@@ -403,22 +412,22 @@ class Graph(object):
         :type rev: str or None
         :returns: the requested edge or None if not found
         :rtype: dict or None
-        :raises: RevisionMismatchError, EdgeGetError
+        :raises: EdgeRevisionError, EdgeGetError
         """
-        res = self._api.get(
+        res = self.api.get(
             "/_api/gharial/{}/edge/{}".format(self.name, edge_id),
             params={} if rev is None else {"rev": rev}
         )
         if res.status_code == 412:
-            raise RevisionMismatchError(res)
+            raise EdgeRevisionError(res)
         elif res.status_code == 404:
             return None
-        elif res.status_code != 200:
+        elif res.status_code not in HTTP_OK:
             raise EdgeGetError(res)
         return res.obj["edge"]
 
-    def add_edge(self, collection, data, wait_for_sync=False, _batch=False):
-        """Add an edge to the specified edge collection of this graph.
+    def create_edge(self, collection, data, wait_for_sync=False, _batch=False):
+        """Create an edge to the specified edge collection of this graph.
 
         The ``data`` must contain ``_from`` and ``_to`` keys with valid
         vertex IDs as their values. If ``data`` contains the ``_key`` key,
@@ -428,11 +437,11 @@ class Graph(object):
         :type collection: str
         :param data: the body of the new edge
         :type data: dict
-        :param wait_for_sync: wait for the add to sync to disk
+        :param wait_for_sync: wait for the create to sync to disk
         :type wait_for_sync: bool
         :return: the id, rev and key of the new edge
         :rtype: dict
-        :raises: DocumentInvalidError, EdgeAddError
+        :raises: DocumentInvalidError, EdgeCreateError
         """
         if "_to" not in data:
             raise DocumentInvalidError(
@@ -449,9 +458,9 @@ class Graph(object):
                 "data": data,
                 "params": params,
             }
-        res = self._api.post(path=path, data=data, params=params)
-        if res.status_code not in {201, 202}:
-            raise EdgeAddError(res)
+        res = self.api.post(path=path, data=data, params=params)
+        if res.status_code not in HTTP_OK:
+            raise EdgeCreateError(res)
         return res.obj["edge"]
 
     def update_edge(self, edge_id, data, rev=None, keep_none=True,
@@ -459,18 +468,18 @@ class Graph(object):
         """Update the edge of the specified ID in this graph.
 
         If ``keep_none`` is set to True, then attributes with values None
-        are retained. Otherwise, they are removed from the edge.
+        are retained. Otherwise, they are deleted from the edge.
 
         If ``data`` contains the ``_key`` key, it is ignored.
 
         If the ``_rev`` key is in ``data``, the revision of the target
-        edge must match against its value. Otherwise a RevisionMismatch
+        edge must match against its value. Otherwise a EdgeRevision
         error is thrown. If ``rev`` is also provided, its value is preferred.
 
         The ``_from`` and ``_to`` attributes are immutable, and they are
         ignored if present in ``data``
 
-        :param edge_id: the ID of the edge to be removed
+        :param edge_id: the ID of the edge to be deleted
         :type edge_id: str
         :param data: the body to update the edge with
         :type data: dict
@@ -482,7 +491,7 @@ class Graph(object):
         :type wait_for_sync: bool
         :return: the id, rev and key of the updated edge
         :rtype: dict
-        :raises: RevisionMismatchError, EdgeUpdateError
+        :raises: EdgeRevisionError, EdgeUpdateError
         """
         path = "/_api/gharial/{}/edge/{}".format(self.name, edge_id)
         params = {
@@ -500,9 +509,9 @@ class Graph(object):
                 "data": data,
                 "params": params,
             }
-        res = self._api.patch(path=path, data=data, params=params)
+        res = self.api.patch(path=path, data=data, params=params)
         if res.status_code == 412:
-            raise RevisionMismatchError(res)
+            raise EdgeRevisionError(res)
         elif res.status_code not in {200, 202}:
             raise EdgeUpdateError(res)
         return res.obj["edge"]
@@ -514,13 +523,13 @@ class Graph(object):
         If ``data`` contains the ``_key`` key, it is ignored.
 
         If the ``_rev`` key is in ``data``, the revision of the target
-        edge must match against its value. Otherwise a RevisionMismatch
+        edge must match against its value. Otherwise a EdgeRevision
         error is thrown. If ``rev`` is also provided, its value is preferred.
 
         The ``_from`` and ``_to`` attributes are immutable, and they are
         ignored if present in ``data``
 
-        :param edge_id: the ID of the edge to be removed
+        :param edge_id: the ID of the edge to be deleted
         :type edge_id: str
         :param data: the body to replace the edge with
         :type data: dict
@@ -530,7 +539,7 @@ class Graph(object):
         :type wait_for_sync: bool
         :returns: the id, rev and key of the replaced edge
         :rtype: dict
-        :raises: RevisionMismatchError, EdgeReplaceError
+        :raises: EdgeRevisionError, EdgeReplaceError
         """
         path = "/_api/gharial/{}/edge/{}".format(self.name, edge_id)
         params = {"waitForSync": wait_for_sync}
@@ -545,22 +554,22 @@ class Graph(object):
                 "data": data,
                 "params": params,
             }
-        res = self._api.put(path=path, params=params, data=data)
+        res = self.api.put(path=path, params=params, data=data)
         if res.status_code == 412:
-            raise RevisionMismatchError(res)
+            raise EdgeRevisionError(res)
         elif res.status_code not in {200, 202}:
             raise EdgeReplaceError(res)
         return res.obj["edge"]
 
-    def remove_edge(self, edge_id, rev=None, wait_for_sync=False,
+    def delete_edge(self, edge_id, rev=None, wait_for_sync=False,
                     _batch=False):
-        """Remove the edge of the specified ID from this graph.
+        """Delete the edge of the specified ID from this graph.
 
-        :param edge_id: the ID of the edge to be removed
+        :param edge_id: the ID of the edge to be deleted
         :type edge_id: str
         :param rev: the edge revision must match this value
         :type rev: str or None
-        :raises: RevisionMismatchError, EdgeRemoveError
+        :raises: EdgeRevisionError, EdgeDeleteError
         """
         path = "/_api/gharial/{}/edge/{}".format(self.name, edge_id)
         params = {"waitForSync": wait_for_sync}
@@ -572,20 +581,21 @@ class Graph(object):
             }
         if rev is not None:
             params["rev"] = rev
-        res = self._api.delete(path=path, params=params)
+        res = self.api.delete(path=path, params=params)
         if res.status_code == 412:
-            raise RevisionMismatchError(res)
+            raise EdgeRevisionError(res)
         elif res.status_code not in {200, 202}:
-            raise EdgeRemoveError(res)
+            raise EdgeDeleteError(res)
 
-    ###################
-    # Graph Traversal #
-    ###################
+    ####################
+    # Graph Traversals #
+    ####################
 
-    def execute_traversal(self, start_vertex, direction=None,
-            strategy=None, order=None, item_order=None, uniqueness=None,
-            max_iterations=None, min_depth=None, max_depth=None, init=None,
-            filters=None, visitor=None, expander=None, sort=None):
+    def execute_traversal(self, start_vertex, direction=None, strategy=None,
+                          order=None, item_order=None, uniqueness=None,
+                          max_iterations=None, min_depth=None, max_depth=None,
+                          init=None, filters=None, visitor=None, expander=None,
+                          sort=None):
         """Execute a graph traversal and return the visited vertices.
 
         For more details on ``init``, ``filter``, ``visitor``, ``expander``
@@ -642,7 +652,7 @@ class Graph(object):
             "sort": sort
         }
         data = {k: v for k, v in data.items() if v is not None}
-        res = self._api.post("/_api/traversal", data=data)
-        if res.status_code != 200:
+        res = self.api.post("/_api/traversal", data=data)
+        if res.status_code not in HTTP_OK:
             raise GraphTraversalError(res)
         return res.obj["result"]

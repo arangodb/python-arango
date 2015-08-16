@@ -1,4 +1,4 @@
-"""Tests for managing ArangoDB collections."""
+"""Tests for managing ArangoDB graphs."""
 
 import unittest
 
@@ -11,42 +11,44 @@ from arango.tests.utils import (
 
 
 class GraphManagementTest(unittest.TestCase):
+    """Tests for managing ArangoDB graphs."""
 
     def setUp(self):
         self.arango = Arango()
         self.db_name = get_next_db_name(self.arango)
-        self.db = self.arango.add_database(self.db_name)
+        self.db = self.arango.create_database(self.db_name)
 
-    def tearDown(self):
-        self.arango.remove_database(self.db_name)
+        # Test database cleaup
+        self.addCleanup(self.arango.delete_database,
+                        name=self.db_name, safe_delete=True)
 
-    def test_add_graph(self):
+    def test_create_graph(self):
         graph_name = get_next_graph_name(self.db)
-        self.db.add_graph(graph_name)
+        self.db.create_graph(graph_name)
         self.assertIn(graph_name, self.db.graphs)
 
-    def test_remove_graph(self):
-        # Add a new collection
+    def test_delete_graph(self):
+        # Create a new collection
         graph_name = get_next_graph_name(self.db)
-        self.db.add_graph(graph_name)
+        self.db.create_graph(graph_name)
         self.assertIn(graph_name, self.db.graphs)
-        # Remove the collection and ensure that it's gone
-        self.db.remove_graph(graph_name)
+        # Delete the collection and ensure that it's gone
+        self.db.delete_graph(graph_name)
         self.assertNotIn(graph_name, self.db.graphs)
 
-    def test_add_graph_with_defined_cols(self):
+    def test_create_graph_with_defined_cols(self):
         # Create the orphan collection
         orphan_col_name = get_next_col_name(self.db)
-        self.db.add_collection(orphan_col_name)
+        self.db.create_collection(orphan_col_name)
         # Create the vertex collection
         vertex_col_name = get_next_col_name(self.db)
-        self.db.add_collection(vertex_col_name)
+        self.db.create_collection(vertex_col_name)
         # Create the edge collection
         edge_col_name = get_next_col_name(self.db)
-        self.db.add_collection(edge_col_name, is_edge=True)
+        self.db.create_collection(edge_col_name, is_edge=True)
         # Create the graph
         graph_name = get_next_graph_name(self.db)
-        graph = self.db.add_graph(
+        graph = self.db.create_graph(
             name=graph_name,
             edge_definitions=[{
                 "collection": edge_col_name,
@@ -90,45 +92,45 @@ class GraphManagementTest(unittest.TestCase):
             }
         )
 
-    def test_add_and_remove_vertex_collection(self):
+    def test_create_and_delete_vertex_collection(self):
         # Create the vertex collection
         vertex_col_name = get_next_col_name(self.db)
-        self.db.add_collection(vertex_col_name)
+        self.db.create_collection(vertex_col_name)
         # Create the graph
         graph_name = get_next_graph_name(self.db)
-        graph = self.db.add_graph(graph_name)
+        graph = self.db.create_graph(graph_name)
         self.assertIn(graph_name, self.db.graphs)
         self.assertEqual(graph.vertex_collections, [])
-        # Add the vertex collection to the graph
-        graph.add_vertex_collection(vertex_col_name)
+        # Create the vertex collection to the graph
+        graph.create_vertex_collection(vertex_col_name)
         self.assertEqual(
             graph.vertex_collections,
             [vertex_col_name]
         )
-        # Remove the vertex collection (completely)
-        graph.remove_vertex_collection(
+        # Delete the vertex collection (completely)
+        graph.delete_vertex_collection(
             vertex_col_name,
             drop_collection=True
         )
         self.assertEqual(graph.vertex_collections, [])
         self.assertNotIn(vertex_col_name, self.db.collections["all"])
 
-    def test_add_and_remove_edge_definition(self):
+    def test_create_and_delete_edge_definition(self):
         # Create the edge and vertex collections
         vertex_col_name = get_next_col_name(self.db)
-        self.db.add_collection(vertex_col_name)
+        self.db.create_collection(vertex_col_name)
         edge_col_name = get_next_col_name(self.db)
-        self.db.add_collection(edge_col_name, is_edge=True)
+        self.db.create_collection(edge_col_name, is_edge=True)
         # Create the graph
         graph_name = get_next_graph_name(self.db)
-        graph = self.db.add_graph(graph_name)
-        # Add the edge definition to the graph
+        graph = self.db.create_graph(graph_name)
+        # Create the edge definition to the graph
         edge_definition = {
             "collection": edge_col_name,
             "from": [vertex_col_name],
             "to": [vertex_col_name]
         }
-        graph.add_edge_definition(
+        graph.create_edge_definition(
             edge_col_name,
             [vertex_col_name],
             [vertex_col_name]
@@ -137,7 +139,7 @@ class GraphManagementTest(unittest.TestCase):
             graph.edge_definitions,
             [edge_definition]
         )
-        graph.remove_edge_definition(
+        graph.delete_edge_definition(
             edge_col_name,
             drop_collection=True
         )
@@ -147,27 +149,27 @@ class GraphManagementTest(unittest.TestCase):
     def test_replace_edge_definition(self):
         # Create edge and vertex collection set 1
         vertex_col_name = get_next_col_name(self.db)
-        self.db.add_collection(vertex_col_name)
+        self.db.create_collection(vertex_col_name)
         edge_col_name = get_next_col_name(self.db)
-        self.db.add_collection(edge_col_name, is_edge=True)
+        self.db.create_collection(edge_col_name, is_edge=True)
 
         # Create edge and vertex collection set 2
         vertex_col_name_2 = get_next_col_name(self.db)
-        self.db.add_collection(vertex_col_name_2)
+        self.db.create_collection(vertex_col_name_2)
         edge_col_name_2 = get_next_col_name(self.db)
-        self.db.add_collection(edge_col_name_2, is_edge=True)
+        self.db.create_collection(edge_col_name_2, is_edge=True)
 
         # Create the graph
         graph_name = get_next_graph_name(self.db)
-        graph = self.db.add_graph(graph_name)
+        graph = self.db.create_graph(graph_name)
 
-        # Add the edge definition to the graph
+        # Create the edge definition to the graph
         edge_definition = {
             "collection": edge_col_name,
             "from": [vertex_col_name],
             "to": [vertex_col_name]
         }
-        graph.add_edge_definition(
+        graph.create_edge_definition(
             edge_col_name,
             [vertex_col_name],
             [vertex_col_name]

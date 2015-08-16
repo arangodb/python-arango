@@ -3,7 +3,9 @@
 import unittest
 
 from arango import Arango
-from arango.exceptions import *
+from arango.exceptions import (
+    CollectionRotateJournalError,
+)
 from arango.utils import is_string
 from arango.tests.utils import (
     get_next_col_name,
@@ -12,24 +14,26 @@ from arango.tests.utils import (
 
 
 class CollectionManagementTest(unittest.TestCase):
+    """Tests for managing ArangoDB collections."""
 
     def setUp(self):
         self.arango = Arango()
         self.db_name = get_next_db_name(self.arango)
-        self.db = self.arango.add_database(self.db_name)
+        self.db = self.arango.create_database(self.db_name)
 
-    def tearDown(self):
-        self.arango.remove_database(self.db_name)
+        # Test database cleaup
+        self.addCleanup(self.arango.delete_database,
+                        name=self.db_name, safe_delete=True)
 
-    def test_add_collection(self):
+    def test_create_collection(self):
         col_name = get_next_col_name(self.db)
-        self.db.add_collection(col_name)
+        self.db.create_collection(col_name)
         self.assertIn(col_name, self.db.collections["all"])
 
     def test_rename_collection(self):
-        # Add a new collection
+        # Create a new collection
         col_name = get_next_col_name(self.db)
-        self.db.add_collection(col_name)
+        self.db.create_collection(col_name)
         col_id = self.db.collection(col_name).id
         # Rename the collection
         new_col_name = get_next_col_name(self.db)
@@ -39,19 +43,19 @@ class CollectionManagementTest(unittest.TestCase):
         # Ensure it is the same collection by checking the ID
         self.assertEqual(self.db.collection(new_col_name).id, col_id)
 
-    def test_remove_collection(self):
-        # Add a new collection
+    def test_delete_collection(self):
+        # Create a new collection
         col_name = get_next_col_name(self.db)
-        self.db.add_collection(col_name)
+        self.db.create_collection(col_name)
         self.assertIn(col_name, self.db.collections["all"])
-        # Remove the collection and ensure that it's gone
-        self.db.remove_collection(col_name)
+        # Delete the collection and ensure that it's gone
+        self.db.delete_collection(col_name)
         self.assertNotIn(col_name, self.db.collections)
 
-    def test_collection_add_with_config(self):
-        # Add a new collection with custom defined properties
+    def test_collection_create_with_config(self):
+        # Create a new collection with custom defined properties
         col_name = get_next_col_name(self.db)
-        col = self.db.add_collection(
+        col = self.db.create_collection(
             name=col_name,
             wait_for_sync=True,
             do_compact=False,
@@ -90,8 +94,8 @@ class CollectionManagementTest(unittest.TestCase):
         self.assertTrue(isinstance(col.figures, dict))
 
     def test_collection_setters(self):
-        # Add a new collection with predefined properties
-        col = self.db.add_collection(
+        # Create a new collection with predefined properties
+        col = self.db.create_collection(
             name=get_next_col_name(self.db),
             wait_for_sync=False,
             journal_size=7774208
@@ -105,12 +109,12 @@ class CollectionManagementTest(unittest.TestCase):
         self.assertEqual(col.journal_size, 8884208)
 
     def test_collection_load_unload(self):
-        col = self.db.add_collection(get_next_col_name(self.db))
+        col = self.db.create_collection(get_next_col_name(self.db))
         self.assertIn(col.unload(), {"unloaded", "unloading"})
         self.assertIn(col.load(), {"loaded", "loading"})
 
     def test_collection_rotate_journal(self):
-        col = self.db.add_collection(get_next_col_name(self.db))
+        col = self.db.create_collection(get_next_col_name(self.db))
         self.assertRaises(
             CollectionRotateJournalError,
             col.rotate_journal

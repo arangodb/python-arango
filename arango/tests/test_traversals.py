@@ -12,26 +12,27 @@ from arango.tests.utils import (
 
 # TODO add more tests
 class EdgeManagementTest(unittest.TestCase):
+    """Tests for ArangoDB graph traversals."""
 
     def setUp(self):
         # Create the test database
         self.arango = Arango()
         self.db_name = get_next_db_name(self.arango)
-        self.db = self.arango.add_database(self.db_name)
+        self.db = self.arango.create_database(self.db_name)
         # Create the test vertex "from" collection
         self.from_col_name = get_next_col_name(self.db)
-        self.from_col = self.db.add_collection(self.from_col_name)
+        self.from_col = self.db.create_collection(self.from_col_name)
         # Create the test vertex "to" collection
         self.to_col_name = get_next_col_name(self.db)
-        self.to_col = self.db.add_collection(self.to_col_name)
+        self.to_col = self.db.create_collection(self.to_col_name)
         # Create the test edge collection
         self.edge_col_name = get_next_col_name(self.db)
-        self.edge_col = self.db.add_collection(
+        self.edge_col = self.db.create_collection(
             self.edge_col_name, is_edge=True
         )
         # Create the test graph
         self.graph_name = get_next_graph_name(self.db)
-        self.graph = self.db.add_graph(
+        self.graph = self.db.create_graph(
             name=self.graph_name,
             edge_definitions=[{
                 "collection": self.edge_col_name,
@@ -39,54 +40,55 @@ class EdgeManagementTest(unittest.TestCase):
                 "to": [self.to_col_name]
             }],
         )
-        # Add a few test "from" vertices
-        self.graph.add_vertex(
+        # Create a few test "from" vertices
+        self.graph.create_vertex(
             self.from_col_name,
             data={"_key": "from01", "value": 1}
         )
-        self.graph.add_vertex(
+        self.graph.create_vertex(
             self.from_col_name,
             data={"_key": "from02", "value": 2}
         )
-        # Add a few test "to" vertices
-        self.graph.add_vertex(
+        # Create a few test "to" vertices
+        self.graph.create_vertex(
             self.to_col_name,
             data={"_key": "to01", "value": 1}
         )
-        self.graph.add_vertex(
+        self.graph.create_vertex(
             self.to_col_name,
             data={"_key": "to02", "value": 2}
         )
-        self.graph.add_vertex(
+        self.graph.create_vertex(
             self.to_col_name,
             data={"_key": "to03", "value": 3}
         )
 
-        # Add a few test edges
-        self.graph.add_edge(
+        # Create a few test edges
+        self.graph.create_edge(
             self.edge_col_name,
             {
                 "_from": "{}/{}".format(self.from_col_name, "from01"),
                 "_to": "{}/{}".format(self.to_col_name, "to01"),
             }
         )
-        self.graph.add_edge(
+        self.graph.create_edge(
             self.edge_col_name,
             {
                 "_from": "{}/{}".format(self.from_col_name, "from02"),
                 "_to": "{}/{}".format(self.to_col_name, "to02"),
             }
         )
-        self.graph.add_edge(
+        self.graph.create_edge(
             self.edge_col_name,
             {
                 "_from": "{}/{}".format(self.from_col_name, "from02"),
                 "_to": "{}/{}".format(self.to_col_name, "to03"),
             }
-        )
 
-    def tearDown(self):
-        self.arango.remove_database(self.db_name)
+        )
+        # Test database cleaup
+        self.addCleanup(self.arango.delete_database,
+                        name=self.db_name, safe_delete=True)
 
     def test_basic_traversal(self):
         visited = self.graph.execute_traversal(

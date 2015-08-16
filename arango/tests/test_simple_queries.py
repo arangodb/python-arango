@@ -3,7 +3,6 @@
 import unittest
 
 from arango import Arango
-from arango.exceptions import *
 from arango.tests.utils import (
     get_next_col_name,
     get_next_db_name,
@@ -11,118 +10,26 @@ from arango.tests.utils import (
 )
 
 
-class DocumentManagementTest(unittest.TestCase):
+class SimpleQueriesTest(unittest.TestCase):
+    """Tests for managing ArangoDB documents."""
 
     def setUp(self):
         self.arango = Arango()
         self.db_name = get_next_db_name(self.arango)
-        self.db = self.arango.add_database(self.db_name)
+        self.db = self.arango.create_database(self.db_name)
         self.col_name = get_next_col_name(self.db)
-        self.col = self.db.add_collection(self.col_name)
-        self.col.add_geo_index(["coord"])
-        self.col.add_skiplist_index(["value"])
-        self.col.add_fulltext_index(["text"])
+        self.col = self.db.create_collection(self.col_name)
+        self.col.create_geo_index(["coord"])
+        self.col.create_skiplist_index(["value"])
+        self.col.create_fulltext_index(["text"])
 
-    def tearDown(self):
-        self.arango.remove_database(self.db_name)
-
-    def test_add_document(self):
-        self.assertEqual(len(self.col), 0)
-        self.col.add_document({"_key": "test_doc"})
-        self.assertEqual(len(self.col), 1)
-        self.assertIn("test_doc", self.col)
-
-    def test_remove_document(self):
-        rev = self.col.add_document({"_key": "test_doc"})["_rev"]
-        self.assertEqual(len(self.col), 1)
-        self.assertRaises(
-            DocumentRemoveError,
-            self.col.remove_document,
-            "test_doc",
-            rev="wrong_revision"
-        )
-        self.col.remove_document("test_doc", rev=rev)
-        self.assertEqual(len(self.col), 0)
-        self.assertNotIn("test_doc", self.col)
-
-    def test_replace_document(self):
-        rev = self.col.add_document({
-            "_key": "test_doc",
-            "value": 1,
-            "value2": 2,
-        })["_rev"]
-        self.assertRaises(
-            DocumentReplaceError,
-            self.col.replace_document,
-            "test_doc",
-            {"_rev": "wrong_revision", "value": 2},
-        )
-        self.col.replace_document(
-            "test_doc",
-            {"_rev": rev, "value": 2}
-        )
-        self.assertEqual(self.col["test_doc"]["value"], 2)
-        self.assertNotIn("value2", self.col["test_doc"])
-
-    def test_update_document(self):
-        rev = self.col.add_document({
-            "_key": "test_doc",
-            "value": 1,
-            "value2": 2,
-        })["_rev"]
-        self.assertRaises(
-            DocumentUpdateError,
-            self.col.update_document,
-            "test_doc",
-            {"_rev": "wrong_revision", "value": 2},
-        )
-        self.col.update_document(
-            "test_doc",
-            {"_rev": rev, "new_value": 2}
-        )
-        self.assertEqual(self.col["test_doc"]["value"], 1)
-        self.assertEqual(self.col["test_doc"]["new_value"], 2)
-
-    def test_truncate(self):
-        self.col.add_document({"_key": "test_doc_01"})
-        self.col.add_document({"_key": "test_doc_02"})
-        self.col.add_document({"_key": "test_doc_03"})
-        self.assertEqual(len(self.col), 3)
-        self.col.truncate()
-        self.assertEqual(len(self.col), 0)
-
-    def test_bulk_import(self):
-        documents = [
-            {"_key": "test_doc_01"},
-            {"_key": "test_doc_02"},
-            {"_key": 1}  # invalid key
-        ]
-        # This should succeed partially
-        res = self.col.bulk_import(documents, complete=False)
-        self.assertEqual(len(self.col), 2)
-        self.assertIn("test_doc_01", self.col)
-        self.assertIn("test_doc_01", self.col)
-        self.assertEqual(res["errors"], 1)
-        self.assertEqual(res["created"], 2)
-        # This should fail because of the last document
-        self.col.truncate()
-        self.assertRaises(
-            CollectionBulkImportError,
-            self.col.bulk_import,
-            documents,
-            complete=True
-        )
-        self.assertEqual(len(self.col), 0)
-        # This should succeed completely since all documents are valid
-        self.col.truncate()
-        res = self.col.bulk_import(documents[:2], complete=True)
-        self.assertEqual(len(self.col), 2)
-        self.assertEqual(res["errors"], 0)
-        self.assertEqual(res["created"], 2)
+        # Test database cleaup
+        self.addCleanup(self.arango.delete_database,
+                        name=self.db_name, safe_delete=True)
 
     def test_first(self):
         self.assertEqual(strip_system_keys(self.col.first(1)), [])
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01"},
             {"name": "test_doc_02"},
             {"name": "test_doc_03"}
@@ -139,7 +46,7 @@ class DocumentManagementTest(unittest.TestCase):
 
     def test_last(self):
         self.assertEqual(strip_system_keys(self.col.last(1)), [])
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01"},
             {"name": "test_doc_02"},
             {"name": "test_doc_03"}
@@ -155,7 +62,7 @@ class DocumentManagementTest(unittest.TestCase):
 
     def test_all(self):
         self.assertEqual(list(self.col.all()), [])
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01"},
             {"name": "test_doc_02"},
             {"name": "test_doc_03"}
@@ -169,7 +76,7 @@ class DocumentManagementTest(unittest.TestCase):
 
     def test_any(self):
         self.assertEqual(strip_system_keys(self.col.all()), [])
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01"},
             {"name": "test_doc_02"},
             {"name": "test_doc_03"}
@@ -187,7 +94,7 @@ class DocumentManagementTest(unittest.TestCase):
         self.assertEqual(
             self.col.get_first_example({"value": 1}), None
         )
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "value": 1},
             {"name": "test_doc_02", "value": 1},
             {"name": "test_doc_03", "value": 3}
@@ -201,7 +108,7 @@ class DocumentManagementTest(unittest.TestCase):
         )
 
     def test_get_by_example(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "value": 1},
             {"name": "test_doc_02", "value": 1},
             {"name": "test_doc_03", "value": 3}
@@ -217,7 +124,7 @@ class DocumentManagementTest(unittest.TestCase):
         )
 
     def test_update_by_example(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "value": 1},
             {"name": "test_doc_02", "value": 1},
             {"name": "test_doc_03", "value": 3}
@@ -229,7 +136,7 @@ class DocumentManagementTest(unittest.TestCase):
         self.assertIn({"name": "test_doc_03", "value": 3}, docs)
 
     def test_replace_by_example(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "value": 1},
             {"name": "test_doc_02", "value": 1},
             {"name": "test_doc_03", "value": 3}
@@ -241,7 +148,7 @@ class DocumentManagementTest(unittest.TestCase):
         self.assertIn({"name": "test_doc_03", "value": 3}, docs)
 
     def test_remove_by_example(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "value": 1},
             {"name": "test_doc_02", "value": 1},
             {"name": "test_doc_03", "value": 3}
@@ -254,7 +161,7 @@ class DocumentManagementTest(unittest.TestCase):
         )
 
     def test_range(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "value": 1},
             {"name": "test_doc_02", "value": 2},
             {"name": "test_doc_03", "value": 3},
@@ -279,7 +186,7 @@ class DocumentManagementTest(unittest.TestCase):
         )
 
     def test_near(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "coord": [1, 1]},
             {"name": "test_doc_02", "coord": [1, 4]},
             {"name": "test_doc_03", "coord": [4, 1]},
@@ -299,7 +206,7 @@ class DocumentManagementTest(unittest.TestCase):
         )
 
     def test_fulltext(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "text": "Hello World!"},
             {"name": "test_doc_02", "text": "foo"},
             {"name": "test_doc_03", "text": "bar"},
@@ -312,6 +219,46 @@ class DocumentManagementTest(unittest.TestCase):
                 {"name": "test_doc_03", "text": "bar"},
             ]
         )
+
+    def test_lookup_by_keys(self):
+        self.col.import_documents([
+            {"_key": "key01", "value": 1},
+            {"_key": "key02", "value": 2},
+            {"_key": "key03", "value": 3},
+            {"_key": "key04", "value": 4},
+            {"_key": "key05", "value": 5},
+            {"_key": "key06", "value": 6},
+        ])
+        self.assertEqual(
+            strip_system_keys(
+                self.col.lookup_by_keys(["key01", "key03", "key06"])
+            ),
+            [
+                {"value": 1},
+                {"value": 3},
+                {"value": 6},
+            ]
+        )
+        self.assertEqual(len(self.col), 6)
+
+    def test_remove_by_keys(self):
+        self.col.import_documents([
+            {"_key": "key01", "value": 1},
+            {"_key": "key02", "value": 2},
+            {"_key": "key03", "value": 3},
+            {"_key": "key04", "value": 4},
+            {"_key": "key05", "value": 5},
+            {"_key": "key06", "value": 6},
+        ])
+        self.assertEqual(
+            self.col.remove_by_keys(["key01", "key03", "key06"]),
+            {"removed": 3, "ignored": 0}
+        )
+        leftover = strip_system_keys(self.col.all())
+        self.assertEqual(len(leftover), 3)
+        self.assertIn({"value": 2}, leftover)
+        self.assertIn({"value": 4}, leftover)
+        self.assertIn({"value": 5}, leftover)
 
 
 if __name__ == "__main__":

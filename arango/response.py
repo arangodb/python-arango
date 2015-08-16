@@ -1,21 +1,33 @@
-"""Base class for HTTP responses"""
+"""ArangoDB HTTP response."""
 
-import json
+from json import loads
 
 
-class ArangoResponse(object):
-    """ArangoDB HTTP Response.
+class Response(object):
+    """ArangoDB HTTP Response class.
 
-    :param status_code: HTTP status code
+    The clients in arango.clients must return an instance of this class.
+
+    :param method: the HTTP method
+    :type method: str
+    :param url: the request URL
+    :type url: str
+    :param status_code: the HTTP status code
     :type status_code: int
-    :param text: HTTP response text
-    :type text: basestring
+    :param content: the HTTP response content
+    :type content: basestring or str
+    :param status_text: the HTTP status description if any
+    :type status_text: str or None
     """
 
-    def __init__(self, status_code, text=""):
+    def __init__(self, method, url, status_code, content, headers,
+                 status_text=None):
+        self.method = method
+        self.url = url
         self.status_code = status_code
-        self.text = text
+        self.headers = headers
+        self.status_text = status_text
         try:
-            self.obj = json.loads(text) if text else None
+            self.obj = loads(content) if content else None
         except ValueError:
-            self.obj = text
+            self.obj = None

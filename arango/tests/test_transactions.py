@@ -1,4 +1,4 @@
-"""Tests for ArangoDB Transactions."""
+"""Tests for ArangoDB transactions."""
 
 import unittest
 from arango import Arango
@@ -9,18 +9,20 @@ from arango.tests.utils import (
 
 
 class BatchRequestTest(unittest.TestCase):
+    """Tests for ArangoDB transactions."""
 
     def setUp(self):
         self.arango = Arango()
         self.db_name = get_next_db_name(self.arango)
-        self.db = self.arango.add_database(self.db_name)
+        self.db = self.arango.create_database(self.db_name)
         self.col_name01 = get_next_col_name(self.db)
-        self.col01 = self.db.add_collection(self.col_name01)
+        self.col01 = self.db.create_collection(self.col_name01)
         self.col_name02 = get_next_col_name(self.db)
-        self.col02 = self.db.add_collection(self.col_name02)
+        self.col02 = self.db.create_collection(self.col_name02)
 
-    def tearDown(self):
-        self.arango.remove_database(self.db_name)
+        # Test database cleaup
+        self.addCleanup(self.arango.delete_database,
+                        name=self.db_name, safe_delete=True)
 
     def test_execute_transaction(self):
         action = """
@@ -43,8 +45,7 @@ class BatchRequestTest(unittest.TestCase):
         self.assertIn("doc01", self.col01)
         self.assertIn("doc02", self.col02)
 
-
-    def test_execute_transaction_params(self):
+    def test_execute_transaction_with_params(self):
         action = """
             function (params) {
                 var db = require('internal').db;
