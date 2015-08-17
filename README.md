@@ -6,7 +6,7 @@ Python Driver for ArangoDB REST API
 Overview
 --------
 
-python-arango is a Python 2.7 & 3.4 driver for ArangoDB
+Python-Arango is a Python driver (2.7 and 3.4) for ArangoDB
 (<https://www.arangodb.com/>)
 
 Installation
@@ -57,8 +57,8 @@ conn.collections    # equivalent to conn.db("_system").collections
 conn.id             # equivalent to conn.db("_system").id
 conn.path           # equivalent to conn.db("_system").path
 conn.is_system      # equivalent to conn.db("_system").is_system
-conn.is_edge        # equivalent to conn.db("_system").is_system
-conn.is_volatile    # equivalent to conn.db("_system").is_system
+conn.is_edge        # equivalent to conn.db("_system").is_edge
+conn.is_volatile    # equivalent to conn.db("_system").is_volatile
 
 # Retrieve information on a specific database
 conn.db("db01").name
@@ -492,7 +492,6 @@ To Do
 3.  Endpoints
 4.  Sharding
 5.  Misc. Functions
-6.  General Handling
 
 Running Tests (requires ArangoDB on localhost)
 ----------------------------------------------
