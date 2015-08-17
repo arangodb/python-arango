@@ -497,5 +497,5 @@ Running Tests (requires ArangoDB on localhost)
 ----------------------------------------------
 
 ```bash
-nosetests
+nosetests -v
 ```
