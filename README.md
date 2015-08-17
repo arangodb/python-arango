@@ -3,6 +3,8 @@ Python-Arango
 
 Python Driver for ArangoDB REST API
 
+[![Build Status](https://travis-ci.org/Joowani/python-arango.svg?branch=master)](https://travis-ci.org/Joowani/python-arango)
+
 Overview
 --------
 
