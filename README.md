@@ -40,7 +40,7 @@ Databases
 ---------
 
 ```python
-# Listing the databases
+# List all databases
 conn.databases
 conn.databases["user"]
 conn.databases["system"]
@@ -51,7 +51,7 @@ conn.create_database("my_database")
 # Delete a database
 conn.delete_database("my_database")
 
-# Retrieving information on the default ("_system") database
+# Retrieve information on the default ("_system") database
 conn.name           # equivalent to conn.db("_system").name
 conn.collections    # equivalent to conn.db("_system").collections
 conn.id             # equivalent to conn.db("_system").id
@@ -60,7 +60,7 @@ conn.is_system      # equivalent to conn.db("_system").is_system
 conn.is_edge        # equivalent to conn.db("_system").is_system
 conn.is_volatile    # equivalent to conn.db("_system").is_system
 
-# Get information on a specific database
+# Retrieve information on a specific database
 conn.db("db01").name
 conn.db("db01").collections
 conn.db("db02").id
@@ -80,9 +80,44 @@ conn.db("my_database").*
 
 User Management
 ---------------
+```python
+
+# List all users
+conn.users
+
+# Create a new user
+conn.create_user("username", "password1")
+
+# Update a user
+conn.update_user("username", "password2", change_password=True)
+
+# Replace a user
+conn.replace_user("username", "password3")
+
+# Delete a user
+conn.delete_user("username")
+```
 
 Monitoring
 ----------
+```python
+
+# Retrieve global server log
+conn.read_log(level="debug")
+
+# Create a new user
+conn.create_user("username", "password1")
+
+# Update a user
+conn.update_user("username", "password2", change_password=True)
+
+# Replace a user
+conn.replace_user("username", "password3")
+
+# Delete a user
+conn.delete_user("username")
+```
+
 
 AQL Functions
 -------------
@@ -134,16 +169,16 @@ my_database.collections["user"]
 my_database.collecitons["system"]
 my_database.collections["all"]
 
-# Create a new collection
+# Create a collection
 my_database.create_collection("new_collection")
 
-# Create a new edge collection
-my_database.create_collection("new_ecol", is_edge=True)
+# Create an edge collection
+my_database.create_collection("new_ecollection", is_edge=True)
 
 # Rename a collection
 my_database.rename_collection("new_collection", "my_collection")
 
-# Delete a collection from the database
+# Delete a collection
 my_database.delete_collection("my_collection")
 
 # Retrieve collection information

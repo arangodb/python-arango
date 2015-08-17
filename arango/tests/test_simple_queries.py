@@ -29,7 +29,7 @@ class SimpleQueriesTest(unittest.TestCase):
 
     def test_first(self):
         self.assertEqual(strip_system_keys(self.col.first(1)), [])
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01"},
             {"name": "test_doc_02"},
             {"name": "test_doc_03"}
@@ -46,7 +46,7 @@ class SimpleQueriesTest(unittest.TestCase):
 
     def test_last(self):
         self.assertEqual(strip_system_keys(self.col.last(1)), [])
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01"},
             {"name": "test_doc_02"},
             {"name": "test_doc_03"}
@@ -62,7 +62,7 @@ class SimpleQueriesTest(unittest.TestCase):
 
     def test_all(self):
         self.assertEqual(list(self.col.all()), [])
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01"},
             {"name": "test_doc_02"},
             {"name": "test_doc_03"}
@@ -76,7 +76,7 @@ class SimpleQueriesTest(unittest.TestCase):
 
     def test_any(self):
         self.assertEqual(strip_system_keys(self.col.all()), [])
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01"},
             {"name": "test_doc_02"},
             {"name": "test_doc_03"}
@@ -94,7 +94,7 @@ class SimpleQueriesTest(unittest.TestCase):
         self.assertEqual(
             self.col.get_first_example({"value": 1}), None
         )
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "value": 1},
             {"name": "test_doc_02", "value": 1},
             {"name": "test_doc_03", "value": 3}
@@ -108,7 +108,7 @@ class SimpleQueriesTest(unittest.TestCase):
         )
 
     def test_get_by_example(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "value": 1},
             {"name": "test_doc_02", "value": 1},
             {"name": "test_doc_03", "value": 3}
@@ -124,7 +124,7 @@ class SimpleQueriesTest(unittest.TestCase):
         )
 
     def test_update_by_example(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "value": 1},
             {"name": "test_doc_02", "value": 1},
             {"name": "test_doc_03", "value": 3}
@@ -136,7 +136,7 @@ class SimpleQueriesTest(unittest.TestCase):
         self.assertIn({"name": "test_doc_03", "value": 3}, docs)
 
     def test_replace_by_example(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "value": 1},
             {"name": "test_doc_02", "value": 1},
             {"name": "test_doc_03", "value": 3}
@@ -148,7 +148,7 @@ class SimpleQueriesTest(unittest.TestCase):
         self.assertIn({"name": "test_doc_03", "value": 3}, docs)
 
     def test_remove_by_example(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "value": 1},
             {"name": "test_doc_02", "value": 1},
             {"name": "test_doc_03", "value": 3}
@@ -161,7 +161,7 @@ class SimpleQueriesTest(unittest.TestCase):
         )
 
     def test_range(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "value": 1},
             {"name": "test_doc_02", "value": 2},
             {"name": "test_doc_03", "value": 3},
@@ -186,7 +186,7 @@ class SimpleQueriesTest(unittest.TestCase):
         )
 
     def test_near(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "coord": [1, 1]},
             {"name": "test_doc_02", "coord": [1, 4]},
             {"name": "test_doc_03", "coord": [4, 1]},
@@ -206,7 +206,7 @@ class SimpleQueriesTest(unittest.TestCase):
         )
 
     def test_fulltext(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"name": "test_doc_01", "text": "Hello World!"},
             {"name": "test_doc_02", "text": "foo"},
             {"name": "test_doc_03", "text": "bar"},
@@ -221,7 +221,7 @@ class SimpleQueriesTest(unittest.TestCase):
         )
 
     def test_lookup_by_keys(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"_key": "key01", "value": 1},
             {"_key": "key02", "value": 2},
             {"_key": "key03", "value": 3},
@@ -242,7 +242,7 @@ class SimpleQueriesTest(unittest.TestCase):
         self.assertEqual(len(self.col), 6)
 
     def test_remove_by_keys(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"_key": "key01", "value": 1},
             {"_key": "key02", "value": 2},
             {"_key": "key03", "value": 3},

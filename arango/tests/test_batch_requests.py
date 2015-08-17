@@ -54,7 +54,7 @@ class BatchRequestTest(unittest.TestCase):
         self.assertEqual(self.col.document("doc03")["value"], 3)
 
     def test_batch_document_replace(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"_key": "doc01", "value": 1},
             {"_key": "doc02", "value": 1},
             {"_key": "doc03", "value": 1}
@@ -69,7 +69,7 @@ class BatchRequestTest(unittest.TestCase):
         self.assertEqual(self.col.document("doc03")["value"], 2)
 
     def test_batch_document_update(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"_key": "doc01", "value": 1},
             {"_key": "doc02", "value": 1},
             {"_key": "doc03", "value": 1}
@@ -96,7 +96,7 @@ class BatchRequestTest(unittest.TestCase):
         self.assertEqual(self.col.document("doc03")["value"], 2)
 
     def test_batch_document_Delete(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"_key": "doc01", "value": 1},
             {"_key": "doc02", "value": 1},
             {"_key": "doc03", "value": 1}
@@ -109,7 +109,7 @@ class BatchRequestTest(unittest.TestCase):
         self.assertEqual(len(self.col), 0)
 
     def test_batch_document_mixed(self):
-        self.col.bulk_import([
+        self.col.import_documents([
             {"_key": "doc01", "value": 0},
             {"_key": "doc02", "value": 0},
             {"_key": "doc03", "value": 0}
@@ -171,7 +171,7 @@ class BatchRequestTest(unittest.TestCase):
         self.assertEqual(self.vertex_col.document("v03")["value"], 3)
 
     def test_batch_vertex_replace(self):
-        self.vertex_col.bulk_import([
+        self.vertex_col.import_documents([
             {"_key": "v01", "value": 1},
             {"_key": "v02", "value": 1},
             {"_key": "v03", "value": 1}
@@ -207,7 +207,7 @@ class BatchRequestTest(unittest.TestCase):
         self.assertEqual(self.vertex_col.document("v03")["new_val"], 4)
 
     def test_batch_vertex_update(self):
-        self.vertex_col.bulk_import([
+        self.vertex_col.import_documents([
             {"_key": "v01", "value": 1},
             {"_key": "v02", "value": 1},
             {"_key": "v03", "value": 1}
@@ -234,7 +234,7 @@ class BatchRequestTest(unittest.TestCase):
         self.assertEqual(self.vertex_col.document("v03")["value"], 4)
 
     def test_batch_vertex_Delete(self):
-        self.vertex_col.bulk_import([
+        self.vertex_col.import_documents([
             {"_key": "v01", "value": 1},
             {"_key": "v02", "value": 1},
             {"_key": "v03", "value": 1}
@@ -259,7 +259,7 @@ class BatchRequestTest(unittest.TestCase):
         self.assertEqual(len(self.vertex_col), 0)
 
     def test_batch_edge_create(self):
-        self.vertex_col.bulk_import([
+        self.vertex_col.import_documents([
             {"_key": "v01", "value": 1},
             {"_key": "v02", "value": 1},
             {"_key": "v03", "value": 1}
@@ -294,7 +294,7 @@ class BatchRequestTest(unittest.TestCase):
         self.assertEqual(self.edge_col.document("e02")["value"], 5)
 
     def test_batch_edge_replace(self):
-        self.vertex_col.bulk_import([
+        self.vertex_col.import_documents([
             {"_key": "v01", "value": 1},
             {"_key": "v02", "value": 1},
             {"_key": "v03", "value": 1}
@@ -341,7 +341,7 @@ class BatchRequestTest(unittest.TestCase):
         self.assertEqual(self.edge_col.document("e02")["new_val"], 2)
 
     def test_batch_edge_update(self):
-        self.vertex_col.bulk_import([
+        self.vertex_col.import_documents([
             {"_key": "v01", "value": 1},
             {"_key": "v02", "value": 1},
             {"_key": "v03", "value": 1}
@@ -388,7 +388,7 @@ class BatchRequestTest(unittest.TestCase):
         self.assertEqual(self.edge_col.document("e02")["value"], 2)
 
     def test_batch_edge_Delete(self):
-        self.vertex_col.bulk_import([
+        self.vertex_col.import_documents([
             {"_key": "v01", "value": 1},
             {"_key": "v02", "value": 1},
             {"_key": "v03", "value": 1}

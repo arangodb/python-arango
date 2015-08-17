@@ -65,7 +65,7 @@ class ArangoDBQueryTest(unittest.TestCase):
 
     def test_execute_query(self):
         collection = self.db.collection(self.col_name)
-        collection.bulk_import([
+        collection.import_documents([
             {"_key": "doc01"},
             {"_key": "doc02"},
             {"_key": "doc03"},
@@ -84,7 +84,7 @@ class ArangoDBQueryTest(unittest.TestCase):
 
     def test_execute_query_2(self):
         collection = self.db.collection(self.col_name)
-        collection.bulk_import([
+        collection.import_documents([
             {"_key": "doc01", "value": 1},
             {"_key": "doc02", "value": 2},
             {"_key": "doc03", "value": 3},

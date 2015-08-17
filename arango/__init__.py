@@ -1,15 +1,21 @@
-"""ArangoDB Top-Level API."""
+"""ArangoDB's Top-Level API."""
 
 from arango.database import Database
 from arango.api import API
 from arango.exceptions import *
 from arango.constants import HTTP_OK, LOG_LEVELS
-from arango.clients import DefaultArangoClient
+from arango.clients import DefaultClient
 from arango.utils import uncamelify
 
 
 class Arango(object):
-    """Wrapper for ArangoDB's top-level API."""
+    """Wrapper for ArangoDB's top-level APIs:
+
+    1. Database Management
+    2. User Management
+    3. Administration & Monitoring
+    4. Miscellaneous Functions
+    """
 
     def __init__(self, protocol="http", host="localhost", port=8529,
                  username="root", password="", client=None):
@@ -26,8 +32,8 @@ class Arango(object):
         :param password: ArangoDB password (default: '')
         :type password: str
         :param client: HTTP client for this wrapper to use
-        :type client: arango.clients.base.BaseArangoClient or None
-        :raises: ArangoConnectionError
+        :type client: arango.clients.base.BaseClient or None
+        :raises: ConnectionError
         """
         self.protocol = protocol
         self.host = host
@@ -40,7 +46,7 @@ class Arango(object):
             self.client = client
         else:
             client_init_data = {"auth": (self.username, self.password)}
-            self.client = DefaultArangoClient(client_init_data)
+            self.client = DefaultClient(client_init_data)
 
         # Initialize the ArangoDB API wrapper object
         self.api = API(
@@ -55,7 +61,7 @@ class Arango(object):
         # Check the connection by requesting a header
         res = self.api.head("/_api/version")
         if res.status_code not in HTTP_OK:
-            raise ArangoConnectionError(res)
+            raise ConnectionError(res)
 
         # Cache for Database objects
         self._database_cache = {}
@@ -91,6 +97,10 @@ class Arango(object):
                 )
             )
 
+    ###########################
+    # Miscellaneous Functions #
+    ###########################
+
     @property
     def version(self):
         """Return the version of ArangoDB.
@@ -104,9 +114,9 @@ class Arango(object):
             raise VersionGetError(res)
         return res.obj["version"]
 
-    #############
-    # Databases #
-    #############
+    #######################
+    # Database Management #
+    #######################
 
     @property
     def databases(self):
@@ -182,13 +192,13 @@ class Arango(object):
                 raise DatabaseDeleteError(res)
         self._invalidate_database_cache()
 
-    #########
-    # Users #
-    #########
+    ###################
+    # User Management #
+    ###################
 
     @property
     def users(self):
-        """Return the details on all users.
+        """Return details on all users.
 
         :returns: a dictionary mapping user names to their information
         :rtype: dict
@@ -209,6 +219,26 @@ class Arango(object):
 
     def create_user(self, username, password, active=None, extra=None,
                     change_password=None):
+        """Create a new user.
+
+        if ``change_password`` is set to true, the only operation allowed by
+        the user will be ``self.replace_user`` or ``self.update_user``. All
+        other operations executed by the user will result in an HTTP 403.
+
+        :param username: the name of the user
+        :type username: str
+        :param password: the user password
+        :type password: str
+        :param active: whether the user is active
+        :type active: bool or None
+        :param extra: any extra data about the user
+        :type extra: dict or None
+        :param change_password: whether the user must change the password
+        :type change_password: bool or None
+        :returns: the information about the new user
+        :rtype: dict
+        :raises: UserCreateError
+        """
         data = {"user": username, "passwd": password}
         if active is not None:
             data["active"] = active
@@ -228,6 +258,26 @@ class Arango(object):
 
     def update_user(self, username, password=None, active=None, extra=None,
                     change_password=None):
+        """Update an existing user.
+
+        if ``change_password`` is set to true, the only operation allowed by
+        the user will be ``self.replace_user`` or ``self.update_user``. All
+        other operations executed by the user will result in an HTTP 403.
+
+        :param username: the name of the existing user
+        :type username: str
+        :param password: the user password
+        :type password: str
+        :param active: whether the user is active
+        :type active: bool or None
+        :param extra: any extra data about the user
+        :type extra: dict or None
+        :param change_password: whether the user must change the password
+        :type change_password: bool or None
+        :returns: the information about the updated user
+        :rtype: dict
+        :raises: UserUpdateError
+        """
         data = {}
         if password is not None:
             data["password"] = password
@@ -251,6 +301,26 @@ class Arango(object):
 
     def replace_user(self, username, password, active=None, extra=None,
                      change_password=None):
+        """Replace an existing user.
+
+        if ``change_password`` is set to true, the only operation allowed by
+        the user will be ``self.replace_user`` or ``self.update_user``. All
+        other operations executed by the user will result in an HTTP 403.
+
+        :param username: the name of the existing user
+        :type username: str
+        :param password: the user password
+        :type password: str
+        :param active: whether the user is active
+        :type active: bool or None
+        :param extra: any extra data about the user
+        :type extra: dict or None
+        :param change_password: whether the user must change the password
+        :type change_password: bool or None
+        :returns: the information about the replaced user
+        :rtype: dict
+        :raises: UserReplaceError
+        """
         data = {"user": username, "password": password}
         if active is not None:
             data["active"] = active
@@ -271,15 +341,25 @@ class Arango(object):
         }
 
     def delete_user(self, username, safe_delete=False):
+        """Delete an existing user.
+
+        :param username: the name of the user
+        :type username: str
+        :param safe_delete: ignores HTTP 404 if set to True
+        :type safe_delete: bool
+        :returns: True if the operation succeeds
+        :rtype: bool
+        :raises: UserDeleteError
+        """
         res = self.api.delete("/_api/user/{user}".format(user=username))
         if res.status_code not in HTTP_OK:
             if not (res.status_code == 404 and safe_delete):
                 raise UserDeleteError(res)
         return True
 
-    ##############
-    # Monitoring #
-    ##############
+    ###############################
+    # Administration & Monitoring #
+    ###############################
 
     def read_log(self, upto=None, level=None, start=None, size=None,
                  offset=None, search=None, sort=None):

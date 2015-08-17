@@ -13,15 +13,25 @@ from arango.exceptions import *
 
 
 class Database(object):
-    """A wrapper around database specific API.
+    """Wrapper for ArangoDB's database-specific APIs:
 
-    :param name: the name of this database
-    :type name: str
-    :param api: ArangoDB API object
-    :type api: arango.api.API
+    1. Database properties
+    1. Collection Management
+    2. AQL Queries
+    3. Batch Requests
+    4. AQL Functions
+    5. Transaction
+    6. Graph Management
     """
 
     def __init__(self, name, api):
+        """Initialize the wrapper object.
+
+        :param name: the name of this database
+        :type name: str
+        :param api: ArangoDB API object
+        :type api: arango.api.API
+        """
         self.name = name
         self.api = api
         self._collection_cache = {}
@@ -92,9 +102,9 @@ class Database(object):
         """
         return self.properties["is_system"]
 
-    ###########
-    # Queries #
-    ###########
+    ###############
+    # AQL Queries #
+    ###############
 
     def explain_query(self, query, all_plans=False, max_plans=None,
                       optimizer_rules=None):
@@ -199,9 +209,9 @@ class Database(object):
             raise AQLQueryExecuteError(res)
         return arango_cursor(self.api, res)
 
-    ###############
-    # Collections #
-    ###############
+    #########################
+    # Collection Management #
+    #########################
 
     @property
     def collections(self):
@@ -497,9 +507,9 @@ class Database(object):
             raise TransactionExecuteError(res)
         return res.obj["result"]
 
-    ##########
-    # Graphs #
-    ##########
+    ####################
+    # Graph Management #
+    ####################
 
     @property
     def graphs(self):

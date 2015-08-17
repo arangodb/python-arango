@@ -9,7 +9,14 @@ from arango.constants import COLLECTION_STATUSES, HTTP_OK
 
 
 class Collection(object):
-    """Wrapper for ArangoDB's collection-specific API."""
+    """Wrapper for ArangoDB's collection-specific APIs.
+
+    1. Collection Properties
+    2. Document Management
+    3. Document Import & Export
+    4. Simple Queries
+    5. Index Management
+    """
 
     def __init__(self, name, api):
         """Initialize the wrapper object.
@@ -329,9 +336,9 @@ class Collection(object):
         else:
             raise DocumentGetError(res)
 
-    #############
-    # Documents #
-    #############
+    #######################
+    # Document Management #
+    #######################
 
     def document(self, key, rev=None, match=True):
         """Return the document of the given key.
@@ -544,6 +551,91 @@ class Collection(object):
             raise DocumentDeleteError(res)
         del res.obj["error"]
         return res.obj
+
+    ############################
+    # Document Import & Export #
+    ############################
+
+    def import_documents(self, documents, complete=True, details=True):
+        """Import documents into this collection in bulk.
+
+        If ``complete`` is set to a value other than True, valid documents
+        will be imported while invalid ones are rejected, meaning only some of
+        the uploaded documents might have been imported.
+
+        If ``details`` parameter is set to True, the response will also contain
+        ``details`` attribute which is a list of detailed error messages.
+
+        :param documents: list of documents to import
+        :type documents: list
+        :param complete: entire import fails if any document is invalid
+        :type complete: bool
+        :param details: return details about invalid documents
+        :type details: bool
+        :returns: the import results
+        :rtype: dict
+        :raises: DocumentsImportError
+        """
+        res = self.api.post(
+            "/_api/import",
+            data="\r\n".join([json.dumps(d) for d in documents]),
+            params={
+                "type": "documents",
+                "collection": self.name,
+                "complete": complete,
+                "details": details
+            }
+        )
+        if res.status_code not in HTTP_OK:
+            raise DocumentsImportError(res)
+        del res.obj["error"]
+        return res.obj
+
+    # TODO look into this endpoint for better documentation and testing
+    def export_documents(self, flush=None, flush_wait=None, count=None,
+                         batch_size=None, limit=None, ttl=None, restrict=None):
+        """"Export all documents from this collection using a cursor.
+
+        :param flush: trigger a WAL flush operation prior to the export
+        :type flush: bool or None
+        :param flush_wait: the max wait time in sec for flush operation
+        :type flush_wait: int or None
+        :param count: whether the count is returned in an attribute of result
+        :type count: bool or None
+        :param batch_size: the max number of result documents in one roundtrip
+        :type batch_size: int or None
+        :param limit: the max number of documents to be included in the cursor
+        :type limit: int or None
+        :param ttl: time-to-live for the cursor on the server
+        :type ttl: int or None
+        :param restrict: object with attributes to be excluded/included
+        :type restrict: dict
+        :return: the generator of documents in this collection
+        :rtype: generator
+        :raises: DocumentsExportError
+        """
+        params = {"collection": self.name}
+        options = {}
+        if flush is not None:
+            options["flush"] = flush
+        if flush_wait is not None:
+            options["flushWait"] = flush_wait
+        if count is not None:
+            options["count"] = count
+        if batch_size is not None:
+            options["batchSize"] = batch_size
+        if limit is not None:
+            options["limit"] = limit
+        if ttl is not None:
+            options["ttl"] = ttl
+        if restrict is not None:
+            options["restrict"] = restrict
+        data = {"options": options} if options else {}
+
+        res = self.api.post("/_api/export", params=params, data=data)
+        if res.status_code not in HTTP_OK:
+            raise DocumentsExportError(res)
+        return arango_cursor(self.api, res)
 
     ##################
     # Simple Queries #
@@ -969,98 +1061,9 @@ class Collection(object):
             "ignored": res.obj["ignored"],
         }
 
-    ###############
-    # Bulk Import #
-    ###############
-
-    def bulk_import(self, documents, complete=True, details=True):
-        """Import documents into this collection in bulk.
-
-        If ``complete`` is set to a value other than True, valid documents
-        will be imported while invalid ones are rejected, meaning only some of
-        the uploaded documents might have been imported.
-
-        If ``details`` parameter is set to True, the response will also contain
-        ``details`` attribute which is a list of detailed error messages.
-
-        :param documents: list of documents to import
-        :type documents: list
-        :param complete: entire import fails if any document is invalid
-        :type complete: bool
-        :param details: return details about invalid documents
-        :type details: bool
-        :returns: the import results
-        :rtype: dict
-        :raises: BulkImportError
-        """
-        res = self.api.post(
-            "/_api/import",
-            data="\r\n".join([json.dumps(d) for d in documents]),
-            params={
-                "type": "documents",
-                "collection": self.name,
-                "complete": complete,
-                "details": details
-            }
-        )
-        if res.status_code not in HTTP_OK:
-            raise BulkImportError(res)
-        del res.obj["error"]
-        return res.obj
-
-    ##########
-    # Export #
-    ##########
-
-    # TODO look into this endpoint for better documentation and testing
-    def export(self, flush=None, flush_wait=None, count=None, batch_size=None,
-               limit=None, ttl=None, restrict=None):
-        """"Export all documents from this collection using a cursor.
-
-        :param flush: trigger a WAL flush operation prior to the export
-        :type flush: bool or None
-        :param flush_wait: the max wait time in sec for flush operation
-        :type flush_wait: int or None
-        :param count: whether the count is returned in an attribute of result
-        :type count: bool or None
-        :param batch_size: the max number of result documents in one roundtrip
-        :type batch_size: int or None
-        :param limit: the max number of documents to be included in the cursor
-        :type limit: int or None
-        :param ttl: time-to-live for the cursor on the server
-        :type ttl: int or None
-        :param restrict: object with attributes to be excluded/included
-        :type restrict: dict
-        :return: the generator of documents in this collection
-        :rtype: generator
-        :raises: CollectionExportError
-        """
-        params = {"collection": self.name}
-        options = {}
-        if flush is not None:
-            options["flush"] = flush
-        if flush_wait is not None:
-            options["flushWait"] = flush_wait
-        if count is not None:
-            options["count"] = count
-        if batch_size is not None:
-            options["batchSize"] = batch_size
-        if limit is not None:
-            options["limit"] = limit
-        if ttl is not None:
-            options["ttl"] = ttl
-        if restrict is not None:
-            options["restrict"] = restrict
-        data = {"options": options} if options else {}
-
-        res = self.api.post("/_api/export", params=params, data=data)
-        if res.status_code not in HTTP_OK:
-            raise CollectionExportError(res)
-        return arango_cursor(self.api, res)
-
-    ###########
-    # Indexes #
-    ###########
+    ####################
+    # Index Management #
+    ####################
 
     @property
     def indexes(self):

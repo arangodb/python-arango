@@ -6,15 +6,24 @@ from arango.constants import HTTP_OK
 
 
 class Graph(object):
-    """A wrapper for ArangoDB graph specific API.
+    """Wrapper for ArangoDB's graph-specific APIs:
 
-    :param name: the name of the graph
-    :type name: str
-    :param api: ArangoDB API object
-    :type api: arango.api.API
+    1. Graph Properties
+    2. Vertex Collection Management
+    3. Edge Definition Management
+    4. Vertex Management
+    5. Edge Management
+    6. Graph Traversals
     """
 
     def __init__(self, name, api):
+        """Initialize the wrapper object.
+
+        :param name: the name of the graph
+        :type name: str
+        :param api: ArangoDB API object
+        :type api: arango.api.API
+        """
         self.name = name
         self.api = api
 
@@ -53,9 +62,9 @@ class Graph(object):
         """
         return self.properties["_rev"]
 
-    ###############################
-    # Handling Vertex Collections #
-    ###############################
+    ################################
+    # Vertex Collection Management #
+    ################################
 
     @property
     def orphan_collections(self):
@@ -119,9 +128,9 @@ class Graph(object):
             raise VertexCollectionDeleteError(res)
         return self.vertex_collections
 
-    #############################
-    # Handling Edge Definitions #
-    #############################
+    ##############################
+    # Edge Definition Management #
+    ##############################
 
     @property
     def edge_definitions(self):
@@ -209,7 +218,7 @@ class Graph(object):
         return res.obj["graph"]["edgeDefinitions"]
 
     #####################
-    # Handling Vertices #
+    # Vertex Management #
     #####################
 
     def get_vertex(self, vertex_id, rev=None):
@@ -387,9 +396,9 @@ class Graph(object):
         if res.status_code not in {200, 202}:
             raise VertexDeleteError(res)
 
-    ##################
-    # Handling Edges #
-    ##################
+    ###################
+    # Edge Management #
+    ###################
 
     def get_edge(self, edge_id, rev=None):
         """Return the edge of the specified ID in this graph.
@@ -578,9 +587,9 @@ class Graph(object):
         elif res.status_code not in {200, 202}:
             raise EdgeDeleteError(res)
 
-    ###################
-    # Graph Traversal #
-    ###################
+    ####################
+    # Graph Traversals #
+    ####################
 
     def execute_traversal(self, start_vertex, direction=None, strategy=None,
                           order=None, item_order=None, uniqueness=None,

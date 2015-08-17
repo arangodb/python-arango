@@ -1,4 +1,4 @@
-"""Tests for managing ArangoDB documents."""
+"""Tests for ArangoDB Document Management."""
 
 import unittest
 
@@ -7,7 +7,7 @@ from arango.exceptions import (
     DocumentDeleteError,
     DocumentReplaceError,
     DocumentUpdateError,
-    BulkImportError,
+    DocumentsImportError,
 )
 from arango.tests.utils import (
     get_next_col_name,
@@ -16,7 +16,7 @@ from arango.tests.utils import (
 
 
 class DocumentManagementTest(unittest.TestCase):
-    """Tests for managing ArangoDB documents."""
+    """Tests for ArangoDB document management."""
 
     def setUp(self):
         self.arango = Arango()
@@ -94,14 +94,14 @@ class DocumentManagementTest(unittest.TestCase):
         self.col.truncate()
         self.assertEqual(len(self.col), 0)
 
-    def test_bulk_import(self):
+    def test_import_documents(self):
         documents = [
             {"_key": "test_doc_01"},
             {"_key": "test_doc_02"},
             {"_key": 1}  # invalid key
         ]
         # This should succeed partially
-        res = self.col.bulk_import(documents, complete=False)
+        res = self.col.import_documents(documents, complete=False)
         self.assertEqual(len(self.col), 2)
         self.assertIn("test_doc_01", self.col)
         self.assertIn("test_doc_01", self.col)
@@ -110,18 +110,21 @@ class DocumentManagementTest(unittest.TestCase):
         # This should fail because of the last document
         self.col.truncate()
         self.assertRaises(
-            BulkImportError,
-            self.col.bulk_import,
+            DocumentsImportError,
+            self.col.import_documents,
             documents,
             complete=True
         )
         self.assertEqual(len(self.col), 0)
         # This should succeed completely since all documents are valid
         self.col.truncate()
-        res = self.col.bulk_import(documents[:2], complete=True)
+        res = self.col.import_documents(documents[:2], complete=True)
         self.assertEqual(len(self.col), 2)
         self.assertEqual(res["errors"], 0)
         self.assertEqual(res["created"], 2)
+
+    def test_export_documents(self):
+        pass
 
 
 if __name__ == "__main__":

@@ -1,1 +1,1 @@
-from arango.clients.default import DefaultArangoClient
+from arango.clients.default import DefaultClient
