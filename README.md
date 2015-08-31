@@ -204,6 +204,15 @@ my_collection.within(latitude=100, longitude=20, radius=15)
 
 # Return all documents near a given coordinate (requires geo-index)
 my_collection.near(latitude=100, longitude=20)
+
+# Return all documents with fulltext match
+my_collection.fulltext("key", "foo,|bar")
+
+# Look up documents by keys
+my_collection.lookup_by_keys(["key1", "key2", "key3"])
+
+# Delete documents by keys
+my_collection.remove_by_keys(["key1", "key2", "key3"])
 ```
 
 AQL Functions
