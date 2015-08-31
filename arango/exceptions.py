@@ -56,12 +56,53 @@ class ConnectionError(RequestError):
     """Failed to connect to ArangoDB."""
 
 
+class InvalidArgumentError(Exception):
+    """The given argument(s) are invalid."""
+
+
+###########################
+# Miscellaneous Functions #
+###########################
+
+
 class VersionGetError(RequestError):
     """Failed to retrieve the version."""
 
 
-class InvalidArgumentError(Exception):
-    """The given argument(s) are invalid."""
+class WriteAheadLogFlushError(RequestError):
+    """Failed to flush the write-ahead log."""
+
+
+class WriteAheadLogGetError(RequestError):
+    """Failed to get the write-ahead log."""
+
+
+class WriteAheadLogSetError(RequestError):
+    """Failed to configure the write-ahead log."""
+
+
+class TimeGetError(RequestError):
+    """Failed to return the current system time."""
+
+
+class EchoError(RequestError):
+    """Failed to return current request."""
+
+
+class RequiredDatabaseVersionGetError(RequestError):
+    """Failed to retrieve the required database version."""
+
+
+class ShutdownError(RequestError):
+    """Failed to initiate a clean shutdown sequence."""
+
+
+class TestsRunError(RequestError):
+    """Failed to execute the specified tests on the server."""
+
+
+class ProgramExecuteError(RequestError):
+    """Failed to execute a the given Javascript program."""
 
 
 #######################
