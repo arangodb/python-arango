@@ -1,9 +1,11 @@
 """ArangoDB's Top-Level API."""
 
+from datetime import datetime
+
 from arango.database import Database
 from arango.api import API
 from arango.exceptions import *
-from arango.constants import HTTP_OK, LOG_LEVELS
+from arango.constants import HTTP_OK, LOG_LEVELS, DEFAULT_DATABASE
 from arango.clients import DefaultClient
 from arango.utils import uncamelify
 
@@ -63,11 +65,13 @@ class Arango(object):
         if res.status_code not in HTTP_OK:
             raise ConnectionError(res)
 
-        # Cache for Database objects
-        self._database_cache = {}
-
         # Default ArangoDB database wrapper object
-        self._default_database = Database("_system", self.api)
+        self._default_database = Database(DEFAULT_DATABASE, self.api)
+
+        # Cache for Database objects
+        self._database_cache = {
+            DEFAULT_DATABASE: self._default_database
+        }
 
     def __getattr__(self, attr):
         """Call __getattr__ of the default database."""
@@ -78,7 +82,7 @@ class Arango(object):
         return self._default_database.collection(item)
 
     def _invalidate_database_cache(self):
-        """Invalidate the Database object cache."""
+        """Invalidate the Database objects cache."""
         real_dbs = set(self.databases["all"])
         cached_dbs = set(self._database_cache)
         for db_name in cached_dbs - real_dbs:
@@ -103,16 +107,184 @@ class Arango(object):
 
     @property
     def version(self):
-        """Return the version of ArangoDB.
+        """Return the version of the ArangoDB server.
 
         :returns: the version number
         :rtype: str
         :raises: VersionGetError
         """
-        res = self.api.get("/_api/version")
+        res = self.api.get("/_api/version", params={"details": True})
         if res.status_code not in HTTP_OK:
             raise VersionGetError(res)
+        return res.obj["details"]
+
+    @property
+    def required_database_version(self):
+        """Return the required database version.
+
+        :returns: the required database version
+        :rtype: str
+        :raises: RequiredDatabaseVersionGetError
+        """
+        res = self.api.get("/_admin/database/target-version")
+        if res.status_code not in HTTP_OK:
+            raise RequiredDatabaseVersionGetError(res)
         return res.obj["version"]
+
+    @property
+    def time(self):
+        """Return the system time of the ArangoDB server.
+
+        :returns: the system time
+        :rtype: datetime.datetime
+        :raises: TimeGetError
+        """
+        res = self.api.get("/_admin/time")
+        if res.status_code not in HTTP_OK:
+            raise TimeGetError(res)
+        return datetime.fromtimestamp(res.obj["time"])
+
+    @property
+    def write_ahead_log(self):
+        """Return the configuration of the write-ahead log.
+
+        :returns: the configuration of the write-ahead log
+        :rtype: dict
+        :raises: WriteAheadLogGetError
+        """
+        res = self.api.get("/_admin/wal/properties")
+        if res.status_code not in HTTP_OK:
+            raise WriteAheadLogGetError(res)
+        return {
+            "allow_oversize": res.obj.get("allowOversizeEntries"),
+            "historic_logs": res.obj.get("historicLogfiles"),
+            "log_size": res.obj.get("logfileSize"),
+            "reserve_logs": res.obj.get("reserveLogfiles"),
+            "sync_interval": res.obj.get("syncInterval"),
+            "throttle_wait": res.obj.get("throttleWait"),
+            "throttle_when_pending": res.obj.get("throttleWhenPending")
+        }
+
+    def flush_write_ahead_log(self, wait_for_sync=True, wait_for_gc=True):
+        """Flush the write-ahead log to collection journals and data files.
+
+        :param wait_for_sync: block until data is synced to disk
+        :type wait_for_sync: bool
+        :param wait_for_gc: block until flushed data is garbage collected
+        :type wait_for_gc: bool
+        :raises: WriteAheadLogFlushError
+        """
+        res = self.api.put(
+            "/_admin/wal/flush",
+            data={
+                "waitForSync": wait_for_sync,
+                "waitForCollector": wait_for_gc
+            }
+        )
+        if res.status_code not in HTTP_OK:
+            raise WriteAheadLogFlushError(res)
+
+    def set_write_ahead_log(self, allow_oversize=None, log_size=None,
+                            historic_logs=None, reserve_logs=None,
+                            throttle_wait=None, throttle_when_pending=None):
+        """Configure the behaviour of the write-ahead log.
+
+        When ``throttle_when_pending`` is set to 0, write-throttling will not
+        be triggered at all.
+
+        :param allow_oversize: allow operations bigger than a single log file
+        :type allow_oversize: bool or None
+        :param log_size: the size of each write-ahead log file
+        :type log_size: int or None
+        :param historic_logs: the number of historic log files to keep
+        :type historic_logs: int or None
+        :param reserve_logs: the number of reserve log files to allocate
+        :type reserve_logs: int or None
+        :param throttle_wait: wait time before aborting when throttled (in ms)
+        :type throttle_wait: int or None
+        :param throttle_when_pending: number of due gc ops before throttling
+        :type throttle_when_pending: int or None
+        :returns: the new configuration of the write-ahead log
+        :rtype: dict
+        :raises: Write
+        """
+        data = dict()
+        if allow_oversize is not None:
+            data["allowOversizeEntries"] = allow_oversize
+        if log_size is not None:
+            data["logfileSize"] = log_size
+        if historic_logs is not None:
+            data["historicLogfiles"] = historic_logs
+        if reserve_logs is not None:
+            data["reserveLogfiles"] = reserve_logs
+        if throttle_wait is not None:
+            data["throttleWait"] = throttle_wait
+        if throttle_when_pending is not None:
+            data["throttleWhenPending"] = throttle_when_pending
+        res = self.api.put("/_admin/wal/properties", data=data)
+        if res.status_code not in HTTP_OK:
+            raise WriteAheadLogGetError(res)
+        return {
+            "allow_oversize": res.obj.get("allowOversizeEntries"),
+            "historic_logs": res.obj.get("historicLogfiles"),
+            "log_size": res.obj.get("logfileSize"),
+            "reserve_logs": res.obj.get("reserveLogfiles"),
+            "sync_interval": res.obj.get("syncInterval"),
+            "throttle_wait": res.obj.get("throttleWait"),
+            "throttle_when_pending": res.obj.get("throttleWhenPending")
+        }
+
+    def echo(self, short=True):
+        """Return the information on the last request (headers, payload etc.)
+
+        :param short: echo or long echo
+        :type short: bool
+        :returns: the information on the last request
+        :rtype: dict
+        :raises: EchoError
+        """
+        path = "/_admin/{}".format("echo" if short else "long_echo")
+        res = self.api.get(path)
+        if res.status_code not in HTTP_OK:
+            raise EchoError(res)
+        return res.obj
+
+    def shutdown(self):
+        """Initiate the server shutdown sequence.
+
+        :raises: ShutdownError
+        """
+        res = self.api.get("/_admin/shutdown")
+        if res.status_code not in HTTP_OK:
+            raise ShutdownError(res)
+
+    def run_tests(self, tests):
+        """Run the available unittests on the server.
+
+        :param tests: list of files containing the test suites
+        :type tests: list
+        :returns: the passed result
+        :rtype: dict
+        :raises: TestsRunError
+        """
+        res = self.api.post("/_admin/test", data={"tests": tests})
+        if res.status_code not in HTTP_OK:
+            raise TestsRunError(res)
+        return res.obj.get("passed")
+
+    def execute_program(self, program):
+        """Execute a javascript program on the server.
+
+        :param program: the body of the program to execute.
+        :type program: str
+        :returns: the result of the execution
+        :rtype: str
+        :raises: ProgramExecuteError
+        """
+        res = self.api.post("/_admin/execute", data=program)
+        if res.status_code not in HTTP_OK:
+            raise ProgramExecuteError(res)
+        return res.obj
 
     #######################
     # Database Management #
@@ -278,7 +450,7 @@ class Arango(object):
         :rtype: dict
         :raises: UserUpdateError
         """
-        data = {}
+        data = dict()
         if password is not None:
             data["password"] = password
         if active is not None:
@@ -347,15 +519,12 @@ class Arango(object):
         :type username: str
         :param safe_delete: ignores HTTP 404 if set to True
         :type safe_delete: bool
-        :returns: True if the operation succeeds
-        :rtype: bool
         :raises: UserDeleteError
         """
         res = self.api.delete("/_api/user/{user}".format(user=username))
         if res.status_code not in HTTP_OK:
             if not (res.status_code == 404 and safe_delete):
                 raise UserDeleteError(res)
-        return True
 
     ###############################
     # Administration & Monitoring #
@@ -363,7 +532,7 @@ class Arango(object):
 
     def read_log(self, upto=None, level=None, start=None, size=None,
                  offset=None, search=None, sort=None):
-        """Read global log from the server
+        """Read the global log from the server
 
         The parameters ``upto`` and ``level`` are mutually exclusive.
         The values for ``upto`` and ``level`` must be one of:
@@ -395,7 +564,7 @@ class Arango(object):
         :rtype: dict
         :raises: LogGetError
         """
-        params = {}
+        params = dict()
         if upto is not None:
             params["upto"] = upto
         if level is not None:
@@ -418,18 +587,15 @@ class Arango(object):
     def reload_routing_info(self):
         """Reload the routing information from the collection ``routing``.
 
-        :returns: True if the operation succeeds
-        :rtype: bool
         :raises: RoutingInfoReloadError
         """
         res = self.api.post("/_admin/routing/reload")
         if res.status_code not in HTTP_OK:
             raise RountingInfoReloadError(res)
-        return True
 
     @property
     def statistics(self):
-        """Return the statisics information.
+        """Return the server statistics.
 
         :returns: the statistics information
         :rtype: dict
@@ -459,7 +625,7 @@ class Arango(object):
 
     @property
     def server_role(self):
-        """Return the role of the server in cluster
+        """Return the role of the server in the cluster (if applicable)
 
         Possible return values are:
 

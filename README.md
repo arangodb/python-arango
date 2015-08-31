@@ -28,142 +28,64 @@ cd python-arango
 python2.7 setup.py install
 ```
 
-Initializing Connection
------------------------
+Initialization
+--------------
 
 ```python
 from arango import Arango
 
-# Initialize ArangoDB connection
-conn = Arango(host="localhost", port=8529)
+# Initialize the API wrapper
+arango = Arango(host="localhost", port=8529)
 ```
 
-Databases
----------
+Database Management
+-------------------
 
 ```python
 # List all databases
-conn.databases
-conn.databases["user"]
-conn.databases["system"]
+arango.databases
+arango.databases["user"]
+arango.databases["all"]
 
 # Create a new database
-conn.create_database("my_database")
+arango.create_database("my_database")
 
 # Delete a database
-conn.delete_database("my_database")
+arango.delete_database("my_database")
+
+# Get the database object of the given name
+arango.database("my_database")  # equivalent to arango.db("my_database")
 
 # Retrieve information on the default ("_system") database
-conn.name           # equivalent to conn.db("_system").name
-conn.collections    # equivalent to conn.db("_system").collections
-conn.id             # equivalent to conn.db("_system").id
-conn.path           # equivalent to conn.db("_system").path
-conn.is_system      # equivalent to conn.db("_system").is_system
-conn.is_edge        # equivalent to conn.db("_system").is_edge
-conn.is_volatile    # equivalent to conn.db("_system").is_volatile
+arango.name           # equivalent to arango.db("_system").name
+arango.collections    # equivalent to arango.db("_system").collections
+arango.id             # equivalent to arango.db("_system").id
+arango.path           # equivalent to arango.db("_system").path
+arango.is_system      # equivalent to arango.db("_system").is_system
 
 # Retrieve information on a specific database
-conn.db("db01").name
-conn.db("db01").collections
-conn.db("db02").id
-conn.db("db03").path
-conn.db("db04").is_system
+arango.db("db01").name
+arango.db("db01").collections
+arango.db("db02").id
+arango.db("db03").path
+arango.db("db04").is_system
 
 # Working with the default ("_system") database
-conn.create_collection("my_collection")
-conn.aql_functions
-conn.*
+arango.create_collection("my_collection")
+arango.aql_functions
+arango.*
 
-# Working with a specific database (e.g. "my_database")
-conn.db("my_database").create_collection("my_collection")
-conn.db("my_database").aql_functions
-conn.db("my_database").*
+# Working with a specific database
+arango.db("my_database").create_collection("my_collection")
+arango.db("my_database").aql_functions
+arango.db("my_database").*
 ```
 
-User Management
----------------
-```python
-
-# List all users
-conn.users
-
-# Create a new user
-conn.create_user("username", "password1")
-
-# Update a user
-conn.update_user("username", "password2", change_password=True)
-
-# Replace a user
-conn.replace_user("username", "password3")
-
-# Delete a user
-conn.delete_user("username")
-```
-
-Monitoring
-----------
-```python
-
-# Retrieve global server log
-conn.read_log(level="debug")
-
-# Create a new user
-conn.create_user("username", "password1")
-
-# Update a user
-conn.update_user("username", "password2", change_password=True)
-
-# Replace a user
-conn.replace_user("username", "password3")
-
-# Delete a user
-conn.delete_user("username")
-```
-
-
-AQL Functions
--------------
+Collection Management
+---------------------
 
 ```python
-my_database = conn.db("my_database")
-
-# List the AQL functions defined in database "my_database"
-my_database.aql_functions
-
-# Create a new AQL function
-my_database.create_aql_function(
-  "myfunctions::temperature::ctof",
-  "function (celsius) { return celsius * 1.8 + 32; }"
-)
-
-# Delete an AQL function
-my_database.delete_aql_function("myfunctions::temperature::ctof")
-```
-
-AQL Queries
------------
-
-```python
-# Retrieve the execution plan without actually executing it
-my_database.explain_query("FOR doc IN my_collection RETURN doc")
-
-# Validate the AQL query without actually executing it
-my_database.validate_query("FOR doc IN my_collection RETURN doc")
-
-# Execute the AQL query and iterate through the AQL cursor
-cursor = my_database.execute_query(
-  "FOR d IN my_collection FILTER d.value == @val RETURN d",
-  bind_vars={"val": "foobar"}
-)
-for doc in cursor:  # the cursor is deleted when the generator is exhausted
-  print doc
-```
-
-Collections
------------
-
-```python
-my_database = conn.db("my_database")
+my_database = arango.db("my_database")
 
 # List the collections in "my_database"
 my_database.collections
@@ -184,7 +106,7 @@ my_database.rename_collection("new_collection", "my_collection")
 my_database.delete_collection("my_collection")
 
 # Retrieve collection information
-my_collection = conn.db("my_database").col("my_collection")
+my_collection = arango.db("my_database").col("my_collection")
 len(my_collection) == my_collection.count
 my_collection.properties
 my_collection.id
@@ -222,37 +144,11 @@ my_collection.contains("a_document_key")
 "a_document_key" in my_collection
 ```
 
-Indexes
--------
+Document Management
+-------------------
 
 ```python
-my_collection = conn.collection("my_collection")  # or conn.col("mycol")
-
-# List the indexes in collection "my_collection"
-my_collection.indexes
-
-# Create a unique hash index on attributes "attr1" and "attr2"
-my_collection.create_hash_index(fields=["attr1", "attr2"], unique=True)
-
-# Create a cap constraint
-my_collection.create_cap_constraint(size=10, byte_size=40000)
-
-# Create a unique skiplist index on attributes "attr1" and "attr2"
-my_collection.create_skiplist_index(["attr1", "attr2"], unique=True)
-
-# Examples of creating a geo-spatial index on 1 (or 2) coordinate attributes
-my_collection.create_geo_index(fields=["coordinates"])
-my_collection.create_geo_index(fields=["longitude", "latitude"])
-
-# Create a fulltext index on attribute "attr1"
-my_collection.create_fulltext_index(fields=["attr1"], min_length=10)
-```
-
-Documents
----------
-
-```python
-my_collection = conn.db("my_database").collection("my_collection")
+my_collection = arango.db("my_database").collection("my_collection")
 
 # Retrieve a document by its key
 my_collection.document("doc01")
@@ -275,8 +171,8 @@ for doc in my_collection:
     my_collection.update_document(doc["_key"], {"new_value": new_value})
 ```
 
-Simple Queries (Collection-Specific)
-------------------------------------
+Simple Queries
+--------------
 
 ```python
 # Return the first 5 documents in collection "my_collection"
@@ -310,11 +206,75 @@ my_collection.within(latitude=100, longitude=20, radius=15)
 my_collection.near(latitude=100, longitude=20)
 ```
 
-Graphs
-------
+AQL Functions
+-------------
 
 ```python
-my_database = conn.db("my_database")
+my_database = arango.db("my_database")
+
+# List the AQL functions defined in database "my_database"
+my_database.aql_functions
+
+# Create a new AQL function
+my_database.create_aql_function(
+  "myfunctions::temperature::ctof",
+  "function (celsius) { return celsius * 1.8 + 32; }"
+)
+
+# Delete an AQL function
+my_database.delete_aql_function("myfunctions::temperature::ctof")
+```
+
+AQL Queries
+-----------
+
+```python
+# Retrieve the execution plan without actually executing it
+my_database.explain_query("FOR doc IN my_collection RETURN doc")
+
+# Validate the AQL query without actually executing it
+my_database.validate_query("FOR doc IN my_collection RETURN doc")
+
+# Execute the AQL query and iterate through the AQL cursor
+cursor = my_database.execute_query(
+  "FOR d IN my_collection FILTER d.value == @val RETURN d",
+  bind_vars={"val": "foobar"}
+)
+for doc in cursor:  # the cursor is deleted when the generator is exhausted
+  print doc
+```
+
+Index Management
+----------------
+
+```python
+my_collection = arango.collection("my_collection")  # or arango.col("mycol")
+
+# List the indexes in collection "my_collection"
+my_collection.indexes
+
+# Create a unique hash index on attributes "attr1" and "attr2"
+my_collection.create_hash_index(fields=["attr1", "attr2"], unique=True)
+
+# Create a cap constraint
+my_collection.create_cap_constraint(size=10, byte_size=40000)
+
+# Create a unique skiplist index on attributes "attr1" and "attr2"
+my_collection.create_skiplist_index(["attr1", "attr2"], unique=True)
+
+# Examples of creating a geo-spatial index on 1 (or 2) coordinate attributes
+my_collection.create_geo_index(fields=["coordinates"])
+my_collection.create_geo_index(fields=["longitude", "latitude"])
+
+# Create a fulltext index on attribute "attr1"
+my_collection.create_fulltext_index(fields=["attr1"], min_length=10)
+```
+
+Graph Management
+----------------
+
+```python
+my_database = arango.db("my_database")
 
 # List all the graphs in the database
 my_database.graphs
@@ -345,8 +305,8 @@ my_graph.vertex_collections
 my_graph.orphan_collections
 ```
 
-Vertices
---------
+Vertex Management
+-----------------
 
 ```python
 # Create new vertices (again if "_key" is not given it's auto-generated)
@@ -363,8 +323,8 @@ my_graph.update_vertex("vol02/v01", {"new_value": 3})
 my_graph.delete_vertex("vol01/v01")
 ```
 
-Edges
------
+Edge Management
+---------------
 
 ```python
 # Create a new edge
@@ -393,7 +353,7 @@ Graph Traversals
 ----------------
 
 ```python
-my_graph = conn.db("my_database").graph("my_graph")
+my_graph = arango.db("my_database").graph("my_graph")
 
 # Execute a graph traversal
 results = my_graph.execute_traversal(
@@ -413,7 +373,7 @@ Batch Requests
 --------------
 
 ```python
-# NOTE: only (create/update/replace/delete) methods for (documents/vertices/edges) are supported at the moment
+# NOTE: only CRUD methods for (documents/vertices/edges) are supported
 
 # Execute a batch request for managing documents
 my_database.execute_batch([
@@ -486,6 +446,84 @@ res = my_database.execute_transaction(
 )
 ```
 
+User Management
+---------------
+```python
+
+# List all users
+arango.users
+
+# Create a new user
+arango.create_user("username", "password")
+
+# Update a user
+arango.update_user("username", "password", change_password=True)
+
+# Replace a user
+arango.replace_user("username", "password", extra={"foo": "bar"})
+
+# Delete a user
+arango.delete_user("username")
+```
+
+Administration and Monitoring
+-----------------------------
+```python
+
+# Read the global log from the server
+arango.read_log(level="debug")
+
+# Reload the routing information
+arango.reload_routing_info()
+
+# Return the server statistics
+arango.statistics
+
+# Return the server statistics description
+arango.statistics_description
+
+# Return the role of the server in the cluster (if applicable)
+arango.server_role
+```
+
+Miscellaneous Functions
+-----------------------
+```python
+
+# Retrieve the versions of ArangoDB server and components
+arango.version
+
+# Retrieve the required database version
+arango.required_database_version
+
+# Retrieve the server time
+arango.time
+
+# Retrieve the write-ahead log
+arango.write_ahead_log
+
+# Flush the write-ahead log
+arango.flush_write_ahead_log(wait_for_sync=True, wait_for_gc=True)
+
+# Configure the write-ahead log
+arango.set_write_ahead_log(
+    allow_oversize=True,
+    log_size=30000000,
+    historic_logs=5,
+    reserve_logs=5,
+    throttle_wait=10000,
+    throttle_when_pending=0
+)
+
+# Echo last request
+arango.echo()
+
+# Shutdown the ArangoDB server
+arango.shutdown()
+
+
+```
+
 To Do
 -----
 
@@ -493,7 +531,7 @@ To Do
 2.  Async Result
 3.  Endpoints
 4.  Sharding
-5.  Misc. Functions
+
 
 Running Tests (requires ArangoDB on localhost)
 ----------------------------------------------
