@@ -21,7 +21,7 @@ sudo pip install python-arango
 -   Latest (Supports up to ArangoDB Version 2.7)
 
 ```bash
-git clone https://github.com/Joowani/python-a.git
+git clone https://github.com/Joowani/python-arango.git
 cd python-arango
 python2.7 setup.py install
 ```
@@ -289,13 +289,13 @@ my_db.graphs
 # Create a new graph
 my_graph = my_db.create_graph("my_graph")
 
-# Create new vertex collections to a graph
+# Create new vertex collections for a graph
 my_db.create_collection("vcol01")
 my_db.create_collection("vcol02")
 my_graph.create_vertex_collection("vcol01")
 my_graph.create_vertex_collection("vcol02")
 
-# Create a new edge definition to a graph
+# Create a new edge definition for a graph
 my_db.create_collection("ecol01", is_edge=True)
 my_graph.create_edge_definition(
   edge_collection="ecol01",
@@ -316,7 +316,7 @@ Vertex Management
 -----------------
 
 ```python
-# Create new vertices (again if "_key" is not given it's auto-generated)
+# Create new vertices (if "_key" is not given it's auto-generated)
 my_graph.create_vertex("vcol01", {"_key": "v01", "value": 1})
 my_graph.create_vertex("vcol02", {"_key": "v01", "value": 1})
 
@@ -380,12 +380,12 @@ Batch Requests
 --------------
 
 ```python
-# NOTE: only CRUD methods for (documents/vertices/edges) are supported
+# NOTE: only CRUD methods for documents/vertices/edges are supported (WIP)
 
 # Execute a batch request for managing documents
 my_db.execute_batch([
     (
-        my_col.create_document,                # method name
+        my_col.create_document,             # method name
         [{"_key": "doc04", "value": 1}],    # args
         {"wait_for_sync": True}             # kwargs
     ),
@@ -510,7 +510,10 @@ a.server_time
 a.write_ahead_log
 
 # Flush the write-ahead log
-a.flush_write_ahead_log(wait_for_sync=True, wait_for_gc=True)
+a.flush_write_ahead_log(
+    wait_for_sync=True, 
+    wait_for_gc=True
+)
 
 # Configure the write-ahead log
 a.set_write_ahead_log(
@@ -540,8 +543,10 @@ To Do
 4.  Sharding
 
 
-Running Tests (requires ArangoDB on localhost)
+Running Tests
 ----------------------------------------------
+The tests create temporary databases and users.
+If a test fails in the middle dummy elements should be cleaned up (WIP). 
 
 ```bash
 nosetests-2.7 -v
