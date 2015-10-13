@@ -73,6 +73,10 @@ class Arango(object):
             DEFAULT_DATABASE: self._default_database
         }
 
+    def __repr__(self):
+        """Return a descriptive string of this instance."""
+        return "<ArangoDB API driver pointing to '{}'>".format(self.host)
+
     def __getattr__(self, attr):
         """Call __getattr__ of the default database."""
         return getattr(self._default_database, attr)
@@ -81,8 +85,8 @@ class Arango(object):
         """Call __getitem__ of the default database."""
         return self._default_database.collection(item)
 
-    def _invalidate_database_cache(self):
-        """Invalidate the Database objects cache."""
+    def _refresh_database_cache(self):
+        """Refresh the Database objects cache."""
         real_dbs = set(self.databases["all"])
         cached_dbs = set(self._database_cache)
         for db_name in cached_dbs - real_dbs:
@@ -116,10 +120,10 @@ class Arango(object):
         res = self.api.get("/_api/version", params={"details": True})
         if res.status_code not in HTTP_OK:
             raise VersionGetError(res)
-        return res.obj["details"]
+        return res.body["details"]
 
     @property
-    def required_database_version(self):
+    def database_version(self):
         """Return the required database version.
 
         :returns: the required database version
@@ -129,10 +133,10 @@ class Arango(object):
         res = self.api.get("/_admin/database/target-version")
         if res.status_code not in HTTP_OK:
             raise RequiredDatabaseVersionGetError(res)
-        return res.obj["version"]
+        return res.body["version"]
 
     @property
-    def time(self):
+    def server_time(self):
         """Return the system time of the ArangoDB server.
 
         :returns: the system time
@@ -142,7 +146,7 @@ class Arango(object):
         res = self.api.get("/_admin/time")
         if res.status_code not in HTTP_OK:
             raise TimeGetError(res)
-        return datetime.fromtimestamp(res.obj["time"])
+        return datetime.fromtimestamp(res.body["time"])
 
     @property
     def write_ahead_log(self):
@@ -156,13 +160,13 @@ class Arango(object):
         if res.status_code not in HTTP_OK:
             raise WriteAheadLogGetError(res)
         return {
-            "allow_oversize": res.obj.get("allowOversizeEntries"),
-            "historic_logs": res.obj.get("historicLogfiles"),
-            "log_size": res.obj.get("logfileSize"),
-            "reserve_logs": res.obj.get("reserveLogfiles"),
-            "sync_interval": res.obj.get("syncInterval"),
-            "throttle_wait": res.obj.get("throttleWait"),
-            "throttle_when_pending": res.obj.get("throttleWhenPending")
+            "allow_oversize": res.body.get("allowOversizeEntries"),
+            "historic_logs": res.body.get("historicLogfiles"),
+            "log_size": res.body.get("logfileSize"),
+            "reserve_logs": res.body.get("reserveLogfiles"),
+            "sync_interval": res.body.get("syncInterval"),
+            "throttle_wait": res.body.get("throttleWait"),
+            "throttle_when_pending": res.body.get("throttleWhenPending")
         }
 
     def flush_write_ahead_log(self, wait_for_sync=True, wait_for_gc=True):
@@ -225,13 +229,13 @@ class Arango(object):
         if res.status_code not in HTTP_OK:
             raise WriteAheadLogGetError(res)
         return {
-            "allow_oversize": res.obj.get("allowOversizeEntries"),
-            "historic_logs": res.obj.get("historicLogfiles"),
-            "log_size": res.obj.get("logfileSize"),
-            "reserve_logs": res.obj.get("reserveLogfiles"),
-            "sync_interval": res.obj.get("syncInterval"),
-            "throttle_wait": res.obj.get("throttleWait"),
-            "throttle_when_pending": res.obj.get("throttleWhenPending")
+            "allow_oversize": res.body.get("allowOversizeEntries"),
+            "historic_logs": res.body.get("historicLogfiles"),
+            "log_size": res.body.get("logfileSize"),
+            "reserve_logs": res.body.get("reserveLogfiles"),
+            "sync_interval": res.body.get("syncInterval"),
+            "throttle_wait": res.body.get("throttleWait"),
+            "throttle_when_pending": res.body.get("throttleWhenPending")
         }
 
     def echo(self, short=True):
@@ -247,7 +251,7 @@ class Arango(object):
         res = self.api.get(path)
         if res.status_code not in HTTP_OK:
             raise EchoError(res)
-        return res.obj
+        return res.body
 
     def shutdown(self):
         """Initiate the server shutdown sequence.
@@ -270,7 +274,7 @@ class Arango(object):
         res = self.api.post("/_admin/test", data={"tests": tests})
         if res.status_code not in HTTP_OK:
             raise TestsRunError(res)
-        return res.obj.get("passed")
+        return res.body.get("passed")
 
     def execute_program(self, program):
         """Execute a javascript program on the server.
@@ -284,7 +288,7 @@ class Arango(object):
         res = self.api.post("/_admin/execute", data=program)
         if res.status_code not in HTTP_OK:
             raise ProgramExecuteError(res)
-        return res.obj
+        return res.body
 
     #######################
     # Database Management #
@@ -302,13 +306,13 @@ class Arango(object):
         res = self.api.get("/_api/database/user")
         if res.status_code not in HTTP_OK:
             raise DatabaseListError(res)
-        user_databases = res.obj["result"]
+        user_databases = res.body["result"]
 
         # Get all databases
         res = self.api.get("/_api/database")
         if res.status_code not in HTTP_OK:
             raise DatabaseListError(res)
-        all_databases = res.obj["result"]
+        all_databases = res.body["result"]
 
         return {"all": all_databases, "user": user_databases}
 
@@ -326,7 +330,7 @@ class Arango(object):
         if name in self._database_cache:
             return self._database_cache[name]
         else:
-            self._invalidate_database_cache()
+            self._refresh_database_cache()
             if name not in self._database_cache:
                 raise DatabaseNotFoundError(name)
             return self._database_cache[name]
@@ -346,7 +350,7 @@ class Arango(object):
         res = self.api.post("/_api/database", data=data)
         if res.status_code not in HTTP_OK:
             raise DatabaseCreateError(res)
-        self._invalidate_database_cache()
+        self._refresh_database_cache()
         return self.db(name)
 
     def delete_database(self, name, safe_delete=False):
@@ -362,7 +366,7 @@ class Arango(object):
         if res.status_code not in HTTP_OK:
             if not (res.status_code == 404 and safe_delete):
                 raise DatabaseDeleteError(res)
-        self._invalidate_database_cache()
+        self._refresh_database_cache()
 
     ###################
     # User Management #
@@ -374,20 +378,38 @@ class Arango(object):
 
         :returns: a dictionary mapping user names to their information
         :rtype: dict
-        :raises: UserGetAllError
+        :raises: UserListError
         """
         res = self.api.get("/_api/user")
         if res.status_code not in HTTP_OK:
-            raise UserGetAllError(res)
-        # Uncamelify key(s) for consistent style
+            raise UserListError(res)
         result = {}
-        for record in res.obj["result"]:
+        for record in res.body["result"]:
             result[record["user"]] = {
                 "change_password": record.get("changePassword"),
                 "active": record.get("active"),
                 "extra": record.get("extra"),
             }
         return result
+
+    def user(self, username):
+        """Return the details on a single user.
+
+        :returns: user information
+        :rtype: dict or None
+        :raises: UserNotFoundError
+        """
+        res = self.api.get("/_api/user")
+        if res.status_code not in HTTP_OK:
+            raise UserNotFoundError(res)
+        for record in res.body["result"]:
+            if record["user"] == username:
+                return {
+                    "change_password": record.get("changePassword"),
+                    "active": record.get("active"),
+                    "extra": record.get("extra"),
+                }
+        raise UserNotFoundError(username)
 
     def create_user(self, username, password, active=None, extra=None,
                     change_password=None):
@@ -423,9 +445,9 @@ class Arango(object):
         if res.status_code not in HTTP_OK:
             raise UserCreateError(res)
         return {
-            "active": res.obj.get("active"),
-            "change_password": res.obj.get("changePassword"),
-            "extra": res.obj.get("extra"),
+            "active": res.body.get("active"),
+            "change_password": res.body.get("changePassword"),
+            "extra": res.body.get("extra"),
         }
 
     def update_user(self, username, password=None, active=None, extra=None,
@@ -466,9 +488,9 @@ class Arango(object):
         if res.status_code not in HTTP_OK:
             raise UserUpdateError(res)
         return {
-            "active": res.obj.get("active"),
-            "change_password": res.obj.get("changePassword"),
-            "extra": res.obj.get("extra"),
+            "active": res.body.get("active"),
+            "change_password": res.body.get("changePassword"),
+            "extra": res.body.get("extra"),
         }
 
     def replace_user(self, username, password, active=None, extra=None,
@@ -507,9 +529,9 @@ class Arango(object):
         if res.status_code not in HTTP_OK:
             raise UserReplaceError(res)
         return {
-            "active": res.obj.get("active"),
-            "change_password": res.obj.get("changePassword"),
-            "extra": res.obj.get("extra"),
+            "active": res.body.get("active"),
+            "change_password": res.body.get("changePassword"),
+            "extra": res.body.get("extra"),
         }
 
     def delete_user(self, username, safe_delete=False):
@@ -530,8 +552,8 @@ class Arango(object):
     # Administration & Monitoring #
     ###############################
 
-    def read_log(self, upto=None, level=None, start=None, size=None,
-                 offset=None, search=None, sort=None):
+    def get_log(self, upto=None, level=None, start=None, size=None,
+                offset=None, search=None, sort=None):
         """Read the global log from the server
 
         The parameters ``upto`` and ``level`` are mutually exclusive.
@@ -582,9 +604,9 @@ class Arango(object):
         res = self.api.get("/_admin/log")
         if res.status_code not in HTTP_OK:
             LogGetError(res)
-        return res.obj
+        return res.body
 
-    def reload_routing_info(self):
+    def reload_routing(self):
         """Reload the routing information from the collection ``routing``.
 
         :raises: RoutingInfoReloadError
@@ -604,9 +626,9 @@ class Arango(object):
         res = self.api.get("/_admin/statistics")
         if res.status_code not in HTTP_OK:
             raise StatisticsGetError(res)
-        del res.obj["code"]
-        del res.obj["error"]
-        return res.obj
+        del res.body["code"]
+        del res.body["error"]
+        return res.body
 
     @property
     def statistics_description(self):
@@ -619,9 +641,9 @@ class Arango(object):
         res = self.api.get("/_admin/statistics-description")
         if res.status_code not in HTTP_OK:
             raise StatisticsDescriptionGetError(res)
-        del res.obj["code"]
-        del res.obj["error"]
-        return res.obj
+        del res.body["code"]
+        del res.body["error"]
+        return res.body
 
     @property
     def server_role(self):
@@ -643,7 +665,7 @@ class Arango(object):
         res = self.api.get("/_admin/server/role")
         if res.status_code not in HTTP_OK:
             raise ServerRoleGetError(res)
-        return res.obj["role"]
+        return res.body["role"]
 
 if __name__ == "__main__":
     a = Arango()

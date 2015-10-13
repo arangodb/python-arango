@@ -15,7 +15,7 @@ COLLECTION_STATUSES = {
     5: "deleted",
 }
 
-# 'HTTP OK' status codes
+# HTTP OK status codes
 HTTP_OK = {
     200, "200",
     201, "201",
@@ -26,6 +26,7 @@ HTTP_OK = {
     206, "206",
 }
 
+# ArangoDB specific logging levels
 LOG_LEVELS = {
     "fatal": 0,
     "error": 1,
@@ -34,4 +35,5 @@ LOG_LEVELS = {
     "debug": 4,
 }
 
+# ArangoDB specific log sorting types
 LOG_SORTING_TYPES = {"asc", "desc"}

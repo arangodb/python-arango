@@ -3,9 +3,9 @@
 import unittest
 from arango import Arango
 from arango.tests.utils import (
-    get_next_db_name,
-    get_next_col_name,
-    get_next_graph_name,
+    generate_db_name,
+    generate_col_name,
+    generate_graph_name,
 )
 
 
@@ -14,21 +14,21 @@ class BatchRequestTest(unittest.TestCase):
 
     def setUp(self):
         self.arango = Arango()
-        self.db_name = get_next_db_name(self.arango)
+        self.db_name = generate_db_name(self.arango)
         self.db = self.arango.create_database(self.db_name)
-        self.col_name = get_next_col_name(self.db)
+        self.col_name = generate_col_name(self.db)
         self.col = self.db.create_collection(self.col_name)
 
         # Create the vertex collection
-        self.vertex_col_name = get_next_col_name(self.db)
+        self.vertex_col_name = generate_col_name(self.db)
         self.vertex_col = self.db.create_collection(self.vertex_col_name)
         # Create the edge collection
-        self.edge_col_name = get_next_col_name(self.db)
+        self.edge_col_name = generate_col_name(self.db)
         self.edge_col = self.db.create_collection(
             self.edge_col_name, is_edge=True
         )
         # Create the graph
-        self.graph_name = get_next_graph_name(self.db)
+        self.graph_name = generate_graph_name(self.db)
         self.graph = self.db.create_graph(
             name=self.graph_name,
             edge_definitions=[{
@@ -38,7 +38,7 @@ class BatchRequestTest(unittest.TestCase):
             }],
         )
 
-        # Test database cleaup
+        # Test database cleanup
         self.addCleanup(self.arango.delete_database,
                         name=self.db_name, safe_delete=True)
 

@@ -4,7 +4,7 @@ import json
 
 from arango.utils import camelify, uncamelify
 from arango.exceptions import *
-from arango.cursor import arango_cursor
+from arango.cursor import cursor
 from arango.constants import COLLECTION_STATUSES, HTTP_OK
 
 
@@ -30,13 +30,27 @@ class Collection(object):
         self.api = api
         self.type = "edge" if self.is_edge else "document"
 
+    def __repr__(self):
+        """Return a descriptive string of this instance."""
+        return "<ArangoDB collection '{}'>".format(self.name)
+
     def __iter__(self):
         """Iterate through the documents in this collection."""
         return self.all()
 
     def __len__(self):
-        """Return the number of documents in this collection."""
-        return self.count
+        """Return the number of documents present in this collection.
+
+        :returns: the number of documents
+        :rtype: int
+        :raises: CollectionGetError
+        """
+        res = self.api.get(
+            "/_api/collection/{}/count".format(self.name)
+        )
+        if res.status_code not in HTTP_OK:
+            raise CollectionGetError(res)
+        return res.body["count"]
 
     def __setattr__(self, attr, value):
         """Update the properties of this collection.
@@ -71,26 +85,19 @@ class Collection(object):
 
         :param key: the document key
         :type key: str
-        :returns: True if the document exists, False otherwise
+        :returns: True if the document exists, else False
         :rtype: bool
         :raises: DocumentGetError
         """
-        return self.contains(key)
-
-    @property
-    def count(self):
-        """Return the number of documents present in this collection.
-
-        :returns: the number of documents
-        :rtype: int
-        :raises: CollectionGetError
-        """
-        res = self.api.get(
-            "/_api/collection/{}/count".format(self.name)
+        res = self.api.head(
+            "/_api/{}/{}/{}".format(self.type, self.name, key)
         )
-        if res.status_code not in HTTP_OK:
-            raise CollectionGetError(res)
-        return res.obj["count"]
+        if res.status_code == 200:
+            return True
+        elif res.status_code == 404:
+            return False
+        else:
+            raise DocumentGetError(res)
 
     @property
     def properties(self):
@@ -106,19 +113,19 @@ class Collection(object):
         if res.status_code not in HTTP_OK:
             raise CollectionGetError(res)
         return {
-            "id": res.obj["id"],
-            "name": res.obj["name"],
-            "is_edge": res.obj["type"] == 3,
+            "id": res.body["id"],
+            "name": res.body["name"],
+            "is_edge": res.body["type"] == 3,
             "status": COLLECTION_STATUSES.get(
-                res.obj["status"],
-                "corrupted ({})".format(res.obj["status"])
+                res.body["status"],
+                "corrupted ({})".format(res.body["status"])
             ),
-            "do_compact": res.obj["doCompact"],
-            "is_system": res.obj["isSystem"],
-            "is_volatile": res.obj["isVolatile"],
-            "journal_size": res.obj["journalSize"],
-            "wait_for_sync": res.obj["waitForSync"],
-            "key_options": uncamelify(res.obj["keyOptions"])
+            "do_compact": res.body["doCompact"],
+            "is_system": res.body["isSystem"],
+            "is_volatile": res.body["isVolatile"],
+            "journal_size": res.body["journalSize"],
+            "wait_for_sync": res.body["waitForSync"],
+            "key_options": uncamelify(res.body["keyOptions"])
         }
 
     @property
@@ -202,7 +209,7 @@ class Collection(object):
         return self.properties["is_edge"]
 
     @property
-    def do_compact(self):
+    def is_compacted(self):
         """Return True if this collection is compacted.
 
         :returns: True if collection is compacted, False otherwise
@@ -212,7 +219,7 @@ class Collection(object):
         return self.properties["do_compact"]
 
     @property
-    def figures(self):
+    def statistics(self):
         """Return the statistics of this collection.
 
         :returns: the statistics of this collection
@@ -224,7 +231,7 @@ class Collection(object):
         )
         if res.status_code not in HTTP_OK:
             raise CollectionGetError(res)
-        return uncamelify(res.obj["figures"])
+        return uncamelify(res.body["figures"])
 
     @property
     def revision(self):
@@ -239,7 +246,7 @@ class Collection(object):
         )
         if res.status_code not in HTTP_OK:
             raise CollectionGetError(res)
-        return res.obj["revision"]
+        return res.body["revision"]
 
     def load(self):
         """Load this collection into memory.
@@ -254,8 +261,8 @@ class Collection(object):
         if res.status_code not in HTTP_OK:
             raise CollectionLoadError(res)
         return COLLECTION_STATUSES.get(
-            res.obj["status"],
-            "corrupted ({})".format(res.obj["status"])
+            res.body["status"],
+            "corrupted ({})".format(res.body["status"])
         )
 
     def unload(self):
@@ -271,8 +278,8 @@ class Collection(object):
         if res.status_code not in HTTP_OK:
             raise CollectionUnloadError(res)
         return COLLECTION_STATUSES.get(
-            res.obj["status"],
-            "corrupted ({})".format(res.obj["status"])
+            res.body["status"],
+            "corrupted ({})".format(res.body["status"])
         )
 
     def rotate_journal(self):
@@ -285,7 +292,7 @@ class Collection(object):
         )
         if res.status_code not in HTTP_OK:
             raise CollectionRotateJournalError(res)
-        return res.obj["result"]
+        return res.body["result"]
 
     def checksum(self, with_rev=False, with_data=False):
         """Return the checksum of this collection.
@@ -304,7 +311,7 @@ class Collection(object):
         )
         if res.status_code not in HTTP_OK:
             raise CollectionGetError(res)
-        return res.obj["checksum"]
+        return res.body["checksum"]
 
     def truncate(self):
         """Delete all documents from this collection.
@@ -317,28 +324,13 @@ class Collection(object):
         if res.status_code not in HTTP_OK:
             raise CollectionTruncateError(res)
 
-    def contains(self, key):
-        """Return True if the document exists in this collection.
-
-        :param key: the document key
-        :type key: str
-        :returns: True if the document exists, else False
-        :rtype: bool
-        :raises: DocumentGetError
-        """
-        res = self.api.head(
-            "/_api/{}/{}/{}".format(self.type, self.name, key)
-        )
-        if res.status_code == 200:
-            return True
-        elif res.status_code == 404:
-            return False
-        else:
-            raise DocumentGetError(res)
-
     #######################
     # Document Management #
     #######################
+
+    def doc(self, key, rev=None, match=True):
+        """Alias for self.document."""
+        return self.document(key, rev, match)
 
     def document(self, key, rev=None, match=True):
         """Return the document of the given key.
@@ -370,7 +362,7 @@ class Collection(object):
             return None
         elif res.status_code not in HTTP_OK:
             raise DocumentGetError(res)
-        return res.obj
+        return res.body
 
     def create_document(self, data, wait_for_sync=False, _batch=False):
         """Create a new document to this collection.
@@ -413,7 +405,7 @@ class Collection(object):
         res = self.api.post(path=path, data=data, params=params)
         if res.status_code not in HTTP_OK:
             raise DocumentCreateError(res)
-        return res.obj
+        return res.body
 
     def update_document(self, key, data, rev=None, keep_none=True,
                         wait_for_sync=False, _batch=False):
@@ -468,8 +460,8 @@ class Collection(object):
             raise DocumentRevisionError(res)
         if res.status_code not in HTTP_OK:
             raise DocumentUpdateError(res)
-        del res.obj["error"]
-        return res.obj
+        del res.body["error"]
+        return res.body
 
     def replace_document(self, key, data, rev=None, wait_for_sync=False,
                          _batch=False):
@@ -516,8 +508,8 @@ class Collection(object):
             raise DocumentRevisionError(res)
         elif res.status_code not in HTTP_OK:
             raise DocumentReplaceError(res)
-        del res.obj["error"]
-        return res.obj
+        del res.body["error"]
+        return res.body
 
     def delete_document(self, key, rev=None, wait_for_sync=False,
                         _batch=False):
@@ -549,8 +541,8 @@ class Collection(object):
             raise DocumentRevisionError(res)
         elif res.status_code not in {200, 202}:
             raise DocumentDeleteError(res)
-        del res.obj["error"]
-        return res.obj
+        del res.body["error"]
+        return res.body
 
     ############################
     # Document Import & Export #
@@ -588,8 +580,8 @@ class Collection(object):
         )
         if res.status_code not in HTTP_OK:
             raise DocumentsImportError(res)
-        del res.obj["error"]
-        return res.obj
+        del res.body["error"]
+        return res.body
 
     # TODO look into this endpoint for better documentation and testing
     def export_documents(self, flush=None, flush_wait=None, count=None,
@@ -635,7 +627,7 @@ class Collection(object):
         res = self.api.post("/_api/export", params=params, data=data)
         if res.status_code not in HTTP_OK:
             raise DocumentsExportError(res)
-        return arango_cursor(self.api, res)
+        return cursor(self.api, res)
 
     ##################
     # Simple Queries #
@@ -656,7 +648,7 @@ class Collection(object):
         )
         if res.status_code not in HTTP_OK:
             raise SimpleQueryFirstError(res)
-        return res.obj["result"]
+        return res.body["result"]
 
     def last(self, count=1):
         """Return the last ``count`` number of documents in this collection.
@@ -673,7 +665,7 @@ class Collection(object):
         )
         if res.status_code not in HTTP_OK:
             raise SimpleQueryLastError(res)
-        return res.obj["result"]
+        return res.body["result"]
 
     def all(self, skip=None, limit=None):
         """Return all documents in this collection.
@@ -696,7 +688,7 @@ class Collection(object):
         res = self.api.put("/_api/simple/all", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryAllError(res)
-        return arango_cursor(self.api, res)
+        return cursor(self.api, res)
 
     def any(self):
         """Return a random document from this collection.
@@ -711,7 +703,7 @@ class Collection(object):
         )
         if res.status_code not in HTTP_OK:
             raise SimpleQueryAnyError(res)
-        return res.obj["document"]
+        return res.body["document"]
 
     def get_first_example(self, example):
         """Return the first document matching the given example document body.
@@ -728,7 +720,7 @@ class Collection(object):
             return None
         elif res.status_code not in HTTP_OK:
             raise SimpleQueryFirstExampleError(res)
-        return res.obj["document"]
+        return res.body["document"]
 
     def get_by_example(self, example, skip=None, limit=None):
         """Return all documents matching the given example document body.
@@ -753,7 +745,7 @@ class Collection(object):
         res = self.api.put("/_api/simple/by-example", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryGetByExampleError(res)
-        return arango_cursor(self.api, res)
+        return cursor(self.api, res)
 
     def update_by_example(self, example, new_value, keep_none=True, limit=None,
                           wait_for_sync=False):
@@ -785,7 +777,7 @@ class Collection(object):
         res = self.api.put("/_api/simple/update-by-example", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryUpdateByExampleError(res)
-        return res.obj["updated"]
+        return res.body["updated"]
 
     def replace_by_example(self, example, new_value, limit=None,
                            wait_for_sync=False):
@@ -816,7 +808,7 @@ class Collection(object):
         res = self.api.put("/_api/simple/replace-by-example", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryReplaceByExampleError(res)
-        return res.obj["replaced"]
+        return res.body["replaced"]
 
     def remove_by_example(self, example, limit=None, wait_for_sync=False):
         """Remove all documents matching the given example.
@@ -841,7 +833,7 @@ class Collection(object):
         res = self.api.put("/_api/simple/remove-by-example", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryDeleteByExampleError(res)
-        return res.obj["deleted"]
+        return res.body["deleted"]
 
     def range(self, attribute, left, right, closed=True, skip=None,
               limit=None):
@@ -880,7 +872,7 @@ class Collection(object):
         res = self.api.put("/_api/simple/range", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryRangeError(res)
-        return arango_cursor(self.api, res)
+        return cursor(self.api, res)
 
     def near(self, latitude, longitude, distance=None, radius=None, skip=None,
              limit=None, geo=None):
@@ -932,7 +924,7 @@ class Collection(object):
         res = self.api.put("/_api/simple/near", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryNearError(res)
-        return arango_cursor(self.api, res)
+        return cursor(self.api, res)
 
     # TODO this endpoint does not seem to work
     def within(self, latitude, longitude, radius, distance=None, skip=None,
@@ -983,7 +975,7 @@ class Collection(object):
         res = self.api.put("/_api/simple/within", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryWithinError(res)
-        return arango_cursor(self.api, res)
+        return cursor(self.api, res)
 
     def fulltext(self, attribute, query, skip=None, limit=None, index=None):
         """Return all documents that match the specified fulltext ``query``.
@@ -1020,7 +1012,7 @@ class Collection(object):
         res = self.api.put("/_api/simple/fulltext", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryFullTextError(res)
-        return arango_cursor(self.api, res)
+        return cursor(self.api, res)
 
     def lookup_by_keys(self, keys):
         """Return all documents whose key is in ``keys``.
@@ -1038,7 +1030,7 @@ class Collection(object):
         res = self.api.put("/_api/simple/lookup-by-keys", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryLookupByKeysError(res)
-        return res.obj["documents"]
+        return res.body["documents"]
 
     def remove_by_keys(self, keys):
         """Remove all documents whose key is in ``keys``.
@@ -1057,8 +1049,8 @@ class Collection(object):
         if res.status_code not in HTTP_OK:
             raise SimpleQueryDeleteByKeysError(res)
         return {
-            "removed": res.obj["removed"],
-            "ignored": res.obj["ignored"],
+            "removed": res.body["removed"],
+            "ignored": res.body["ignored"],
         }
 
     ####################
@@ -1080,7 +1072,7 @@ class Collection(object):
             raise IndexListError(res)
 
         indexes = {}
-        for index_id, details in res.obj["identifiers"].items():
+        for index_id, details in res.body["identifiers"].items():
             del details["id"]
             indexes[index_id.split("/", 1)[1]] = uncamelify(details)
         return indexes
@@ -1093,7 +1085,7 @@ class Collection(object):
         )
         if res.status_code not in HTTP_OK:
             raise IndexCreateError(res)
-        return res.obj
+        return res.body
 
     def create_hash_index(self, fields, unique=None, sparse=None):
         """Create a new hash index to this collection.
@@ -1222,4 +1214,4 @@ class Collection(object):
         )
         if res.status_code not in HTTP_OK:
             raise IndexDeleteError(res)
-        return res.obj
+        return res.body

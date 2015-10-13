@@ -1,12 +1,17 @@
 """Utility Functions."""
 
+import importlib
 from re import sub
 from json import dumps
 from collections import Mapping, Iterable
 try:
-    from urllib import urlencode
+    urllib = importlib.import_module('urllib.parse')
 except ImportError:
-    from urllib.parse import urlencode
+    urllib = importlib.import_module('urllib')
+try:
+    builtins = importlib.import_module('__builtin__')
+except ImportError:
+    builtins = importlib.import_module('builtins')
 
 
 def is_string(obj):
@@ -17,10 +22,8 @@ def is_string(obj):
     :returns: True iff ``obj`` is an instance of str/unicode
     :rtype: bool
     """
-    try:
-        return isinstance(obj, basestring)
-    except NameError:
-        return isinstance(obj, str)
+    base_str = getattr(builtins, 'basestring', None)
+    return isinstance(obj, base_str) if base_str else isinstance(obj, str)
 
 
 def unicode_to_str(obj):
@@ -112,7 +115,7 @@ def stringify_request(method, path, params=None, headers=None, data=None):
     :rtype: str
     """
     if params is not None:
-        path += "?" + urlencode(params)
+        path += "?" + urllib.urlencode(params)
     request_string = "{} {} HTTP/1.1".format(method, path)
     if headers:
         for key, value in headers.items():

@@ -27,6 +27,10 @@ class Graph(object):
         self.name = name
         self.api = api
 
+    def __repr__(self):
+        """Return a descriptive string of this instance."""
+        return "<ArangoDB graph '{}'>".format(self.name)
+
     @property
     def properties(self):
         """Return the properties of this graph.
@@ -40,7 +44,7 @@ class Graph(object):
         )
         if res.status_code not in HTTP_OK:
             raise GraphPropertyError(res)
-        return uncamelify(res.obj["graph"])
+        return uncamelify(res.body["graph"])
 
     @property
     def id(self):
@@ -89,7 +93,7 @@ class Graph(object):
         )
         if res.status_code not in HTTP_OK:
             raise VertexCollectionListError(res)
-        return res.obj["collections"]
+        return res.body["collections"]
 
     def create_vertex_collection(self, collection):
         """Create a vertex collection to this graph.
@@ -166,7 +170,7 @@ class Graph(object):
         )
         if res.status_code not in HTTP_OK:
             raise EdgeDefinitionCreateError(res)
-        return res.obj["graph"]["edgeDefinitions"]
+        return res.body["graph"]["edgeDefinitions"]
 
     def replace_edge_definition(self, edge_collection,
                                 from_vertex_collections,
@@ -195,7 +199,7 @@ class Graph(object):
         )
         if res.status_code not in HTTP_OK:
             raise EdgeDefinitionReplaceError(res)
-        return res.obj["graph"]["edgeDefinitions"]
+        return res.body["graph"]["edgeDefinitions"]
 
     def delete_edge_definition(self, collection,
                                drop_collection=False):
@@ -215,7 +219,7 @@ class Graph(object):
         )
         if res.status_code not in HTTP_OK:
             raise EdgeDefinitionDeleteError(res)
-        return res.obj["graph"]["edgeDefinitions"]
+        return res.body["graph"]["edgeDefinitions"]
 
     #####################
     # Vertex Management #
@@ -245,7 +249,7 @@ class Graph(object):
             return None
         elif res.status_code not in HTTP_OK:
             raise VertexGetError(res)
-        return res.obj["vertex"]
+        return res.body["vertex"]
 
     def create_vertex(self, collection, data, wait_for_sync=False,
                       _batch=False):
@@ -276,7 +280,7 @@ class Graph(object):
         res = self.api.post(path=path, data=data, params=params)
         if res.status_code not in HTTP_OK:
             raise VertexCreateError(res)
-        return res.obj["vertex"]
+        return res.body["vertex"]
 
     def update_vertex(self, vertex_id, data, rev=None, keep_none=True,
                       wait_for_sync=False, _batch=False):
@@ -326,7 +330,7 @@ class Graph(object):
             raise VertexRevisionError(res)
         elif res.status_code not in {200, 202}:
             raise VertexUpdateError(res)
-        return res.obj["vertex"]
+        return res.body["vertex"]
 
     def replace_vertex(self, vertex_id, data, rev=None, wait_for_sync=False,
                        _batch=False):
@@ -368,7 +372,7 @@ class Graph(object):
             raise VertexRevisionError(res)
         elif res.status_code not in {200, 202}:
             raise VertexReplaceError(res)
-        return res.obj["vertex"]
+        return res.body["vertex"]
 
     def delete_vertex(self, vertex_id, rev=None, wait_for_sync=False,
                       _batch=False):
@@ -424,7 +428,7 @@ class Graph(object):
             return None
         elif res.status_code not in HTTP_OK:
             raise EdgeGetError(res)
-        return res.obj["edge"]
+        return res.body["edge"]
 
     def create_edge(self, collection, data, wait_for_sync=False, _batch=False):
         """Create an edge to the specified edge collection of this graph.
@@ -461,7 +465,7 @@ class Graph(object):
         res = self.api.post(path=path, data=data, params=params)
         if res.status_code not in HTTP_OK:
             raise EdgeCreateError(res)
-        return res.obj["edge"]
+        return res.body["edge"]
 
     def update_edge(self, edge_id, data, rev=None, keep_none=True,
                     wait_for_sync=False, _batch=False):
@@ -514,7 +518,7 @@ class Graph(object):
             raise EdgeRevisionError(res)
         elif res.status_code not in {200, 202}:
             raise EdgeUpdateError(res)
-        return res.obj["edge"]
+        return res.body["edge"]
 
     def replace_edge(self, edge_id, data, rev=None, wait_for_sync=False,
                      _batch=False):
@@ -559,7 +563,7 @@ class Graph(object):
             raise EdgeRevisionError(res)
         elif res.status_code not in {200, 202}:
             raise EdgeReplaceError(res)
-        return res.obj["edge"]
+        return res.body["edge"]
 
     def delete_edge(self, edge_id, rev=None, wait_for_sync=False,
                     _batch=False):
@@ -655,4 +659,4 @@ class Graph(object):
         res = self.api.post("/_api/traversal", data=data)
         if res.status_code not in HTTP_OK:
             raise GraphTraversalError(res)
-        return res.obj["result"]
+        return res.body["result"]

@@ -4,8 +4,8 @@ import unittest
 
 from arango import Arango
 from arango.tests.utils import (
-    get_next_col_name,
-    get_next_db_name,
+    generate_col_name,
+    generate_db_name,
     strip_system_keys,
 )
 
@@ -15,15 +15,15 @@ class SimpleQueriesTest(unittest.TestCase):
 
     def setUp(self):
         self.arango = Arango()
-        self.db_name = get_next_db_name(self.arango)
+        self.db_name = generate_db_name(self.arango)
         self.db = self.arango.create_database(self.db_name)
-        self.col_name = get_next_col_name(self.db)
+        self.col_name = generate_col_name(self.db)
         self.col = self.db.create_collection(self.col_name)
         self.col.create_geo_index(["coord"])
         self.col.create_skiplist_index(["value"])
         self.col.create_fulltext_index(["text"])
 
-        # Test database cleaup
+        # Test database cleanup
         self.addCleanup(self.arango.delete_database,
                         name=self.db_name, safe_delete=True)
 

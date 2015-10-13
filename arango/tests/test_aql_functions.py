@@ -7,7 +7,7 @@ from arango.exceptions import (
     AQLFunctionCreateError,
 )
 from arango.tests.utils import (
-    get_next_db_name
+    generate_db_name
 )
 
 
@@ -16,10 +16,10 @@ class AQLFunctionManagementTest(unittest.TestCase):
 
     def setUp(self):
         self.arango = Arango()
-        self.db_name = get_next_db_name(self.arango)
+        self.db_name = generate_db_name(self.arango)
         self.db = self.arango.create_database(self.db_name)
 
-        # Test database cleaup
+        # Test database cleanup
         self.addCleanup(self.arango.delete_database,
                         name=self.db_name, safe_delete=True)
 
