@@ -1,4 +1,4 @@
-Python-Arango
+python-arango
 =========
 
 Python Driver for ArangoDB REST API
@@ -6,19 +6,19 @@ Python Driver for ArangoDB REST API
 Overview
 --------
 
-Python-Arango is a Python driver (2.7 and 3.4) for ArangoDB
-(<https://www.arangodb.com/>)
+Python-Arango is a Python driver for ArangoDB(<https://www.arangodb.com/>)
+It is compatible with Python versions 2.7 and 3.4.
 
 Installation
 ------------
 
--   Stable (Supports up to ArangoDB Version 2.7)
+-   Stable (supports up to ArangoDB version 2.7.0)
 
 ```bash
 sudo pip install python-arango
 ```
 
--   Latest (Supports up to ArangoDB Version 2.7)
+-   Latest (supports up to ArangoDB version 2.7.0)
 
 ```bash
 git clone https://github.com/Joowani/python-arango.git
