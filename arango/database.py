@@ -7,7 +7,7 @@ import inspect
 from arango.utils import uncamelify, stringify_request
 from arango.graph import Graph
 from arango.collection import Collection
-from arango.cursor import arango_cursor
+from arango.cursor import cursor
 from arango.constants import HTTP_OK
 from arango.exceptions import *
 
@@ -37,7 +37,11 @@ class Database(object):
         self._collection_cache = {}
         self._graph_cache = {}
 
-    def _update_collection_cache(self):
+    def __repr__(self):
+        """Return a descriptive string of this instance."""
+        return "<ArangoDB database '{}'>".format(self.name)
+
+    def _refresh_collection_cache(self):
         """Invalidate the collection cache."""
         real_cols = set(self.collections["all"])
         cached_cols = set(self._collection_cache)
@@ -48,7 +52,7 @@ class Database(object):
                 name=col_name, api=self.api
             )
 
-    def _update_graph_cache(self):
+    def _refresh_graph_cache(self):
         """Invalidate the graph cache."""
         real_graphs = set(self.graphs)
         cached_graphs = set(self._graph_cache)
@@ -70,7 +74,7 @@ class Database(object):
         res = self.api.get("/_api/database/current")
         if res.status_code not in HTTP_OK:
             raise DatabasePropertyError(res)
-        return uncamelify(res.obj["result"])
+        return uncamelify(res.body["result"])
 
     @property
     def id(self):
@@ -83,7 +87,7 @@ class Database(object):
         return self.properties["id"]
 
     @property
-    def path(self):
+    def file_path(self):
         """Return the file path of this database.
 
         :returns: the file path of this database
@@ -141,10 +145,10 @@ class Database(object):
         )
         if res.status_code not in HTTP_OK:
             raise AQLQueryExplainError(res)
-        if "plan" in res.obj:
-            return uncamelify(res.obj["plan"])
+        if "plan" in res.body:
+            return uncamelify(res.body["plan"])
         else:
-            return uncamelify(res.obj["plans"])
+            return uncamelify(res.body["plans"])
 
     def validate_query(self, query):
         """Validate the AQL query.
@@ -207,7 +211,7 @@ class Database(object):
         res = self.api.post("/_api/cursor", data=data)
         if res.status_code not in HTTP_OK:
             raise AQLQueryExecuteError(res)
-        return arango_cursor(self.api, res)
+        return cursor(self.api, res)
 
     #########################
     # Collection Management #
@@ -227,7 +231,7 @@ class Database(object):
 
         user_collections = []
         system_collections = []
-        for collection in res.obj["collections"]:
+        for collection in res.body["collections"]:
             if collection["isSystem"]:
                 system_collections.append(collection["name"])
             else:
@@ -256,7 +260,7 @@ class Database(object):
         if name in self._collection_cache:
             return self._collection_cache[name]
         else:
-            self._update_collection_cache()
+            self._refresh_collection_cache()
             if name not in self._collection_cache:
                 raise CollectionNotFoundError(name)
             return self._collection_cache[name]
@@ -324,7 +328,7 @@ class Database(object):
         res = self.api.post("/_api/collection", data=data)
         if res.status_code not in HTTP_OK:
             raise CollectionCreateError(res)
-        self._update_collection_cache()
+        self._refresh_collection_cache()
         return self.collection(name)
 
     def delete_collection(self, name):
@@ -337,7 +341,7 @@ class Database(object):
         res = self.api.delete("/_api/collection/{}".format(name))
         if res.status_code not in HTTP_OK:
             raise CollectionDeleteError(res)
-        self._update_collection_cache()
+        self._refresh_collection_cache()
 
     def rename_collection(self, name, new_name):
         """Rename the specified collection in this database.
@@ -354,7 +358,38 @@ class Database(object):
         )
         if res.status_code not in HTTP_OK:
             raise CollectionRenameError(res)
-        self._update_collection_cache()
+        self._refresh_collection_cache()
+
+    def load_collection(self, name):
+        """Load the specified collection into memory.
+
+        :param name: the name of the collection
+        :type name: str
+        :returns: the status of the collection
+        :rtype: str
+        :raises: CollectionLoadError
+        """
+        self.collection(name).load()
+
+    def unload_collection(self, name):
+        """Unload the specified collection from memory.
+
+        :param name: the name of the collection
+        :type name: str
+        :returns: the status of the collection
+        :rtype: str
+        :raises: CollectionUnloadError
+        """
+        self.collection(name).unload()
+
+    def truncate_collection(self, name):
+        """Delete all documents from the specified collection.
+
+        :param name: the name of the collection
+        :type name: str
+        :raises: CollectionTruncateError
+        """
+        self.collection(name).truncate()
 
     ##################
     # Batch Requests #
@@ -397,10 +432,10 @@ class Database(object):
         )
         if res.status_code not in HTTP_OK:
             raise BatchExecuteError(res)
-        if res.obj is None:
+        if res.body is None:
             return []
         return [
-            json.loads(string) for string in res.obj.split("\r\n") if
+            json.loads(string) for string in res.body.split("\r\n") if
             string.startswith("{") and string.endswith("}")
         ]
 
@@ -419,7 +454,7 @@ class Database(object):
         res = self.api.get("/_api/aqlfunction")
         if res.status_code not in HTTP_OK:
             raise AQLFunctionListError(res)
-        return {func["name"]: func["code"]for func in res.obj}
+        return {func["name"]: func["code"]for func in res.body}
 
     def create_aql_function(self, name, code):
         """Create a new AQL function.
@@ -505,7 +540,7 @@ class Database(object):
         res = self.api.post(path=path, data=data, params=http_params)
         if res.status_code not in HTTP_OK:
             raise TransactionExecuteError(res)
-        return res.obj["result"]
+        return res.body["result"]
 
     ####################
     # Graph Management #
@@ -522,7 +557,7 @@ class Database(object):
         res = self.api.get("/_api/gharial")
         if res.status_code not in (200, 202):
             raise GraphListError(res)
-        return [graph["_key"] for graph in res.obj["graphs"]]
+        return [graph["_key"] for graph in res.body["graphs"]]
 
     def graph(self, name):
         """Return the Graph object of the specified name.
@@ -538,7 +573,7 @@ class Database(object):
         if name in self._graph_cache:
             return self._graph_cache[name]
         else:
-            self._update_graph_cache()
+            self._refresh_graph_cache()
             if name not in self._graph_cache:
                 raise GraphNotFoundError(name)
             return self._graph_cache[name]
@@ -568,7 +603,7 @@ class Database(object):
         res = self.api.post("/_api/gharial", data=data)
         if res.status_code not in HTTP_OK:
             raise GraphCreateError(res)
-        self._update_graph_cache()
+        self._refresh_graph_cache()
         return self.graph(name)
 
     def delete_graph(self, name):
@@ -581,4 +616,4 @@ class Database(object):
         res = self.api.delete("/_api/gharial/{}".format(name))
         if res.status_code not in HTTP_OK:
             raise GraphDeleteError(res)
-        self._update_graph_cache()
+        self._refresh_graph_cache()

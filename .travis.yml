@@ -3,7 +3,7 @@ sudo: false
 python:
     - "2.7"
 before_install:
-    - "sh scripts/setup_arangodb_2.6.sh"
+    - "sh scripts/setup_arangodb.sh"
 install:
     - "pip install ."
 script: nosetests

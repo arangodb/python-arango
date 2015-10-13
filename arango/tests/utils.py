@@ -1,9 +1,9 @@
-"""Utility functions for testing."""
+"""Utility functions used for testing."""
 
 import collections
 
 
-def get_next_db_name(arango):
+def generate_db_name(arango):
     """Generate and return the next available database name.
 
     The names look like "test_database_001", "test_database_002" ...
@@ -20,7 +20,7 @@ def get_next_db_name(arango):
     return "test_database_{num:03d}".format(num=num)
 
 
-def get_next_col_name(arango):
+def generate_col_name(arango):
     """Generate and return the next available collection name.
 
     The names look like "test_collection_001", "test_collection_002" ...
@@ -37,7 +37,7 @@ def get_next_col_name(arango):
     return "test_collection_{num:03d}".format(num=num)
 
 
-def get_next_graph_name(arango):
+def generate_graph_name(arango):
     """Generate and return the next available collection name.
 
     The names look like "test_graph_001", "test_graph_002" ...
@@ -54,7 +54,7 @@ def get_next_graph_name(arango):
     return "test_graph_{num:03d}".format(num=num)
 
 
-def get_next_user_name(arango):
+def generate_user_name(arango):
     """Generate and return the next available user name.
 
     The names generated look like "test_user_001", "test_user_002" ...

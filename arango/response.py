@@ -28,6 +28,6 @@ class Response(object):
         self.headers = headers
         self.status_text = status_text
         try:
-            self.obj = loads(content) if content else None
+            self.body = loads(content) if content else None
         except ValueError:
-            self.obj = None
+            self.body = None

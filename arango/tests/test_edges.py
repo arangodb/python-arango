@@ -4,9 +4,9 @@ import unittest
 
 from arango import Arango
 from arango.tests.utils import (
-    get_next_graph_name,
-    get_next_col_name,
-    get_next_db_name
+    generate_graph_name,
+    generate_col_name,
+    generate_db_name
 )
 
 
@@ -16,18 +16,18 @@ class EdgeManagementTest(unittest.TestCase):
     def setUp(self):
         # Create the test database
         self.arango = Arango()
-        self.db_name = get_next_db_name(self.arango)
+        self.db_name = generate_db_name(self.arango)
         self.db = self.arango.create_database(self.db_name)
         # Create the test vertex collection
-        self.vertex_col_name = get_next_col_name(self.db)
+        self.vertex_col_name = generate_col_name(self.db)
         self.vertex_col = self.db.create_collection(self.vertex_col_name)
         # Create the test edge collection
-        self.edge_col_name = get_next_col_name(self.db)
+        self.edge_col_name = generate_col_name(self.db)
         self.edge_col = self.db.create_collection(
             self.edge_col_name, is_edge=True
         )
         # Create the test graph
-        self.graph_name = get_next_graph_name(self.db)
+        self.graph_name = generate_graph_name(self.db)
         self.graph = self.db.create_graph(
             name=self.graph_name,
             edge_definitions=[{
@@ -59,7 +59,7 @@ class EdgeManagementTest(unittest.TestCase):
             }
         )
 
-        # Test database cleaup
+        # Test database cleanup
         self.addCleanup(self.arango.delete_database,
                         name=self.db_name, safe_delete=True)
 
@@ -73,7 +73,7 @@ class EdgeManagementTest(unittest.TestCase):
                 "value": "foobar"
             }
         )
-        self.assertEqual(self.edge_col.count, 1)
+        self.assertEqual(len(self.edge_col), 1)
         self.assertEqual(
             self.graph.get_edge(
                 "{}/{}".format(self.edge_col_name, "edge01")

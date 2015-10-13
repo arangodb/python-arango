@@ -3,7 +3,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $DIR
 
-VERSION=2.6.4
+VERSION=2.7.0
 NAME=ArangoDB-$VERSION
 
 if [ ! -d "$DIR/$NAME" ]; then
@@ -47,9 +47,21 @@ if [ "x$process" == "x" ]; then
 fi
 
 echo "Waiting until ArangoDB is ready on port 8529"
-while [[ -z `curl -s 'http://127.0.0.1:8529/_api/version' ` ]] ; do
+
+n=0
+# timeout value for startup
+timeout=60 
+while [[ (-z `curl -H 'Authorization: Basic cm9vdDo=' -s 'http://127.0.0.1:8529/_api/version' `) && (n -lt timeout) ]] ; do
   echo -n "."
-  sleep 2s
+  sleep 1s
+  n=$[$n+1]
 done
+
+if [[ n -eq timeout ]];
+then
+    echo "Could not start ArangoDB. Timeout reached."
+    exit 1
+fi
+
 
 echo "ArangoDB is up"

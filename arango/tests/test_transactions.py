@@ -3,8 +3,8 @@
 import unittest
 from arango import Arango
 from arango.tests.utils import (
-    get_next_db_name,
-    get_next_col_name,
+    generate_db_name,
+    generate_col_name,
 )
 
 
@@ -13,14 +13,14 @@ class BatchRequestTest(unittest.TestCase):
 
     def setUp(self):
         self.arango = Arango()
-        self.db_name = get_next_db_name(self.arango)
+        self.db_name = generate_db_name(self.arango)
         self.db = self.arango.create_database(self.db_name)
-        self.col_name01 = get_next_col_name(self.db)
+        self.col_name01 = generate_col_name(self.db)
         self.col01 = self.db.create_collection(self.col_name01)
-        self.col_name02 = get_next_col_name(self.db)
+        self.col_name02 = generate_col_name(self.db)
         self.col02 = self.db.create_collection(self.col_name02)
 
-        # Test database cleaup
+        # Test database cleanup
         self.addCleanup(self.arango.delete_database,
                         name=self.db_name, safe_delete=True)
 

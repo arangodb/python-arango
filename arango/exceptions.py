@@ -10,34 +10,24 @@ class RequestError(Exception):
 
     def __init__(self, response):
         # Get the ArangoDB error message if given
-        if response.obj is not None and "errorMessage" in response.obj:
-            message = response.obj["errorMessage"]
+        if response.body is not None and "errorMessage" in response.body:
+            message = response.body["errorMessage"]
         elif response.status_text is not None:
             message = response.status_text
         else:
-            message = "not given"
+            message = "server error"
 
         # Get the ArangoDB error number if given
-        if response.obj is not None and "errorNum" in response.obj:
-            error_num = response.obj["errorNum"]
+        if response.body is not None and "errorNum" in response.body:
+            self.error_code = response.body["errorNum"]
         else:
-            error_num = "not given"
+            self.error_code = None
 
         # Generate the error message for the exception
-        super(RequestError, self).__init__(
-            "HTTP Method: {method}, URL: {url}, "
-            "HTTP Status Code: {status_code}, "
-            "Server Error Number: {error_num}, "
-            "Error Message: {message}".format(
-                method=response.method,
-                url=response.url,
-                status_code=response.status_code,
-                error_num=error_num,
-                message=message,
-            )
-        )
-        self.status_code = response.status_code
-        self.status_text = response.status_text
+        super(RequestError, self).__init__(message)
+        self.method = response.method
+        self.url = response.url
+        self.http_code = response.status_code
 
 
 class NotFoundError(KeyError):
@@ -139,12 +129,12 @@ class DatabaseDeleteError(RequestError):
 ###################
 
 
-class UserGetAllError(RequestError):
-    """Failed to get the list of users."""
-
-
-class UserGetError(RequestError):
+class UserNotFoundError(NotFoundError):
     """Failed to get the user."""
+
+
+class UserListError(RequestError):
+    """Failed to get the list of users."""
 
 
 class UserCreateError(RequestError):

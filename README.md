@@ -3,7 +3,7 @@ Python-Arango
 
 Python Driver for ArangoDB REST API
 
-[![Build Status](https://travis-ci.org/joowani/python-arango.svg?branch=master)](https://travis-ci.org/Joowani/python-arango)
+[![Build Status](https://travis-ci.org/joowani/python-a.svg?branch=master)](https://travis-ci.org/Joowani/python-arango)
 
 Overview
 --------
@@ -14,16 +14,16 @@ Python-Arango is a Python driver (2.7 and 3.4) for ArangoDB
 Installation
 ------------
 
--   Stable (Supports ArangoDB Version 2.6)
+-   Stable (Supports up to ArangoDB Version 2.7)
 
 ```bash
 sudo pip install python-arango
 ```
 
--   Latest (Supports ArangoDB Version 2.6)
+-   Latest (Supports up to ArangoDB Version 2.7)
 
 ```bash
-git clone https://github.com/Joowani/python-arango.git
+git clone https://github.com/Joowani/python-a.git
 cd python-arango
 python2.7 setup.py install
 ```
@@ -35,203 +35,203 @@ Initialization
 from arango import Arango
 
 # Initialize the API wrapper
-arango = Arango(host="localhost", port=8529)
+a = Arango(host="localhost", port=8529)
 ```
 
 Database Management
 -------------------
 
 ```python
-# List all databases
-arango.databases
-arango.databases["user"]
-arango.databases["all"]
+# List databases
+a.databases["user"]
+a.databases["all"]
 
 # Create a new database
-arango.create_database("my_database")
+a.create_database("my_db")
 
 # Delete a database
-arango.delete_database("my_database")
+a.delete_database("my_db")
 
 # Get the database object of the given name
-arango.database("my_database")  # equivalent to arango.db("my_database")
+a.database("my_db")  # equivalent to a.db("my_db")
 
 # Retrieve information on the default ("_system") database
-arango.name           # equivalent to arango.db("_system").name
-arango.collections    # equivalent to arango.db("_system").collections
-arango.id             # equivalent to arango.db("_system").id
-arango.path           # equivalent to arango.db("_system").path
-arango.is_system      # equivalent to arango.db("_system").is_system
+a.name           # equivalent to a.db("_system").name
+a.collections    # equivalent to a.db("_system").collections
+a.id             # equivalent to a.db("_system").id
+a.file_path      # equivalent to a.db("_system").file_path
+a.is_system      # equivalent to a.db("_system").is_system
 
 # Retrieve information on a specific database
-arango.db("db01").name
-arango.db("db01").collections
-arango.db("db02").id
-arango.db("db03").path
-arango.db("db04").is_system
+a.db("db01").name
+a.db("db01").collections
+a.db("db02").id
+a.db("db03").file_path
+a.db("db04").is_system
 
 # Working with the default ("_system") database
-arango.create_collection("my_collection")
-arango.aql_functions
-arango.*
+a.create_collection("my_col")
+a.aql_functions
+a.*
 
 # Working with a specific database
-arango.db("my_database").create_collection("my_collection")
-arango.db("my_database").aql_functions
-arango.db("my_database").*
+a.db("db01").create_collection("my_col")
+a.db("db02").aql_functions
+a.db("db03").*
 ```
 
 Collection Management
 ---------------------
 
 ```python
-my_database = arango.db("my_database")
+my_db = a.db("my_db")
 
-# List the collections in "my_database"
-my_database.collections
-my_database.collections["user"]
-my_database.collecitons["system"]
-my_database.collections["all"]
+# List the collections in "my_db"
+my_db.collections["user"]
+my_db.collecitons["system"]
+my_db.collections["all"]
 
 # Create a collection
-my_database.create_collection("new_collection")
+my_db.create_collection("new_col")
 
 # Create an edge collection
-my_database.create_collection("new_ecollection", is_edge=True)
+my_db.create_collection("new_edge_col", is_edge=True)
 
 # Rename a collection
-my_database.rename_collection("new_collection", "my_collection")
+my_db.rename_collection("new_col", "my_col")
 
 # Delete a collection
-my_database.delete_collection("my_collection")
+my_db.delete_collection("my_col")
 
 # Retrieve collection information
-my_collection = arango.db("my_database").col("my_collection")
-len(my_collection) == my_collection.count
-my_collection.properties
-my_collection.id
-my_collection.status
-my_collection.key_options
-my_collection.wait_for_sync
-my_collection.journal_size
-my_collection.is_system
-my_collection.is_edge
-my_collection.do_compact
-my_collection.figures
-my_collection.revision
+my_col = a.db("my_db").col("my_col")
+len(my_col)
+my_col.properties
+my_col.id
+my_col.status
+my_col.key_options
+my_col.wait_for_sync
+my_col.journal_size
+my_col.is_system
+my_col.is_edge
+my_col.is_compacted
+my_col.statistics
+my_col.revision
 
 # Update collection properties (only the modifiable ones)
-my_collection.wait_for_sync = False
-my_collection.journal_size = new_journal_size
+my_col.wait_for_sync = False
+my_col.journal_size = new_journal_size
 
 # Load the collection into memory
-my_collection.load()
+my_col.load()
+my_db.load_collection("my_col")
 
 # Unload the collection from memory
-my_collection.unload()
+my_col.unload()
+my_db.unload_collection("my_col")
 
 # Rotate the collection journal
-my_collection.rotate_journal()
+my_col.rotate_journal()
 
 # Return the checksum of the collection
-my_collection.checksum(with_rev=True, with_data=True)
+my_col.checksum(with_rev=True, with_data=True)
 
 # Delete all documents in the collection
-my_collection.truncate()
+my_col.truncate()
+my_db.truncate_collection("my_col")
 
 # Check if a document exists in the collection
-my_collection.contains("a_document_key")
-"a_document_key" in my_collection
+"doc_key" in my_col
 ```
 
 Document Management
 -------------------
 
 ```python
-my_collection = arango.db("my_database").collection("my_collection")
+my_col = a.db("my_db").col("my_col")
 
 # Retrieve a document by its key
-my_collection.document("doc01")
+my_col.document("doc01")
 
 # Create a new document ("_key" attribute is optional)
-my_collection.create_document({"_key": "doc01", "value": 1})
+my_col.create_document({"_key": "doc01", "value": 1})
 
 # Replace a document
-my_collection.replace_document("doc01", {"value": 2})
+my_col.replace_document("doc01", {"value": 2})
 
 # Update a document
-my_collection.update_document("doc01", {"another_value": 3})
+my_col.update_document("doc01", {"another_value": 3})
 
 # Delete a document
-my_collection.delete_document("doc01")
+my_col.delete_document("doc01")
 
 # Iterate through the documents in a collection and update them
-for doc in my_collection:
+for doc in my_col:
     new_value = doc["value"] + 1
-    my_collection.update_document(doc["_key"], {"new_value": new_value})
+    my_col.update_document(doc["_key"], {"new_value": new_value})
 ```
 
 Simple Queries
 --------------
 
 ```python
-# Return the first 5 documents in collection "my_collection"
-my_collection.first(5)
+# Return the first 5 documents in collection "my_col"
+my_col.first(5)
 
 # Return the last 3 documents
-my_collection.last(3)
+my_col.last(3)
 
 # Return all documents (cursor generator object)
-my_collection.all()
-list(my_collection.all())
+my_col.all()
+list(my_col.all())
 
 # Return a random document
-my_collection.any()
+my_col.any()
 
 # Return first document whose "value" is 1
-my_collection.get_first_example({"value": 1})
+my_col.get_first_example({"value": 1})
 
 # Return all documents whose "value" is 1
-my_collection.get_by_example({"value": 1})
+my_col.get_by_example({"value": 1})
 
 # Update all documents whose "value" is 1 with a new attribute
-my_collection.update_by_example(
+my_col.update_by_example(
   {"value": 1}, new_value={"new_attr": 1}
 )
 
 # Return all documents within a radius around a given coordinate (requires geo-index)
-my_collection.within(latitude=100, longitude=20, radius=15)
+my_col.within(latitude=100, longitude=20, radius=15)
 
 # Return all documents near a given coordinate (requires geo-index)
-my_collection.near(latitude=100, longitude=20)
+my_col.near(latitude=100, longitude=20)
 
 # Return all documents with fulltext match
-my_collection.fulltext("key", "foo,|bar")
+my_col.fulltext("key", "foo,|bar")
 
 # Look up documents by keys
-my_collection.lookup_by_keys(["key1", "key2", "key3"])
+my_col.lookup_by_keys(["key1", "key2", "key3"])
 
 # Delete documents by keys
-my_collection.remove_by_keys(["key1", "key2", "key3"])
+my_col.remove_by_keys(["key1", "key2", "key3"])
 ```
 
 AQL Functions
 -------------
 
 ```python
-my_database = arango.db("my_database")
+my_db = a.db("my_db")
 
-# List the AQL functions defined in database "my_database"
-my_database.aql_functions
+# List the AQL functions defined in database "my_db"
+my_db.aql_functions
 
 # Create a new AQL function
-my_database.create_aql_function(
+my_db.create_aql_function(
   "myfunctions::temperature::ctof",
   "function (celsius) { return celsius * 1.8 + 32; }"
 )
 
 # Delete an AQL function
-my_database.delete_aql_function("myfunctions::temperature::ctof")
+my_db.delete_aql_function("myfunctions::temperature::ctof")
 ```
 
 AQL Queries
@@ -239,14 +239,14 @@ AQL Queries
 
 ```python
 # Retrieve the execution plan without actually executing it
-my_database.explain_query("FOR doc IN my_collection RETURN doc")
+my_db.explain_query("FOR doc IN my_col RETURN doc")
 
 # Validate the AQL query without actually executing it
-my_database.validate_query("FOR doc IN my_collection RETURN doc")
+my_db.validate_query("FOR doc IN my_col RETURN doc")
 
 # Execute the AQL query and iterate through the AQL cursor
-cursor = my_database.execute_query(
-  "FOR d IN my_collection FILTER d.value == @val RETURN d",
+cursor = my_db.execute_query(
+  "FOR d IN my_col FILTER d.value == @val RETURN d",
   bind_vars={"val": "foobar"}
 )
 for doc in cursor:  # the cursor is deleted when the generator is exhausted
@@ -257,48 +257,48 @@ Index Management
 ----------------
 
 ```python
-my_collection = arango.collection("my_collection")  # or arango.col("mycol")
+my_col = a.collection("my_col")  # or a.col("mycol")
 
-# List the indexes in collection "my_collection"
-my_collection.indexes
+# List the indexes in collection "my_col"
+my_col.indexes
 
 # Create a unique hash index on attributes "attr1" and "attr2"
-my_collection.create_hash_index(fields=["attr1", "attr2"], unique=True)
+my_col.create_hash_index(fields=["attr1", "attr2"], unique=True)
 
 # Create a cap constraint
-my_collection.create_cap_constraint(size=10, byte_size=40000)
+my_col.create_cap_constraint(size=10, byte_size=40000)
 
 # Create a unique skiplist index on attributes "attr1" and "attr2"
-my_collection.create_skiplist_index(["attr1", "attr2"], unique=True)
+my_col.create_skiplist_index(["attr1", "attr2"], unique=True)
 
 # Examples of creating a geo-spatial index on 1 (or 2) coordinate attributes
-my_collection.create_geo_index(fields=["coordinates"])
-my_collection.create_geo_index(fields=["longitude", "latitude"])
+my_col.create_geo_index(fields=["coordinates"])
+my_col.create_geo_index(fields=["longitude", "latitude"])
 
 # Create a fulltext index on attribute "attr1"
-my_collection.create_fulltext_index(fields=["attr1"], min_length=10)
+my_col.create_fulltext_index(fields=["attr1"], min_length=10)
 ```
 
 Graph Management
 ----------------
 
 ```python
-my_database = arango.db("my_database")
+my_db = a.db("my_db")
 
 # List all the graphs in the database
-my_database.graphs
+my_db.graphs
 
 # Create a new graph
-my_graph = my_database.create_graph("my_graph")
+my_graph = my_db.create_graph("my_graph")
 
 # Create new vertex collections to a graph
-my_database.create_collection("vcol01")
-my_database.create_collection("vcol02")
+my_db.create_collection("vcol01")
+my_db.create_collection("vcol02")
 my_graph.create_vertex_collection("vcol01")
 my_graph.create_vertex_collection("vcol02")
 
 # Create a new edge definition to a graph
-my_database.create_collection("ecol01", is_edge=True)
+my_db.create_collection("ecol01", is_edge=True)
 my_graph.create_edge_definition(
   edge_collection="ecol01",
   from_vertex_collections=["vcol01"],
@@ -362,7 +362,7 @@ Graph Traversals
 ----------------
 
 ```python
-my_graph = arango.db("my_database").graph("my_graph")
+my_graph = a.db("my_db").graph("my_graph")
 
 # Execute a graph traversal
 results = my_graph.execute_traversal(
@@ -385,29 +385,29 @@ Batch Requests
 # NOTE: only CRUD methods for (documents/vertices/edges) are supported
 
 # Execute a batch request for managing documents
-my_database.execute_batch([
+my_db.execute_batch([
     (
-        my_collection.create_document,                # method name
+        my_col.create_document,                # method name
         [{"_key": "doc04", "value": 1}],    # args
         {"wait_for_sync": True}             # kwargs
     ),
     (
-        my_collection.update_document,
+        my_col.update_document,
         ["doc01", {"value": 2}],
         {"wait_for_sync": True}
     ),
     (
-        my_collection.replace_document,
+        my_col.replace_document,
         ["doc02", {"new_value": 3}],
         {"wait_for_sync": True}
     ),
     (
-        my_collection.delete_document,
+        my_col.delete_document,
         ["doc03"],
         {"wait_for_sync": True}
     ),
     (
-        my_collection.create_document,
+        my_col.create_document,
         [{"_key": "doc05", "value": 5}],
         {"wait_for_sync": True}
     ),
@@ -446,7 +446,7 @@ action = """
       return 'success!';
   }
 """
-res = my_database.execute_transaction(
+res = my_db.execute_transaction(
     action=action,
     read_collections=["col01", "col02"],
     write_collections=["col01", "col02"],
@@ -460,19 +460,19 @@ User Management
 ```python
 
 # List all users
-arango.users
+a.users
 
 # Create a new user
-arango.create_user("username", "password")
+a.create_user("username", "password")
 
 # Update a user
-arango.update_user("username", "password", change_password=True)
+a.update_user("username", "password", change_password=True)
 
 # Replace a user
-arango.replace_user("username", "password", extra={"foo": "bar"})
+a.replace_user("username", "password", extra={"foo": "bar"})
 
 # Delete a user
-arango.delete_user("username")
+a.delete_user("username")
 ```
 
 Administration and Monitoring
@@ -480,19 +480,19 @@ Administration and Monitoring
 ```python
 
 # Read the global log from the server
-arango.read_log(level="debug")
+a.get_log(level="debug")
 
 # Reload the routing information
-arango.reload_routing_info()
+a.reload_routing()
 
 # Return the server statistics
-arango.statistics
+a.statistics
 
 # Return the server statistics description
-arango.statistics_description
+a.statistics_description
 
 # Return the role of the server in the cluster (if applicable)
-arango.server_role
+a.server_role
 ```
 
 Miscellaneous Functions
@@ -500,22 +500,22 @@ Miscellaneous Functions
 ```python
 
 # Retrieve the versions of ArangoDB server and components
-arango.version
+a.version
 
 # Retrieve the required database version
-arango.required_database_version
+a.database_version
 
 # Retrieve the server time
-arango.time
+a.server_time
 
 # Retrieve the write-ahead log
-arango.write_ahead_log
+a.write_ahead_log
 
 # Flush the write-ahead log
-arango.flush_write_ahead_log(wait_for_sync=True, wait_for_gc=True)
+a.flush_write_ahead_log(wait_for_sync=True, wait_for_gc=True)
 
 # Configure the write-ahead log
-arango.set_write_ahead_log(
+a.set_write_ahead_log(
     allow_oversize=True,
     log_size=30000000,
     historic_logs=5,
@@ -525,10 +525,10 @@ arango.set_write_ahead_log(
 )
 
 # Echo last request
-arango.echo()
+a.echo()
 
 # Shutdown the ArangoDB server
-arango.shutdown()
+a.shutdown()
 
 
 ```
@@ -546,5 +546,7 @@ Running Tests (requires ArangoDB on localhost)
 ----------------------------------------------
 
 ```bash
-nosetests -v
+nosetests-2.7 -v
+nosetests-3.4 -v
+
 ```

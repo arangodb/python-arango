@@ -5,7 +5,7 @@ import unittest
 from arango import Arango
 from arango.utils import is_string
 from arango.tests.utils import (
-    get_next_db_name
+    generate_db_name
 )
 
 
@@ -14,9 +14,9 @@ class DatabaseManagementTest(unittest.TestCase):
 
     def setUp(self):
         self.arango = Arango()
-        self.db_name = get_next_db_name(self.arango)
+        self.db_name = generate_db_name(self.arango)
 
-        # Test database cleaup
+        # Test database cleanup
         self.addCleanup(self.arango.delete_database,
                         name=self.db_name, safe_delete=True)
 
@@ -38,7 +38,7 @@ class DatabaseManagementTest(unittest.TestCase):
         self.assertEqual(db.name, "_system")
         self.assertTrue(isinstance(db.properties, dict))
         self.assertTrue(is_string(db.id))
-        self.assertTrue(is_string(db.path))
+        self.assertTrue(is_string(db.file_path))
         self.assertEqual(db.is_system, True)
 
 
