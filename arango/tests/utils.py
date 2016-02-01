@@ -14,7 +14,7 @@ def generate_db_name(arango):
     :rtype: str
     """
     num = 0
-    existing_databases = set(arango.databases["all"])
+    existing_databases = set(arango.list_databases())
     while "test_database_{num:03d}".format(num=num) in existing_databases:
         num += 1
     return "test_database_{num:03d}".format(num=num)
@@ -65,7 +65,7 @@ def generate_user_name(arango):
     :rtype: str
     """
     num = 0
-    existing_users = set(arango.users)
+    existing_users = set(arango.list_users())
     while "test_user_{num:03d}".format(num=num) in existing_users:
         num += 1
     return "test_user_{num:03d}".format(num=num)

@@ -3,12 +3,12 @@
 import json
 
 from arango.constants import DEFAULT_DATABASE
-from arango.clients import DefaultClient
-from arango.utils import is_string
+from arango.clients import DefaultHTTPClient
+from arango.utils import is_str
 
 
-class API(object):
-    """Wrapper object which makes REST API calls to ArangoDB.
+class Connection(object):
+    """Connection used to make API calls to ArangoDB.
 
     :param protocol: the internet transfer protocol (default: 'http')
     :type protocol: str
@@ -23,34 +23,34 @@ class API(object):
     :param database: the ArangoDB database to point the API calls to
     :type database: str
     :param client: HTTP client for this wrapper to use
-    :type client: arango.clients.base.BaseClient or None
+    :type client: arango.clients.base.BaseHTTPClient or None
     """
 
     def __init__(self, protocol="http", host="localhost", port=8529,
                  username="root", password="", database=None, client=None):
-        self.protocol = protocol
-        self.host = host
-        self.port = port
-        self.username = username
-        self.password = password
-        self.database = DEFAULT_DATABASE if database is None else database
+        self._protocol = protocol
+        self._host = host
+        self._port = port
+        self._username = username
+        self._password = password
+        self._database = DEFAULT_DATABASE if database is None else database
         self.url_prefix = "{protocol}://{host}:{port}/_db/{database}".format(
-            protocol=self.protocol,
-            host=self.host,
-            port=self.port,
-            database=self.database,
+            protocol=self._protocol,
+            host=self._host,
+            port=self._port,
+            database=self._database,
         )
         if client is not None:
-            self.client = client
+            self._client = client
         else:
-            client_init_data = {"auth": (self.username, self.password)}
-            self.client = DefaultClient(client_init_data)
+            client_init_data = {"auth": (self._username, self._password)}
+            self._client = DefaultHTTPClient()
 
-    def head(self, path, params=None, headers=None):
+    def head(self, endpoint, params=None, headers=None):
         """Call a HEAD method in ArangoDB's REST API.
 
-        :param path: the API path (e.g. '/_api/version')
-        :type path: str
+        :param endpoint: the API path (e.g. '/_api/version')
+        :type endpoint: str
         :param params: the request parameters
         :type params: dict or None
         :param headers: the request headers
@@ -58,18 +58,18 @@ class API(object):
         :returns: the ArangoDB http response
         :rtype: arango.response.Response
         """
-        return self.client.head(
-            url=self.url_prefix + path,
+        return self._client.head(
+            url=self.url_prefix + endpoint,
             params=params,
             headers=headers,
-            auth=(self.username, self.password)
+            auth=(self._username, self._password)
         )
 
-    def get(self, path, params=None, headers=None):
+    def get(self, endpoint, params=None, headers=None):
         """Call a GET method in ArangoDB's REST API.
 
-        :param path: the API path (e.g. '/_api/version')
-        :type path: str
+        :param endpoint: the API path (e.g. '/_api/version')
+        :type endpoint: str
         :param params: the request parameters
         :type params: dict or None
         :param headers: the request headers
@@ -77,18 +77,18 @@ class API(object):
         :returns: the ArangoDB http response
         :rtype: arango.response.Response
         """
-        return self.client.get(
-            url=self.url_prefix + path,
+        return self._client.get(
+            url=self.url_prefix + endpoint,
             params=params,
             headers=headers,
-            auth=(self.username, self.password),
+            auth=(self._username, self._password),
         )
 
-    def put(self, path, data=None, params=None, headers=None):
+    def put(self, endpoint, data=None, params=None, headers=None):
         """Call a PUT method in ArangoDB's REST API.
 
-        :param path: the API path (e.g. '/_api/version')
-        :type path: str
+        :param endpoint: the API path (e.g. '/_api/version')
+        :type endpoint: str
         :param data: the request payload
         :type data: str or dict or None
         :param params: the request parameters
@@ -98,19 +98,19 @@ class API(object):
         :returns: the ArangoDB http response
         :rtype: arango.response.Response
         """
-        return self.client.put(
-            url=self.url_prefix + path,
-            data=data if is_string(data) else json.dumps(data),
+        return self._client.put(
+            url=self.url_prefix + endpoint,
+            data=data if is_str(data) else json.dumps(data),
             params=params,
             headers=headers,
-            auth=(self.username, self.password)
+            auth=(self._username, self._password)
         )
 
-    def post(self, path, data=None, params=None, headers=None):
+    def post(self, endpoint, data=None, params=None, headers=None):
         """Call a POST method in ArangoDB's REST API.
 
-        :param path: the API path (e.g. '/_api/version')
-        :type path: str
+        :param endpoint: the API path (e.g. '/_api/version')
+        :type endpoint: str
         :param data: the request payload
         :type data: str or dict or None
         :param params: the request parameters
@@ -120,19 +120,19 @@ class API(object):
         :returns: the ArangoDB http response
         :rtype: arango.response.Response
         """
-        return self.client.post(
-            url=self.url_prefix + path,
-            data=data if is_string(data) else json.dumps(data),
+        return self._client.post(
+            url=self.url_prefix + endpoint,
+            data=data if is_str(data) else json.dumps(data),
             params=params,
             headers=headers,
-            auth=(self.username, self.password)
+            auth=(self._username, self._password)
         )
 
-    def patch(self, path, data=None, params=None, headers=None):
+    def patch(self, endpoint, data=None, params=None, headers=None):
         """Call a PATCH method in ArangoDB's REST API.
 
-        :param path: the API path (e.g. '/_api/version')
-        :type path: str
+        :param endpoint: the API path (e.g. '/_api/version')
+        :type endpoint: str
         :param data: the request payload
         :type data: str or dict or None
         :param params: the request parameters
@@ -142,19 +142,19 @@ class API(object):
         :returns: the ArangoDB http response
         :rtype: arango.response.Response
         """
-        return self.client.patch(
-            url=self.url_prefix + path,
-            data=data if is_string(data) else json.dumps(data),
+        return self._client.patch(
+            url=self.url_prefix + endpoint,
+            data=data if is_str(data) else json.dumps(data),
             params=params,
             headers=headers,
-            auth=(self.username, self.password)
+            auth=(self._username, self._password)
         )
 
-    def delete(self, path, params=None, headers=None):
+    def delete(self, endpoint, params=None, headers=None):
         """Call a DELETE method in ArangoDB's REST API.
 
-        :param path: the API path (e.g. '/_api/version')
-        :type path: str
+        :param endpoint: the API path (e.g. '/_api/version')
+        :type endpoint: str
         :param params: the request parameters
         :type params: dict or None
         :param headers: the request headers
@@ -162,31 +162,9 @@ class API(object):
         :returns: the ArangoDB http response
         :rtype: arango.response.Response
         """
-        return self.client.delete(
-            url=self.url_prefix + path,
+        return self._client.delete(
+            url=self.url_prefix + endpoint,
             params=params,
             headers=headers,
-            auth=(self.username, self.password)
-        )
-
-    def options(self, path, data=None, params=None, headers=None):
-        """Call an OPTIONS method in ArangoDB's REST API.
-
-        :param path: the API path (e.g. '/_api/version')
-        :type path: str
-        :param data: the request payload
-        :type data: str or dict or None
-        :param params: the request parameters
-        :type params: dict or None
-        :param headers: the request headers
-        :type headers: dict or None
-        :returns: the ArangoDB http response
-        :rtype: arango.response.Response
-        """
-        return self.client.options(
-            url=self.url_prefix + path,
-            data=data if is_string(data) else json.dumps(data),
-            params=params,
-            headers=headers,
-            auth=(self.username, self.password)
+            auth=(self._username, self._password)
         )

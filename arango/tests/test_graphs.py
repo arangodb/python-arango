@@ -25,16 +25,16 @@ class GraphManagementTest(unittest.TestCase):
     def test_create_graph(self):
         graph_name = generate_graph_name(self.db)
         self.db.create_graph(graph_name)
-        self.assertIn(graph_name, self.db.graphs)
+        self.assertIn(graph_name, self.db.list_graphs())
 
     def test_delete_graph(self):
         # Create a new collection
         graph_name = generate_graph_name(self.db)
         self.db.create_graph(graph_name)
-        self.assertIn(graph_name, self.db.graphs)
+        self.assertIn(graph_name, self.db.list_graphs())
         # Delete the collection and ensure that it's gone
         self.db.delete_graph(graph_name)
-        self.assertNotIn(graph_name, self.db.graphs)
+        self.assertNotIn(graph_name, self.db.list_graphs())
 
     def test_create_graph_with_defined_cols(self):
         # Create the orphan collection
@@ -57,7 +57,7 @@ class GraphManagementTest(unittest.TestCase):
             }],
             orphan_collections=[orphan_col_name]
         )
-        self.assertIn(graph_name, self.db.graphs)
+        self.assertIn(graph_name, self.db.list_graphs())
         self.assertEqual(
             graph.orphan_collections,
             [orphan_col_name]
@@ -99,7 +99,7 @@ class GraphManagementTest(unittest.TestCase):
         # Create the graph
         graph_name = generate_graph_name(self.db)
         graph = self.db.create_graph(graph_name)
-        self.assertIn(graph_name, self.db.graphs)
+        self.assertIn(graph_name, self.db.list_graphs())
         self.assertEqual(graph.vertex_collections, [])
         # Create the vertex collection to the graph
         graph.create_vertex_collection(vertex_col_name)
@@ -113,7 +113,7 @@ class GraphManagementTest(unittest.TestCase):
             drop_collection=True
         )
         self.assertEqual(graph.vertex_collections, [])
-        self.assertNotIn(vertex_col_name, self.db.collections["all"])
+        self.assertNotIn(vertex_col_name, self.db.list_collections["all"])
 
     def test_create_and_delete_edge_definition(self):
         # Create the edge and vertex collections
@@ -144,7 +144,7 @@ class GraphManagementTest(unittest.TestCase):
             drop_collection=True
         )
         self.assertEqual(graph.edge_definitions, [])
-        self.assertNotIn(edge_col_name, self.db.collections["all"])
+        self.assertNotIn(edge_col_name, self.db.list_collections["all"])
 
     def test_replace_edge_definition(self):
         # Create edge and vertex collection set 1

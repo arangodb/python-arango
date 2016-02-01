@@ -55,7 +55,7 @@ class UserManagementTest(unittest.TestCase):
                 "extra": {"key": "val"}
             }
         )
-        self.assertIn(self.username, self.arango.users)
+        self.assertIn(self.username, self.arango.list_users())
         self.assertEqual(
             self.arango.user(username=self.username),
             {
@@ -146,9 +146,9 @@ class UserManagementTest(unittest.TestCase):
             self.arango.create_user(self.username, "password"),
             {"active": True, "change_password": False, "extra": {}}
         )
-        self.assertIn(self.username, self.arango.users)
+        self.assertIn(self.username, self.arango.list_users())
         self.arango.delete_user(self.username)
-        self.assertNotIn(self.username, self.arango.users)
+        self.assertNotIn(self.username, self.arango.list_users())
 
         # Deleting non-existing user should fail
         self.assertRaises(

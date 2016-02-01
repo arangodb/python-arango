@@ -42,8 +42,7 @@ Database Management
 
 ```python
 # List databases
-a.databases["user"]
-a.databases["all"]
+a.databases(user_only=True)
 
 # Create a new database
 a.create_database("my_db")
@@ -105,17 +104,9 @@ my_db.delete_collection("my_col")
 # Retrieve collection information
 my_col = a.db("my_db").col("my_col")
 len(my_col)
-my_col.properties
-my_col.id
-my_col.status
-my_col.key_options
-my_col.wait_for_sync
-my_col.journal_size
-my_col.is_system
-my_col.is_edge
-my_col.is_compacted
-my_col.statistics
-my_col.revision
+my_col.properties()
+my_col.statistics()
+my_col.revision()
 
 # Update collection properties (only the modifiable ones)
 my_col.wait_for_sync = False
@@ -305,7 +296,7 @@ my_graph.create_edge_definition(
 )
 
 # Retrieve graph information
-my_graph.properties
+my_graph.properties()
 my_graph.id
 my_graph.revision
 my_graph.edge_definitions
@@ -459,7 +450,7 @@ User Management
 ```python
 
 # List all users
-a.users
+a.list_users()
 
 # Create a new user
 a.create_user("username", "password")
@@ -485,13 +476,10 @@ a.get_log(level="debug")
 a.reload_routing()
 
 # Return the server statistics
-a.statistics
-
-# Return the server statistics description
-a.statistics_description
+a.statistics()
 
 # Return the role of the server in the cluster (if applicable)
-a.server_role
+a.role()
 ```
 
 Miscellaneous Functions
@@ -502,7 +490,7 @@ Miscellaneous Functions
 a.version
 
 # Retrieve the required database version
-a.database_version
+a.required_database
 
 # Retrieve the server time
 a.server_time
