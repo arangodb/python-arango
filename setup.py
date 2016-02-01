@@ -1,16 +1,17 @@
 from setuptools import setup, find_packages
 
+version = {}
+with open('./arango/version.py') as fp:
+    exec(fp.read(), version)
 
 setup(
-    name="python-arango",
-    description="Python Driver for ArangoDB",
-    version="2.2.0",
-    author="Joohwan Oh",
-    author_email="joohwan.oh@outlook.com",
-    url="https://github.com/joowani/python-arango",
-    download_url="https://github.com/Joowani/python-arango/tarball/2.2.0",
+    name='python-arango',
+    description='Python Driver for ArangoDB REST API',
+    version=version['VERSION'],
+    author='Joohwan Oh',
+    author_email='joohwan.oh@outlook.com',
+    url='https://github.com/joowani/python-arango',
     packages=find_packages(),
     include_package_data=True,
-    install_requires=["requests", "nose"],
-    test_suite="nose",
+    install_requires=['requests', 'pytest', 'six']
 )
