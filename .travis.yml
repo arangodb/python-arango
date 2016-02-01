@@ -2,9 +2,11 @@ language: python
 sudo: false
 python:
     - "2.7"
+    - "3.4"
+    - "3.5"
 before_install:
     - "sh scripts/setup_arangodb.sh"
 install:
     - "pip install ."
-script: nosetests
-
+script:
+    - "py.test -v"

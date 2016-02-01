@@ -1,662 +1,429 @@
-"""ArangoDB Graph."""
+from __future__ import absolute_import, unicode_literals
 
-from arango.utils import uncamelify
+from arango.collections import (
+    EdgeCollection,
+    VertexCollection
+)
+from arango.utils import HTTP_OK
 from arango.exceptions import *
-from arango.constants import HTTP_OK
+from arango.request import Request
+from arango.api import APIWrapper, api_method
 
 
-class Graph(object):
-    """Wrapper for ArangoDB's graph-specific APIs:
+class Graph(APIWrapper):
+    """ArangoDB graph.
 
-    1. Graph Properties
-    2. Vertex Collection Management
-    3. Edge Definition Management
-    4. Vertex Management
-    5. Edge Management
-    6. Graph Traversals
+    A graph can have vertex and edge collections.
+
+    :param connection: ArangoDB connection object
+    :type connection: arango.connection.Connection
+    :param name: the name of the graph
+    :type name: str
     """
 
     def __init__(self, connection, name):
-        """Initialize the wrapper object.
-
-        :param connection: ArangoDB API connection object
-        :type connection: arango.connection.Connection
-        :param name: the name of this graph
-        :type name: str
-        """
         self._conn = connection
         self._name = name
 
     def __repr__(self):
-        """Return a descriptive string of this instance."""
         return "<ArangoDB graph '{}'>".format(self._name)
 
     @property
+    def name(self):
+        """Return the name of the graph.
+
+        :returns: the name of the graph
+        :rtype: str
+        """
+        return self._name
+
+    def vertex_collection(self, name):
+        """Return the vertex collection object.
+
+        :param name: the name of the vertex collection
+        :type name: str
+        :returns: the vertex collection object
+        :rtype: arango.collections.vertex.VertexCollection
+        """
+        return VertexCollection(self._conn, self._name, name)
+
+    def edge_collection(self, name):
+        """Return the edge collection object.
+
+        :param name: the name of the edge collection
+        :type name: str
+        :returns: the edge collection object
+        :rtype: arango.collections.edge.EdgeCollection
+        """
+        return EdgeCollection(self._conn, self._name, name)
+
+    @api_method
     def properties(self):
-        """Return the properties of this graph.
+        """Return the graph properties.
 
-        :returns: the properties of this graph
+        :returns: the graph properties
         :rtype: dict
-        :raises: GraphPropertiesError
+        :raises arango.exceptions.GraphGetPropertiesError: if the properties
+            of the graph cannot be retrieved
         """
-        res = self._conn.get(
-            "/_api/gharial/{}".format(self._name)
+        request = Request(
+            method='get',
+            endpoint='/_api/gharial/{}'.format(self._name)
         )
-        if res.status_code not in HTTP_OK:
-            raise GraphPropertyError(res)
-        return uncamelify(res.body["graph"])
 
-    @property
-    def id(self):
-        """Return the ID of this graph.
-
-        :returns: the ID of this graph
-        :rtype: str
-        :raises: GraphPropertiesError
-        """
-        return self.properties["_id"]
-
-    @property
-    def revision(self):
-        """Return the revision of this graph.
-
-        :returns: the revision of this graph
-        :rtype: str
-        :raises: GraphPropertiesError
-        """
-        return self.properties["_rev"]
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise GraphGetPropertiesError(res)
+            graph = res.body['graph']
+            return {
+                'id': graph['_id'],
+                'name': graph['name'],
+                'revision': graph['_rev']
+            }
+        return request, handler
 
     ################################
     # Vertex Collection Management #
     ################################
 
-    @property
+    @api_method
     def orphan_collections(self):
-        """Return the orphan collections of this graph.
+        """Return the orphan vertex collections of the graph.
 
-        :returns: the string names of the orphan collections
+        :returns: the names of the orphan vertex collections
         :rtype: list
-        :raises: GraphPropertiesError
+        :raises arango.exceptions.OrphanCollectionsListError: if the list of
+            orphan vertex collections cannot be retrieved
         """
-        return self.properties["orphan_collections"]
+        request = Request(
+            method='get',
+            endpoint='/_api/gharial/{}'.format(self._name)
+        )
 
-    @property
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise OrphanCollectionsListError(res)
+            return res.body['graph']['orphanCollections']
+
+        return request, handler
+
+    @api_method
     def vertex_collections(self):
-        """Return the vertex collections of this graph.
+        """Return the vertex collections of the graph.
 
-        :returns: the string names of the vertex collections
+        :returns: the names of the vertex collections
         :rtype: list
-        :raises: VertexCollectionListError
+        :raises arango.exceptions.VertexCollectionsListError: if the list of
+            vertex collections cannot be retrieved
         """
-        res = self._conn.get(
-            "/_api/gharial/{}/vertex".format(self._name)
+        request = Request(
+            method='get',
+            endpoint='/_api/gharial/{}/vertex'.format(self._name)
         )
-        if res.status_code not in HTTP_OK:
-            raise VertexCollectionListError(res)
-        return res.body["collections"]
 
-    def create_vertex_collection(self, collection):
-        """Create a vertex collection to this graph.
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise VertexCollectionsListError(res)
+            return res.body['collections']
 
-        :param collection: the name of the vertex collection to create
-        :type collection: str
-        :returns: the updated list of the vertex collection names
-        :rtype: list
-        :raises: VertexCollectionCreateError
+        return request, handler
+
+    @api_method
+    def create_vertex_collection(self, name):
+        """Create a vertex collection for the graph.
+
+        :param name: the name of the new vertex collection to create
+        :type name: str
+        :returns: the vertex collection object
+        :rtype: arango.collections.vertex.VertexCollection
+        :raises arango.exceptions.VertexCollectionCreateError: if the vertex
+            collection cannot be created
         """
-        res = self._conn.post(
-            "/_api/gharial/{}/vertex".format(self._name),
-            data={"collection": collection}
+        request = Request(
+            method='post',
+            endpoint='/_api/gharial/{}/vertex'.format(self._name),
+            data={'collection': name}
         )
-        if res.status_code not in HTTP_OK:
-            raise VertexCollectionCreateError(res)
-        return self.vertex_collections
 
-    def delete_vertex_collection(self, collection,
-                                 drop_collection=False):
-        """Delete a vertex collection from this graph.
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise VertexCollectionCreateError(res)
+            return VertexCollection(self._conn, self._name, name)
 
-        :param collection: the name of the vertex collection to delete
-        :type collection: str
-        :param drop_collection: whether or not to drop the collection also
-        :type drop_collection: bool
-        :returns: the updated list of the vertex collection names
-        :rtype: list
-        :raises: VertexCollectionDeleteError
+        return request, handler
+
+    @api_method
+    def delete_vertex_collection(self, name, purge=False):
+        """Remove the vertex collection from the graph.
+
+        :param name: the name of the vertex collection to remove
+        :type name: str
+        :param purge: delete the vertex collection completely
+        :type purge: bool
+        :returns: whether the operation was successful
+        :rtype: bool
+        :raises arango.exceptions.VertexCollectionDeleteError: if the vertex
+            collection cannot be removed from the graph
         """
-        res = self._conn.delete(
-            "/_api/gharial/{}/vertex/{}".format(self._name, collection),
-            params={"dropCollection": drop_collection}
+        request = Request(
+            method='delete',
+            endpoint='/_api/gharial/{}/vertex/{}'.format(self._name, name),
+            params={'dropCollection': purge}
         )
-        if res.status_code not in HTTP_OK:
-            raise VertexCollectionDeleteError(res)
-        return self.vertex_collections
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise VertexCollectionDeleteError(res)
+            return not res.body['error']
+
+        return request, handler
 
     ##############################
     # Edge Definition Management #
     ##############################
 
-    @property
+    @api_method
     def edge_definitions(self):
-        """Return the edge definitions of this graph.
+        """Return the edge definitions of the graph.
 
-        :returns: the edge definitions of this graph
+        :returns: the edge definitions of the graph
         :rtype: list
-        :raises: GraphPropertiesError
+        :raises arango.exceptions.EdgeDefinitionsListError: if the list of
+            edge definitions cannot be retrieved
         """
-        return self.properties["edge_definitions"]
+        request = Request(
+            method='get',
+            endpoint='/_api/gharial/{}'.format(self._name)
+        )
 
-    def create_edge_definition(self, edge_collection, from_vertex_collections,
-                               to_vertex_collections):
-        """Create a edge definition to this graph.
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise EdgeDefinitionsListError(res)
+            return [
+                {
+                    'name': edge_definition['collection'],
+                    'to_collections': edge_definition['to'],
+                    'from_collections': edge_definition['from']
+                }
+                for edge_definition in
+                res.body['graph']['edgeDefinitions']
+            ]
 
-        :param edge_collection: the name of the edge collection
-        :type edge_collection: str
-        :param from_vertex_collections: names of ``from`` vertex collections
-        :type from_vertex_collections: list
-        :param to_vertex_collections: the names of ``to`` vertex collections
-        :type to_vertex_collections: list
-        :returns: the updated list of edge definitions
-        :rtype: list
-        :raises: EdgeDefinitionCreateError
+        return request, handler
+
+    @api_method
+    def create_edge_definition(self, name, from_collections, to_collections):
+        """Create a new edge definition for the graph.
+
+        An edge definition consists of an edge collection, one or more "from"
+        vertex collections, one or more "to" vertex collections.
+
+        :param name: the name of the new edge collection
+        :type name: str
+        :param from_collections: the name(s) of the "from" vertex collections
+        :type from_collections: list
+        :param to_collections: the names of the "to" vertex collections
+        :type to_collections: list
+        :returns: the edge collection object
+        :rtype: arango.collections.edge.EdgeCollection
+        :raises arango.exceptions.EdgeDefinitionCreateError: if the edge
+            definition cannot be created
         """
-        res = self._conn.post(
-            "/_api/gharial/{}/edge".format(self._name),
+        request = Request(
+            method='post',
+            endpoint='/_api/gharial/{}/edge'.format(self._name),
             data={
-                "collection": edge_collection,
-                "from": from_vertex_collections,
-                "to": to_vertex_collections
+                'collection': name,
+                'from': from_collections,
+                'to': to_collections
             }
         )
-        if res.status_code not in HTTP_OK:
-            raise EdgeDefinitionCreateError(res)
-        return res.body["graph"]["edgeDefinitions"]
 
-    def replace_edge_definition(self, edge_collection,
-                                from_vertex_collections,
-                                to_vertex_collections):
-        """Replace an edge definition in this graph.
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise EdgeDefinitionCreateError(res)
+            return EdgeCollection(self._conn, self._name, name)
 
-        :param edge_collection: the name of the edge collection
-        :type edge_collection: str
-        :param from_vertex_collections: names of ``from`` vertex collections
-        :type from_vertex_collections: list
-        :param to_vertex_collections: the names of ``to`` vertex collections
-        :type to_vertex_collections: list
-        :returns: the updated list of edge definitions
-        :rtype: list
-        :raises: EdgeDefinitionReplaceError
+        return request, handler
+
+    @api_method
+    def replace_edge_definition(self, name, from_collections, to_collections):
+        """Replace an edge definition in the graph.
+
+        :param name: the name of the edge definition to replace
+        :type name: str
+        :param from_collections: the names of the "from" vertex collections
+        :type from_collections: list
+        :param to_collections: the names of the "to" vertex collections
+        :type to_collections: list
+        :returns: whether the operation was successful
+        :rtype: bool
+        :raises arango.exceptions.EdgeDefinitionReplaceError: if the edge
+            definition cannot be replaced
         """
-        res = self._conn.put(
-            "/_api/gharial/{}/edge/{}".format(
-                self._name, edge_collection
+        request = Request(
+            method='put',
+            endpoint='/_api/gharial/{}/edge/{}'.format(
+                self._name, name
             ),
             data={
-                "collection": edge_collection,
-                "from": from_vertex_collections,
-                "to": to_vertex_collections
+                'collection': name,
+                'from': from_collections,
+                'to': to_collections
             }
         )
-        if res.status_code not in HTTP_OK:
-            raise EdgeDefinitionReplaceError(res)
-        return res.body["graph"]["edgeDefinitions"]
 
-    def delete_edge_definition(self, collection,
-                               drop_collection=False):
-        """Delete the specified edge definition from this graph.
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise EdgeDefinitionReplaceError(res)
+            return not res.body['error']
 
-        :param collection: the name of the edge collection to delete
-        :type collection: str
-        :param drop_collection: whether or not to drop the collection also
-        :type drop_collection: bool
-        :returns: the updated list of edge definitions
-        :rtype: list
-        :raises: EdgeDefinitionDeleteError
+        return request, handler
+
+    @api_method
+    def delete_edge_definition(self, name, purge=False):
+        """Remove an edge definition from the graph.
+
+        :param name: the name of the edge collection
+        :type name: str
+        :param purge: delete the edge collection completely
+        :type purge: bool
+        :returns: whether the operation was successful
+        :rtype: bool
+        :raises arango.exceptions.EdgeDefinitionDeleteError: if the edge
+            definition cannot be deleted
         """
-        res = self._conn.delete(
-            "/_api/gharial/{}/edge/{}".format(self._name, collection),
-            params={"dropCollection": drop_collection}
+        request = Request(
+            method='delete',
+            endpoint='/_api/gharial/{}/edge/{}'.format(self._name, name),
+            params={'dropCollection': purge}
         )
-        if res.status_code not in HTTP_OK:
-            raise EdgeDefinitionDeleteError(res)
-        return res.body["graph"]["edgeDefinitions"]
 
-    #####################
-    # Vertex Management #
-    #####################
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise EdgeDefinitionDeleteError(res)
+            return not res.body['error']
 
-    def get_vertex(self, vertex_id, rev=None):
-        """Return the vertex of the specified ID in this graph.
-
-        If the vertex revision ``rev`` is specified, it must match against
-        the revision of the retrieved vertex.
-
-        :param vertex_id: the ID of the vertex to retrieve
-        :type vertex_id: str
-        :param rev: the vertex revision must match this value
-        :type rev: str or None
-        :returns: the requested vertex or None if not found
-        :rtype: dict or None
-        :raises: VertexRevisionError, VertexGetError
-        """
-        res = self._conn.get(
-            "/_api/gharial/{}/vertex/{}".format(self._name, vertex_id),
-            params={"rev": rev} if rev is not None else {}
-        )
-        if res.status_code == 412:
-            raise VertexRevisionError(res)
-        elif res.status_code == 404:
-            return None
-        elif res.status_code not in HTTP_OK:
-            raise VertexGetError(res)
-        return res.body["vertex"]
-
-    def create_vertex(self, collection, data, wait_for_sync=False,
-                      _batch=False):
-        """Create a vertex to the specified vertex collection if this graph.
-
-        If ``data`` contains the ``_key`` key, its value must be unused
-        in the collection.
-
-        :param collection: the name of the vertex collection
-        :type collection: str
-        :param data: the body of the new vertex
-        :type data: dict
-        :param wait_for_sync: wait for the create to sync to disk
-        :type wait_for_sync: bool
-        :return: the id, rev and key of the new vertex
-        :rtype: dict
-        :raises: VertexCreateError
-        """
-        path = "/_api/gharial/{}/vertex/{}".format(self._name, collection)
-        params = {"waitForSync": wait_for_sync}
-        if _batch:
-            return {
-                "method": "post",
-                "path": path,
-                "data": data,
-                "params": params,
-            }
-        res = self._conn.post(endpoint=path, data=data, params=params)
-        if res.status_code not in HTTP_OK:
-            raise VertexCreateError(res)
-        return res.body["vertex"]
-
-    def update_vertex(self, vertex_id, data, rev=None, keep_none=True,
-                      wait_for_sync=False, _batch=False):
-        """Update a vertex of the specified ID in this graph.
-
-        If ``keep_none`` is set to True, then attributes with values None
-        are retained. Otherwise, they are deleted from the vertex.
-
-        If ``data`` contains the ``_key`` key, it is ignored.
-
-        If the ``_rev`` key is in ``data``, the revision of the target
-        vertex must match against its value. Otherwise a VertexRevision
-        error is thrown. If ``rev`` is also provided, its value is preferred.
-
-        :param vertex_id: the ID of the vertex to be updated
-        :type vertex_id: str
-        :param data: the body to update the vertex with
-        :type data: dict
-        :param rev: the vertex revision must match this value
-        :type rev: str or None
-        :param keep_none: whether or not to keep the keys with value None
-        :type keep_none: bool
-        :param wait_for_sync: wait for the update to sync to disk
-        :type wait_for_sync: bool
-        :return: the id, rev and key of the updated vertex
-        :rtype: dict
-        :raises: VertexRevisionError, VertexUpdateError
-        """
-        path = "/_api/gharial/{}/vertex/{}".format(self._name, vertex_id)
-        params = {
-            "waitForSync": wait_for_sync,
-            "keepNull": keep_none
-        }
-        if rev is not None:
-            params["rev"] = rev
-        elif "_rev" in data:
-            params["rev"] = data["_rev"]
-        if _batch:
-            return {
-                "method": "patch",
-                "path": path,
-                "data": data,
-                "params": params,
-            }
-        res = self._conn.patch(endpoint=path, data=data, params=params)
-        if res.status_code == 412:
-            raise VertexRevisionError(res)
-        elif res.status_code not in {200, 202}:
-            raise VertexUpdateError(res)
-        return res.body["vertex"]
-
-    def replace_vertex(self, vertex_id, data, rev=None, wait_for_sync=False,
-                       _batch=False):
-        """Replace a vertex of the specified ID in this graph.
-
-        If ``data`` contains the ``_key`` key, it is ignored.
-
-        If the ``_rev`` key is in ``data``, the revision of the target
-        vertex must match against its value. Otherwise a VertexRevision
-        error is thrown. If ``rev`` is also provided, its value is preferred.
-
-        :param vertex_id: the ID of the vertex to be replaced
-        :type vertex_id: str
-        :param data: the body to replace the vertex with
-        :type data: dict
-        :param rev: the vertex revision must match this value
-        :type rev: str or None
-        :param wait_for_sync: wait for replace to sync to disk
-        :type wait_for_sync: bool
-        :return: the id, rev and key of the replaced vertex
-        :rtype: dict
-        :raises: VertexRevisionError, VertexReplaceError
-        """
-        path = "/_api/gharial/{}/vertex/{}".format(self._name, vertex_id)
-        params = {"waitForSync": wait_for_sync}
-        if rev is not None:
-            params["rev"] = rev
-        if "_rev" in data:
-            params["rev"] = data["_rev"]
-        if _batch:
-            return {
-                "method": "put",
-                "path": path,
-                "data": data,
-                "params": params,
-            }
-        res = self._conn.put(endpoint=path, params=params, data=data)
-        if res.status_code == 412:
-            raise VertexRevisionError(res)
-        elif res.status_code not in {200, 202}:
-            raise VertexReplaceError(res)
-        return res.body["vertex"]
-
-    def delete_vertex(self, vertex_id, rev=None, wait_for_sync=False,
-                      _batch=False):
-        """Delete the vertex of the specified ID from this graph.
-
-        :param vertex_id: the ID of the vertex to be deleted
-        :type vertex_id: str
-        :param rev: the vertex revision must match this value
-        :type rev: str or None
-        :raises: VertexRevisionError, VertexDeleteError
-        """
-        path = "/_api/gharial/{}/vertex/{}".format(self._name, vertex_id)
-        params = {"waitForSync": wait_for_sync}
-        if rev is not None:
-            params["rev"] = rev
-        if _batch:
-            return {
-                "method": "delete",
-                "path": path,
-                "params": params,
-            }
-        res = self._conn.delete(endpoint=path, params=params)
-        if res.status_code == 412:
-            raise VertexRevisionError(res)
-        if res.status_code not in {200, 202}:
-            raise VertexDeleteError(res)
-
-    ###################
-    # Edge Management #
-    ###################
-
-    def get_edge(self, edge_id, rev=None):
-        """Return the edge of the specified ID in this graph.
-
-        If the edge revision ``rev`` is specified, it must match against
-        the revision of the retrieved edge.
-
-        :param edge_id: the ID of the edge to retrieve
-        :type edge_id: str
-        :param rev: the edge revision must match this value
-        :type rev: str or None
-        :returns: the requested edge or None if not found
-        :rtype: dict or None
-        :raises: EdgeRevisionError, EdgeGetError
-        """
-        res = self._conn.get(
-            "/_api/gharial/{}/edge/{}".format(self._name, edge_id),
-            params={} if rev is None else {"rev": rev}
-        )
-        if res.status_code == 412:
-            raise EdgeRevisionError(res)
-        elif res.status_code == 404:
-            return None
-        elif res.status_code not in HTTP_OK:
-            raise EdgeGetError(res)
-        return res.body["edge"]
-
-    def create_edge(self, collection, data, wait_for_sync=False, _batch=False):
-        """Create an edge to the specified edge collection of this graph.
-
-        The ``data`` must contain ``_from`` and ``_to`` keys with valid
-        vertex IDs as their values. If ``data`` contains the ``_key`` key,
-        its value must be unused in the collection.
-
-        :param collection: the name of the edge collection
-        :type collection: str
-        :param data: the body of the new edge
-        :type data: dict
-        :param wait_for_sync: wait for the create to sync to disk
-        :type wait_for_sync: bool
-        :return: the id, rev and key of the new edge
-        :rtype: dict
-        :raises: DocumentInvalidError, EdgeCreateError
-        """
-        if "_to" not in data:
-            raise DocumentInvalidError(
-                "the new edge data is missing the '_to' key")
-        if "_from" not in data:
-            raise DocumentInvalidError(
-                "the new edge data is missing the '_from' key")
-        path = "/_api/gharial/{}/edge/{}".format(self._name, collection)
-        params = {"waitForSync": wait_for_sync}
-        if _batch:
-            return {
-                "method": "post",
-                "path": path,
-                "data": data,
-                "params": params,
-            }
-        res = self._conn.post(endpoint=path, data=data, params=params)
-        if res.status_code not in HTTP_OK:
-            raise EdgeCreateError(res)
-        return res.body["edge"]
-
-    def update_edge(self, edge_id, data, rev=None, keep_none=True,
-                    wait_for_sync=False, _batch=False):
-        """Update the edge of the specified ID in this graph.
-
-        If ``keep_none`` is set to True, then attributes with values None
-        are retained. Otherwise, they are deleted from the edge.
-
-        If ``data`` contains the ``_key`` key, it is ignored.
-
-        If the ``_rev`` key is in ``data``, the revision of the target
-        edge must match against its value. Otherwise a EdgeRevision
-        error is thrown. If ``rev`` is also provided, its value is preferred.
-
-        The ``_from`` and ``_to`` attributes are immutable, and they are
-        ignored if present in ``data``
-
-        :param edge_id: the ID of the edge to be deleted
-        :type edge_id: str
-        :param data: the body to update the edge with
-        :type data: dict
-        :param rev: the edge revision must match this value
-        :type rev: str or None
-        :param keep_none: whether or not to keep the keys with value None
-        :type keep_none: bool
-        :param wait_for_sync: wait for the update to sync to disk
-        :type wait_for_sync: bool
-        :return: the id, rev and key of the updated edge
-        :rtype: dict
-        :raises: EdgeRevisionError, EdgeUpdateError
-        """
-        path = "/_api/gharial/{}/edge/{}".format(self._name, edge_id)
-        params = {
-            "waitForSync": wait_for_sync,
-            "keepNull": keep_none
-        }
-        if rev is not None:
-            params["rev"] = rev
-        elif "_rev" in data:
-            params["rev"] = data["_rev"]
-        if _batch:
-            return {
-                "method": "patch",
-                "path": path,
-                "data": data,
-                "params": params,
-            }
-        res = self._conn.patch(endpoint=path, data=data, params=params)
-        if res.status_code == 412:
-            raise EdgeRevisionError(res)
-        elif res.status_code not in {200, 202}:
-            raise EdgeUpdateError(res)
-        return res.body["edge"]
-
-    def replace_edge(self, edge_id, data, rev=None, wait_for_sync=False,
-                     _batch=False):
-        """Replace the edge of the specified ID in this graph.
-
-        If ``data`` contains the ``_key`` key, it is ignored.
-
-        If the ``_rev`` key is in ``data``, the revision of the target
-        edge must match against its value. Otherwise a EdgeRevision
-        error is thrown. If ``rev`` is also provided, its value is preferred.
-
-        The ``_from`` and ``_to`` attributes are immutable, and they are
-        ignored if present in ``data``
-
-        :param edge_id: the ID of the edge to be deleted
-        :type edge_id: str
-        :param data: the body to replace the edge with
-        :type data: dict
-        :param rev: the edge revision must match this value
-        :type rev: str or None
-        :param wait_for_sync: wait for the replace to sync to disk
-        :type wait_for_sync: bool
-        :returns: the id, rev and key of the replaced edge
-        :rtype: dict
-        :raises: EdgeRevisionError, EdgeReplaceError
-        """
-        path = "/_api/gharial/{}/edge/{}".format(self._name, edge_id)
-        params = {"waitForSync": wait_for_sync}
-        if rev is not None:
-            params["rev"] = rev
-        elif "_rev" in data:
-            params["rev"] = data["_rev"]
-        if _batch:
-            return {
-                "method": "put",
-                "path": path,
-                "data": data,
-                "params": params,
-            }
-        res = self._conn.put(endpoint=path, params=params, data=data)
-        if res.status_code == 412:
-            raise EdgeRevisionError(res)
-        elif res.status_code not in {200, 202}:
-            raise EdgeReplaceError(res)
-        return res.body["edge"]
-
-    def delete_edge(self, edge_id, rev=None, wait_for_sync=False,
-                    _batch=False):
-        """Delete the edge of the specified ID from this graph.
-
-        :param edge_id: the ID of the edge to be deleted
-        :type edge_id: str
-        :param rev: the edge revision must match this value
-        :type rev: str or None
-        :raises: EdgeRevisionError, EdgeDeleteError
-        """
-        path = "/_api/gharial/{}/edge/{}".format(self._name, edge_id)
-        params = {"waitForSync": wait_for_sync}
-        if _batch:
-            return {
-                "method": "delete",
-                "path": path,
-                "params": params,
-            }
-        if rev is not None:
-            params["rev"] = rev
-        res = self._conn.delete(endpoint=path, params=params)
-        if res.status_code == 412:
-            raise EdgeRevisionError(res)
-        elif res.status_code not in {200, 202}:
-            raise EdgeDeleteError(res)
+        return request, handler
 
     ####################
     # Graph Traversals #
     ####################
 
-    def execute_traversal(self, start_vertex, direction=None, strategy=None,
-                          order=None, item_order=None, uniqueness=None,
-                          max_iterations=None, min_depth=None, max_depth=None,
-                          init=None, filters=None, visitor=None, expander=None,
-                          sort=None):
-        """Execute a graph traversal and return the visited vertices.
+    @api_method
+    def traverse(self,
+                 start_vertex,
+                 direction='outbound',
+                 item_order='forward',
+                 strategy=None,
+                 order=None,
+                 edge_uniqueness=None,
+                 vertex_uniqueness=None,
+                 max_iter=None,
+                 min_depth=None,
+                 max_depth=None,
+                 init_func=None,
+                 sort_func=None,
+                 filter_func=None,
+                 visitor_func=None,
+                 expander_func=None):
+        """Traverse the graph and return the visited vertices and edges.
 
-        For more details on ``init``, ``filter``, ``visitor``, ``expander``
-        and ``sort`` please refer to the ArangoDB HTTP API documentation:
-        https://docs.arangodb.com/HttpTraversal/README.html
-
-        :param start_vertex: the ID of the start vertex
+        :param start_vertex: the collection and the key of the start vertex in
+            the format ``"collection/key"``
         :type start_vertex: str
-        :param direction: "outbound" or "inbound" or "any"
+        :param direction: ``"outbound"`` (default), ``"inbound"`` or ``"any"``
         :type direction: str
-        :param strategy: "depthfirst" or "breadthfirst"
-        :type strategy: str
-        :param order: "preorder" or "postorder"
-        :type order: str
-        :param item_order: "forward" or "backward"
+        :param item_order: ``"forward"`` (default) or ``"backward"``
         :type item_order: str
-        :param uniqueness: uniqueness of vertices and edges visited
-        :type uniqueness: dict
-        :param max_iterations: max number of iterations in each traversal
-        :type max_iterations: int
-        :param min_depth: minimum traversal depth
+        :param strategy: ``"dfs"`` or ``"bfs"``
+        :type strategy: str
+        :param order: ``"preorder"``, ``"postorder"``, ``"preorder-expander"``
+            or ``None`` (default)
+        :type order: str
+        :param vertex_uniqueness: ``"global"``, ``"path"`` or ``None``
+        :type vertex_uniqueness: str
+        :param edge_uniqueness: ``"global"``, ``"path"`` or ``None``
+        :type edge_uniqueness: str
+        :param min_depth: the minimum depth of the nodes to visit
         :type min_depth: int
-        :param max_depth: maximum traversal depth
+        :param max_depth: the maximum depth of the nodes to visit
         :type max_depth: int
-        :param init: custom init function in Javascript
-        :type init: str
-        :param filters: custom filter function in Javascript
-        :type filters: str
-        :param visitor: custom visitor function in Javascript
-        :type visitor: str
-        :param expander: custom expander function in Javascript
-        :type expander: str
-        :param sort: custom sorting function in Javascript
-        :type sort: str
-        :returns: the traversal results
-        :rtype: dict
-        :raises: GraphTraversalError
+        :param max_iter: halt the graph traversal after a maximum number of
+            iterations (e.g. to prevent endless loops in cyclic graphs)
+        :type max_iter: int
+        :param init_func: init function in Javascript with signature
+            ``(config, result) -> void``, which is used to initialize values
+        :type init_func: str
+        :param sort_func: sort function in Javascript with signature
+            ``(left, right) -> integer``, which returns ``-1`` if ``left <
+            right``, ``+1`` if ``left > right``, and ``0`` if ``left == right``
+        :type sort_func: str
+        :param filter_func: filter function in Javascript with signature
+            ``(config, vertex, path) -> mixed``, where mixed can be one of four
+            possible values: ``"exclude"`` (do not visit the vertex),
+            ``"prune"`` (do not follow the edges of the vertex), ``""`` or
+            ``undefined`` (visit the vertex and its edges), or an Array
+            (any combinations of the ``"mixed"``, ``"prune"``, ``""`` or
+            ``undefined``).
+        :type filter_func: str
+        :param visitor_func: visitor function in Javascript with signature
+            ``(config, result, vertex, path, connected) -> void``, where the
+            return value is ignored, ``result`` is modified by reference, and
+            ``connected`` is populated only when argument **order** is set to
+            ``"preorder-expander"``
+        :type visitor_func: str
+        :param expander_func: expander function in Javascript with signature
+            ``(config, vertex, path) -> mixed``, which must return an array of
+            the connections for vertex where each connection is an object with
+            attributes edge and vertex
+        :type expander_func: str
+        :returns: the visited edges and vertices
+        :rtype: list
+        :raises arango.exceptions.GraphTraverseError: if the graph traversal
+            cannot be executed
         """
+        if expander_func is None and direction is None:
+            direction = 'any'
+
+        if strategy is not None:
+            if strategy.lower() == 'dfs':
+                strategy = 'depthfirst'
+            elif strategy.lower() == 'bfs':
+                strategy = 'breadthfirst'
+
+        uniqueness = {}
+        if vertex_uniqueness is not None:
+            uniqueness['vertices'] = vertex_uniqueness
+        if edge_uniqueness is not None:
+            uniqueness['edges'] = edge_uniqueness
+
         data = {
-            "startVertex": start_vertex,
-            "graphName": self._name,
-            "direction": direction,
-            "strategy": strategy,
-            "order": order,
-            "itemOrder": item_order,
-            "uniqueness": uniqueness,
-            "maxIterations": max_iterations,
-            "minDepth": min_depth,
-            "maxDepth": max_depth,
-            "init": init,
-            "filter": filters,
-            "visitor": visitor,
-            "expander": expander,
-            "sort": sort
+            'startVertex': start_vertex,
+            'graphName': self._name,
+            'direction': direction,
+            'strategy': strategy,
+            'order': order,
+            'itemOrder': item_order,
+            'uniqueness': uniqueness or None,
+            'maxIterations': max_iter,
+            'minDepth': min_depth,
+            'maxDepth': max_depth,
+            'init': init_func,
+            'filter': filter_func,
+            'visitor': visitor_func,
+            'sort': sort_func,
+            'expander': expander_func
         }
-        data = {k: v for k, v in data.items() if v is not None}
-        res = self._conn.post("/_api/traversal", data=data)
-        if res.status_code not in HTTP_OK:
-            raise GraphTraversalError(res)
-        return res.body["result"]
+        request = Request(
+            method='post',
+            endpoint='/_api/traversal',
+            data={k: v for k, v in data.items() if v is not None}
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise GraphTraverseError(res)
+            return res.body['result']['visited']
+
+        return request, handler

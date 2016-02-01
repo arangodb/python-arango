@@ -5,3 +5,6 @@
 *build/
 *dist/
 *.coverage
+.coveragerc
+.cache/
+tests/__pycache__/

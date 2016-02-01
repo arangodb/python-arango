@@ -3,7 +3,7 @@
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd $DIR
 
-VERSION=2.7.0
+VERSION=3.0.4
 NAME=ArangoDB-$VERSION
 
 if [ ! -d "$DIR/$NAME" ]; then
@@ -32,8 +32,7 @@ ${ARANGOD} \
     --server.endpoint tcp://127.0.0.1:8529 \
     --javascript.app-path ${ARANGODB_DIR}/js/apps \
     --javascript.startup-directory ${ARANGODB_DIR}/js \
-    --database.maximal-journal-size 1048576 \
-    --server.disable-authentication true &
+    --database.maximal-journal-size 1048576 &
 
 sleep 2
 
@@ -47,15 +46,8 @@ if [ "x$process" == "x" ]; then
 fi
 
 echo "Waiting until ArangoDB is ready on port 8529"
+sleep 10
 
-n=0
-# timeout value for startup
-timeout=60 
-while [[ (-z `curl -H 'Authorization: Basic cm9vdDo=' -s 'http://127.0.0.1:8529/_api/version' `) && (n -lt timeout) ]] ; do
-  echo -n "."
-  sleep 1s
-  n=$[$n+1]
-done
 
 if [[ n -eq timeout ]];
 then
