@@ -3,10 +3,10 @@
 from abc import ABCMeta, abstractmethod
 
 
-class BaseClient(object):
+class BaseHTTPClient(object):
     """Base class for ArangoDB clients.
 
-    The methods MUST return an ``arango.response.Response`` object.
+    The methods must return an ``arango.response.Response`` object.
     """
 
     __metaclass__ = ABCMeta
@@ -108,25 +108,6 @@ class BaseClient(object):
 
         :param url: request URL
         :type url: str
-        :param params: request parameters
-        :type params: dict or None
-        :param headers: request headers
-        :type headers: dict or None
-        :param auth: username and password tuple
-        :type auth: tuple or None
-        :returns: ArangoDB http response object
-        :rtype: arango.response.Response
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def options(self, url, data=None, params=None, headers=None, auth=None):
-        """HTTP OPTIONS method.
-
-        :param url: request URL
-        :type url: str
-        :param data: request payload
-        :type data: str or dict or None
         :param params: request parameters
         :type params: dict or None
         :param headers: request headers

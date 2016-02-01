@@ -1,6 +1,6 @@
 """ArangoDB HTTP response."""
 
-from json import loads
+import json
 
 
 class Response(object):
@@ -20,14 +20,24 @@ class Response(object):
     :type status_text: str or None
     """
 
-    def __init__(self, method, url, status_code, content, headers,
-                 status_text=None):
+    __slots__ = (
+        'method',
+        'url',
+        'headers',
+        'status_code',
+        'status_text',
+        'text',
+        'body'
+    )
+
+    def __init__(self, method, url, headers, status_code, status_text, body):
         self.method = method
         self.url = url
-        self.status_code = status_code
         self.headers = headers
+        self.status_code = status_code
         self.status_text = status_text
+        self.text = body
         try:
-            self.body = loads(content) if content else None
+            self.body = json.loads(body)
         except ValueError:
             self.body = None

@@ -14,7 +14,7 @@ except ImportError:
     builtins = importlib.import_module('builtins')
 
 
-def is_string(obj):
+def is_str(obj):
     """Return True iff ``obj`` is an instance of str or unicode.
 
     :param obj: the object to check
@@ -34,7 +34,7 @@ def unicode_to_str(obj):
     :returns: the sanitized object
     :rtype: object
     """
-    if is_string(obj):
+    if is_str(obj):
         return str(obj)
     elif isinstance(obj, Mapping):
         return dict(map(unicode_to_str, obj.items()))
@@ -54,9 +54,9 @@ def camelify(obj):
     :returns: the camelified object
     :rtype: object
     """
-    if is_string(obj):
-        words = obj.split("_")
-        return words[0] + "".join(word.title() for word in words[1:])
+    if is_str(obj):
+        words = obj.split('_')
+        return str(words[0] + ''.join(word.title() for word in words[1:]))
     elif isinstance(obj, Mapping):
         return dict(map(camelify, obj.items()))
     elif isinstance(obj, Iterable):
@@ -75,8 +75,8 @@ def uncamelify(obj):
     :returns: the uncamelified object
     :rtype: object
     """
-    if is_string(obj):
-        return sub('(?!^)([A-Z]+)', r'_\1', obj).lower()
+    if is_str(obj):
+        return str(sub('(?!^)([A-Z]+)', r'_\1', obj).lower())
     elif isinstance(obj, Mapping):
         return dict(map(uncamelify, obj.items()))
     elif isinstance(obj, Iterable):

@@ -1,10 +1,6 @@
 """ArangoDB Database."""
 
-import json
-import inspect
-
-
-from arango.utils import uncamelify, stringify_request
+from arango.utils import uncamelify
 from arango.graph import Graph
 from arango.collection import Collection
 from arango.cursor import cursor
@@ -24,46 +20,21 @@ class Database(object):
     6. Graph Management
     """
 
-    def __init__(self, name, api):
+    def __init__(self, connection, name):
         """Initialize the wrapper object.
 
+        :param connection: ArangoDB API connection object
+        :type connection: arango.connection.Connection
         :param name: the name of this database
         :type name: str
-        :param api: ArangoDB API object
-        :type api: arango.api.API
         """
-        self.name = name
-        self.api = api
-        self._collection_cache = {}
-        self._graph_cache = {}
+        self._conn = connection
+        self._name = name
 
     def __repr__(self):
         """Return a descriptive string of this instance."""
-        return "<ArangoDB database '{}'>".format(self.name)
+        return "<ArangoDB database '{}'>".format(self._name)
 
-    def _refresh_collection_cache(self):
-        """Invalidate the collection cache."""
-        real_cols = set(self.collections["all"])
-        cached_cols = set(self._collection_cache)
-        for col_name in cached_cols - real_cols:
-            del self._collection_cache[col_name]
-        for col_name in real_cols - cached_cols:
-            self._collection_cache[col_name] = Collection(
-                name=col_name, api=self.api
-            )
-
-    def _refresh_graph_cache(self):
-        """Invalidate the graph cache."""
-        real_graphs = set(self.graphs)
-        cached_graphs = set(self._graph_cache)
-        for graph_name in cached_graphs - real_graphs:
-            del self._graph_cache[graph_name]
-        for graph_name in real_graphs - cached_graphs:
-            self._graph_cache[graph_name] = Graph(
-                name=graph_name, api=self.api
-            )
-
-    @property
     def properties(self):
         """Return all properties of this database.
 
@@ -71,40 +42,10 @@ class Database(object):
         :rtype: dict
         :raises: DatabasePropertyError
         """
-        res = self.api.get("/_api/database/current")
+        res = self._conn.get('/_api/database/current')
         if res.status_code not in HTTP_OK:
             raise DatabasePropertyError(res)
-        return uncamelify(res.body["result"])
-
-    @property
-    def id(self):
-        """Return the ID of this database.
-
-        :returns: the database ID
-        :rtype: str
-        :raises: DatabasePropertyError
-        """
-        return self.properties["id"]
-
-    @property
-    def file_path(self):
-        """Return the file path of this database.
-
-        :returns: the file path of this database
-        :rtype: str
-        :raises: DatabasePropertyError
-        """
-        return self.properties["path"]
-
-    @property
-    def is_system(self):
-        """Return True if this is a system database, False otherwise.
-
-        :returns: True if this is a system database, False otherwise
-        :rtype: bool
-        :raises: DatabasePropertyError
-        """
-        return self.properties["is_system"]
+        return uncamelify(res.body['result'])
 
     ###############
     # AQL Queries #
@@ -135,20 +76,20 @@ class Database(object):
         :rtype: dict or list
         :raises: AQLQueryExplainError
         """
-        options = {"allPlans": all_plans}
+        options = {'allPlans': all_plans}
         if max_plans is not None:
-            options["maxNumberOfPlans"] = max_plans
+            options['maxNumberOfPlans'] = max_plans
         if optimizer_rules is not None:
-            options["optimizer"] = {"rules": optimizer_rules}
-        res = self.api.post(
-            "/_api/explain", data={"query": query, "options": options}
+            options['optimizer'] = {'rules': optimizer_rules}
+        res = self._conn.post(
+            '/_api/explain', data={'query': query, 'options': options}
         )
         if res.status_code not in HTTP_OK:
             raise AQLQueryExplainError(res)
-        if "plan" in res.body:
-            return uncamelify(res.body["plan"])
+        if 'plan' in res.body:
+            return uncamelify(res.body['plan'])
         else:
-            return uncamelify(res.body["plans"])
+            return uncamelify(res.body['plans'])
 
     def validate_query(self, query):
         """Validate the AQL query.
@@ -157,7 +98,7 @@ class Database(object):
         :type query: str
         :raises: AQLQueryValidateError
         """
-        res = self.api.post("/_api/query", data={"query": query})
+        res = self._conn.post('/_api/query', data={'query': query})
         if res.status_code not in HTTP_OK:
             raise AQLQueryValidateError(res)
 
@@ -189,61 +130,57 @@ class Database(object):
         """
         options = {}
         if full_count is not None:
-            options["fullCount"] = full_count
+            options['fullCount'] = full_count
         if max_plans is not None:
-            options["maxNumberOfPlans"] = max_plans
+            options['maxNumberOfPlans'] = max_plans
         if optimizer_rules is not None:
-            options["optimizer"] = {"rules": optimizer_rules}
+            options['optimizer'] = {'rules': optimizer_rules}
 
-        data = {
-            "query": query,
-            "count": count,
-        }
+        data = {'query': query, 'count': count}
         if batch_size is not None:
-            data["batchSize"] = batch_size
+            data['batchSize'] = batch_size
         if ttl is not None:
-            data["ttl"] = ttl
+            data['ttl'] = ttl
         if bind_vars is not None:
-            data["bindVars"] = bind_vars
+            data['bindVars'] = bind_vars
         if options:
-            data["options"] = options
+            data['options'] = options
 
-        res = self.api.post("/_api/cursor", data=data)
+        res = self._conn.post('/_api/cursor', data=data)
         if res.status_code not in HTTP_OK:
             raise AQLQueryExecuteError(res)
-        return cursor(self.api, res)
+        return cursor(self._conn, res)
 
     #########################
     # Collection Management #
     #########################
 
-    @property
-    def collections(self):
+    def list_collections(self, user_only=False):
         """Return the names of the collections in this database.
 
+        :param user_only: return only the user collection names
+        :type user_only: bool
         :returns: the names of the collections
         :rtype: dict
         :raises: CollectionListError
         """
-        res = self.api.get("/_api/collection")
+        res = self._conn.get('/_api/collection')
         if res.status_code not in HTTP_OK:
             raise CollectionListError(res)
-
-        user_collections = []
-        system_collections = []
-        for collection in res.body["collections"]:
-            if collection["isSystem"]:
-                system_collections.append(collection["name"])
-            else:
-                user_collections.append(collection["name"])
-        return {
-            "user": user_collections,
-            "system": system_collections,
-            "all": user_collections + system_collections,
-        }
+        return [
+            collection['name'] for collection in res.body['collections']
+            if not (user_only and collection['isSystem'])
+        ]
 
     def col(self, name):
-        """Alias for self.collection."""
+        """Return the Collection object of the specified name.
+
+        :param name: the name of the collection
+        :type name: str
+        :returns: the requested collection object
+        :rtype: arango.collection.Collection
+        :raises: TypeError, CollectionNotFound
+        """
         return self.collection(name)
 
     def collection(self, name):
@@ -253,17 +190,9 @@ class Database(object):
         :type name: str
         :returns: the requested collection object
         :rtype: arango.collection.Collection
-        :raises: TypeError, CollectionNotFound
+        :raises: TypeError
         """
-        if not isinstance(name, str):
-            raise TypeError("Expecting a str.")
-        if name in self._collection_cache:
-            return self._collection_cache[name]
-        else:
-            self._refresh_collection_cache()
-            if name not in self._collection_cache:
-                raise CollectionNotFoundError(name)
-            return self._collection_cache[name]
+        return Collection(self._conn, name)
 
     def create_collection(self, name, wait_for_sync=False, do_compact=True,
                           journal_size=None, is_system=False, is_edge=False,
@@ -302,33 +231,32 @@ class Database(object):
         :raises: CollectionCreateError
         """
         key_options = {
-            "type": key_generator_type,
-            "allowUserKeys": allow_user_keys
+            'type': key_generator_type,
+            'allowUserKeys': allow_user_keys
         }
         if key_increment is not None:
-            key_options["increment"] = key_increment
+            key_options['increment'] = key_increment
         if key_offset is not None:
-            key_options["offset"] = key_offset
+            key_options['offset'] = key_offset
         data = {
-            "name": name,
-            "waitForSync": wait_for_sync,
-            "doCompact": do_compact,
-            "isSystem": is_system,
-            "isVolatile": is_volatile,
-            "type": 3 if is_edge else 2,
-            "keyOptions": key_options
+            'name': name,
+            'waitForSync': wait_for_sync,
+            'doCompact': do_compact,
+            'isSystem': is_system,
+            'isVolatile': is_volatile,
+            'type': 3 if is_edge else 2,
+            'keyOptions': key_options
         }
         if journal_size is not None:
-            data["journalSize"] = journal_size
+            data['journalSize'] = journal_size
         if number_of_shards is not None:
-            data["numberOfShards"] = number_of_shards
+            data['numberOfShards'] = number_of_shards
         if shard_keys is not None:
-            data["shardKeys"] = shard_keys
+            data['shardKeys'] = shard_keys
 
-        res = self.api.post("/_api/collection", data=data)
+        res = self._conn.post('/_api/collection', data=data)
         if res.status_code not in HTTP_OK:
             raise CollectionCreateError(res)
-        self._refresh_collection_cache()
         return self.collection(name)
 
     def delete_collection(self, name):
@@ -338,10 +266,9 @@ class Database(object):
         :type name: str
         :raises: CollectionDeleteError
         """
-        res = self.api.delete("/_api/collection/{}".format(name))
+        res = self._conn.delete('/_api/collection/{}'.format(name))
         if res.status_code not in HTTP_OK:
             raise CollectionDeleteError(res)
-        self._refresh_collection_cache()
 
     def rename_collection(self, name, new_name):
         """Rename the specified collection in this database.
@@ -352,13 +279,12 @@ class Database(object):
         :type new_name: str
         :raises: CollectionRenameError
         """
-        res = self.api.put(
-            "/_api/collection/{}/rename".format(name),
-            data={"name": new_name}
+        res = self._conn.put(
+            '/_api/collection/{}/rename'.format(name),
+            data={'name': new_name}
         )
         if res.status_code not in HTTP_OK:
             raise CollectionRenameError(res)
-        self._refresh_collection_cache()
 
     def load_collection(self, name):
         """Load the specified collection into memory.
@@ -395,49 +321,14 @@ class Database(object):
     # Batch Requests #
     ##################
 
-    def execute_batch(self, requests):
+    def execute_batch(self, batch_steps):
         """Execute ArangoDB API calls in a batch.
 
-        :param requests: ArangoDB requests
-        :type requests: list
+        :param batch_steps: ArangoDB requests
+        :type batch_steps: list
         :raises: BatchInvalidError, BatchExecuteError
         """
-
-        data = ""
-        for content_id, request in enumerate(requests, start=1):
-            try:
-                func, args, kwargs = request
-            except (TypeError, ValueError):
-                raise BatchInvalidError(
-                    "pos {}: malformed request".format(content_id)
-                )
-            if "_batch" not in inspect.getargspec(func)[0]:
-                raise BatchInvalidError(
-                    "pos {}: ArangoDB method '{}' does not support "
-                    "batch execution".format(content_id, func.__name__)
-                )
-            kwargs["_batch"] = True
-            res = func(*args, **kwargs)
-            data += "--XXXsubpartXXX\r\n"
-            data += "Content-Type: application/x-arango-batchpart\r\n"
-            data += "Content-Id: {}\r\n\r\n".format(content_id)
-            data += "{}\r\n".format(stringify_request(**res))
-        data += "--XXXsubpartXXX--\r\n\r\n"
-        res = self.api.post(
-            "/_api/batch",
-            headers={
-                "Content-Type": "multipart/form-data; boundary=XXXsubpartXXX"
-            },
-            data=data,
-        )
-        if res.status_code not in HTTP_OK:
-            raise BatchExecuteError(res)
-        if res.body is None:
-            return []
-        return [
-            json.loads(string) for string in res.body.split("\r\n") if
-            string.startswith("{") and string.endswith("}")
-        ]
+        pass
 
     #################
     # AQL Functions #
@@ -451,10 +342,10 @@ class Database(object):
         :rtype: dict
         :raises: AQLFunctionListError
         """
-        res = self.api.get("/_api/aqlfunction")
+        res = self._conn.get('/_api/aqlfunction')
         if res.status_code not in HTTP_OK:
             raise AQLFunctionListError(res)
-        return {func["name"]: func["code"]for func in res.body}
+        return {func['name']: func['code']for func in res.body}
 
     def create_aql_function(self, name, code):
         """Create a new AQL function.
@@ -467,8 +358,8 @@ class Database(object):
         :rtype: dict
         :raises: AQLFunctionCreateError
         """
-        data = {"name": name, "code": code}
-        res = self.api.post("/_api/aqlfunction", data=data)
+        data = {'name': name, 'code': code}
+        res = self._conn.post('/_api/aqlfunction', data=data)
         if res.status_code not in (200, 201):
             raise AQLFunctionCreateError(res)
         return self.aql_functions
@@ -489,9 +380,9 @@ class Database(object):
         :rtype: dict
         :raises: AQLFunctionDeleteError
         """
-        res = self.api.delete(
-            "/_api/aqlfunction/{}".format(name),
-            params={"group": group} if group is not None else {}
+        res = self._conn.delete(
+            '/_api/aqlfunction/{}'.format(name),
+            params={'group': group} if group is not None else {}
         )
         if res.status_code not in HTTP_OK:
             raise AQLFunctionDeleteError(res)
@@ -525,39 +416,38 @@ class Database(object):
         :rtype: dict
         :raises: TransactionExecuteError
         """
-        path = "/_api/transaction"
-        data = {"collections": {}, "action": action}
+        path = '/_api/transaction'
+        data = {'collections': {}, 'action': action}
         if read_collections is not None:
-            data["collections"]["read"] = read_collections
+            data['collections']['read'] = read_collections
         if write_collections is not None:
-            data["collections"]["write"] = write_collections
+            data['collections']['write'] = write_collections
         if params is not None:
-            data["params"] = params
+            data['params'] = params
         http_params = {
-            "waitForSync": wait_for_sync,
-            "lockTimeout": lock_timeout,
+            'waitForSync': wait_for_sync,
+            'lockTimeout': lock_timeout,
         }
-        res = self.api.post(path=path, data=data, params=http_params)
+        res = self._conn.post(endpoint=path, data=data, params=http_params)
         if res.status_code not in HTTP_OK:
             raise TransactionExecuteError(res)
-        return res.body["result"]
+        return res.body['result']
 
     ####################
     # Graph Management #
     ####################
 
-    @property
-    def graphs(self):
+    def list_graphs(self):
         """List all graphs in this database.
 
         :returns: the graphs in this database
         :rtype: dict
         :raises: GraphGetError
         """
-        res = self.api.get("/_api/gharial")
-        if res.status_code not in (200, 202):
+        res = self._conn.get('/_api/gharial')
+        if res.status_code not in HTTP_OK:
             raise GraphListError(res)
-        return [graph["_key"] for graph in res.body["graphs"]]
+        return [graph['_key'] for graph in res.body['graphs']]
 
     def graph(self, name):
         """Return the Graph object of the specified name.
@@ -568,15 +458,7 @@ class Database(object):
         :rtype: arango.graph.Graph
         :raises: TypeError, GraphNotFound
         """
-        if not isinstance(name, str):
-            raise TypeError("Expecting a str.")
-        if name in self._graph_cache:
-            return self._graph_cache[name]
-        else:
-            self._refresh_graph_cache()
-            if name not in self._graph_cache:
-                raise GraphNotFoundError(name)
-            return self._graph_cache[name]
+        return Graph(self._conn, name)
 
     def create_graph(self, name, edge_definitions=None,
                      orphan_collections=None):
@@ -594,16 +476,15 @@ class Database(object):
         :rtype: arango.graph.Graph
         :raises: GraphCreateError
         """
-        data = {"name": name}
+        data = {'name': name}
         if edge_definitions is not None:
-            data["edgeDefinitions"] = edge_definitions
+            data['edgeDefinitions'] = edge_definitions
         if orphan_collections is not None:
-            data["orphanCollections"] = orphan_collections
+            data['orphanCollections'] = orphan_collections
 
-        res = self.api.post("/_api/gharial", data=data)
+        res = self._conn.post('/_api/gharial', data=data)
         if res.status_code not in HTTP_OK:
             raise GraphCreateError(res)
-        self._refresh_graph_cache()
         return self.graph(name)
 
     def delete_graph(self, name):
@@ -613,7 +494,6 @@ class Database(object):
         :type name: str
         :raises: GraphDeleteError
         """
-        res = self.api.delete("/_api/gharial/{}".format(name))
+        res = self._conn.delete('/_api/gharial/{}'.format(name))
         if res.status_code not in HTTP_OK:
             raise GraphDeleteError(res)
-        self._refresh_graph_cache()

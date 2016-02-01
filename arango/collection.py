@@ -18,21 +18,21 @@ class Collection(object):
     5. Index Management
     """
 
-    def __init__(self, name, api):
+    def __init__(self, connection, name):
         """Initialize the wrapper object.
 
+        :param connection: ArangoDB API connection object
+        :type connection: arango.connection.Connection
         :param name: the name of this collection
         :type name: str
-        :param api: ArangoDB API object
-        :type api: arango.api.API
         """
-        self.name = name
-        self.api = api
+        self._conn = connection
+        self._name = name
         self.type = "edge" if self.is_edge else "document"
 
     def __repr__(self):
         """Return a descriptive string of this instance."""
-        return "<ArangoDB collection '{}'>".format(self.name)
+        return "<ArangoDB collection '{}'>".format(self._name)
 
     def __iter__(self):
         """Iterate through the documents in this collection."""
@@ -45,8 +45,8 @@ class Collection(object):
         :rtype: int
         :raises: CollectionGetError
         """
-        res = self.api.get(
-            "/_api/collection/{}/count".format(self.name)
+        res = self._conn.get(
+            "/_api/collection/{}/count".format(self._name)
         )
         if res.status_code not in HTTP_OK:
             raise CollectionGetError(res)
@@ -58,8 +58,8 @@ class Collection(object):
         Only ``wait_for_sync`` and ``journal_size`` attributes are mutable.
         """
         if attr in {"wait_for_sync", "journal_size"}:
-            res = self.api.put(
-                "/_api/collection/{}/properties".format(self.name),
+            res = self._conn.put(
+                "/_api/collection/{}/properties".format(self._name),
                 data={camelify(attr): value}
             )
             if res.status_code not in HTTP_OK:
@@ -89,8 +89,8 @@ class Collection(object):
         :rtype: bool
         :raises: DocumentGetError
         """
-        res = self.api.head(
-            "/_api/{}/{}/{}".format(self.type, self.name, key)
+        res = self._conn.head(
+            "/_api/{}/{}/{}".format(self.type, self._name, key)
         )
         if res.status_code == 200:
             return True
@@ -107,8 +107,8 @@ class Collection(object):
         :rtype: dict
         :raises: CollectionGetError
         """
-        res = self.api.get(
-            "/_api/collection/{}/properties".format(self.name)
+        res = self._conn.get(
+            "/_api/collection/{}/properties".format(self._name)
         )
         if res.status_code not in HTTP_OK:
             raise CollectionGetError(res)
@@ -226,8 +226,8 @@ class Collection(object):
         :rtype: dict
         :raises: CollectionGetError
         """
-        res = self.api.get(
-            "/_api/collection/{}/figures".format(self.name)
+        res = self._conn.get(
+            "/_api/collection/{}/figures".format(self._name)
         )
         if res.status_code not in HTTP_OK:
             raise CollectionGetError(res)
@@ -241,8 +241,8 @@ class Collection(object):
         :rtype: str
         :raises: CollectionGetError
         """
-        res = self.api.get(
-            "/_api/collection/{}/revision".format(self.name)
+        res = self._conn.get(
+            "/_api/collection/{}/revision".format(self._name)
         )
         if res.status_code not in HTTP_OK:
             raise CollectionGetError(res)
@@ -255,8 +255,8 @@ class Collection(object):
         :rtype: str
         :raises: CollectionLoadError
         """
-        res = self.api.put(
-            "/_api/collection/{}/load".format(self.name)
+        res = self._conn.put(
+            "/_api/collection/{}/load".format(self._name)
         )
         if res.status_code not in HTTP_OK:
             raise CollectionLoadError(res)
@@ -272,8 +272,8 @@ class Collection(object):
         :rtype: str
         :raises: CollectionUnloadError
         """
-        res = self.api.put(
-            "/_api/collection/{}/unload".format(self.name)
+        res = self._conn.put(
+            "/_api/collection/{}/unload".format(self._name)
         )
         if res.status_code not in HTTP_OK:
             raise CollectionUnloadError(res)
@@ -287,8 +287,8 @@ class Collection(object):
 
         :raises: CollectionRotateJournalError
         """
-        res = self.api.put(
-            "/_api/collection/{}/rotate".format(self.name)
+        res = self._conn.put(
+            "/_api/collection/{}/rotate".format(self._name)
         )
         if res.status_code not in HTTP_OK:
             raise CollectionRotateJournalError(res)
@@ -305,8 +305,8 @@ class Collection(object):
         :rtype: int
         :raises: CollectionGetChecksumError
         """
-        res = self.api.get(
-            "/_api/collection/{}/checksum".format(self.name),
+        res = self._conn.get(
+            "/_api/collection/{}/checksum".format(self._name),
             params={"withRevision": with_rev, "withData": with_data}
         )
         if res.status_code not in HTTP_OK:
@@ -318,8 +318,8 @@ class Collection(object):
 
         :raises: CollectionTruncateError
         """
-        res = self.api.put(
-            "/_api/collection/{}/truncate".format(self.name)
+        res = self._conn.put(
+            "/_api/collection/{}/truncate".format(self._name)
         )
         if res.status_code not in HTTP_OK:
             raise CollectionTruncateError(res)
@@ -350,8 +350,8 @@ class Collection(object):
         :rtype: dict or None
         :raises: DocumentRevisionError, DocumentGetError
         """
-        res = self.api.get(
-            "/_api/{}/{}/{}".format(self.type, self.name, key),
+        res = self._conn.get(
+            "/_api/{}/{}/{}".format(self.type, self._name, key),
             headers={
                 "If-Match" if match else "If-None-Match": rev
             } if rev else {}
@@ -388,7 +388,7 @@ class Collection(object):
                     "the new document data is missing the '_from' key")
         path = "/_api/{}".format(self.type)
         params = {
-            "collection": self.name,
+            "collection": self._name,
             "waitForSync": wait_for_sync,
         }
         if "_from" in data:
@@ -402,7 +402,7 @@ class Collection(object):
                 "data": data,
                 "params": params,
             }
-        res = self.api.post(path=path, data=data, params=params)
+        res = self._conn.post(endpoint=path, data=data, params=params)
         if res.status_code not in HTTP_OK:
             raise DocumentCreateError(res)
         return res.body
@@ -437,7 +437,7 @@ class Collection(object):
         :rtype: dict
         :raises: DocumentUpdateError
         """
-        path = "/_api/{}/{}/{}".format(self.type, self.name, key)
+        path = "/_api/{}/{}/{}".format(self.type, self._name, key)
         params = {
             "waitForSync": wait_for_sync,
             "keepNull": keep_none
@@ -455,7 +455,7 @@ class Collection(object):
                 "data": data,
                 "params": params,
             }
-        res = self.api.patch(path=path, data=data, params=params)
+        res = self._conn.patch(endpoint=path, data=data, params=params)
         if res.status_code == 412:
             raise DocumentRevisionError(res)
         if res.status_code not in HTTP_OK:
@@ -495,7 +495,7 @@ class Collection(object):
         elif "_rev" in data:
             params["rev"] = data["_rev"]
             params["policy"] = "error"
-        path = "/_api/{}/{}/{}".format(self.type, self.name, key)
+        path = "/_api/{}/{}/{}".format(self.type, self._name, key)
         if _batch:
             return {
                 "method": "put",
@@ -503,7 +503,7 @@ class Collection(object):
                 "data": data,
                 "params": params,
             }
-        res = self.api.put(path=path, params=params, data=data)
+        res = self._conn.put(endpoint=path, params=params, data=data)
         if res.status_code == 412:
             raise DocumentRevisionError(res)
         elif res.status_code not in HTTP_OK:
@@ -529,14 +529,14 @@ class Collection(object):
         if rev is not None:
             params["rev"] = rev
             params["policy"] = "error"
-        path = "/_api/{}/{}/{}".format(self.type, self.name, key)
+        path = "/_api/{}/{}/{}".format(self.type, self._name, key)
         if _batch:
             return {
                 "method": "delete",
                 "path": path,
                 "params": params
             }
-        res = self.api.delete(path=path, params=params)
+        res = self._conn.delete(endpoint=path, params=params)
         if res.status_code == 412:
             raise DocumentRevisionError(res)
         elif res.status_code not in {200, 202}:
@@ -568,12 +568,12 @@ class Collection(object):
         :rtype: dict
         :raises: DocumentsImportError
         """
-        res = self.api.post(
+        res = self._conn.post(
             "/_api/import",
             data="\r\n".join([json.dumps(d) for d in documents]),
             params={
                 "type": "documents",
-                "collection": self.name,
+                "collection": self._name,
                 "complete": complete,
                 "details": details
             }
@@ -606,7 +606,7 @@ class Collection(object):
         :rtype: generator
         :raises: DocumentsExportError
         """
-        params = {"collection": self.name}
+        params = {"collection": self._name}
         options = {}
         if flush is not None:
             options["flush"] = flush
@@ -624,10 +624,10 @@ class Collection(object):
             options["restrict"] = restrict
         data = {"options": options} if options else {}
 
-        res = self.api.post("/_api/export", params=params, data=data)
+        res = self._conn.post("/_api/export", params=params, data=data)
         if res.status_code not in HTTP_OK:
             raise DocumentsExportError(res)
-        return cursor(self.api, res)
+        return cursor(self._conn, res)
 
     ##################
     # Simple Queries #
@@ -642,9 +642,9 @@ class Collection(object):
         :rtype: list
         :raises: SimpleQueryFirstError
         """
-        res = self.api.put(
+        res = self._conn.put(
             "/_api/simple/first",
-            data={"collection": self.name, "count": count}
+            data={"collection": self._name, "count": count}
         )
         if res.status_code not in HTTP_OK:
             raise SimpleQueryFirstError(res)
@@ -659,9 +659,9 @@ class Collection(object):
         :rtype: list
         :raises: SimpleQueryLastError
         """
-        res = self.api.put(
+        res = self._conn.put(
             "/_api/simple/last",
-            data={"collection": self.name, "count": count}
+            data={"collection": self._name, "count": count}
         )
         if res.status_code not in HTTP_OK:
             raise SimpleQueryLastError(res)
@@ -680,15 +680,15 @@ class Collection(object):
         :rtype: list
         :raises: SimpleQueryAllError
         """
-        data = {"collection": self.name}
+        data = {"collection": self._name}
         if skip is not None:
             data["skip"] = skip
         if limit is not None:
             data["limit"] = limit
-        res = self.api.put("/_api/simple/all", data=data)
+        res = self._conn.put("/_api/simple/all", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryAllError(res)
-        return cursor(self.api, res)
+        return cursor(self._conn, res)
 
     def any(self):
         """Return a random document from this collection.
@@ -697,9 +697,9 @@ class Collection(object):
         :rtype: dict
         :raises: SimpleQueryAnyError
         """
-        res = self.api.put(
+        res = self._conn.put(
             "/_api/simple/any",
-            data={"collection": self.name}
+            data={"collection": self._name}
         )
         if res.status_code not in HTTP_OK:
             raise SimpleQueryAnyError(res)
@@ -714,8 +714,8 @@ class Collection(object):
         :rtype: dict or None
         :raises: SimpleQueryFirstExampleError
         """
-        data = {"collection": self.name, "example": example}
-        res = self.api.put("/_api/simple/first-example", data=data)
+        data = {"collection": self._name, "example": example}
+        res = self._conn.put("/_api/simple/first-example", data=data)
         if res.status_code == 404:
             return None
         elif res.status_code not in HTTP_OK:
@@ -737,15 +737,15 @@ class Collection(object):
         :rtype: list
         :raises: SimpleQueryGetByExampleError
         """
-        data = {"collection": self.name, "example": example}
+        data = {"collection": self._name, "example": example}
         if skip is not None:
             data["skip"] = skip
         if limit is not None:
             data["limit"] = limit
-        res = self.api.put("/_api/simple/by-example", data=data)
+        res = self._conn.put("/_api/simple/by-example", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryGetByExampleError(res)
-        return cursor(self.api, res)
+        return cursor(self._conn, res)
 
     def update_by_example(self, example, new_value, keep_none=True, limit=None,
                           wait_for_sync=False):
@@ -766,7 +766,7 @@ class Collection(object):
         :raises: SimpleQueryUpdateByExampleError
         """
         data = {
-            "collection": self.name,
+            "collection": self._name,
             "example": example,
             "newValue": new_value,
             "keepNull": keep_none,
@@ -774,7 +774,7 @@ class Collection(object):
         }
         if limit is not None:
             data["limit"] = limit
-        res = self.api.put("/_api/simple/update-by-example", data=data)
+        res = self._conn.put("/_api/simple/update-by-example", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryUpdateByExampleError(res)
         return res.body["updated"]
@@ -798,14 +798,14 @@ class Collection(object):
         :raises: SimpleQueryReplaceByExampleError
         """
         data = {
-            "collection": self.name,
+            "collection": self._name,
             "example": example,
             "newValue": new_value,
             "waitForSync": wait_for_sync,
         }
         if limit is not None:
             data["limit"] = limit
-        res = self.api.put("/_api/simple/replace-by-example", data=data)
+        res = self._conn.put("/_api/simple/replace-by-example", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryReplaceByExampleError(res)
         return res.body["replaced"]
@@ -824,13 +824,13 @@ class Collection(object):
         :raises: SimpleQueryDeleteByExampleError
         """
         data = {
-            "collection": self.name,
+            "collection": self._name,
             "example": example,
             "waitForSync": wait_for_sync,
         }
         if limit is not None:
             data["limit"] = limit
-        res = self.api.put("/_api/simple/remove-by-example", data=data)
+        res = self._conn.put("/_api/simple/remove-by-example", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryDeleteByExampleError(res)
         return res.body["deleted"]
@@ -859,7 +859,7 @@ class Collection(object):
         :raises: SimpleQueryRangeError
         """
         data = {
-            "collection": self.name,
+            "collection": self._name,
             "attribute": attribute,
             "left": left,
             "right": right,
@@ -869,10 +869,10 @@ class Collection(object):
             data["skip"] = skip
         if limit is not None:
             data["limit"] = limit
-        res = self.api.put("/_api/simple/range", data=data)
+        res = self._conn.put("/_api/simple/range", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryRangeError(res)
-        return cursor(self.api, res)
+        return cursor(self._conn, res)
 
     def near(self, latitude, longitude, distance=None, radius=None, skip=None,
              limit=None, geo=None):
@@ -906,7 +906,7 @@ class Collection(object):
         :raises: SimpleQueryNearError
         """
         data = {
-            "collection": self.name,
+            "collection": self._name,
             "latitude": latitude,
             "longitude": longitude
         }
@@ -921,10 +921,10 @@ class Collection(object):
         if geo is not None:
             data["geo"] = geo
 
-        res = self.api.put("/_api/simple/near", data=data)
+        res = self._conn.put("/_api/simple/near", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryNearError(res)
-        return cursor(self.api, res)
+        return cursor(self._conn, res)
 
     # TODO this endpoint does not seem to work
     def within(self, latitude, longitude, radius, distance=None, skip=None,
@@ -958,7 +958,7 @@ class Collection(object):
         :raises: SimpleQueryWithinError
         """
         data = {
-            "collection": self.name,
+            "collection": self._name,
             "latitude": latitude,
             "longitude": longitude,
             "radius": radius
@@ -972,10 +972,10 @@ class Collection(object):
         if geo is not None:
             data["geo"] = geo
 
-        res = self.api.put("/_api/simple/within", data=data)
+        res = self._conn.put("/_api/simple/within", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryWithinError(res)
-        return cursor(self.api, res)
+        return cursor(self._conn, res)
 
     def fulltext(self, attribute, query, skip=None, limit=None, index=None):
         """Return all documents that match the specified fulltext ``query``.
@@ -999,7 +999,7 @@ class Collection(object):
         :raises: SimpleQueryFullTextError
         """
         data = {
-            "collection": self.name,
+            "collection": self._name,
             "attribute": attribute,
             "query": query,
         }
@@ -1009,10 +1009,10 @@ class Collection(object):
             data["limit"] = limit
         if index is not None:
             data["index"] = index
-        res = self.api.put("/_api/simple/fulltext", data=data)
+        res = self._conn.put("/_api/simple/fulltext", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryFullTextError(res)
-        return cursor(self.api, res)
+        return cursor(self._conn, res)
 
     def lookup_by_keys(self, keys):
         """Return all documents whose key is in ``keys``.
@@ -1024,10 +1024,10 @@ class Collection(object):
         :raises: SimpleQueryLookupByKeysError
         """
         data = {
-            "collection": self.name,
+            "collection": self._name,
             "keys": keys,
         }
-        res = self.api.put("/_api/simple/lookup-by-keys", data=data)
+        res = self._conn.put("/_api/simple/lookup-by-keys", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryLookupByKeysError(res)
         return res.body["documents"]
@@ -1042,10 +1042,10 @@ class Collection(object):
         :raises: SimpleQueryDeleteByKeysError
         """
         data = {
-            "collection": self.name,
+            "collection": self._name,
             "keys": keys,
         }
-        res = self.api.put("/_api/simple/remove-by-keys", data=data)
+        res = self._conn.put("/_api/simple/remove-by-keys", data=data)
         if res.status_code not in HTTP_OK:
             raise SimpleQueryDeleteByKeysError(res)
         return {
@@ -1065,8 +1065,8 @@ class Collection(object):
         :rtype: dict
         :raises: IndexListError
         """
-        res = self.api.get(
-            "/_api/index?collection={}".format(self.name)
+        res = self._conn.get(
+            "/_api/index?collection={}".format(self._name)
         )
         if res.status_code not in HTTP_OK:
             raise IndexListError(res)
@@ -1079,8 +1079,8 @@ class Collection(object):
 
     def _create_index(self, data):
         """Helper method for creating new indexes."""
-        res = self.api.post(
-            "/_api/index?collection={}".format(self.name),
+        res = self._conn.post(
+            "/_api/index?collection={}".format(self._name),
             data=data
         )
         if res.status_code not in HTTP_OK:
@@ -1209,8 +1209,8 @@ class Collection(object):
         :type index_id: str
         :raises: IndexDeleteError
         """
-        res = self.api.delete(
-            "/_api/index/{}/{}".format(self.name, index_id)
+        res = self._conn.delete(
+            "/_api/index/{}/{}".format(self._name, index_id)
         )
         if res.status_code not in HTTP_OK:
             raise IndexDeleteError(res)

@@ -42,7 +42,7 @@ class NotFoundError(KeyError):
         super(NotFoundError, self).__init__(name)
 
 
-class ConnectionError(RequestError):
+class ServerConnectionError(RequestError):
     """Failed to connect to ArangoDB."""
 
 
@@ -56,7 +56,11 @@ class InvalidArgumentError(Exception):
 
 
 class VersionGetError(RequestError):
-    """Failed to retrieve the version."""
+    """Failed to retrieve the server version."""
+
+
+class DetailsGetError(RequestError):
+    """Failed to retrieve the server details."""
 
 
 class WriteAheadLogFlushError(RequestError):
@@ -77,6 +81,10 @@ class TimeGetError(RequestError):
 
 class EchoError(RequestError):
     """Failed to return current request."""
+
+
+class SleepError(RequestError):
+    """Failed to suspend the execution."""
 
 
 class RequiredDatabaseVersionGetError(RequestError):

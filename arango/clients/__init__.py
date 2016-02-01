@@ -1,1 +1,1 @@
-from arango.clients.default import DefaultClient
+from arango.clients.default import DefaultHTTPClient
