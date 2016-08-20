@@ -12,6 +12,10 @@
     :target: https://badge.fury.io/py/python-arango
     :alt: Package Version
 
+.. image:: https://coveralls.io/repos/github/joowani/python-arango/badge.svg?branch=master
+    :target: https://coveralls.io/github/joowani/python-arango?branch=master
+    :alt: Test Coverage
+
 .. image:: https://img.shields.io/github/issues/joowani/python-arango.svg   
     :target: https://github.com/joowani/python-arango/issues
     :alt: Issues Open
