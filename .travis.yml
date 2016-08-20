@@ -1,12 +1,18 @@
 language: python
 sudo: false
 python:
-    - "2.7"
-    - "3.4"
-    - "3.5"
+    - 2.7
+    - 3.4
+    - 3.5
 before_install:
-    - "sh scripts/setup_arangodb.sh"
+    - sh scripts/setup_arangodb.sh
 install:
-    - "pip install ."
+    - pip install coverage
+    - pip install pytest
+    - pip install pytest-cov
+    - pip install python-coveralls
+    - python setup.py install
 script:
-    - "py.test -v"
+    - py.test --cov-report= --cov=arango tests/
+after_success:
+    - coveralls
