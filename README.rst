@@ -65,7 +65,7 @@ To install the latest version directly from GitHub_:
     cd python-arango
     python setup.py install
 
-You may need to use ``sudo`` depending on your environment.
+You may need to use ``sudo`` depending on your environment setup.
 
 .. _PyPi: https://pypi.python.org/pypi/python-arango
 .. _GitHub: https://github.com/joowani/python-arango
@@ -73,7 +73,7 @@ You may need to use ``sudo`` depending on your environment.
 Getting Started
 ===============
 
-Here is simple usage example:
+Here is a simple usage example:
 
 .. code-block:: python
 
