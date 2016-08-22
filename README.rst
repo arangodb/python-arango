@@ -38,14 +38,14 @@ Features
 
 - Clean, Pythonic interface
 - Lightweight
-- 95%+ API coverage
+- 95%+ ArangoDB REST API coverage
 
 Compatibility
 =============
 
 - Python versions 2.7.x, 3.4.x and 3.5.x are supported
 - Latest version of python-arango (3.x) supports ArangoDB 3.x only
-- Older versions of python-arango (2.x) support ArangoDB 2.x only
+- Older versions of python-arango support ArangoDB 1.x ~ 2.x only
 
 Installation
 ============
@@ -82,7 +82,7 @@ Here is a simple usage example:
     # Initialize the client for ArangoDB
     client = ArangoClient(
         protocol='http',
-        host="localhost",
+        host='localhost',
         port=8529,
         username='root',
         password='',

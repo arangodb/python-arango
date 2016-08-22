@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractmethod
 
 
-class BaseHTTPClient(object):
+class BaseHTTPClient(object):  # pragma: no cover
     """Base class for ArangoDB clients.
 
     The methods must return an instance of :class:`arango.response.Response`.

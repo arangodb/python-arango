@@ -38,7 +38,8 @@ class BatchExecution(Connection):
             username=connection.username,
             password=connection.password,
             http_client=connection.http_client,
-            database=connection.database
+            database=connection.database,
+            enable_logging=connection.has_logging
         )
         self._id = uuid4()
         self._return_result = return_result
@@ -50,7 +51,7 @@ class BatchExecution(Connection):
         self._type = 'batch'
 
     def __repr__(self):
-        return '<ArangoDB batch request {}>'.format(self._id)
+        return '<ArangoDB batch execution {}>'.format(self._id)
 
     def __enter__(self):
         return self

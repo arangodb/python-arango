@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from arango.async import AsyncExecution
 from arango.batch import BatchExecution
+from arango.cluster import ClusterTest
 from arango.collections import Collection
 from arango.utils import HTTP_OK
 from arango.exceptions import *
@@ -27,6 +28,15 @@ class Database(object):
 
     def __getitem__(self, name):
         return self.collection(name)
+
+    @property
+    def connection(self):
+        """Return the connection object.
+
+        :return: the database connection object
+        :rtype: arango.connection.Connection
+        """
+        return self._conn
 
     @property
     def name(self):
@@ -107,17 +117,41 @@ class Database(object):
             commit_on_error=commit_on_error
         )
 
+    def cluster(self, shard_id, transaction_id=None, timeout=None, sync=None):
+        """Return the cluster round-trip test object.
+
+        :param shard_id: the ID of the shard to which the request is sent
+        :type shard_id: str
+        :param transaction_id: the transaction ID for the request
+        :type transaction_id: str
+        :param timeout: the timeout in seconds for the cluster operation, where
+            an error is returned if the response does not arrive within the
+            given limit (default: 24 hrs)
+        :type timeout: int
+        :param sync: if set to ``True``, the test uses synchronous mode,
+            otherwise asynchronous mode is used (this is mainly for debugging
+            purposes)
+        :param sync: bool
+        """
+        return ClusterTest(
+            connection=self._conn,
+            shard_id=shard_id,
+            transaction_id=transaction_id,
+            timeout=timeout,
+            sync=sync
+        )
+
     def properties(self):
         """Return the database properties.
 
         :returns: the database properties
         :rtype: dict
-        :raises arango.exceptions.DatabaseGetPropertiesError: if the properties
+        :raises arango.exceptions.DatabasePropertiesError: if the properties
             of the database cannot be retrieved
         """
         res = self._conn.get('/_api/database/current')
         if res.status_code not in HTTP_OK:
-            raise DatabaseGetPropertiesError(res)
+            raise DatabasePropertiesError(res)
         result = res.body['result']
         result['system'] = result.pop('isSystem')
         return result
@@ -130,13 +164,13 @@ class Database(object):
         """Return the collections in the database.
 
         :returns: the details of the collections in the database
-        :rtype: list
-        :raises arango.exceptions.CollectionsListError: if the list of
+        :rtype: [dict]
+        :raises arango.exceptions.CollectionListError: if the list of
             collections cannot be retrieved
         """
         res = self._conn.get('/_api/collection')
         if res.status_code not in HTTP_OK:
-            raise CollectionsListError(res)
+            raise CollectionListError(res)
         return [{
             'id': col['id'],
             'name': col['name'],
@@ -268,12 +302,12 @@ class Database(object):
 
         :returns: the graphs in the database
         :rtype: dict
-        :raises arango.exceptions.GraphsListError: if the list of graphs
+        :raises arango.exceptions.GraphListError: if the list of graphs
             cannot be retrieved
         """
         res = self._conn.get('/_api/gharial')
         if res.status_code not in HTTP_OK:
-            raise GraphsListError(res)
+            raise GraphListError(res)
         return [
             {
                 'name': graph['_key'],
@@ -299,9 +333,19 @@ class Database(object):
                      orphan_collections=None):
         """Create a new graph in the database.
 
+        An edge definition should look like this:
+
+        .. code-block:: python
+
+            {
+                'name': 'edge_collection_name',
+                'from_collections': ['from_vertex_collection_name'],
+                'to_collections': ['to_vertex_collection_name']
+            }
+
         :param name: name of the new graph
         :type name: str
-        :param edge_definitions: definitions for edges
+        :param edge_definitions: list of edge definitions
         :type edge_definitions: list
         :param orphan_collections: names of additional vertex collections
         :type orphan_collections: list
@@ -312,7 +356,11 @@ class Database(object):
         """
         data = {'name': name}
         if edge_definitions is not None:
-            data['edgeDefinitions'] = edge_definitions
+            data['edgeDefinitions'] = [{
+                'collection': definition['name'],
+                'from': definition['from_collections'],
+                'to': definition['to_collections']
+            } for definition in edge_definitions]
         if orphan_collections is not None:
             data['orphanCollections'] = orphan_collections
 
@@ -348,12 +396,12 @@ class Database(object):
 
         :returns: the server tasks that are currently active
         :rtype: [dict]
-        :raises arango.exceptions.TasksListError: if the list of active server
+        :raises arango.exceptions.TaskListError: if the list of active server
             tasks cannot be retrieved from the server
         """
         res = self._conn.get('/_api/tasks')
         if res.status_code not in HTTP_OK:
-            raise TasksListError(res)
+            raise TaskListError(res)
         return res.body
 
     def task(self, task_id):

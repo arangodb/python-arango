@@ -1,3 +1,5 @@
+.. _index-page:
+
 Indexes
 -------
 
@@ -40,4 +42,4 @@ on the HTTP REST API for collection index management visit this
     # Delete an existing index from the collection
     cities.delete_index('some_index_id')
 
-Refer to the :ref:`Collection` class for more details.
+Refer to :ref:`Collection` class for more details.

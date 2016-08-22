@@ -1,3 +1,5 @@
+.. _task-page:
+
 Task Management
 ---------------
 
@@ -30,7 +32,7 @@ more information on the HTTP REST API for task management visit this
         name='test_task',
         command='''
             var task = function(params){
-                var db =require('@arangodb');
+                var db = require('@arangodb');
                 db.print(params);
             }
             task(params);
@@ -50,4 +52,4 @@ more information on the HTTP REST API for task management visit this
     # Delete an existing task
     db.delete_task('001', ignore_missing=False)
 
-Refer to the :ref:`Database` class for more details.
+Refer to :ref:`Database` class for more details.

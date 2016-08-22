@@ -15,6 +15,8 @@ from .utils import (
 arango_client = ArangoClient()
 db_name = generate_db_name(arango_client)
 db = arango_client.create_database(db_name)
+bad_db_name = generate_db_name(arango_client)
+bad_db = arango_client.db(bad_db_name)
 test_cmd = "(function(p){require('@arangodb').print(p);})(p)"
 
 
@@ -34,6 +36,9 @@ def test_list_tasks():
         assert isinstance(task['name'], string_types)
         assert isinstance(task['created'], float)
         assert isinstance(task['command'], string_types)
+
+    with pytest.raises(TaskListError):
+        bad_db.tasks()
 
 
 def test_get_task():

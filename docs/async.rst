@@ -1,3 +1,5 @@
+.. _async-page:
+
 Async Execution
 ---------------
 
@@ -33,10 +35,12 @@ visit this `page <https://docs.arangodb.com/HTTP/AsyncResultsManagement>`_.
         print(job, job.status())
 
     # Retrieve the result of a job
-    job1.result()
+    result = job1.result()
+    assert isinstance(result, dict)
 
     # If a job fails the error is returned as opposed to being raised
-    assert isinstance(job3.result(), Exception)
+    result = job3.result()
+    assert isinstance(result, Exception)
 
     # Cancel a pending job
     job3.cancel()
@@ -44,6 +48,14 @@ visit this `page <https://docs.arangodb.com/HTTP/AsyncResultsManagement>`_.
     # Clear a result of a job from the server
     job4.clear()
 
+    # List the first 100 jobs done
+    client.async_jobs(status='done', count=100)
 
-Refer to the :ref:`AsyncExecution` and :ref:`AsyncJob` classes for more
-details.
+    # List the first 100 jobs pending in the queue
+    client.async_jobs(status='pending', count=100)
+
+    # Clear all jobs from the server
+    client.clear_async_jobs()
+
+Refer to :ref:`ArangoClient`, :ref:`AsyncExecution` and :ref:`AsyncJob`
+classes for more details.

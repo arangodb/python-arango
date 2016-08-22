@@ -5,12 +5,9 @@ from arango.connection import Connection
 from arango.utils import HTTP_OK
 from arango.exceptions import (
     AsyncExecuteError,
-    AsyncJobInvalidError,
-    AsyncJobNotDoneError,
-    AsyncJobNotFoundError,
     AsyncJobCancelError,
-    AsyncJobGetStatusError,
-    AsyncJobGetResultError,
+    AsyncJobStatusError,
+    AsyncJobResultError,
     AsyncJobClearError
 )
 from arango.graph import Graph
@@ -39,14 +36,15 @@ class AsyncExecution(Connection):
             username=connection.username,
             password=connection.password,
             http_client=connection.http_client,
-            database=connection.database
+            database=connection.database,
+            enable_logging=connection.has_logging
         )
         self._return_result = return_result
         self._aql = AQL(self)
         self._type = 'async'
 
     def __repr__(self):
-        return '<ArangoDB asynchronous request>'
+        return '<ArangoDB asynchronous execution>'
 
     def handle_request(self, request, handler):
         """Handle the incoming request and response handler.
@@ -57,11 +55,13 @@ class AsyncExecution(Connection):
         :type handler: callable
         :returns: the async job or None
         :rtype: arango.async.AsyncJob
+        :raises arango.exceptions.AsyncExecuteError: if the async request
+            cannot be executed
         """
         if self._return_result:
             request.headers['x-arango-async'] = 'store'
         else:
-            request.headers['x-arango-async'] = True
+            request.headers['x-arango-async'] = 'true'
 
         res = getattr(self, request.method)(**request.kwargs)
         if res.status_code not in HTTP_OK:
@@ -145,55 +145,36 @@ class AsyncJob(object):
         """Return the status of the async job from the server.
 
         :returns: the status of the async job, which can be ``"pending"`` (the
-            job is still in the queue), ``"done"`` (the job completed or raised
+            job is still in the queue), ``"done"`` (the job finished or raised
             an exception)
         :rtype: str
-        :raises arango.exceptions.AsyncJobInvalidError: if the async job is
-            not valid
-        :raises arango.exceptions.AsyncJobNotFoundError: if the async job
-            cannot be found in the server
-        :raises arango.exceptions.AsyncJobGetStatusError: if the status of the
+        :raises arango.exceptions.AsyncJobStatusError: if the status of the
             async job cannot be retrieved from the server
         """
-        res = self._conn.get('/_api/job/{}'.format(self._id))
+        res = self._conn.get('/_api/job/{}'.format(self.id))
         if res.status_code == 204:
             return 'pending'
         elif res.status_code in HTTP_OK:
             return 'done'
-        elif res.status_code == 400:
-            raise AsyncJobInvalidError(res)
         elif res.status_code == 404:
-            raise AsyncJobNotFoundError(res)
+            raise AsyncJobStatusError(res, 'Job {} missing'.format(self.id))
         else:
-            raise AsyncJobGetStatusError(res)
+            raise AsyncJobStatusError(res)
 
     def result(self):
         """Return the result of the async job if available.
 
         :returns: the result or the exception from the async job
         :rtype: object
-        :raises arango.exceptions.AsyncJobInvalidError: if the async job is
-            not valid
-        :raises arango.exceptions.AsyncJobNotFoundError: if the async job
-            cannot be found in the server
-        :raises arango.exceptions.AsyncJobNotDoneError: if the async job is
-            still pending in the queue
-        :raises arango.exceptions.AsyncJobGetResultError: if the result of the
+        :raises arango.exceptions.AsyncJobResultError: if the result of the
             async job cannot be retrieved from the server
 
         .. note::
             An async job result will automatically be cleared from the server
             once fetched and will *not* be available in subsequent calls.
         """
-        _id = self._id
-        res = self._conn.put('/_api/job/{}'.format(_id))
-        if (
-            res.status_code == 404 and
-            res.error_code == 404 and
-            res.error_message == 'not found'
-        ):
-            raise AsyncJobNotFoundError(res, 'Job {} not found'.format(_id))
-        elif res.body is not None:
+        res = self._conn.put('/_api/job/{}'.format(self._id))
+        if 'X-Arango-Async-Id' in res.headers:
             try:
                 result = self._handler(res)
             except Exception as error:
@@ -201,10 +182,11 @@ class AsyncJob(object):
             else:
                 return result
         elif res.status_code == 204:
-            raise AsyncJobNotDoneError(res, 'Job {} pending'.format(_id))
-        elif res.status_code == 400:
-            raise AsyncJobInvalidError(res, 'Job {} invalid'.format(_id))
-        raise AsyncJobGetResultError(res, 'Failed to query job {}'.format(_id))
+            raise AsyncJobResultError(res, 'Job {} not done'.format(self._id))
+        elif res.status_code == 404:
+            raise AsyncJobResultError(res, 'Job {} missing'.format(self._id))
+        else:
+            raise AsyncJobResultError(res)
 
     def cancel(self, ignore_missing=False):
         """Cancel the async job if it is still pending.
@@ -214,55 +196,40 @@ class AsyncJob(object):
         :returns: ``True`` if the job was cancelled successfully, ``False`` if
             the job was not found but **ignore_missing** was set to ``True``
         :rtype: bool
-        :raises arango.exceptions.AsyncJobInvalidError: if the async job is
-            not valid
-        :raises arango.exceptions.AsyncJobNotFoundError: if the async job
-            cannot be found in the server
         :raises arango.exceptions.AsyncJobCancelError: if the async job cannot
             be cancelled
 
         .. note::
-            An async job cannot be cancelled once it is taken out of the queue.
+            An async job cannot be cancelled once it is taken out of the queue
+            (i.e. started, finished or cancelled).
         """
-        _id = self._id
-        res = self._conn.put('/_api/job/{}/cancel'.format(_id))
+        res = self._conn.put('/_api/job/{}/cancel'.format(self._id))
         if res.status_code == 200:
             return True
-        elif res.status_code == 400:
-            raise AsyncJobInvalidError(res, 'Job {} invalid'.format(_id))
         elif res.status_code == 404:
             if ignore_missing:
                 return False
-            raise AsyncJobNotFoundError(res, 'Job {} not found'.format(_id))
-        raise AsyncJobCancelError(res, 'Failed to cancel job {}'.format(_id))
+            raise AsyncJobCancelError(res, 'Job {} missing'.format(self._id))
+        else:
+            raise AsyncJobCancelError(res)
 
     def clear(self, ignore_missing=False):
-        """Clear the result of the job from the server if available.
-
-        If the result is deleted successfully, boolean True is returned. If
-        the job was not found but ``ignore_missing`` was set, boolean False
-        is returned.
+        """Delete the result of the job from the server.
 
         :param ignore_missing: ignore missing async jobs
         :type ignore_missing: bool
         :returns: ``True`` if the result was deleted successfully, ``False``
             if the job was not found but **ignore_missing** was set to ``True``
         :rtype: bool
-        :raises arango.exceptions.AsyncJobInvalidError: if the async job is
-            not valid
-        :raises arango.exceptions.AsyncJobNotFoundError: if the async job
-            cannot be found in the server
-        :raises arango.exceptions.AsyncJobClearError: if the result of
-            the async job cannot be removed from the server
+        :raises arango.exceptions.AsyncJobClearError: if the result of the
+            async job cannot be delete from the server
         """
-        _id = self._id
-        res = self._conn.delete('/_api/job/{}'.format(_id))
+        res = self._conn.delete('/_api/job/{}'.format(self._id))
         if res.status_code in HTTP_OK:
             return True
-        elif res.status_code == 400:
-            raise AsyncJobInvalidError(res, 'Job {} invalid'.format(_id))
         elif res.status_code == 404:
             if ignore_missing:
                 return False
-            raise AsyncJobNotFoundError(res, 'Job {} not found'.format(_id))
-        raise AsyncJobClearError(res, 'Failed to clear job {}'.format(_id))
+            raise AsyncJobClearError(res, 'Job {} missing'.format(self._id))
+        else:
+            raise AsyncJobClearError(res)

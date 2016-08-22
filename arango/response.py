@@ -17,6 +17,9 @@ class Response(object):
     :type http_text: str
     :param body: the HTTP response body
     :type body: str | dict
+
+    .. note::
+        This class is meant to be used internally only.
     """
 
     __slots__ = (

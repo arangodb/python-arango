@@ -35,13 +35,10 @@ class Cursor(object):
         return self
 
     def __exit__(self, *_):
-        self.close()
+        self.close(ignore_missing=True)
 
     def __repr__(self):
-        cursor_id = self.id
-        if cursor_id is None:
-            return '<ArangoDB cursor>'
-        return '<ArangoDB cursor {}>'.format(cursor_id)
+        return '<ArangoDB cursor {}>'.format(self.id)
 
     @property
     def id(self):
@@ -102,7 +99,6 @@ class Cursor(object):
             stats['scanned_index'] = stats.pop('scannedIndex', None)
             stats['execution_time'] = stats.pop('executionTime', None)
             return stats
-        return None
 
     def warnings(self):
         """Return any warnings (e.g. from the query execution).
@@ -112,7 +108,6 @@ class Cursor(object):
         """
         if 'extra' in self._data and 'warnings' in self._data['extra']:
             return self._data['extra']['warnings']
-        return None
 
     def next(self):
         """Read the next result from the cursor.
@@ -127,7 +122,6 @@ class Cursor(object):
                 raise CursorNextError(res)
             self._data = res.body
         elif not self.batch() and not self.has_more():
-            self.close()
             raise StopIteration
         return self.batch().pop(0)
 
@@ -142,7 +136,7 @@ class Cursor(object):
         """
         if not self.id:
             return False
-        res = self._conn.delete("/api/cursor/{}".format(self.id))
+        res = self._conn.delete("/_api/cursor/{}".format(self.id))
         if res.status_code not in HTTP_OK:
             if res.status_code == 404 and ignore_missing:
                 return False

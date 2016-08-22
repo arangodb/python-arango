@@ -1,8 +1,10 @@
+.. _cursor-page:
+
 Cursors
 -------
 
-Many operations defined in python-arango (including :doc:`aql` queries) return
-:ref:`Cursor` objects to batch the network communication between the ArangoDB
+Many operations defined in python-arango (including :ref:`aql-page` queries)
+return :ref:`Cursor` objects to batch the network communication between the
 server and the client. Each request from the cursor fetches the next set of
 documents, where the total number of documents in the result set may or may not
 be known in advance depending on the query. For more information on the HTTP
@@ -59,4 +61,4 @@ REST API for using cursors visit this
     # Delete the cursor from the server
     cursor.close()
 
-Refer to the :ref:`Cursor` class for more details.
+Refer to :ref:`Cursor` class for more details.

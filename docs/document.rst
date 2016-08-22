@@ -1,3 +1,5 @@
+.. _document-page:
+
 Documents
 ---------
 
@@ -37,7 +39,7 @@ required in python-arango.
 required fields ``"_from"`` and ``"_to"``. The value of these fields should be
 the value of a from and to vertices; ``"_id"`` fields. Edge documents are
 contained in :ref:`edge collections <edge-collections>`, which are components
-of :doc:`graphs <graph>`.
+of :ref:`graphs <graph-page>`.
 
 **Here is an example of a valid edge document**:
 
@@ -116,4 +118,4 @@ for more information on the REST HTTP API for document management visit this
         student['happy'] = True
         students.update(student)
 
-Refer to the :ref:`Collection` class for more details.
+Refer to :ref:`Collection` class for more details.

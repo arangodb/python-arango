@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
-import pytest
 from six import string_types
+import pytest
 
 from arango import ArangoClient
 from arango.exceptions import *
@@ -13,6 +13,7 @@ from .utils import (
 )
 
 arango_client = ArangoClient()
+bad_arango_client = ArangoClient(password='incorrect')
 db_name = generate_db_name(arango_client)
 arango_client.create_database(db_name)
 
@@ -32,6 +33,9 @@ def test_list_users():
         assert isinstance(user['extra'], dict)
         assert isinstance(user['change_password'], bool)
 
+    with pytest.raises(UserListError):
+        bad_arango_client.users()
+
 
 def test_get_user():
     # Test get existing users
@@ -39,9 +43,9 @@ def test_get_user():
         assert arango_client.user(user['username']) == user
 
     # Test get missing user
-    missing_username = generate_user_name(arango_client)
+    bad_username = generate_user_name(arango_client)
     with pytest.raises(UserGetError):
-        arango_client.user(missing_username)
+        arango_client.user(bad_username)
 
 
 def test_create_user():
@@ -106,9 +110,9 @@ def test_update_user():
     assert arango_client.user(new_user['username']) == new_user
 
     # Test update missing user
-    missing_username = generate_user_name(arango_client)
+    bad_username = generate_user_name(arango_client)
     with pytest.raises(UserUpdateError):
-        arango_client.update_user(missing_username, password='password')
+        arango_client.update_user(bad_username, password='password')
 
 
 def test_replace_user():
@@ -137,9 +141,9 @@ def test_replace_user():
     assert arango_client.user(new_user['username']) == new_user
 
     # Test replace missing user
-    missing_username = generate_user_name(arango_client)
+    bad_username = generate_user_name(arango_client)
     with pytest.raises(UserReplaceError):
-        arango_client.replace_user(missing_username, password='password')
+        arango_client.replace_user(bad_username, password='password')
 
 
 def test_delete_user():
@@ -176,9 +180,9 @@ def test_grant_user_access():
     assert col_name in set(col['name'] for col in db.collections())
 
     # Test grant access to missing user
-    missing_username = generate_user_name(arango_client)
+    bad_username = generate_user_name(arango_client)
     with pytest.raises(UserGrantAccessError):
-        arango_client.grant_user_access(missing_username, db_name)
+        arango_client.grant_user_access(bad_username, db_name)
 
 
 def test_revoke_user_access():
@@ -200,6 +204,6 @@ def test_revoke_user_access():
     assert err.value.http_code == 401
 
     # Test revoke access to missing user
-    missing_username = generate_user_name(arango_client)
+    bad_username = generate_user_name(arango_client)
     with pytest.raises(UserRevokeAccessError):
-        arango_client.revoke_user_access(missing_username, db_name)
+        arango_client.revoke_user_access(bad_username, db_name)

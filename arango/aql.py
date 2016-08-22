@@ -9,10 +9,10 @@ from arango.exceptions import (
     AQLQueryExecuteError,
     AQLFunctionCreateError,
     AQLFunctionDeleteError,
-    AQLFunctionsListError,
+    AQLFunctionListError,
     AQLCacheClearError,
     AQLCacheConfigureError,
-    AQLCacheGetPropertiesError
+    AQLCachePropertiesError
 )
 from arango.request import Request
 
@@ -168,14 +168,14 @@ class AQL(APIWrapper):
 
         :returns: a mapping of AQL function names to its javascript code
         :rtype: dict
-        :raises arango.exceptions.AQLFunctionsListError: if the AQL functions
+        :raises arango.exceptions.AQLFunctionListError: if the AQL functions
             cannot be retrieved
         """
         request = Request(method='get', endpoint='/_api/aqlfunction')
 
         def handler(res):
             if res.status_code not in HTTP_OK:
-                raise AQLFunctionsListError(res)
+                raise AQLFunctionListError(res)
             body = res.body or {}
             return {func['name']: func['code'] for func in map(dict, body)}
 
@@ -259,7 +259,7 @@ class AQLQueryCache(APIWrapper):
 
         :returns: the cache properties
         :rtype: dict
-        :raises arango.exceptions.AQLCacheGetPropertiesError: if the cache
+        :raises arango.exceptions.AQLCachePropertiesError: if the cache
             properties cannot be retrieved
         """
         request = Request(
@@ -269,7 +269,7 @@ class AQLQueryCache(APIWrapper):
 
         def handler(res):
             if res.status_code not in HTTP_OK:
-                raise AQLCacheGetPropertiesError(res)
+                raise AQLCachePropertiesError(res)
             return {'mode': res.body['mode'], 'limit': res.body['maxResults']}
 
         return request, handler

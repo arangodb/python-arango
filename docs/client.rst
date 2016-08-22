@@ -1,3 +1,5 @@
+.. _client-page:
+
 Getting Started
 ---------------
 

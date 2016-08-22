@@ -56,12 +56,12 @@ class BaseCollection(APIWrapper):
 
         :returns: the number of documents
         :rtype: int
-        :raises arango.exceptions.CollectionGetCountError: if the document
+        :raises arango.exceptions.DocumentCountError: if the document
             count cannot be retrieved
         """
         res = self._conn.get('/_api/collection/{}/count'.format(self._name))
         if res.status_code not in HTTP_OK:
-            raise CollectionGetCountError(res)
+            raise DocumentCountError(res)
         return res.body['count']
 
     def __getitem__(self, key):
@@ -75,7 +75,7 @@ class BaseCollection(APIWrapper):
             be fetched from the collection
         """
         res = self._conn.get('/_api/document/{}/{}'.format(self._name, key))
-        if res.status_code == 404:
+        if res.status_code == 404 and res.error_code == 1202:
             return None
         elif res.status_code not in HTTP_OK:
             raise DocumentGetError(res)
@@ -88,15 +88,15 @@ class BaseCollection(APIWrapper):
         :type key: dict | str
         :returns: whether the document exists
         :rtype: bool
-        :raises arango.exceptions.CollectionContainsError: if the check cannot
+        :raises arango.exceptions.DocumentInError: if the check cannot
             be executed
         """
-        res = self._conn.head('/_api/document/{}/{}'.format(self._name, key))
-        if res.status_code in HTTP_OK:
-            return True
-        elif res.status_code == 404:
+        res = self._conn.get('/_api/document/{}/{}'.format(self._name, key))
+        if res.status_code == 404 and res.error_code == 1202:
             return False
-        raise CollectionContainsError(res)
+        elif res.status_code in HTTP_OK:
+            return True
+        raise DocumentInError(res)
 
     def _status(self, code):
         """Return the collection status text.
@@ -161,7 +161,7 @@ class BaseCollection(APIWrapper):
 
         :returns: the collection statistics
         :rtype: dict
-        :raises arango.exceptions.CollectionGetStatisticsError: if the
+        :raises arango.exceptions.CollectionStatisticsError: if the
             collection statistics cannot be retrieved
         """
         request = Request(
@@ -171,7 +171,7 @@ class BaseCollection(APIWrapper):
 
         def handler(res):
             if res.status_code not in HTTP_OK:
-                raise CollectionGetStatisticsError(res)
+                raise CollectionStatisticsError(res)
             stats = res.body['figures']
             stats['compaction_status'] = stats.pop('compactionStatus', None)
             stats['document_refs'] = stats.pop('documentReferences', None)
@@ -190,7 +190,7 @@ class BaseCollection(APIWrapper):
 
         :returns: the collection revision
         :rtype: str
-        :raises arango.exceptions.CollectionGetRevisionError: if the
+        :raises arango.exceptions.CollectionRevisionError: if the
             collection revision cannot be retrieved
         """
         request = Request(
@@ -200,7 +200,7 @@ class BaseCollection(APIWrapper):
 
         def handler(res):
             if res.status_code not in HTTP_OK:
-                raise CollectionGetRevisionError(res)
+                raise CollectionRevisionError(res)
             return res.body['revision']
 
         return request, handler
@@ -211,7 +211,7 @@ class BaseCollection(APIWrapper):
 
         :returns: the collection properties
         :rtype: dict
-        :raises arango.exceptions.CollectionGetPropertiesError: if the
+        :raises arango.exceptions.CollectionPropertiesError: if the
             collection properties cannot be retrieved
         """
         request = Request(
@@ -221,7 +221,7 @@ class BaseCollection(APIWrapper):
 
         def handler(res):
             if res.status_code not in HTTP_OK:
-                raise CollectionGetPropertiesError(res)
+                raise CollectionPropertiesError(res)
             result = {
                 'id': res.body['id'],
                 'name': res.body['name'],
@@ -285,11 +285,9 @@ class BaseCollection(APIWrapper):
                 'journal_size': res.body['journalSize'],
                 'keygen': res.body['keyOptions']['type'],
                 'user_keys': res.body['keyOptions']['allowUserKeys'],
+                'key_increment': res.body['keyOptions'].get('increment'),
+                'key_offset': res.body['keyOptions'].get('offset')
             }
-            if 'increment' in res.body['keyOptions']:
-                result['key_increment'] = res.body['keyOptions']['increment']
-            if 'offset' in res.body['keyOptions']:
-                result['key_offset'] = res.body['keyOptions']['offset']
             return result
 
         return request, handler
@@ -356,7 +354,7 @@ class BaseCollection(APIWrapper):
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise CollectionRotateJournalError(res)
-            return res.body['result']
+            return res.body['result']  # pragma: no cover
 
         return request, handler
 
@@ -372,7 +370,7 @@ class BaseCollection(APIWrapper):
         :type with_data: bool
         :returns: the collection checksum
         :rtype: int
-        :raises arango.exceptions.CollectionGetChecksumError: if the
+        :raises arango.exceptions.CollectionChecksumError: if the
             collection checksum cannot be retrieved
         """
         request = Request(
@@ -383,7 +381,7 @@ class BaseCollection(APIWrapper):
 
         def handler(res):
             if res.status_code not in HTTP_OK:
-                raise CollectionGetChecksumError(res)
+                raise CollectionChecksumError(res)
             return int(res.body['checksum'])
 
         return request, handler
@@ -422,7 +420,7 @@ class BaseCollection(APIWrapper):
 
         :returns: the number of documents
         :rtype: int
-        :raises arango.exceptions.CollectionGetCountError: if the document
+        :raises arango.exceptions.DocumentCountError: if the document
             count cannot be retrieved
         """
         request = Request(
@@ -432,7 +430,7 @@ class BaseCollection(APIWrapper):
 
         def handler(res):
             if res.status_code not in HTTP_OK:
-                raise CollectionGetCountError(res)
+                raise DocumentCountError(res)
             return res.body['count']
 
         return request, handler
@@ -455,7 +453,7 @@ class BaseCollection(APIWrapper):
         :rtype: bool
         :raises arango.exceptions.DocumentRevisionError: if the given revision
             does not match the revision of the retrieved document
-        :raises arango.exceptions.CollectionContainsError: if the check cannot
+        :raises arango.exceptions.DocumentInError: if the check cannot
             be executed
         """
         request = Request(
@@ -470,11 +468,11 @@ class BaseCollection(APIWrapper):
         def handler(res):
             if res.status_code in {304, 412}:
                 raise DocumentRevisionError(res)
-            elif res.status_code == 404:
+            elif res.status_code == 404 and res.error_code == 1202:
                 return False
             elif res.status_code in HTTP_OK:
                 return True
-            raise CollectionContainsError(res)
+            raise DocumentInError(res)
 
         return request, handler
 
@@ -507,7 +505,7 @@ class BaseCollection(APIWrapper):
         :param ttl: time-to-live for the cursor on the server
         :type ttl: int
         :param filter_fields: list of document fields to filter by
-        :type filter_fields: dict
+        :type filter_fields: list
         :param filter_type: ``"include"`` (default) or ``"exclude"``
         :type filter_type: str
         :returns: the document cursor
@@ -520,9 +518,9 @@ class BaseCollection(APIWrapper):
             time of the retrieval are *not* included by the server cursor
         """
         data = {'count': count}
-        if flush is not None:
+        if flush is not None:  # pragma: no cover
             data['flush'] = flush
-        if flush_wait is not None:
+        if flush_wait is not None:  # pragma: no cover
             data['flushWait'] = flush_wait
         if batch_size is not None:
             data['batchSize'] = batch_size
@@ -838,7 +836,7 @@ class BaseCollection(APIWrapper):
         if limit is not None:
             data['limit'] = limit
         if geo_field is not None:
-            data['geo'] = geo_field
+            data['geo'] = '/'.join([self._name, geo_field])
 
         request = Request(
             method='put',
@@ -900,7 +898,7 @@ class BaseCollection(APIWrapper):
 
         :returns: the collection indexes
         :rtype: [dict]
-        :raises arango.exceptions.IndexesListError: if the list of indexes
+        :raises arango.exceptions.IndexListError: if the list of indexes
             cannot be retrieved
         """
         request = Request(
@@ -911,23 +909,19 @@ class BaseCollection(APIWrapper):
 
         def handler(res):
             if res.status_code not in HTTP_OK:
-                raise IndexesListError(res)
+                raise IndexListError(res)
 
             indexes = []
             for index in res.body['indexes']:
                 index['id'] = index['id'].split('/', 1)[1]
                 if 'minLength' in index:
                     index['min_length'] = index.pop('minLength')
-                if 'byteSize' in index:
-                    index['byte_size'] = index.pop('byteSize')
                 if 'geoJson' in index:
                     index['geo_json'] = index.pop('geoJson')
                 if 'ignoreNull' in index:
                     index['ignore_none'] = index.pop('ignoreNull')
                 if 'selectivityEstimate' in index:
                     index['selectivity'] = index.pop('selectivityEstimate')
-                if 'isNewlyCreated' in index:
-                    index['new'] = index.pop('isNewlyCreated')
                 indexes.append(index)
             return indexes
 
@@ -951,8 +945,6 @@ class BaseCollection(APIWrapper):
             details.pop('code', None)
             if 'minLength' in details:
                 details['min_length'] = details.pop('minLength')
-            if 'byteSize' in details:
-                details['byte_size'] = details.pop('byteSize')
             if 'geoJson' in details:
                 details['geo_json'] = details.pop('geoJson')
             if 'ignoreNull' in details:
@@ -1012,7 +1004,7 @@ class BaseCollection(APIWrapper):
         return self._add_index(data)
 
     @api_method
-    def add_geo_index(self, fields, ordered=None, unique=None):
+    def add_geo_index(self, fields, ordered=None):
         """Create a geo-spatial index in the collection.
 
         :param fields: if given a single field, the index is created using its
@@ -1022,8 +1014,6 @@ class BaseCollection(APIWrapper):
         :type fields: list
         :param ordered: whether the order is longitude -> latitude
         :type ordered: bool
-        :param unique: whether the index is unique
-        :type unique: bool
         :returns: the details on the new index
         :rtype: dict
         :raises arango.exceptions.IndexCreateError: if the geo-spatial index
@@ -1032,8 +1022,6 @@ class BaseCollection(APIWrapper):
         data = {'type': 'geo', 'fields': fields}
         if ordered is not None:
             data['geoJson'] = ordered
-        if unique is not None:
-            data['unique'] = unique
         return self._add_index(data)
 
     @api_method
@@ -1093,13 +1081,15 @@ class BaseCollection(APIWrapper):
         return self._add_index(data)
 
     @api_method
-    def delete_index(self, index_id):
+    def delete_index(self, index_id, ignore_missing=False):
         """Delete an index from the collection.
 
         :param index_id: the ID of the index to delete
         :type index_id: str
+        :param ignore_missing: ignore missing indexes
+        :type ignore_missing: bool
         :returns: whether the index was deleted successfully
-        :rtype: dict
+        :rtype: bool
         :raises arango.exceptions.IndexDeleteError: if the specified index
             cannot be deleted from the collection
         """
@@ -1109,6 +1099,10 @@ class BaseCollection(APIWrapper):
         )
 
         def handler(res):
+            if res.status_code == 404 and res.error_code == 1212:
+                if ignore_missing:
+                    return False
+                raise IndexDeleteError(res)
             if res.status_code not in HTTP_OK:
                 raise IndexDeleteError(res)
             return not res.body['error']

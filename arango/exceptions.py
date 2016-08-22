@@ -21,7 +21,7 @@ class ArangoError(Exception):
                 error_message = data.error_message
             elif data.status_text is not None:
                 error_message = data.status_text
-            else:
+            else:  # pragma: no cover
                 error_message = "request failed"
 
             # Get the ArangoDB error number if provided
@@ -65,19 +65,19 @@ class ServerConnectionError(ArangoError):
     """Failed to connect to the ArangoDB instance."""
 
 
-class ServerGetEndpointsError(ArangoError):
+class ServerEndpointsError(ArangoError):
     """Failed to retrieve the ArangoDB server endpoints."""
 
 
-class ServerGetVersionError(ArangoError):
+class ServerVersionError(ArangoError):
     """Failed to retrieve the ArangoDB server version."""
 
 
-class ServerGetDetailsError(ArangoError):
+class ServerDetailsError(ArangoError):
     """Failed to retrieve the ArangoDB server details."""
 
 
-class ServerGetTimeError(ArangoError):
+class ServerTimeError(ArangoError):
     """Failed to return the current ArangoDB system time."""
 
 
@@ -101,7 +101,7 @@ class ServerExecuteError(ArangoError):
     """Failed to execute a the given Javascript program on the server."""
 
 
-class ServerGetRequiredVersionError(ArangoError):
+class ServerRequiredDBVersionError(ArangoError):
     """Failed to retrieve the required database version."""
 
 
@@ -113,11 +113,11 @@ class ServerReloadRoutingError(ArangoError):
     """Failed to reload the routing information."""
 
 
-class ServerGetStatisticsError(ArangoError):
+class ServerStatisticsError(ArangoError):
     """Failed to retrieve the server statistics."""
 
 
-class ServerGetRoleError(ArangoError):
+class ServerRoleError(ArangoError):
     """Failed to retrieve the role of the server in a cluster."""
 
 
@@ -126,11 +126,7 @@ class ServerGetRoleError(ArangoError):
 ##############################
 
 
-class WALFlushError(ArangoError):
-    """Failed to flush the write-ahead log."""
-
-
-class WALGetPropertiesError(ArangoError):
+class WALPropertiesError(ArangoError):
     """Failed to retrieve the write-ahead log."""
 
 
@@ -138,12 +134,20 @@ class WALConfigureError(ArangoError):
     """Failed to configure the write-ahead log."""
 
 
+class WALTransactionListError(ArangoError):
+    """Failed to retrieve the list of running transactions."""
+
+
+class WALFlushError(ArangoError):
+    """Failed to flush the write-ahead log."""
+
+
 ###################
 # Task Exceptions #
 ###################
 
 
-class TasksListError(ArangoError):
+class TaskListError(ArangoError):
     """Failed to list the active server tasks."""
 
 
@@ -164,11 +168,11 @@ class TaskDeleteError(ArangoError):
 #######################
 
 
-class DatabasesListError(ArangoError):
+class DatabaseListError(ArangoError):
     """Failed to retrieve the list of databases."""
 
 
-class DatabaseGetPropertiesError(ArangoError):
+class DatabasePropertiesError(ArangoError):
     """Failed to retrieve the database options."""
 
 
@@ -185,7 +189,7 @@ class DatabaseDeleteError(ArangoError):
 ###################
 
 
-class UsersListError(ArangoError):
+class UserListError(ArangoError):
     """Failed to retrieve the users."""
 
 
@@ -222,19 +226,11 @@ class UserRevokeAccessError(ArangoError):
 #########################
 
 
-class CollectionsListError(ArangoError):
+class CollectionListError(ArangoError):
     """Failed to retrieve the list of collections."""
 
 
-class CollectionGetCountError(ArangoError):
-    """Failed to retrieve the count of the documents in the collections."""
-
-
-class CollectionContainsError(ArangoError):
-    """Failed to check whether a collection contains a document."""
-
-
-class CollectionGetPropertiesError(ArangoError):
+class CollectionPropertiesError(ArangoError):
     """Failed to retrieve the collection properties."""
 
 
@@ -242,15 +238,15 @@ class CollectionConfigureError(ArangoError):
     """Failed to configure the collection properties."""
 
 
-class CollectionGetStatisticsError(ArangoError):
+class CollectionStatisticsError(ArangoError):
     """Failed to retrieve the collection statistics."""
 
 
-class CollectionGetRevisionError(ArangoError):
+class CollectionRevisionError(ArangoError):
     """Failed to retrieve the collection revision."""
 
 
-class CollectionGetChecksumError(ArangoError):
+class CollectionChecksumError(ArangoError):
     """Failed to retrieve the collection checksum."""
 
 
@@ -291,6 +287,14 @@ class CollectionBadStatusError(ArangoError):
 #######################
 
 
+class DocumentCountError(ArangoError):
+    """Failed to retrieve the count of the documents in the collections."""
+
+
+class DocumentInError(ArangoError):
+    """Failed to check whether a collection contains a document."""
+
+
 class DocumentGetError(ArangoError):
     """Failed to retrieve the document."""
 
@@ -320,7 +324,7 @@ class DocumentRevisionError(ArangoError):
 ####################
 
 
-class IndexesListError(ArangoError):
+class IndexListError(ArangoError):
     """Failed to retrieve the list of indexes in the collection."""
 
 
@@ -332,9 +336,9 @@ class IndexDeleteError(ArangoError):
     """Failed to delete the index from the collection."""
 
 
-####################
+##################
 # AQL Exceptions #
-####################
+##################
 
 
 class AQLQueryExplainError(ArangoError):
@@ -353,7 +357,7 @@ class AQLCacheClearError(ArangoError):
     """Failed to clear the AQL query cache."""
 
 
-class AQLCacheGetPropertiesError(ArangoError):
+class AQLCachePropertiesError(ArangoError):
     """Failed to retrieve the AQL query cache properties."""
 
 
@@ -361,7 +365,7 @@ class AQLCacheConfigureError(ArangoError):
     """Failed to configure the AQL query cache properties."""
 
 
-class AQLFunctionsListError(ArangoError):
+class AQLFunctionListError(ArangoError):
     """Failed to retrieve the list of AQL user functions."""
 
 
@@ -395,10 +399,6 @@ class TransactionError(ArangoError):
     """Failed to execute a transaction."""
 
 
-class TransactionsListError(ArangoError):
-    """Failed to retrieve the list of running transactions."""
-
-
 ####################
 # Batch Exceptions #
 ####################
@@ -417,27 +417,19 @@ class AsyncExecuteError(ArangoError):
     """Failed to execute the asynchronous request."""
 
 
-class AsyncJobInvalidError(ArangoError):
-    """Failed to retrieve the asynchronous job ID."""
-
-
-class AsyncJobNotDoneError(ArangoError):
-    """The asynchronous job is still pending in the queue."""
-
-
-class AsyncJobNotFoundError(ArangoError):
-    """Failed to find the asynchronous job (already deleted/fetched)"""
+class AsyncJobListError(ArangoError):
+    """Failed to list the IDs of the asynchronous jobs."""
 
 
 class AsyncJobCancelError(ArangoError):
     """Failed to cancel the asynchronous job."""
 
 
-class AsyncJobGetStatusError(ArangoError):
+class AsyncJobStatusError(ArangoError):
     """Failed to retrieve the asynchronous job result from the server."""
 
 
-class AsyncJobGetResultError(ArangoError):
+class AsyncJobResultError(ArangoError):
     """Failed to pop the asynchronous job result from the server."""
 
 
@@ -445,12 +437,21 @@ class AsyncJobClearError(ArangoError):
     """Failed to delete the asynchronous job result from the server."""
 
 
+###########################
+# Cluster Test Exceptions #
+###########################
+
+
+class ClusterTestError(ArangoError):
+    """Failed to execute the cluster round-trip for sharding."""
+
+
 ####################
 # Graph Exceptions #
 ####################
 
 
-class GraphsListError(ArangoError):
+class GraphListError(ArangoError):
     """Failed to retrieve the list of graphs."""
 
 
@@ -466,7 +467,7 @@ class GraphDeleteError(ArangoError):
     """Failed to delete the graph."""
 
 
-class GraphGetPropertiesError(ArangoError):
+class GraphPropertiesError(ArangoError):
     """Failed to retrieve the graph properties."""
 
 
@@ -474,11 +475,11 @@ class GraphTraverseError(ArangoError):
     """Failed to execute the graph traversal."""
 
 
-class OrphanCollectionsListError(ArangoError):
+class OrphanCollectionListError(ArangoError):
     """Failed to retrieve the list of orphaned vertex collections."""
 
 
-class VertexCollectionsListError(ArangoError):
+class VertexCollectionListError(ArangoError):
     """Failed to retrieve the list of vertex collections."""
 
 
@@ -490,7 +491,7 @@ class VertexCollectionDeleteError(ArangoError):
     """Failed to delete the vertex collection."""
 
 
-class EdgeDefinitionsListError(ArangoError):
+class EdgeDefinitionListError(ArangoError):
     """Failed to retrieve the list of edge definitions."""
 
 

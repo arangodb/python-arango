@@ -4,7 +4,9 @@ import pytest
 
 from arango import ArangoClient
 from arango.exceptions import (
-    IndexCreateError
+    IndexListError,
+    IndexCreateError,
+    IndexDeleteError
 )
 
 from .utils import (
@@ -17,6 +19,8 @@ db_name = generate_db_name(arango_client)
 db = arango_client.create_database(db_name)
 col_name = generate_col_name(db)
 col = db.create_collection(col_name)
+bad_col_name = generate_col_name(db)
+bad_col = db.collection(bad_col_name)
 col.add_geo_index(['coordinates'])
 
 
@@ -41,17 +45,24 @@ def test_list_indexes():
     assert isinstance(indexes, list)
     assert expected_index in indexes
 
+    with pytest.raises(IndexListError):
+        bad_col.indexes()
+
 
 def test_add_hash_index():
     fields = ['attr1', 'attr2']
-    result = col.add_hash_index(fields, unique=True)
+    result = col.add_hash_index(
+        fields=fields,
+        unique=True,
+        sparse=True
+    )
 
     expected_index = {
         'selectivity': 1,
-        'sparse': False,
+        'sparse': True,
         'type': 'hash',
         'fields': ['attr1', 'attr2'],
-        'unique': True
+        'unique': True,
     }
     for key, value in expected_index.items():
         assert result[key] == value
@@ -62,10 +73,14 @@ def test_add_hash_index():
 
 def test_add_skiplist_index():
     fields = ['attr1', 'attr2']
-    result = col.add_skiplist_index(fields, unique=True)
+    result = col.add_skiplist_index(
+        fields=fields,
+        unique=True,
+        sparse=True
+    )
 
     expected_index = {
-        'sparse': False,
+        'sparse': True,
         'type': 'skiplist',
         'fields': ['attr1', 'attr2'],
         'unique': True
@@ -79,7 +94,10 @@ def test_add_skiplist_index():
 
 def test_add_geo_index():
     # Test add geo index with one attribute
-    result = col.add_geo_index(fields=['attr1'], ordered=False)
+    result = col.add_geo_index(
+        fields=['attr1'],
+        ordered=False
+    )
 
     expected_index = {
         'sparse': True,
@@ -173,8 +191,21 @@ def test_delete_index():
     new_indexes = set(index['id'] for index in col.indexes())
     assert new_indexes.issuperset(old_indexes)
 
-    for index_id in new_indexes - old_indexes:
+    indexes_to_delete = new_indexes - old_indexes
+    for index_id in indexes_to_delete:
         assert col.delete_index(index_id) is True
 
     new_indexes = set(index['id'] for index in col.indexes())
     assert new_indexes == old_indexes
+
+    # Test delete missing indexes
+    for index_id in indexes_to_delete:
+        assert col.delete_index(index_id, ignore_missing=True) is False
+    for index_id in indexes_to_delete:
+        with pytest.raises(IndexDeleteError):
+            col.delete_index(index_id, ignore_missing=False)
+
+    # Test delete indexes in missing collection
+    for index_id in indexes_to_delete:
+        with pytest.raises(IndexDeleteError):
+            bad_col.delete_index(index_id, ignore_missing=False)
