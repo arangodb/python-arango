@@ -63,7 +63,7 @@ class Graph(APIWrapper):
 
         :returns: the graph properties
         :rtype: dict
-        :raises arango.exceptions.GraphGetPropertiesError: if the properties
+        :raises arango.exceptions.GraphPropertiesError: if the properties
             of the graph cannot be retrieved
         """
         request = Request(
@@ -73,7 +73,7 @@ class Graph(APIWrapper):
 
         def handler(res):
             if res.status_code not in HTTP_OK:
-                raise GraphGetPropertiesError(res)
+                raise GraphPropertiesError(res)
             graph = res.body['graph']
             return {
                 'id': graph['_id'],
@@ -92,7 +92,7 @@ class Graph(APIWrapper):
 
         :returns: the names of the orphan vertex collections
         :rtype: list
-        :raises arango.exceptions.OrphanCollectionsListError: if the list of
+        :raises arango.exceptions.OrphanCollectionListError: if the list of
             orphan vertex collections cannot be retrieved
         """
         request = Request(
@@ -102,7 +102,7 @@ class Graph(APIWrapper):
 
         def handler(res):
             if res.status_code not in HTTP_OK:
-                raise OrphanCollectionsListError(res)
+                raise OrphanCollectionListError(res)
             return res.body['graph']['orphanCollections']
 
         return request, handler
@@ -113,7 +113,7 @@ class Graph(APIWrapper):
 
         :returns: the names of the vertex collections
         :rtype: list
-        :raises arango.exceptions.VertexCollectionsListError: if the list of
+        :raises arango.exceptions.VertexCollectionListError: if the list of
             vertex collections cannot be retrieved
         """
         request = Request(
@@ -123,7 +123,7 @@ class Graph(APIWrapper):
 
         def handler(res):
             if res.status_code not in HTTP_OK:
-                raise VertexCollectionsListError(res)
+                raise VertexCollectionListError(res)
             return res.body['collections']
 
         return request, handler
@@ -188,7 +188,7 @@ class Graph(APIWrapper):
 
         :returns: the edge definitions of the graph
         :rtype: list
-        :raises arango.exceptions.EdgeDefinitionsListError: if the list of
+        :raises arango.exceptions.EdgeDefinitionListError: if the list of
             edge definitions cannot be retrieved
         """
         request = Request(
@@ -198,7 +198,7 @@ class Graph(APIWrapper):
 
         def handler(res):
             if res.status_code not in HTTP_OK:
-                raise EdgeDefinitionsListError(res)
+                raise EdgeDefinitionListError(res)
             return [
                 {
                     'name': edge_definition['collection'],
@@ -379,13 +379,10 @@ class Graph(APIWrapper):
             attributes edge and vertex
         :type expander_func: str
         :returns: the visited edges and vertices
-        :rtype: list
+        :rtype: dict
         :raises arango.exceptions.GraphTraverseError: if the graph traversal
             cannot be executed
         """
-        if expander_func is None and direction is None:
-            direction = 'any'
-
         if strategy is not None:
             if strategy.lower() == 'dfs':
                 strategy = 'depthfirst'

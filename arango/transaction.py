@@ -48,7 +48,8 @@ class Transaction(Connection):
             username=connection.username,
             password=connection.password,
             http_client=connection.http_client,
-            database=connection.database
+            database=connection.database,
+            enable_logging=connection.has_logging
         )
         self._id = uuid4()
         self._actions = ['db = require("internal").db']
@@ -95,23 +96,32 @@ class Transaction(Connection):
             raise TransactionError('unsupported method')
         self._actions.append(request.command)
 
-    def execute(self, command, params=None):
+    def execute(self, command, params=None, sync=None, timeout=None):
         """Execute raw Javascript code in a transaction.
 
         :param command: the raw Javascript code
         :type command: str
         :param params: optional arguments passed into the code
         :type params: dict
+        :param sync: wait for the operation to sync to disk (overrides the
+            value specified during the transaction object instantiation)
+        :type sync: bool
+        :param timeout: timeout on the collection locks (overrides the value
+            value specified during the transaction object instantiation)
+        :type timeout: int
         :return: the result of the transaction
         :rtype: dict
         :raises arango.exceptions.TransactionError: if the transaction cannot
             be executed
         """
         data = {'collections': self._collections, 'action': command}
-        if self._timeout is not None:
-            data['lockTimeout'] = self._timeout
-        if self._sync is not None:
-            data['waitForSync'] = self._sync
+        timeout = self._timeout if timeout is None else timeout
+        sync = self._sync if sync is None else sync
+
+        if timeout is not None:
+            data['lockTimeout'] = timeout
+        if sync is not None:
+            data['waitForSync'] = sync
         if params is not None:
             data['params'] = params
 

@@ -17,7 +17,9 @@ db_name = generate_db_name(arango_client)
 db = arango_client.create_database(db_name)
 col_name = generate_col_name(db)
 col = db.create_collection(col_name)
-col.add_geo_index(['coordinates'])
+geo_index = col.add_geo_index(['coordinates'])
+bad_col_name = generate_col_name(db)
+bad_col = db.collection(bad_col_name)
 
 doc1 = {'_key': '1', 'val': 100, 'text': 'foo', 'coordinates': [1, 1]}
 doc2 = {'_key': '2', 'val': 100, 'text': 'bar', 'coordinates': [2, 2]}
@@ -156,6 +158,10 @@ def test_insert_many():
     results = col.insert_many(test_docs, return_new=False)
     for result, doc in zip(results, test_docs):
         isinstance(result, DocumentInsertError)
+        
+    # Test get with missing collection
+    with pytest.raises(DocumentInsertError):
+        bad_col.insert_many(test_docs)
 
 
 def test_update():
@@ -274,9 +280,8 @@ def test_update():
     assert col['1']['_rev'] == current_rev
 
     # Test update in missing collection
-    bad_col = generate_col_name(db)
     with pytest.raises(DocumentUpdateError):
-        db.collection(bad_col).update(doc)
+        bad_col.update(doc)
 
 
 def test_update_many():
@@ -428,9 +433,8 @@ def test_update_many():
         assert doc['val'] == 700
 
     # Test update_many in missing collection
-    bad_col = generate_col_name(db)
     with pytest.raises(DocumentUpdateError):
-        db.collection(bad_col).update_many(docs)
+        bad_col.update_many(docs)
 
 
 def test_update_match():
@@ -482,9 +486,8 @@ def test_update_match():
     assert 'val' not in col['4']
 
     # Test update matching documents in missing collection
-    bad_col = generate_col_name(db)
     with pytest.raises(DocumentUpdateError):
-        db.collection(bad_col).update_match({'val': 100}, {'foo': 100})
+        bad_col.update_match({'val': 100}, {'foo': 100})
 
 
 def test_replace():
@@ -571,9 +574,8 @@ def test_replace():
     assert col['1']['_rev'] == current_rev
 
     # Test replace in missing collection
-    bad_col = generate_col_name(db)
     with pytest.raises(DocumentReplaceError):
-        db.collection(bad_col).replace(doc)
+        bad_col.replace(doc)
 
 
 def test_replace_many():
@@ -685,9 +687,8 @@ def test_replace_many():
         assert doc['_rev'] == current_revs[doc['_key']]
 
     # Test replace_many in missing collection
-    bad_col = generate_col_name(db)
     with pytest.raises(DocumentReplaceError):
-        db.collection(bad_col).replace_many(docs)
+        bad_col.replace_many(docs)
 
 
 def test_replace_match():
@@ -721,9 +722,8 @@ def test_replace_match():
     assert 'foo' not in col['5']
 
     # Test replace matching documents in missing collection
-    bad_col = generate_col_name(db)
     with pytest.raises(DocumentReplaceError):
-        db.collection(bad_col).replace_match({'val': 100}, {'foo': 100})
+        bad_col.replace_match({'val': 100}, {'foo': 100})
 
 
 def test_delete():
@@ -779,6 +779,12 @@ def test_delete():
     assert bad_doc['_key'] in col
     assert len(col) == 1
 
+    bad_doc.update({'_rev': 'bad_rev'})
+    with pytest.raises(DocumentDeleteError):
+        col.delete(bad_doc, check_rev=True)
+    assert bad_doc['_key'] in col
+    assert len(col) == 1
+
     # Test delete (document) with check_rev
     assert col.delete(doc4, ignore_missing=True) is False
     with pytest.raises(DocumentDeleteError):
@@ -786,13 +792,11 @@ def test_delete():
     assert len(col) == 1
 
     # Test delete with missing collection
-    bad_col = generate_col_name(db)
     with pytest.raises(DocumentDeleteError):
-        db.collection(bad_col).delete(doc5)
+        bad_col.delete(doc5)
 
-    bad_col = generate_col_name(db)
     with pytest.raises(DocumentDeleteError):
-        db.collection(bad_col).delete(doc5['_key'])
+        bad_col.delete(doc5['_key'])
 
 
 def test_delete_many():
@@ -872,13 +876,11 @@ def test_delete_many():
     assert len(col) == 0
 
     # Test delete_many with missing collection
-    bad_col = generate_col_name(db)
     with pytest.raises(DocumentDeleteError):
-        db.collection(bad_col).delete_many(docs)
+        bad_col.delete_many(docs)
 
-    bad_col = generate_col_name(db)
     with pytest.raises(DocumentDeleteError):
-        db.collection(bad_col).delete_many(test_doc_keys)
+        bad_col.delete_many(test_doc_keys)
 
 
 def test_delete_match():
@@ -901,6 +903,23 @@ def test_delete_match():
     # Test delete matching documents with limit of 2
     assert col.delete_match({'val': 100}, limit=2) == 2
     assert [doc['val'] for doc in col].count(100) == 1
+
+    with pytest.raises(DocumentDeleteError):
+        bad_col.delete_match({'val': 100})
+
+
+def test_count():
+    # Set up test documents
+    col.import_bulk(test_docs)
+
+    assert len(col) == len(test_docs)
+    assert col.count() == len(test_docs)
+
+    with pytest.raises(DocumentCountError):
+        len(bad_col)
+
+    with pytest.raises(DocumentCountError):
+        bad_col.count()
 
 
 def test_find():
@@ -937,13 +956,17 @@ def test_find():
             assert doc['_key'] in {'1', '2', '3', '4', '5'}
             assert doc['_key'] in col
 
-    # test find in empty collection
+    # Test find in empty collection
     col.truncate()
     assert list(col.find({})) == []
     assert list(col.find({'val': 100})) == []
     assert list(col.find({'val': 200})) == []
     assert list(col.find({'val': 300})) == []
     assert list(col.find({'val': 400})) == []
+
+    # Test find in missing collection
+    with pytest.raises(DocumentGetError):
+        bad_col.find({'val': 100})
 
 
 def test_has():
@@ -971,6 +994,12 @@ def test_has():
     # Test has with correct revision and match_rev turned off
     bad_rev = col['5']['_rev'] + '000'
     assert col.has('5', rev=bad_rev, match_rev=False) is True
+
+    with pytest.raises(DocumentInError):
+        bad_col.has('1')
+
+    with pytest.raises(DocumentInError):
+        '1' in bad_col
 
 
 def test_get():
@@ -1000,6 +1029,8 @@ def test_get():
     bad_rev = col['5']['_rev'] + '000'
     with pytest.raises(DocumentRevisionError):
         col.get('5', rev=bad_rev, match_rev=True)
+    with pytest.raises(DocumentGetError):
+        col.get('5', rev='bad_rev')
 
     # Test get with correct revision and match_rev turned off
     bad_rev = col['5']['_rev'] + '000'
@@ -1007,6 +1038,16 @@ def test_get():
     assert result['_key'] == '5'
     assert result['_rev'] != bad_rev
     assert result['val'] == 300
+
+    # Test get with missing collection
+    with pytest.raises(DocumentGetError):
+        bad_col.get('1')
+
+    with pytest.raises(DocumentGetError):
+        bad_col['1']
+
+    with pytest.raises(DocumentGetError):
+        iter(bad_col)
 
 
 def test_get_many():
@@ -1043,6 +1084,9 @@ def test_get_many():
     assert col.get_many(['2', '3']) == []
     assert col.get_many(['2', '3', '4']) == []
 
+    with pytest.raises(DocumentGetError):
+        bad_col.get_many(['2', '3', '4'])
+
 
 def test_all():
     # Check preconditions
@@ -1055,14 +1099,34 @@ def test_all():
     result = list(col.all())
     assert ordered(clean_keys(result)) == test_docs
 
-    # # Test all with flush
-    # result = list(col.all(flush=True))
-    # assert order_documents(clean_keys(result)) == test_docs
+    # Test all with flush
+    # result = list(col.all(flush=True, flush_wait=1))
+    # assert ordered(clean_keys(result)) == test_docs
 
     # Test all with count
     result = col.all(count=True)
     assert result.count() == len(test_docs)
     assert ordered(clean_keys(result)) == test_docs
+
+    # Test all with batch size
+    result = col.all(count=True, batch_size=1)
+    assert result.count() == len(test_docs)
+    assert ordered(clean_keys(result)) == test_docs
+
+    # Test all with time-to-live
+    result = col.all(count=True, ttl=1000)
+    assert result.count() == len(test_docs)
+    assert ordered(clean_keys(result)) == test_docs
+
+    # Test all with filters
+    result = col.all(
+        count=True,
+        filter_fields=['text'],
+        filter_type='exclude'
+    )
+    assert result.count() == 5
+    for doc in result:
+        assert 'text' not in doc
 
     # Test all with a limit of 0
     result = col.all(count=True, limit=0)
@@ -1083,6 +1147,10 @@ def test_all():
     for doc in list(clean_keys(list(result))):
         assert doc in test_docs
 
+    # Test all in missing collection
+    with pytest.raises(DocumentGetError):
+        bad_col.all()
+
 
 def test_random():
     # Set up test documents
@@ -1100,9 +1168,7 @@ def test_random():
         assert random_doc is None
 
     # Test random in missing collection
-    bad_col_name = generate_col_name(db)
     with pytest.raises(DocumentGetError):
-        bad_col = db.collection(bad_col_name)
         bad_col.random()
 
 
@@ -1131,9 +1197,7 @@ def test_find_near():
     assert [doc['_key'] for doc in result] == ['5', '4', '3']
 
     # Test random in missing collection
-    bad_col_name = generate_col_name(db)
     with pytest.raises(DocumentGetError):
-        bad_col = db.collection(bad_col_name)
         bad_col.find_near(latitude=1, longitude=1, limit=1)
 
     # Test find_near in an empty collection
@@ -1142,6 +1206,10 @@ def test_find_near():
     assert list(result) == []
     result = col.find_near(latitude=5, longitude=5, limit=4)
     assert list(result) == []
+
+    # Test find near in missing collection
+    with pytest.raises(DocumentGetError):
+        bad_col.find_near(latitude=1, longitude=1, limit=1)
 
 
 def test_find_in_range():
@@ -1179,6 +1247,10 @@ def test_find_in_range():
     result = col.find_in_range('val', 100, 300, inclusive=False)
     assert [doc['_key'] for doc in result] == ['4']
 
+    # Test find_in_range in missing collection
+    with pytest.raises(DocumentGetError):
+        bad_col.find_in_range(field='val', lower=100, upper=200, offset=2)
+
 
 # TODO the WITHIN geo function does not seem to work properly
 def test_find_in_radius():
@@ -1191,6 +1263,10 @@ def test_find_in_radius():
     result = list(col.find_in_radius(3, 3, 10, 'distance'))
     for doc in result:
         assert 'distance' in doc
+
+    # Test find_in_radius in missing collection
+    with pytest.raises(DocumentGetError):
+        bad_col.find_in_radius(3, 3, 10, 'distance')
 
 
 def test_find_in_box():
@@ -1207,6 +1283,7 @@ def test_find_in_box():
         longitude1=0,
         latitude2=6,
         longitude2=3,
+        geo_field=geo_index['id']
     )
     assert clean_keys(result) == [d3, d1]
 
@@ -1217,6 +1294,7 @@ def test_find_in_box():
         latitude2=6,
         longitude2=3,
         limit=0,
+        geo_field=geo_index['id']
     )
     assert clean_keys(result) == [d3, d1]
 
@@ -1259,6 +1337,15 @@ def test_find_in_box():
         skip=2
     )
     assert clean_keys(result) == [d2, d1]
+
+    # Test find_in_box in missing collection
+    with pytest.raises(DocumentGetError):
+        bad_col.find_in_box(
+            latitude1=0,
+            longitude1=0,
+            latitude2=6,
+            longitude2=3,
+        )
 
 
 def test_find_by_text():
@@ -1332,8 +1419,6 @@ def test_import_bulk():
     assert len(col) == 1
 
     # Test import bulk in missing collection
-    bad_col_name = generate_col_name(db)
     with pytest.raises(DocumentInsertError):
-        bad_col = db.collection(bad_col_name)
         bad_col.import_bulk([doc3, doc4], halt_on_error=True)
     assert len(col) == 1

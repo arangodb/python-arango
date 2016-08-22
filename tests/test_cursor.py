@@ -45,6 +45,7 @@ def test_read_cursor_init():
         optimizer_rules=['+all']
     )
     cursor_id = cursor.id
+    assert 'ArangoDB cursor' in repr(cursor)
     assert cursor.has_more() is True
     assert cursor.cached() is False
     assert cursor.statistics()['modified'] == 0
@@ -149,7 +150,7 @@ def test_read_cursor_early_finish():
         ttl=1000,
         optimizer_rules=['+all']
     )
-    assert cursor.close(ignore_missing=True) is False
+    assert cursor.close() is True
     with pytest.raises(CursorCloseError):
         cursor.close(ignore_missing=False)
 
@@ -248,8 +249,49 @@ def test_write_cursor_early_finish():
         ttl=1000,
         optimizer_rules=['+all']
     )
+    assert cursor.close() is True
+    with pytest.raises(CursorCloseError):
+        cursor.close(ignore_missing=False)
     assert cursor.close(ignore_missing=True) is False
+
+    col.truncate()
+    col.import_bulk([doc1, doc2, doc3, doc4])
+
+    cursor = db.aql.execute(
+        'FOR d IN {} RETURN d'.format(col_name),
+        count=False,
+        batch_size=1,
+        ttl=1000,
+        optimizer_rules=['+all']
+    )
+
+
+@pytest.mark.order11
+def test_cursor_context_manager():
+    global cursor, cursor_id
+
+    col.truncate()
+    col.import_bulk([doc1, doc2, doc3])
+
+    with db.aql.execute(
+        'FOR d IN {} RETURN d'.format(col_name),
+        count=False,
+        batch_size=2,
+        ttl=1000,
+        optimizer_rules=['+all']
+    ) as cursor:
+        assert clean_keys(cursor.next()) == doc1
     with pytest.raises(CursorCloseError):
         cursor.close(ignore_missing=False)
 
-    assert clean_keys(cursor.batch()) == [doc1]
+    with db.aql.execute(
+        'FOR d IN {} RETURN d'.format(col_name),
+        count=False,
+        batch_size=2,
+        ttl=1000,
+        optimizer_rules=['+all']
+    ) as cursor:
+        assert clean_keys(cursor.__next__()) == doc1
+    with pytest.raises(CursorCloseError):
+        cursor.close(ignore_missing=False)
+    assert cursor.close(ignore_missing=True) is False

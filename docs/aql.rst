@@ -1,11 +1,13 @@
+.. _aql-page:
+
 AQL
 ----
 
 **ArangoDB AQL Language (AQL)** is used to retrieve and modify data stored in
 ArangoDB. AQL is similar to SQL for relational databases but without the
 support for data-definition operations such as creating or deleting
-:doc:`databases <database>`, :doc:`collections <collection>` and
-:doc:`indexes <index>` etc. For more general information on AQL visit this
+:ref:`databases <database-page>`, :ref:`collections <collection-page>` and
+:ref:`indexes <index-page>` etc. For more general information on AQL visit this
 `page <https://docs.arangodb.com/AQL>`__.
 
 AQL Queries
@@ -80,7 +82,7 @@ information this `page <https://docs.arangodb.com/AQL/Extending>`__.
     # Delete an existing AQL user function
     db.aql.delete_function('functions::temperature::converter')
 
-Refer to the :ref:`AQL` class for more details.
+Refer to :ref:`AQL` class for more details.
 
 
 AQL Query Cache
@@ -112,4 +114,4 @@ information visit this
     # Clear the AQL query cache
     db.aql.cache.clear()
 
-Refer to the :ref:`AQLQueryCache` class for more details.
+Refer to :ref:`AQLQueryCache` class for more details.

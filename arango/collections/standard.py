@@ -64,7 +64,7 @@ class Collection(BaseCollection):
         def handler(res):
             if res.status_code in {304, 412}:
                 raise DocumentRevisionError(res)
-            elif res.status_code == 404:
+            elif res.status_code == 404 and res.error_code == 1202:
                 return None
             elif res.status_code in HTTP_OK:
                 return res.body

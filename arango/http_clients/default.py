@@ -19,11 +19,6 @@ class DefaultHTTPClient(BaseHTTPClient):
         else:
             self._session = requests
 
-    def close_session(self):
-        """Close the HTTP session."""
-        if isinstance(self._session, requests.Session):
-            self._session.close()
-
     def head(self, url, params=None, headers=None, auth=None):
         """Execute an HTTP **HEAD** method.
 

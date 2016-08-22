@@ -1,3 +1,5 @@
+.. _wal-page:
+
 Write-Ahead Log
 ---------------
 
@@ -38,4 +40,4 @@ general information visit this
     # Flush the WAL with garbage collection
     client.wal.flush(garbage_collect=True)
 
-Refer to the :ref:`WriteAheadLog` class for more details.
+Refer to :ref:`WriteAheadLog` class for more details.

@@ -38,7 +38,7 @@ class ArangoClient(object):
                  port=8529,
                  username='root',
                  password='',
-                 verify=True,
+                 verify=False,
                  http_client=None,
                  enable_logging=True):
 
@@ -61,14 +61,24 @@ class ArangoClient(object):
         )
         self._wal = WriteAheadLog(self._conn)
 
-        # Verify the server connection
         if verify:
-            res = self._conn.head('/_api/version')
-            if res.status_code not in HTTP_OK:
-                raise ServerConnectionError(res)
+            self.verify()
 
     def __repr__(self):
         return '<ArangoDB client for "{}">'.format(self._host)
+
+    def verify(self):
+        """Verify the connection to ArangoDB server.
+
+        :returns: ``True`` if the connection is successful
+        :rtype: bool
+        :raises arango.exceptions.ServerConnectionError: if the connection to
+            the ArangoDB server fails
+        """
+        res = self._conn.head('/_api/version')
+        if res.status_code not in HTTP_OK:
+            raise ServerConnectionError(res)
+        return True
 
     @property
     def protocol(self):
@@ -147,7 +157,7 @@ class ArangoClient(object):
 
         :returns: the server version
         :rtype: str
-        :raises arango.exceptions.ServerGetVersionError: if the server version
+        :raises arango.exceptions.ServerVersionError: if the server version
             cannot be retrieved
         """
         res = self._conn.get(
@@ -155,7 +165,7 @@ class ArangoClient(object):
             params={'details': False}
         )
         if res.status_code not in HTTP_OK:
-            raise ServerGetVersionError(res)
+            raise ServerVersionError(res)
         return res.body['version']
 
     def details(self):
@@ -163,7 +173,7 @@ class ArangoClient(object):
 
         :returns: the server details
         :rtype: dict
-        :raises arango.exceptions.ServerGetDetailsError: if the server details
+        :raises arango.exceptions.ServerDetailsError: if the server details
             cannot be retrieved
         """
         res = self._conn.get(
@@ -171,7 +181,7 @@ class ArangoClient(object):
             params={'details': True}
         )
         if res.status_code not in HTTP_OK:
-            raise ServerGetDetailsError(res)
+            raise ServerDetailsError(res)
         return res.body['details']
 
     def required_db_version(self):
@@ -179,12 +189,12 @@ class ArangoClient(object):
 
         :returns: the required version of the target database
         :rtype: str
-        :raises arango.exceptions.ServerGetRequiredVersionError: if the
+        :raises arango.exceptions.ServerRequiredDBVersionError: if the
             required database version cannot be retrieved
         """
         res = self._conn.get('/_admin/database/target-version')
         if res.status_code not in HTTP_OK:
-            raise ServerGetRequiredVersionError(res)
+            raise ServerRequiredDBVersionError(res)
         return res.body['version']
 
     def statistics(self, description=False):
@@ -192,7 +202,7 @@ class ArangoClient(object):
 
         :returns: the statistics information
         :rtype: dict
-        :raises arango.exceptions.ServerGetStatisticsError: if the server
+        :raises arango.exceptions.ServerStatisticsError: if the server
             statistics cannot be retrieved
         """
         res = self._conn.get(
@@ -200,7 +210,7 @@ class ArangoClient(object):
             if description else '/_admin/statistics'
         )
         if res.status_code not in HTTP_OK:
-            raise ServerGetStatisticsError(res)
+            raise ServerStatisticsError(res)
         res.body.pop('code', None)
         res.body.pop('error', None)
         return res.body
@@ -215,12 +225,12 @@ class ArangoClient(object):
             in the cluster) or ``"UNDEFINED"`` (the server role is undefined,
             the only possible value for a single server)
         :rtype: str
-        :raises arango.exceptions.ServerGetRoleError: if the server role cannot
+        :raises arango.exceptions.ServerRoleError: if the server role cannot
             be retrieved
         """
         res = self._conn.get('/_admin/server/role')
         if res.status_code not in HTTP_OK:
-            raise ServerGetRoleError(res)
+            raise ServerRoleError(res)
         return res.body.get('role')
 
     def time(self):
@@ -228,12 +238,12 @@ class ArangoClient(object):
 
         :returns: the server system time
         :rtype: datetime.datetime
-        :raises arango.exceptions.ServerGetTimeError: if the server time
+        :raises arango.exceptions.ServerTimeError: if the server time
             cannot be retrieved
         """
         res = self._conn.get('/_admin/time')
         if res.status_code not in HTTP_OK:
-            raise ServerGetTimeError(res)
+            raise ServerTimeError(res)
         return datetime.fromtimestamp(res.body['time'])
 
     def endpoints(self):
@@ -246,12 +256,12 @@ class ArangoClient(object):
 
         :returns: the list of endpoints
         :rtype: list
-        :raises arango.exceptions.ServerGetEndpointsError: if the endpoints
+        :raises arango.exceptions.ServerEndpointsError: if the endpoints
             cannot be retrieved from the server
         """
         res = self._conn.get('/_api/endpoint')
         if res.status_code not in HTTP_OK:
-            raise ServerGetEndpointsError(res)
+            raise ServerEndpointsError(res)
         return res.body
 
     def echo(self):
@@ -285,7 +295,7 @@ class ArangoClient(object):
             raise ServerSleepError(res)
         return res.body['duration']
 
-    def shutdown(self):
+    def shutdown(self):  # pragma: no cover
         """Initiate the server shutdown sequence.
 
         :returns: whether the server was shutdown successfully
@@ -301,7 +311,7 @@ class ArangoClient(object):
             raise ServerShutdownError(res)
         return True
 
-    def run_tests(self, tests):
+    def run_tests(self, tests):  # pragma: no cover
         """Run the available unittests on the server.
 
         :param tests: list of files containing the test suites
@@ -384,7 +394,7 @@ class ArangoClient(object):
             params['sort'] = sort
         res = self._conn.get('/_admin/log')
         if res.status_code not in HTTP_OK:
-            ServerReadLogError(res)
+            raise ServerReadLogError(res)
         if 'totalAmount' in res.body:
             res.body['total_amount'] = res.body.pop('totalAmount')
         return res.body
@@ -413,7 +423,7 @@ class ArangoClient(object):
         :type user_only: bool
         :returns: the database names
         :rtype: list
-        :raises arango.exceptions.DatabasesListError: if the database names
+        :raises arango.exceptions.DatabaseListError: if the database names
             cannot be retrieved from the server
         """
         # Get the current user's databases
@@ -422,7 +432,7 @@ class ArangoClient(object):
             if user_only else '/_api/database'
         )
         if res.status_code not in HTTP_OK:
-            raise DatabasesListError(res)
+            raise DatabaseListError(res)
         return res.body['result']
 
     def db(self, name, username=None, password=None):
@@ -523,12 +533,12 @@ class ArangoClient(object):
 
         :returns: the mapping of usernames to user details
         :rtype: list
-        :raises arango.exceptions.UsersListError: if the details on the users
+        :raises arango.exceptions.UserListError: if the details on the users
             cannot be retrieved from the server
         """
         res = self._conn.get('/_api/user')
         if res.status_code not in HTTP_OK:
-            raise UsersListError(res)
+            raise UserListError(res)
 
         return [{
             'username': record['user'],
@@ -763,3 +773,53 @@ class ArangoClient(object):
         if res.status_code not in HTTP_OK:
             raise UserRevokeAccessError(res)
         return not res.body.get('error')
+
+    ########################
+    # Async Job Management #
+    ########################
+
+    def async_jobs(self, status, count=None):
+        """Retrieve the IDs of the asynchronous jobs with the given status.
+
+        :param status: the job status which can be ``"pending"`` or ``"done"``
+        :type status: str
+        :param count: the maximum number of job IDs to return per call
+        :type count: int
+        :returns: the IDs the of the asynchronous jobs
+        :rtype:
+        :raises arango.exceptions.AsyncJobListError: if the list of async job
+            IDs cannot be retrieved from the server
+        """
+        res = self._conn.get(
+            '/_api/job/{}'.format(status),
+            params={} if count is None else {'count': count}
+        )
+        if res.status_code not in HTTP_OK:
+            raise AsyncJobListError(res)
+        return res.body
+
+    def clear_async_jobs(self, threshold=None):
+        """Delete asynchronous job results from the server.
+
+        :param threshold: if specified, only the job results created before
+            the threshold (a unix timestamp) are deleted, otherwise all job
+            results are deleted
+        :type threshold: int
+        :returns: whether the deletion of results was successful
+        :rtype: bool
+        :raises arango.exceptions.AsyncJobClearError: if the async job results
+            cannot be deleted from the server
+
+        .. note::
+            Async jobs that are currently queued or running are not stopped.
+        """
+        if threshold is None:
+            res = self._conn.delete('/_api/job/all')
+        else:
+            res = self._conn.delete(
+                '/_api/job/expired',
+                params={'stamp': threshold}
+            )
+        if res.status_code not in HTTP_OK:
+            raise AsyncJobClearError(res)
+        return True

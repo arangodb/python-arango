@@ -74,7 +74,7 @@ class VertexCollection(BaseCollection):
         def handler(res):
             if res.status_code == 412:
                 raise DocumentRevisionError(res)
-            elif res.status_code == 404:
+            elif res.status_code == 404 and res.error_code == 1202:
                 return None
             elif res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
@@ -221,7 +221,7 @@ class VertexCollection(BaseCollection):
         return request, handler
 
     @api_method
-    def delete(self, document, ignore_missing=True, sync=None):
+    def delete(self, document, ignore_missing=False, sync=None):
         """Delete a document by its key from the vertex collection.
 
         The ``"_key"`` field must be present in **document**. If the ``"_rev"``
@@ -262,7 +262,7 @@ class VertexCollection(BaseCollection):
         def handler(res):
             if res.status_code == 412:
                 raise DocumentRevisionError(res)
-            elif res.status_code == 404:
+            elif res.status_code == 404 and res.error_code == 1202:
                 if ignore_missing:
                     return False
                 raise DocumentDeleteError(res)

@@ -1,3 +1,5 @@
+.. _admin-page:
+
 Server Administration
 ---------------------
 
@@ -59,4 +61,4 @@ For more information on the HTTP REST API visit this
     client.reload_routing()
 
 
-Refer to the :ref:`ArangoClient` class for more details.
+Refer to :ref:`ArangoClient` class for more details.

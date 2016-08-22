@@ -1,3 +1,5 @@
+.. _batch-page:
+
 Batch Execution
 ---------------
 
@@ -47,5 +49,5 @@ For more information on the HTTP REST API for batch requests visit this
     batch.commit()  # The commit must be called manually
 
 
-Refer to the :ref:`BatchExecution` and :ref:`BatchJob` classes for more
+Refer to :ref:`BatchExecution` and :ref:`BatchJob` classes for more
 details.

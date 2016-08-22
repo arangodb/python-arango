@@ -3,9 +3,9 @@ from __future__ import absolute_import, unicode_literals
 from arango.utils import HTTP_OK
 from arango.exceptions import (
     WALFlushError,
-    WALGetPropertiesError,
+    WALPropertiesError,
     WALConfigureError,
-    TransactionsListError
+    WALTransactionListError
 )
 
 
@@ -27,12 +27,12 @@ class WriteAheadLog(object):
 
         :returns: the configuration of the write-ahead log
         :rtype: dict
-        :raises arango.exceptions.WALGetPropertiesError: if the WAL properties
+        :raises arango.exceptions.WALPropertiesError: if the WAL properties
             cannot be retrieved from the server
         """
         res = self._conn.get('/_admin/wal/properties')
         if res.status_code not in HTTP_OK:
-            raise WALGetPropertiesError(res)
+            raise WALPropertiesError(res)
         return {
             'oversized_ops': res.body.get('allowOversizeEntries'),
             'log_size': res.body.get('logfileSize'),
@@ -61,7 +61,7 @@ class WriteAheadLog(object):
         :type throttle_limit: int
         :returns: the new configuration of the write-ahead log
         :rtype: dict
-        :raises arango.exceptions.WALGetPropertiesError: if the WAL properties
+        :raises arango.exceptions.WALPropertiesError: if the WAL properties
             cannot be modified
         """
         data = {}
@@ -95,24 +95,24 @@ class WriteAheadLog(object):
 
         Fields in the returned dictionary:
 
-        - **last_collected**: the ID of the last collected log file (at the \
+        - *last_collected*: the ID of the last collected log file (at the \
         start of each running transaction) or ``None`` if no transactions are \
         running
 
-        - **last_sealed**: the ID of the last sealed log file (at the start \
+        - *last_sealed*: the ID of the last sealed log file (at the start \
         of each running transaction) or ``None`` if no transactions are \
         running
 
-        - **count**: the number of current running transactions
+        - *count*: the number of current running transactions
 
         :returns: the information about the currently running transactions
         :rtype: dict
-        :raises arango.exceptions.TransactionsListError: if the details on the
-            transactions cannot be retrieved
+        :raises arango.exceptions.WALTransactionListError: if the details on
+            the transactions cannot be retrieved
         """
         res = self._conn.get('/_admin/wal/transactions')
         if res.status_code not in HTTP_OK:
-            raise TransactionsListError(res)
+            raise WALTransactionListError(res)
         return {
             'last_collected': res.body['minLastCollected'],
             'last_sealed': res.body['minLastSealed'],

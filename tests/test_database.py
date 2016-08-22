@@ -16,6 +16,8 @@ from .utils import (
 arango_client = ArangoClient()
 db_name = generate_db_name(arango_client)
 db = arango_client.create_database(db_name)
+bad_db_name = generate_db_name(arango_client)
+bad_db = arango_client.db(bad_db_name)
 col_name_1 = generate_col_name(db)
 col_name_2 = ''
 db.create_collection(col_name_1)
@@ -37,6 +39,10 @@ def test_properties():
     assert 'path' in properties
     assert properties['system'] is False
     assert properties['name'] == db_name
+    assert 'ArangoDB connection' in repr(db.connection)
+
+    with pytest.raises(DatabasePropertiesError):
+        bad_db.properties()
 
 
 @pytest.mark.order2
@@ -45,6 +51,9 @@ def test_list_collections():
         col['name'] == col_name_1 or col['name'].startswith('_')
         for col in db.collections()
     )
+
+    with pytest.raises(CollectionListError):
+        bad_db.collections()
 
 
 @pytest.mark.order3
@@ -77,7 +86,8 @@ def test_create_collection():
         key_offset=100,
         edge=True,
         shard_count=2,
-        shard_fields=["test_attr"]
+        shard_fields=["test_attr"],
+        index_bucket_count=10,
     )
     properties = col.properties()
     assert 'id' in properties
@@ -120,6 +130,9 @@ def test_list_graphs():
     assert graph['edge_definitions'] == []
     assert graph['orphan_collections'] == []
     assert 'revision' in graph
+
+    with pytest.raises(GraphListError):
+        bad_db.graphs()
 
 
 @pytest.mark.order7

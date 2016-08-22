@@ -1,3 +1,5 @@
+.. _transaction-page:
+
 Transactions
 ------------
 
@@ -65,4 +67,4 @@ transactions visit this `page <https://docs.arangodb.com/HTTP/Transaction>`__.
     assert 'Greg' in db.collection('students')
     assert result is True
 
-Refer to the :ref:`Transaction` class for more details.
+Refer to :ref:`Transaction` class for more details.
