@@ -3,19 +3,17 @@
 Cursors
 -------
 
-Many operations defined in python-arango (including :ref:`aql-page` queries)
-return :ref:`Cursor` objects to batch the network communication between the
-server and the client. Each request from the cursor fetches the next set of
-documents, where the total number of documents in the result set may or may not
-be known in advance depending on the query. For more information on the HTTP
-REST API for using cursors visit this
-`page <https://docs.arangodb.com/HTTP/AqlQueryCursor/AccessingCursors.html>`__.
+Several operations provided by python-arango (e.g. :ref:`aql-page` queries)
+return query :ref:`Cursor` objects to batch the network communication between
+the server and the client. Each request from the cursor fetches the next set
+of documents. Depending on the query, the total number of documents in a result
+set may or may not be known in advance.
 
 .. note::
-    In order to free the server resources, python-arango deletes a cursor as
-    soon as its document result set is depleted.
+    In order to free the server resources as much as possible, python-arango
+    deletes cursors as soon as their result sets are depleted.
 
-**Example:**
+Here is an example showing how a query cursor can be used:
 
 .. code-block:: python
 

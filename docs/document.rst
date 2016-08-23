@@ -3,19 +3,19 @@
 Documents
 ---------
 
-**Documents** in Python-Arango are Python dictionaries. The documents can be
-nested to an arbitrary depth and contain lists. Each document must have the
-``"_key"`` field whose value identifies the document uniquely within a given
-collection. There is also the ``"_id"`` field whose value identifies the
-document uniquely across *all* collections within a given database, but this
-field completely optional in python-arango documents.
+**Documents** in python-arango are Python dictionaries. They can be nested to
+an arbitrary depth and contain lists. Each document must have the ``"_key"``
+field, whose value identifies the document uniquely within a given collection.
+There is also the ``"_id"`` field, whose value identifies the document uniquely
+across *all* collections within a given database.
 
 ArangoDB supports MVCC (Multiple Version Concurrency Control) and is capable
-of storing each document in multiple revisions. The document revision can be
-distinguished by value of the document's ``"_rev"`` field which is also not
-required in python-arango.
+of storing each document in multiple revisions. The revision of a document can
+be distinguished by the value of the ``"_rev"`` field. For more information on
+document basics and terminologies visit this
+`page <https://docs.arangodb.com/HTTP/Document/AddressAndEtag.html>`__.
 
-**Here is an example of a valid document**:
+Here is an example of a valid document:
 
 .. code-block:: python
 
@@ -26,22 +26,22 @@ required in python-arango.
         'first_name': 'John',
         'last_name': 'Doe',
         'address': {
-            'city': 'Gotham'
+            'city': 'Gotham',
             'zip': 'M1NS93',
             'street' : '300 Beverly St.',
-        }
+        },
         'courses': ['CSC101', 'STA101']
     }
 
 .. _edge-documents:
 
 **Edge documents** or **edges** are similar to documents but with additional
-required fields ``"_from"`` and ``"_to"``. The value of these fields should be
-the value of a from and to vertices; ``"_id"`` fields. Edge documents are
-contained in :ref:`edge collections <edge-collections>`, which are components
-of :ref:`graphs <graph-page>`.
+required fields ``"_from"`` and ``"_to"``. The values of these fields are the
+values of the ``"_id"`` field in the "from" and "to" vertex documents (see
+:ref:`graphs <graph-page>` for more details). Edge documents are contained in
+:ref:`edge collections <edge-collections>`.
 
-**Here is an example of a valid edge document**:
+Here is an example of a valid edge document:
 
 .. code-block:: python
 
@@ -49,18 +49,14 @@ of :ref:`graphs <graph-page>`.
         '_id': 'knows/001',
         '_key': '001',
         '_rev': '23891346',
-        '_from': 'students/john'
+        '_from': 'students/john',
         '_to': 'students/jane',
         'friends': True,
         'closeness': 10
     }
 
-For more information on document basics and terminologies visit this
-`page <https://docs.arangodb.com/HTTP/Document/AddressAndEtag.html>`__ and
-for more information on the REST HTTP API for document management visit this
-`page <https://docs.arangodb.com/HTTP/Document/WorkingWithDocuments.html>`__.
 
-**Example:**
+Here is an example showing how documents can be managed:
 
 .. code-block:: python
 
@@ -118,4 +114,5 @@ for more information on the REST HTTP API for document management visit this
         student['happy'] = True
         students.update(student)
 
-Refer to :ref:`Collection` class for more details.
+Refer to :ref:`Collection` class for more details on the operations shown
+above.

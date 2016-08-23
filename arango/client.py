@@ -267,7 +267,7 @@ class ArangoClient(object):
     def echo(self):
         """Return information on the last request (headers, payload etc.)
 
-        :returns: the information on the last request
+        :returns: the details of the last request
         :rtype: dict
         :raises arango.exceptions.ServerEchoError: if the last request cannot
             be retrieved from the server
@@ -423,8 +423,7 @@ class ArangoClient(object):
         :type user_only: bool
         :returns: the database names
         :rtype: list
-        :raises arango.exceptions.DatabaseListError: if the database names
-            cannot be retrieved from the server
+        :raises arango.exceptions.DatabaseListError: if the retrieval fails
         """
         # Get the current user's databases
         res = self._conn.get(
@@ -442,11 +441,11 @@ class ArangoClient(object):
 
         :param name: the name of the database
         :type name: str
-        :param username: the username for the database connection (if set,
-            overrides the username specified during the client initialization)
+        :param username: the username for authentication (if set, overrides
+            the username specified during the client initialization)
         :type username: str
-        :param password: the password for the database connection (if set,
-            overrides the password specified during the client initialization
+        :param password: the password for authentication (if set, overrides
+            the password specified during the client initialization
         :type password: str
         :returns: the database object
         :rtype: arango.database.Database
@@ -458,11 +457,11 @@ class ArangoClient(object):
 
         :param name: the name of the database
         :type name: str
-        :param username: the username for the database connection (if set,
-            overrides the username specified during the client initialization)
+        :param username: the username for authentication (if set, overrides
+            the username specified during the client initialization)
         :type username: str
-        :param password: the password for the database connection (if set,
-            overrides the password specified during the client initialization
+        :param password: the password for authentication (if set, overrides
+            the password specified during the client initialization
         :type password: str
         :returns: the database object
         :rtype: arango.database.Database
@@ -478,33 +477,55 @@ class ArangoClient(object):
             enable_logging=self._logging
         ))
 
-    def create_database(self, name, users=None):
+    def create_database(self, name, users=None, username=None, password=None):
         """Create a new database.
 
         :param name: the name of the new database
         :type name: str
-        :param users: the list of database users, where each user must be a
-            sub-dictionary with fields ``"username"``, ``"password"`` and
-            ``"active"`` (if set to ``False`` the user will not be able to
-            log into the database)
-        :type users: list
+        :param users: the list of users with access to the new database, where
+            each user is a dictionary with keys ``"username"``, ``"password"``,
+            ``"active"`` and ``"extra"``.
+        :type users: [dict]
+        :param username: the username for authentication (if set, overrides
+            the username specified during the client initialization)
+        :type username: str
+        :param password: the password for authentication (if set, overrides
+            the password specified during the client initialization
+        :type password: str
         :returns: the database object
         :rtype: arango.database.Database
-        :raises arango.exceptions.DatabaseCreateError: if the database cannot
-            be created on the server
+        :raises arango.exceptions.DatabaseCreateError: if the create fails
 
         .. note::
-            If **users** is not set, only the ``root`` user will have access
-            to the new database by default.
+            Here is an example entry in **users**:
+
+            .. code-block:: python
+
+                {
+                    'username': 'john',
+                    'password': 'password',
+                    'active': True,
+                    'extra': {'Department': 'IT'}
+                }
+
+            If **users** is not set, only the root and the current user are
+            granted access to the new database by default.
         """
         res = self._conn.post(
             '/_api/database',
-            data={'name': name, 'users': users}
-            if users else {'name': name}
+            data={
+                'name': name,
+                'users': [{
+                    'username': user['username'],
+                    'passwd': user['password'],
+                    'active': user.get('active', True),
+                    'extra': user.get('extra', {})
+                } for user in users]
+            } if users else {'name': name}
         )
         if res.status_code not in HTTP_OK:
             raise DatabaseCreateError(res)
-        return self.db(name)
+        return self.db(name, username, password)
 
     def delete_database(self, name, ignore_missing=False):
         """Delete the database of the specified name.
@@ -515,8 +536,7 @@ class ArangoClient(object):
         :type ignore_missing: bool
         :returns: whether the database was deleted successfully
         :rtype: bool
-        :raises arango.exceptions.DatabaseDeleteError: if the database cannot
-            be deleted from the server
+        :raises arango.exceptions.DatabaseDeleteError: if the delete fails
         """
         res = self._conn.delete('/_api/database/{}'.format(name))
         if res.status_code not in HTTP_OK:
@@ -529,33 +549,37 @@ class ArangoClient(object):
     ###################
 
     def users(self):
-        """Return the details on all users.
+        """Return the details of all users.
 
-        :returns: the mapping of usernames to user details
-        :rtype: list
-        :raises arango.exceptions.UserListError: if the details on the users
-            cannot be retrieved from the server
+        :returns: the details of all users
+        :rtype: [dict]
+        :raises arango.exceptions.UserListError: if the retrieval fails
+
+        .. note::
+            Root privileges (i.e. access to the ``_system`` database) are
+            required to use this method
         """
         res = self._conn.get('/_api/user')
         if res.status_code not in HTTP_OK:
             raise UserListError(res)
-
         return [{
             'username': record['user'],
             'active': record['active'],
             'extra': record['extra'],
-            'change_password': record['changePassword']
-        } for record in map(dict, res.body['result'])]
+        } for record in res.body['result']]
 
     def user(self, username):
-        """Return the details on a user
+        """Return the details of a user.
 
-        :param username: the details on the user
+        :param username: the details of the user
         :type username: str
         :returns: the user details
         :rtype: dict
-        :raises arango.exceptions.UserGetError: if the details on user cannot
-            be retrieved from the server
+        :raises arango.exceptions.UserGetError: if the retrieval fails
+
+        .. note::
+            Root privileges (i.e. access to the ``_system`` database) are
+            required to use this method
         """
         res = self._conn.get('/_api/user/{}'.format(username))
         if res.status_code not in HTTP_OK:
@@ -563,44 +587,33 @@ class ArangoClient(object):
         return {
             'username': res.body['user'],
             'active': res.body['active'],
-            'extra': res.body['extra'],
-            'change_password': res.body['changePassword']
+            'extra': res.body['extra']
         }
 
-    def create_user(self,
-                    username,
-                    password,
-                    active=None,
-                    extra=None,
-                    change_password=None):
+    def create_user(self, username, password, active=None, extra=None):
         """Create a new user.
 
         :param username: the name of the user
         :type username: str
-        :param password: the user password
+        :param password: the user's password
         :type password: str
         :param active: whether the user is active
         :type active: bool
-        :param extra: any extra data about the user
+        :param extra: any extra data on the user
         :type extra: dict
-        :param change_password: if ``True``, the specified user will be forced
-            to change his/her password and the only operation allowed by the
-            user will be :func:`~arango.client.ArangoClient.replace_user` or
-            :func:`~arango.client.ArangoClient.update_user` (all other calls
-            will result in an HTTP 403)
-        :type change_password: bool
-        :returns: the information about the new user
+        :returns: the details of the new user
         :rtype: dict
-        :raises arango.exceptions.UserCreateError: if the new user cannot be
-            created on the server
+        :raises arango.exceptions.UserCreateError: if the user create fails
+
+        .. note::
+            Root privileges (i.e. access to the ``_system`` database) are
+            required to use this method
         """
         data = {'user': username, 'passwd': password}
         if active is not None:
             data['active'] = active
         if extra is not None:
             data['extra'] = extra
-        if change_password is not None:
-            data['changePassword'] = change_password
 
         res = self._conn.post('/_api/user', data=data)
         if res.status_code not in HTTP_OK:
@@ -609,48 +622,38 @@ class ArangoClient(object):
             'username': res.body['user'],
             'active': res.body['active'],
             'extra': res.body['extra'],
-            'change_password': res.body['changePassword'],
         }
 
-    def update_user(self,
-                    username,
-                    password=None,
-                    active=None,
-                    extra=None,
-                    change_password=None):
+    def update_user(self, username, password=None, active=None, extra=None):
         """Update an existing user.
 
         :param username: the name of the existing user
         :type username: str
-        :param password: the user password
+        :param password: the user's new password
         :type password: str
         :param active: whether the user is active
         :type active: bool
-        :param extra: any extra data about the user
+        :param extra: any extra data on the user
         :type extra: dict
-        :param change_password: if ``True``, the specified user will be forced
-            to change his/her password and the only operation allowed by the
-            user will be :func:`~arango.client.ArangoClient.replace_user` or
-            :func:`~arango.client.ArangoClient.update_user` (all other calls
-            will result in an HTTP 403)
-        :type change_password: bool
-        :returns: the information about the updated user
+        :returns: the details of the updated user
         :rtype: dict
-        :raises arango.exceptions.UserUpdateError: if the specified user
-            cannot be updated on the server
+        :raises arango.exceptions.UserUpdateError: if the user update fails
+
+        .. note::
+            Root privileges (i.e. access to the ``_system`` database) are
+            required to use this method
         """
         data = {}
         if password is not None:
-            data['password'] = password
+            data['passwd'] = password
         if active is not None:
             data['active'] = active
         if extra is not None:
             data['extra'] = extra
-        if change_password is not None:
-            data['changePassword'] = change_password
 
         res = self._conn.patch(
-            '/_api/user/{user}'.format(user=username), data=data
+            '/_api/user/{user}'.format(user=username),
+            data=data
         )
         if res.status_code not in HTTP_OK:
             raise UserUpdateError(res)
@@ -658,50 +661,36 @@ class ArangoClient(object):
             'username': res.body['user'],
             'active': res.body['active'],
             'extra': res.body['extra'],
-            'change_password': res.body['changePassword'],
         }
 
-    def replace_user(self,
-                     username,
-                     password,
-                     active=None,
-                     extra=None,
-                     change_password=None):
+    def replace_user(self, username, password, active=None, extra=None):
         """Replace an existing user.
-
-        if ``change_password`` is set to true, the only operation allowed by
-        the user will be ``self.replace_user`` or ``self.update_user``. All
-        other operations executed by the user will result in an HTTP 403.
 
         :param username: the name of the existing user
         :type username: str
-        :param password: the user password
+        :param password: the user's new password
         :type password: str
         :param active: whether the user is active
         :type active: bool
-        :param extra: any extra data about the user
+        :param extra: any extra data on the user
         :type extra: dict
-        :param change_password: if ``True``, the specified user will be forced
-            to change his/her password and the only operation allowed by the
-            user will be :func:`~arango.client.ArangoClient.replace_user` or
-            :func:`~arango.client.ArangoClient.update_user` (all other calls
-            will result in an HTTP 403)
-        :type change_password: bool
-        :returns: the information about the replaced user
+        :returns: the details of the replaced user
         :rtype: dict
-        :raises arango.exceptions.UserReplaceError: if the specified user
-            cannot be replaced on the server
+        :raises arango.exceptions.UserReplaceError: if the user replace fails
+
+        .. note::
+            Root privileges (i.e. access to the ``_system`` database) are
+            required to use this method
         """
-        data = {'user': username, 'password': password}
+        data = {'user': username, 'passwd': password}
         if active is not None:
             data['active'] = active
         if extra is not None:
             data['extra'] = extra
-        if change_password is not None:
-            data['changePassword'] = change_password
 
         res = self._conn.put(
-            '/_api/user/{user}'.format(user=username), data=data
+            '/_api/user/{user}'.format(user=username), 
+            data=data
         )
         if res.status_code not in HTTP_OK:
             raise UserReplaceError(res)
@@ -709,27 +698,51 @@ class ArangoClient(object):
             'username': res.body['user'],
             'active': res.body['active'],
             'extra': res.body['extra'],
-            'change_password': res.body['changePassword'],
         }
 
     def delete_user(self, username, ignore_missing=False):
         """Delete an existing user.
 
-        :param username: the name of the user
+        :param username: the name of the existing user
         :type username: str
         :param ignore_missing: ignore missing users
         :type ignore_missing: bool
-        :raises arango.exceptions.UserDeleteError: if the specified user
-            cannot be deleted from the server
+        :returns: ``True`` if the operation was successful, ``False`` if the
+            user was missing but **ignore_missing** was set to ``True``
+        :rtype: bool
+        :raises arango.exceptions.UserDeleteError: if the user delete fails
+
+        .. note::
+            Root privileges (i.e. access to the ``_system`` database) are
+            required to use this method
         """
         res = self._conn.delete('/_api/user/{user}'.format(user=username))
-        if res.status_code not in HTTP_OK:
-            if not (res.status_code == 404 and ignore_missing):
-                raise UserDeleteError(res)
-        return not res.body['error']
+        if res.status_code in HTTP_OK:
+            return True
+        elif res.status_code == 404 and ignore_missing:
+            return False
+        raise UserDeleteError(res)
+
+    def user_access(self, username):
+        """Return the database access details of a user.
+
+        :param username: the name of the user
+        :type username: str
+        :returns: the names of the databases the user can access
+        :rtype: [str]
+        :raises: arango.exceptions.UserAccessError: if the retrieval fails
+
+        .. note::
+            Root privileges (i.e. access to the ``_system`` database) are
+            required to use this method
+        """
+        res = self._conn.get('/_api/user/{}/database'.format(username))
+        if res.status_code in HTTP_OK:
+            return list(res.body['result'])
+        raise UserAccessError(res)
 
     def grant_user_access(self, username, database):
-        """Grant user access to the given database.
+        """Grant user access to a database.
 
         :param username: the name of the user
         :type username: str
@@ -737,22 +750,22 @@ class ArangoClient(object):
         :type database: str
         :returns: whether the operation was successful
         :rtype: bool
-        :raises arango.exceptions.UserGrantAccessError: if the access cannot
-            be granted to the specified user
+        :raises arango.exceptions.UserGrantAccessError: if the operation fails
 
         .. note::
-            Admin privileges are required to use this method
+            Root privileges (i.e. access to the ``_system`` database) are
+            required to use this method
         """
         res = self._conn.put(
             '/_api/user/{}/database/{}'.format(username, database),
             data={'grant': 'rw'}
         )
-        if res.status_code not in HTTP_OK:
-            raise UserGrantAccessError(res)
-        return not res.body.get('error')
+        if res.status_code in HTTP_OK:
+            return True
+        raise UserGrantAccessError(res)
 
     def revoke_user_access(self, username, database):
-        """Revoke user access to the given database.
+        """Revoke user access to a database.
 
         :param username: the name of the user
         :type username: str
@@ -760,35 +773,34 @@ class ArangoClient(object):
         :type database: str
         :returns: whether the operation was successful
         :rtype: bool
-        :raises arango.exceptions.UserRevokeAccessError: if the access cannot
-            be revoked from the specified user
+        :raises arango.exceptions.UserRevokeAccessError: if the operation fails
 
         .. note::
-            Admin privileges are required to use this method
+            Root privileges (i.e. access to the ``_system`` database) are
+            required to use this method
         """
         res = self._conn.put(
             '/_api/user/{}/database/{}'.format(username, database),
             data={'grant': 'none'}
         )
-        if res.status_code not in HTTP_OK:
-            raise UserRevokeAccessError(res)
-        return not res.body.get('error')
+        if res.status_code in HTTP_OK:
+            return True
+        raise UserRevokeAccessError(res)
 
     ########################
     # Async Job Management #
     ########################
 
     def async_jobs(self, status, count=None):
-        """Retrieve the IDs of the asynchronous jobs with the given status.
+        """Return the IDs of asynchronous jobs with the specified status.
 
-        :param status: the job status which can be ``"pending"`` or ``"done"``
+        :param status: the job status (``"pending"`` or ``"done"``)
         :type status: str
-        :param count: the maximum number of job IDs to return per call
+        :param count: the maximum number of job IDs to return
         :type count: int
-        :returns: the IDs the of the asynchronous jobs
-        :rtype:
-        :raises arango.exceptions.AsyncJobListError: if the list of async job
-            IDs cannot be retrieved from the server
+        :returns: the list of job IDs
+        :rtype: [str]
+        :raises arango.exceptions.AsyncJobListError: if the retrieval fails
         """
         res = self._conn.get(
             '/_api/job/{}'.format(status),
@@ -801,17 +813,16 @@ class ArangoClient(object):
     def clear_async_jobs(self, threshold=None):
         """Delete asynchronous job results from the server.
 
-        :param threshold: if specified, only the job results created before
-            the threshold (a unix timestamp) are deleted, otherwise all job
+        :param threshold: if specified, only the job results created prior to
+            the threshold (a unix timestamp) are deleted, otherwise *all* job
             results are deleted
         :type threshold: int
         :returns: whether the deletion of results was successful
         :rtype: bool
-        :raises arango.exceptions.AsyncJobClearError: if the async job results
-            cannot be deleted from the server
+        :raises arango.exceptions.AsyncJobClearError: if the operation fails
 
         .. note::
-            Async jobs that are currently queued or running are not stopped.
+            Async jobs currently queued or running are not stopped.
         """
         if threshold is None:
             res = self._conn.delete('/_api/job/all')
@@ -820,6 +831,6 @@ class ArangoClient(object):
                 '/_api/job/expired',
                 params={'stamp': threshold}
             )
-        if res.status_code not in HTTP_OK:
-            raise AsyncJobClearError(res)
-        return True
+        if res.status_code in HTTP_OK:
+            return True
+        raise AsyncJobClearError(res)

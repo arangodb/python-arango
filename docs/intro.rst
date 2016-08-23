@@ -6,7 +6,7 @@
 .. image:: /static/logo.png
 
 Welcome to the documentation for **python-arango**, a Python driver for
-`ArangoDB's REST API <https://www.arangodb.com/>`__.
+`ArangoDB <https://www.arangodb.com/>`__.
 
 
 Features
@@ -56,8 +56,8 @@ Contents
     client
     database
     collection
-    index
     document
+    index
     graph
     aql
     cursor

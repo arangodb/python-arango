@@ -3,14 +3,12 @@
 Indexes
 -------
 
-**Indexes** can be added to collections to speed up document access. Every
+**Indexes** can be added to collections to speed up document lookups. Every
 collection has a primary hash index on the ``"_key"`` field by default. This
-index cannot be deleted or modified. In addition, every edge collection has a
-special *edge* index on fields ``"_from"`` and ``"_to"``. For more information
-on the HTTP REST API for collection index management visit this
-`page <https://docs.arangodb.com/HTTP/Indexes>`__.
+index cannot be deleted or modified. Every edge collection has additional edge
+index on fields ``"_from"`` and ``"_to"``.
 
-**Example:**
+Here is an example showing how indexes can be added or removed:
 
 .. code-block:: python
 
@@ -34,7 +32,7 @@ on the HTTP REST API for collection index management visit this
     cities.add_skiplist_index(fields=['population'], sparse=False)
 
     # Add a new geo-spatial index on field 'coordinates'
-    cities.add_geo_index(fields=['coordinates'], unique=True)
+    cities.add_geo_index(fields=['coordinates'])
 
     # Add a new persistent index on fields 'currency'
     cities.add_persistent_index(fields=['currency'], unique=True, sparse=True)

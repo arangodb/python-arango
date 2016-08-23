@@ -3,8 +3,7 @@
 Getting Started
 ---------------
 
-Here is a small code snippet showing how python-arango can be used to make
-API requests to an ArangoDB server:
+Here is an example showing how **python-arango** client can be used:
 
 .. code-block:: python
 
@@ -13,7 +12,7 @@ API requests to an ArangoDB server:
     # Initialize the client for ArangoDB
     client = ArangoClient(
         protocol='http',
-        host="localhost",
+        host='localhost',
         port=8529,
         username='root',
         password='',
@@ -35,14 +34,11 @@ API requests to an ArangoDB server:
 
     # Insert new documents into the collection
     students.insert({'name': 'jane', 'age': 19})
-    students.insert({'name': 'josh', 'age': 13})
-    students.insert({'name': 'jane', 'age': 21})
+    students.insert({'name': 'josh', 'age': 18})
+    students.insert({'name': 'jake', 'age': 21})
 
     # Execute an AQL query
-    result = db.aql.query('FOR s IN students RETURN s')
-    print(student['name'] for student in result)
-
-    # Truncate the collection
-    students.truncate()
+    result = db.aql.execute('FOR s IN students RETURN s')
+    print([student['name'] for student in result])
 
 Read the rest of the documentation to discover much more!

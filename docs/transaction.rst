@@ -5,18 +5,18 @@ Transactions
 
 Python-arango provides partial support for **transactions**, where incoming
 requests are queued in client-side memory and executed as a single, logical
-unit of work (ACID compliant). For more information on the HTTP REST API for
-transactions visit this `page <https://docs.arangodb.com/HTTP/Transaction>`__.
+unit of work (ACID compliant). Due to the limitations of ArangoDB's REST API,
+:ref:`Transaction` currently supports only writes, unless raw Javascript is
+executed (see example below).
 
 .. note::
-    Due to the limitations of ArangoDB's HTTP API, :ref:`Transaction` does
-    not support result retrieval retrieval unless raw Javascript is executed
-    (see example below).
+    The user should be mindful of the client-side memory while executing
+    transactions with a large number of requests.
 
 .. warning::
     :ref:`Transaction` is still experimental and prone to API changes.
 
-**Example:**
+Here is an example showing how transactions can be executed:
 
 .. code-block:: python
 
@@ -25,11 +25,11 @@ transactions visit this `page <https://docs.arangodb.com/HTTP/Transaction>`__.
     client = ArangoClient()
     db = client.db('my_database')
 
-    # Initialize a Transaction object via a context manager
+    # Initialize the Transaction object via a context manager
     with db.transaction(write='students') as txn:
 
         # Transaction has a similar interface as that of Database, but
-        # no results are returned on API calls (only queued in memory).
+        # no results are returned on method calls (only queued in memory).
         txn.collection('students').insert({'_key': 'Abby'})
         txn.collection('students').insert({'_key': 'John'})
         txn.collection('students').insert({'_key': 'Mary'})
@@ -43,12 +43,12 @@ transactions visit this `page <https://docs.arangodb.com/HTTP/Transaction>`__.
     txn = db.transaction(write='students')
     job5 = txn.collection('students').insert({'_key': 'Jake'})
     job6 = txn.collection('students').insert({'_key': 'Jill'})
-    txn.commit()  # The commit must be called manually
+    txn.commit()  # In which case commit must be called explicitly
 
     assert 'Jake' in db.collection('students')
     assert 'Jill' in db.collection('students')
 
-    # Raw javascript can also be executed (committed immediately)
+    # Raw javascript can also be executed (these are committed immediately)
     result = db.transaction(write='students').execute(
         command='''
         function () {{

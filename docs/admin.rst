@@ -3,20 +3,11 @@
 Server Administration
 ---------------------
 
-Python-arango provides operations for server administration and monitoring.
-For more information on the HTTP REST API visit this
-`page <https://docs.arangodb.com/HTTP/AdministrationAndMonitoring>`__.
+Python-arango provides operations for administration and monitoring. Some of
+these operations require root privileges (i.e. access to the ``_system``
+database).
 
-.. note::
-     Some operations in the example below require root privileges (i.e. the
-     user must have access to the ``_system`` database).
-
-.. warning::
-    `Replication <https://docs.arangodb.com/HTTP/Replications>`__ and
-    `sharding <https://docs.arangodb.com/HTTP/ShardingInterface>`__ are
-    currently not supported by python-arango.
-
-**Example:**
+Example:
 
 .. code-block:: python
 
@@ -59,6 +50,5 @@ For more information on the HTTP REST API visit this
 
     # Reload the routing collection (requires root access)
     client.reload_routing()
-
 
 Refer to :ref:`ArangoClient` class for more details.

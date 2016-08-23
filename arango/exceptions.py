@@ -213,6 +213,10 @@ class UserDeleteError(ArangoError):
     """Failed to delete the user."""
 
 
+class UserAccessError(ArangoError):
+    """Failed to retrieve the names of databases user can access."""
+
+
 class UserGrantAccessError(ArangoError):
     """Failed to grant user access to a database."""
 
