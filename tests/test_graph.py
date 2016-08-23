@@ -1,4 +1,4 @@
-from __future__ import absolute_import, unicode_literals
+#from __future__ import absolute_import, unicode_literals
 
 import pytest
 
@@ -22,6 +22,11 @@ col_name = generate_col_name(db)
 col = db.create_collection(col_name)
 graph_name = generate_graph_name(db)
 graph = db.create_graph(graph_name)
+bad_graph_name = generate_graph_name(db)
+bad_graph = db.graph(bad_graph_name)
+bad_col_name = generate_col_name(db)
+bad_vcol = bad_graph.vertex_collection(bad_col_name)
+bad_ecol = bad_graph.edge_collection(bad_col_name)
 
 # vertices in test vertex collection #1
 vertex1 = {'_key': '1', 'value': 1}
@@ -64,6 +69,10 @@ def test_properties():
     assert properties['name'] == graph_name
     assert properties['revision'].isdigit()
 
+    # Test if exception is raised properly
+    with pytest.raises(GraphPropertiesError):
+        bad_graph.properties()
+
 
 @pytest.mark.order2
 def test_create_vertex_collection():
@@ -72,7 +81,9 @@ def test_create_vertex_collection():
     vcol1 = graph.create_vertex_collection('vcol1')
     assert isinstance(vcol1, VertexCollection)
     assert vcol1.name == 'vcol1'
-
+    assert vcol1.name in repr(vcol1)
+    assert graph.name in repr(vcol1)
+    assert graph.name == vcol1.graph_name
     assert graph.vertex_collections() == ['vcol1']
     assert graph.orphan_collections() == ['vcol1']
     assert 'vcol1' in set(c['name'] for c in db.collections())
@@ -97,6 +108,12 @@ def test_create_vertex_collection():
 @pytest.mark.order3
 def test_list_vertex_collections():
     assert graph.vertex_collections() == ['vcol1', 'vcol2']
+
+    # Test if exception is raised properly
+    with pytest.raises(VertexCollectionListError):
+        bad_graph.vertex_collections()
+    with pytest.raises(OrphanCollectionListError):
+        bad_graph.orphan_collections()
 
 
 @pytest.mark.order4
@@ -126,6 +143,9 @@ def test_create_edge_definition():
     ecol1 = graph.create_edge_definition('ecol1', [], [])
     assert isinstance(ecol1, EdgeCollection)
     assert ecol1.name == 'ecol1'
+    assert ecol1.name in repr(ecol1)
+    assert graph.name in repr(ecol1)
+    assert graph.name == ecol1.graph_name
 
     assert graph.edge_definitions() == [{
         'name': 'ecol1',
@@ -221,6 +241,10 @@ def test_list_edge_definitions():
             'to_collections': ['vcol3']
         }
     ]
+
+    # Test if exception is raised properly
+    with pytest.raises(EdgeDefinitionListError):
+        bad_graph.edge_definitions()
 
 
 @pytest.mark.order7
@@ -324,6 +348,25 @@ def test_delete_edge_definition():
 
 
 @pytest.mark.order9
+def test_create_graph_with_vertices_ane_edges():
+    new_graph_name = generate_graph_name(db)
+    edge_definitions = [
+        {
+            'name': 'ecol1',
+            'from_collections': ['vcol3'],
+            'to_collections': ['vcol2']
+        }
+    ]
+    new_graph = db.create_graph(
+        new_graph_name,
+        edge_definitions=edge_definitions,
+        orphan_collections=['vcol1']
+    )
+    assert new_graph.edge_definitions() == edge_definitions
+    assert new_graph.orphan_collections() == ['vcol1']
+
+
+@pytest.mark.order10
 def test_insert_vertex():
     vcol = graph.vertex_collection('vcol1')
 
@@ -342,7 +385,7 @@ def test_insert_vertex():
 
     # Test insert vertex into missing collection
     with pytest.raises(DocumentInsertError):
-        assert graph.vertex_collection('missing').insert(vertex2)
+        assert bad_vcol.insert(vertex2)
     assert '2' not in vcol
     assert len(vcol) == 1
 
@@ -352,7 +395,7 @@ def test_insert_vertex():
     assert len(vcol) == 1
 
     # Test insert second vertex
-    result = vcol.insert(vertex2)
+    result = vcol.insert(vertex2, sync=True)
     assert result['_id'] == 'vcol1/2'
     assert result['_key'] == '2'
     assert result['_rev'].isdigit()
@@ -365,7 +408,7 @@ def test_insert_vertex():
         assert vcol.insert(vertex2)
 
 
-@pytest.mark.order10
+@pytest.mark.order11
 def test_get_vertex():
     vcol = graph.vertex_collection('vcol1')
 
@@ -381,11 +424,15 @@ def test_get_vertex():
     with pytest.raises(DocumentRevisionError):
         vcol.get('1', rev=str(int(old_rev) + 1))
 
+    # Test get existing vertex from missing vertex collection
+    with pytest.raises(DocumentGetError):
+        bad_vcol.get('1')
+
     # Test get existing vertex again
     assert clean_keys(vcol.get('2')) == {'_key': '2', 'value': 2}
 
 
-@pytest.mark.order11
+@pytest.mark.order12
 def test_update_vertex():
     vcol = graph.vertex_collection('vcol1')
 
@@ -422,6 +469,12 @@ def test_update_vertex():
     assert vcol['1']['foo'] == 200
     assert vcol['1']['bar'] == 400
 
+    # Test update vertex in missing vertex collection
+    with pytest.raises(DocumentUpdateError):
+        bad_vcol.update({'_key': '1', 'bar': 500})
+    assert vcol['1']['foo'] == 200
+    assert vcol['1']['bar'] == 400
+
     # Test update vertex with sync option
     result = vcol.update({'_key': '1', 'bar': 500}, sync=True)
     assert result['_id'] == 'vcol1/1'
@@ -449,7 +502,7 @@ def test_update_vertex():
     assert vcol['1']['bar'] is None
 
 
-@pytest.mark.order12
+@pytest.mark.order13
 def test_replace_vertex():
     vcol = graph.vertex_collection('vcol1')
 
@@ -492,6 +545,12 @@ def test_replace_vertex():
     assert vcol['1']['bar'] == 500
     assert 'foo' not in vcol['1']
 
+    # Test replace vertex in missing vertex collection
+    with pytest.raises(DocumentReplaceError):
+        bad_vcol.replace({'_key': '1', 'bar': 600})
+    assert vcol['1']['bar'] == 500
+    assert 'foo' not in vcol['1']
+
     # Test replace vertex with sync option
     vertex = {'_key': '1', 'bar': 400, 'foo': 200}
     result = vcol.replace(vertex, sync=True)
@@ -502,7 +561,7 @@ def test_replace_vertex():
     assert vcol['1']['bar'] == 400
 
 
-@pytest.mark.order13
+@pytest.mark.order14
 def test_delete_vertex():
     vcol = graph.vertex_collection('vcol1')
     vcol.truncate()
@@ -528,21 +587,23 @@ def test_delete_vertex():
         vcol.delete(vertex2)
     assert '2' in vcol
 
+    with pytest.raises(DocumentDeleteError):
+        bad_vcol.delete({'_key': '10', '_rev': 'boo'}, ignore_missing=True)
+    assert '2' in vcol
+
     # Test delete vertex from missing collection
     with pytest.raises(DocumentDeleteError):
-        graph.vertex_collection('missing').delete(
-            vertex1, ignore_missing=False
-        )
+        bad_vcol.delete(vertex1, ignore_missing=False)
 
     # Test delete missing vertex
     with pytest.raises(DocumentDeleteError):
         vcol.delete({'_key': '10'}, ignore_missing=False)
 
     # Test delete missing vertex while ignoring missing
-    vcol.delete({'_key': '10'}, ignore_missing=True) is None
+    assert vcol.delete({'_key': '10'}, ignore_missing=True) is False
 
 
-@pytest.mark.order14
+@pytest.mark.order15
 def test_insert_edge():
     ecol = graph.edge_collection('ecol2')
     ecol.truncate()
@@ -573,7 +634,7 @@ def test_insert_edge():
 
     # Test insert valid edge into missing collection
     with pytest.raises(DocumentInsertError):
-        assert graph.vertex_collection('missing').insert(edge2)
+        assert bad_ecol.insert(edge2)
     assert '2' not in ecol
     assert len(ecol) == 1
 
@@ -583,7 +644,7 @@ def test_insert_edge():
     assert len(ecol) == 1
 
     # Test insert second valid edge
-    result = ecol.insert(edge2)
+    result = ecol.insert(edge2, sync=True)
     assert result['_id'] == 'ecol2/2'
     assert result['_key'] == '2'
     assert '2' in ecol
@@ -621,30 +682,34 @@ def test_insert_edge():
     assert 'd' not in vcol3
 
 
-@pytest.mark.order15
+@pytest.mark.order16
 def test_get_edge():
     ecol = graph.edge_collection('ecol2')
     ecol.truncate()
     for edge in [edge1, edge2, edge4]:
         ecol.insert(edge)
 
-    # Test get missing vertex
+    # Test get missing edge
     assert ecol.get('0') is None
 
-    # Test get existing vertex
+    # Test get existing edge
     result = ecol.get('1')
     old_rev = result['_rev']
     assert clean_keys(result) == edge1
 
-    # Test get existing vertex with wrong revision
+    # Test get existing edge with wrong revision
     with pytest.raises(DocumentRevisionError):
         ecol.get('1', rev=str(int(old_rev) + 1))
 
-    # Test get existing vertex again
+    # Test get existing edge from missing edge collection
+    with pytest.raises(DocumentGetError):
+        bad_ecol.get('1')
+
+    # Test get existing edge again
     assert clean_keys(ecol.get('2')) == edge2
 
 
-@pytest.mark.order16
+@pytest.mark.order17
 def test_update_edge():
     ecol = graph.edge_collection('ecol2')
     ecol.truncate()
@@ -680,6 +745,12 @@ def test_update_edge():
     new_rev = str(int(old_rev) + 10)
     with pytest.raises(DocumentRevisionError):
         ecol.update({'_key': '1', '_rev': new_rev, 'bar': 500})
+    assert ecol['1']['foo'] == 200
+    assert ecol['1']['bar'] == 400
+
+    # Test update edge in missing edge collection
+    with pytest.raises(DocumentUpdateError):
+        bad_ecol.update({'_key': '1', 'bar': 500})
     assert ecol['1']['foo'] == 200
     assert ecol['1']['bar'] == 400
 
@@ -739,7 +810,7 @@ def test_update_edge():
     assert ecol['1']['_rev'] != old_rev
 
 
-@pytest.mark.order17
+@pytest.mark.order18
 def test_replace_edge():
     ecol = graph.edge_collection('ecol2')
     ecol.truncate()
@@ -787,6 +858,12 @@ def test_replace_edge():
     assert ecol['1']['foo'] == 300
     assert ecol['1']['bar'] == 400
 
+    # Test replace edge in missing edge collection
+    with pytest.raises(DocumentReplaceError):
+        bad_ecol.replace(edge)
+    assert ecol['1']['foo'] == 300
+    assert ecol['1']['bar'] == 400
+
     # Test replace edge with sync option
     edge['_rev'] = None
     result = ecol.replace(edge, sync=True)
@@ -826,7 +903,7 @@ def test_replace_edge():
     assert ecol['1']['_rev'] != old_rev
 
 
-@pytest.mark.order18
+@pytest.mark.order19
 def test_delete_edge():
     ecol = graph.edge_collection('ecol2')
     ecol.truncate()
@@ -852,9 +929,7 @@ def test_delete_edge():
 
     # Test delete edge from missing collection
     with pytest.raises(DocumentDeleteError):
-        graph.vertex_collection('missing').delete(
-            edge1, ignore_missing=False
-        )
+        bad_ecol.delete(edge1, ignore_missing=False)
 
     # Test delete missing edge
     with pytest.raises(DocumentDeleteError):
@@ -864,7 +939,7 @@ def test_delete_edge():
     ecol.delete(edge3, ignore_missing=True) is None
 
 
-@pytest.mark.order19
+@pytest.mark.order20
 def test_traverse():
     # Create test graph, vertex and edge collections
     curriculum = db.create_graph('curriculum')
@@ -938,7 +1013,7 @@ def test_traverse():
     result = curriculum.traverse(
         start_vertex='profs/anna',
         strategy='dfs',
-        direction='any'
+        direction='any',
     )
     dfs_vertices = [v['_key'] for v in result['vertices']]
     result = curriculum.traverse(
@@ -953,6 +1028,16 @@ def test_traverse():
     # Traverse the graph with filter function
     result = curriculum.traverse(
         start_vertex='profs/andy',
+        filter_func='if (vertex._key == "MAT101") {return "exclude";} return;'
+    )
+    visited_vertices = sorted([v['_key'] for v in result['vertices']])
+    assert visited_vertices == ['MAT102', 'MAT223', 'andy']
+
+    # Traverse the graph with uniqueness (should be same as before)
+    result = curriculum.traverse(
+        start_vertex='profs/andy',
+        vertex_uniqueness='global',
+        edge_uniqueness='global',
         filter_func='if (vertex._key == "MAT101") {return "exclude";} return;'
     )
     visited_vertices = sorted([v['_key'] for v in result['vertices']])

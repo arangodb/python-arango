@@ -17,6 +17,8 @@ db_name = generate_db_name(arango_client)
 db = arango_client.create_database(db_name)
 col_name = generate_col_name(db)
 col = db.create_collection(col_name)
+bad_col_name = generate_col_name(db)
+bad_col = db.collection(bad_col_name)
 
 
 def teardown_module(*_):
@@ -46,6 +48,10 @@ def test_properties():
         assert isinstance(properties['key_increment'], int)
     if 'key_offset' in properties:
         assert isinstance(properties['key_offset'], int)
+    with pytest.raises(CollectionBadStatusError):
+        assert getattr(col, '_status')(10)
+    with pytest.raises(CollectionPropertiesError):
+        bad_col.properties()
 
 
 def test_configure():
@@ -57,7 +63,7 @@ def test_configure():
     new_sync = not old_sync
     new_journal_size = old_journal_size + 1
 
-    # Test set properties
+    # Test configure
     result = col.configure(sync=new_sync, journal_size=new_journal_size)
     assert result['sync'] == new_sync
     assert result['journal_size'] == new_journal_size
@@ -67,10 +73,16 @@ def test_configure():
     assert new_properties['sync'] == new_sync
     assert new_properties['journal_size'] == new_journal_size
 
+    # Test missing collection
+    with pytest.raises(CollectionConfigureError):
+        bad_col.configure(sync=new_sync, journal_size=new_journal_size)
+
 
 def test_rename():
     assert col.name == col_name
     new_name = generate_col_name(db)
+    while new_name == bad_col_name:
+        new_name = generate_col_name(db)
 
     # Test rename collection
     result = col.rename(new_name)
@@ -84,6 +96,9 @@ def test_rename():
     assert col.name == new_name
     assert repr(col) == '<ArangoDB collection "{}">'.format(new_name)
 
+    with pytest.raises(CollectionRenameError):
+        bad_col.rename(new_name)
+
 
 def test_statistics():
     stats = col.statistics()
@@ -92,19 +107,27 @@ def test_statistics():
     assert 'dead' in stats
     assert 'document_refs' in stats
     assert 'journals' in stats
+    with pytest.raises(CollectionStatisticsError):
+        bad_col.statistics()
 
 
 def test_revision():
     revision = col.revision()
     assert isinstance(revision, string_types)
+    with pytest.raises(CollectionRevisionError):
+        bad_col.revision()
 
 
 def test_load():
     assert col.load() in {'loaded', 'loading'}
+    with pytest.raises(CollectionLoadError):
+        bad_col.load()
 
 
 def test_unload():
     assert col.unload() in {'unloaded', 'unloading'}
+    with pytest.raises(CollectionUnloadError):
+        bad_col.unload()
 
 
 def test_rotate():
@@ -127,6 +150,10 @@ def test_checksum():
     assert col.checksum(with_rev=False, with_data=False) > 0
     assert col.checksum(with_rev=False, with_data=True) > 0
 
+    # Test checksum for missing collection
+    with pytest.raises(CollectionChecksumError):
+        bad_col.checksum()
+
 
 def test_truncate():
     col.insert_many([{'value': 1}, {'value': 2}, {'value': 3}])
@@ -141,3 +168,7 @@ def test_truncate():
     assert 'status' in result
     assert 'is_system' in result
     assert len(col) == 0
+
+    # Test truncate missing collection
+    with pytest.raises(CollectionTruncateError):
+        bad_col.truncate()

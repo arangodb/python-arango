@@ -8,7 +8,8 @@ from six import moves
 class Request(object):
     """ArangoDB API request object.
 
-    This class is meant to be used internally only.
+    .. note::
+        This class is meant to be used internally only.
     """
 
     __slots__ = (
@@ -33,11 +34,6 @@ class Request(object):
         self.params = params or {}
         self.data = data
         self.command = command
-
-    def __repr__(self):
-        return "<ArangoDB request '{} {}'>".format(
-            self.method.upper(), self.endpoint
-        )
 
     @property
     def kwargs(self):

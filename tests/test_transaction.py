@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 import pytest
 
 from arango import ArangoClient
+from arango.collections import Collection
 from arango.exceptions import TransactionError
 
 from .utils import (
@@ -37,6 +38,18 @@ def setup_function(*_):
     col.truncate()
 
 
+def test_init():
+    txn = db.transaction(
+        read=col_name,
+        write=col_name,
+        sync=True,
+        timeout=1000,
+    )
+    assert txn.type == 'transaction'
+    assert 'ArangoDB transaction {}'.format(txn.id) in repr(txn)
+    assert isinstance(txn.collection('test'), Collection)
+
+
 def test_execute_without_params():
     txn = db.transaction(write=col_name)
     result = txn.execute(
@@ -47,7 +60,9 @@ def test_execute_without_params():
             db.{col}.save({{ '_key': '2', 'val': 2}});
             return 'success without params!';
         }}
-        '''.format(col=col_name)
+        '''.format(col=col_name),
+        sync=False,
+        timeout=1000
     )
     assert result == 'success without params!'
     assert '1' in col and col['1']['val'] == 1
@@ -69,6 +84,22 @@ def test_execute_with_params():
     assert result == 'success with params!'
     assert col['1']['val'] == 3
     assert col['2']['val'] == 4
+
+
+def test_execute_with_errors():
+    txn = db.transaction(write=col_name)
+    bad_col_name = generate_col_name(db)
+    with pytest.raises(TransactionError):
+        txn.execute(
+            command='''
+                function (params) {{
+                var db = require('internal').db;
+                db.{col}.save({{ '_key': '1', 'val': params.one }});
+                db.{col}.save({{ '_key': '2', 'val': params.two }});
+                return 'this transaction should fail!';
+            }}'''.format(col=bad_col_name),
+            params={'one': 3, 'two': 4}
+        )
 
 
 def test_unsupported_methods():

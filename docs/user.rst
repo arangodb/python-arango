@@ -1,3 +1,5 @@
+.. _user-page:
+
 User Management
 ---------------
 
@@ -40,4 +42,4 @@ this `page <https://docs.arangodb.com/HTTP/UserManagement>`__.
     # Delete an existing user
     client.delete_user(username='jill')
 
-Refer to the :ref:`ArangoClient` class for more details.
+Refer to :ref:`ArangoClient` class for more details.

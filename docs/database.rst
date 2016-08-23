@@ -1,3 +1,5 @@
+.. _database-page:
+
 Databases
 ---------
 
@@ -45,6 +47,6 @@ For more information on the HTTP REST API for database management visit this
     # Delete an existing database
     client.delete_database('test_db_01')
 
-Refer to the :ref:`ArangoClient` and :ref:`Database` classes for more details
-on database management, and the :doc:`user` page for more details on how to
-create, update, replace or delete database users separately.
+Refer to :ref:`ArangoClient` and :ref:`Database` classes for more details
+on database management, and the :ref:`user-page` page for more details on how
+to create, update, replace or delete database users separately.

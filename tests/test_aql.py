@@ -3,11 +3,23 @@ from __future__ import absolute_import, unicode_literals
 import pytest
 
 from arango import ArangoClient
-from arango.exceptions import *
+from arango.aql import AQL
+from arango.exceptions import (
+    AQLQueryExecuteError,
+    AQLQueryExplainError,
+    AQLQueryValidateError,
+    AQLFunctionListError,
+    AQLFunctionCreateError,
+    AQLFunctionDeleteError,
+    AQLCacheClearError,
+    AQLCacheConfigureError,
+    AQLCachePropertiesError,
+)
 
 from .utils import (
     generate_db_name,
-    generate_col_name
+    generate_col_name,
+    generate_user_name
 )
 
 
@@ -17,15 +29,23 @@ db_name = generate_db_name(arango_client)
 db = arango_client.create_database(db_name)
 col_name = generate_col_name(db)
 db.create_collection(col_name)
+username = generate_user_name(arango_client)
+user = arango_client.create_user(username, 'password')
 func_name = ''
 func_body = ''
 
 
 def teardown_module(*_):
     arango_client.delete_database(db_name, ignore_missing=True)
-
+    arango_client.delete_user(username, ignore_missing=True)
 
 @pytest.mark.order1
+def test_init():
+    assert isinstance(db.aql, AQL)
+    assert 'ArangoDB AQL' in repr(db.aql)
+
+
+@pytest.mark.order2
 def test_query_explain():
     fields_to_check = [
         'estimatedNrItems',
@@ -43,7 +63,8 @@ def test_query_explain():
     plans = db.aql.explain(
         'FOR d IN {} RETURN d'.format(col_name),
         all_plans=True,
-        opt_rules=['-all', '+use-index-range']
+        opt_rules=['-all', '+use-index-range'],
+        max_plans=10
     )
     for plan in plans:
         for field in fields_to_check:
@@ -59,7 +80,7 @@ def test_query_explain():
         assert field in plan
 
 
-@pytest.mark.order2
+@pytest.mark.order3
 def test_query_validate():
     # Test invalid query
     with pytest.raises(AQLQueryValidateError):
@@ -73,7 +94,7 @@ def test_query_validate():
     assert 'parsed' in result
 
 
-@pytest.mark.order3
+@pytest.mark.order4
 def test_query_execute():
     # Test invalid AQL query
     with pytest.raises(AQLQueryExecuteError):
@@ -103,12 +124,14 @@ def test_query_execute():
     result = db.aql.execute(
         'FOR d IN {} FILTER d.value == @value RETURN d'.format(col_name),
         bind_vars={'value': 1},
-        count=True
+        count=True,
+        full_count=True,
+        max_plans=100
     )
     assert set(d['_key'] for d in result) == {'doc04', 'doc05'}
 
 
-@pytest.mark.order4
+@pytest.mark.order5
 def test_query_function_create_and_list():
     global func_name, func_body
 
@@ -131,7 +154,7 @@ def test_query_function_create_and_list():
         assert result is True
 
 
-@pytest.mark.order5
+@pytest.mark.order6
 def test_query_function_delete_and_list():
     # Test delete AQL function
     result = db.aql.delete_function(func_name)
@@ -147,14 +170,14 @@ def test_query_function_delete_and_list():
     assert db.aql.functions() == {}
 
 
-@pytest.mark.order6
+@pytest.mark.order7
 def test_get_query_cache_properties():
     properties = db.aql.cache.properties()
     assert 'mode' in properties
     assert 'limit' in properties
 
 
-@pytest.mark.order7
+@pytest.mark.order8
 def test_set_query_cache_properties():
     properties = db.aql.cache.configure(
         mode='on', limit=100
@@ -167,7 +190,25 @@ def test_set_query_cache_properties():
     assert properties['limit'] == 100
 
 
-@pytest.mark.order8
+@pytest.mark.order9
 def test_clear_query_cache():
     result = db.aql.cache.clear()
     assert isinstance(result, bool)
+
+
+@pytest.mark.order10
+def test_aql_errors():
+    bad_db_name = generate_db_name(arango_client)
+    bad_aql = arango_client.database(bad_db_name).aql
+
+    with pytest.raises(AQLFunctionListError):
+        bad_aql.functions()
+
+    with pytest.raises(AQLCachePropertiesError):
+        bad_aql.cache.properties()
+
+    with pytest.raises(AQLCacheConfigureError):
+        bad_aql.cache.configure(mode='on')
+
+    with pytest.raises(AQLCacheClearError):
+        bad_aql.cache.clear()

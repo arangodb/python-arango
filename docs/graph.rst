@@ -1,3 +1,5 @@
+.. _graph-page:
+
 Graphs
 ------
 
@@ -79,7 +81,7 @@ refer to this `page <https://docs.arangodb.com/HTTP/Gharial/Vertices.html>`__.
     # Delete an existing vertex collection
     schedule.delete_vertex_collection('profs', purge=True)
 
-Refer to the :ref:`Graph` and :ref:`VertexCollection` classes for more details.
+Refer to :ref:`Graph` and :ref:`VertexCollection` classes for more details.
 
 .. _edge-definitions:
 
@@ -142,7 +144,7 @@ refer to this `page <https://docs.arangodb.com/HTTP/Gharial/Edges.html>`__.
     # Delete an existing edge definition (and the collection)
     schedule.delete_edge_definition('teaches', purge=False)
 
-Refer to the :ref:`Graph` and :ref:`EdgeCollection` classes for more details.
+Refer to :ref:`Graph` and :ref:`EdgeCollection` classes for more details.
 
 .. _graph-traversals:
 
@@ -195,4 +197,4 @@ information on the HTTP REST API for executing graph traversals refer to this
     )
     print(traversal_results['visited'])
 
-Refer to the :ref:`Graph` class for more details.
+Refer to :ref:`Graph` class for more details.

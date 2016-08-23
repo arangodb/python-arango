@@ -5,23 +5,23 @@
 
 .. image:: /static/logo.png
 
-
 Welcome to the documentation for **python-arango**, a Python driver for
 `ArangoDB's REST API <https://www.arangodb.com/>`__.
+
 
 Features
 ========
 
 - Clean, Pythonic interface
 - Lightweight
-- 95%+ API coverage
+- 95%+ ArangoDB REST API coverage
 
 Compatibility
 =============
 
-- Tested with Python versions 2.7.x, 3.4.x and 3.5.x
-- Latest version of python-arango (3.x) works with ArangoDB 3.x only
-- Older versions of python-arango (2.x) work with ArangoDB 2.x only
+- Python versions 2.7.x, 3.4.x and 3.5.x are supported
+- Latest version of python-arango (3.x) supports ArangoDB 3.x only
+- Older versions of python-arango support ArangoDB 1.x ~ 2.x only
 
 Installation
 ============

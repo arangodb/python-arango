@@ -72,7 +72,7 @@ class EdgeCollection(BaseCollection):
         def handler(res):
             if res.status_code == 412:
                 raise DocumentRevisionError(res)
-            elif res.status_code == 404:
+            elif res.status_code == 404 and res.error_code == 1202:
                 return None
             elif res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
@@ -258,7 +258,7 @@ class EdgeCollection(BaseCollection):
         def handler(res):
             if res.status_code == 412:
                 raise DocumentRevisionError(res)
-            elif res.status_code == 404:
+            elif res.status_code == 404 and res.error_code == 1202:
                 if ignore_missing:
                     return False
                 raise DocumentDeleteError(res)
