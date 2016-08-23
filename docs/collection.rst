@@ -3,20 +3,14 @@
 Collections
 -----------
 
-A **collection** consists of :ref:`documents <document-page>`. It is uniquely
+A **collection** contains :ref:`documents <document-page>`. It is uniquely
 identified by its name which must consist only of alphanumeric, hyphen and
-underscore characters.
+underscore characters. There are *three* types of collections: standard
+**document collections** which contain normal documents, **vertex collections**
+which also contain normal documents, and **edge collections** which contain
+:ref:`edges <edge-documents>`.
 
-There are two types of collections: **document collections** which contain
-:ref:`documents <document-page>` (standard) or **edge collections** which
-contain :ref:`edges <edge-documents>`. By default, collections use the
-**traditional** key generator which generates key values in a non-deterministic
-fashion. A deterministic, auto-increment key generator can be used as well.
-
-For more information on the HTTP REST API for collection management visit this
-`page <https://docs.arangodb.com/HTTP/Collection>`__.
-
-**Example:**
+Here is an example showing how collections can be managed:
 
 .. code-block:: python
 
@@ -25,10 +19,10 @@ For more information on the HTTP REST API for collection management visit this
     client = ArangoClient()
     db = client.db('my_database')
 
-    # List all available collections
+    # List all collections in "my_database"
     db.collections()
 
-    # Create a new collection
+    # Create a new collection named "students"
     students = db.create_collection('students')
 
     # Retrieve an existing collection
@@ -48,4 +42,3 @@ For more information on the HTTP REST API for collection management visit this
     students.configure(journal_size=3000000)
 
 Refer to :ref:`Collection` class for more details.
-

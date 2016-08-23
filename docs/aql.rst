@@ -14,12 +14,10 @@ AQL Queries
 ===========
 
 **AQL queries** can be invoked using the :ref:`AQL` class, which returns
-instances of :ref:`Cursor`. For more information on the syntax of AQL visit
-this `page <https://docs.arangodb.com/AQL/Fundamentals/Syntax.html>`__ and
-for more information on the HTTP REST API visit this
-`page <https://docs.arangodb.com/HTTP/AqlQuery>`__.
+instances of :ref:`Cursor`. For more information on AQL syntax visit this
+`page <https://docs.arangodb.com/AQL/Fundamentals/Syntax.html>`__.
 
-**Example:**
+Here is an example showing how AQL queries can be executed:
 
 .. code-block:: python
 
@@ -56,13 +54,10 @@ AQL User Functions
 **AQL user functions** are custom functions defined by the users to extend the
 functionality of AQL. Although python-arango provides ways to add, delete and
 retrieve user functions in Python, the functions themselves must be defined in
-Javascript.
+Javascript. For more general information on AQL user functions visit this
+`page <https://docs.arangodb.com/AQL/Extending>`__.
 
-For more information on the HTTP REST API for AQL user functions visit this
-`page <https://docs.arangodb.com/HTTP/AqlQueryCache>`__ and for more general
-information this `page <https://docs.arangodb.com/AQL/Extending>`__.
-
-**Example:**
+Here is an example showing how AQL functions can be created or deleted:
 
 .. code-block:: python
 
@@ -90,13 +85,10 @@ AQL Query Cache
 
 **AQL query cache** minimizes redundant calculation of the same query results.
 If it useful when read queries are called frequently and write queries are not.
-
-For more information on the HTTP REST API for AQL query caches visit this
-`page <https://docs.arangodb.com/HTTP/AqlQueryCache>`__ and for more general
-information visit this
+For more general information on AQL query caches visit this
 `page <https://docs.arangodb.com/AQL/ExecutionAndPerformance/QueryCache.html>`__.
 
-**Example:**
+Here is an example showing how the AQL query cache can be used:
 
 .. code-block:: python
 

@@ -3,10 +3,10 @@ Error Handling
 
 All python-arango exceptions inherit :class:`arango.exceptions.ArangoError`,
 which lightly wraps around the HTTP error responses returned from ArangoDB.
-Most of the error messages returned by python-arango come directly from the
-ArangoDB server.
+The majority of the error messages in the exceptions raised by python-arango
+come directly from the server.
 
-**Here is an example of catching and introspecting an exception:**
+Here is an example showing how a python-arango exception can be caught:
 
 .. code-block:: python
 

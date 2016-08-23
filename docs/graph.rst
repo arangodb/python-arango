@@ -3,15 +3,15 @@
 Graphs
 ------
 
-An ArangoDB **graph** consists of **vertices** and **edges**. Edges are stored
-as documents in :ref:`edge collections <edge-collections>`, whereas vertices
+An **graph** consists of **vertices** and **edges**. Edges are stored as
+documents in :ref:`edge collections <edge-collections>`, whereas vertices
 are stored as documents in :ref:`vertex collections <vertex-collections>`
 (edges can be vertices also). The combination of edge and vertex collections
-involved in a graph is defined :ref:`edge definitions <edge-definitions>`. For
-more general information on graphs, vertices and edges refer to this
+used in a graph is specified in :ref:`edge definitions <edge-definitions>`.
+For more information on graphs, vertices and edges visit this
 `page <https://docs.arangodb.com/Manual/Graphs>`__.
 
-**Example:**
+Here is an example showing how a graph can be created or deleted:
 
 .. code-block:: python
 
@@ -44,14 +44,10 @@ types of collections.
 
 The documents in a vertex collection are fully accessible from a standard
 collection. Managing documents through a vertex collection, however, adds
-additional *guarantees*: all modifications are executed in transactions, and
-if a vertex is deleted all connected edges are also deleted automatically.
+additional safeguards: all modifications are executed in transactions, and
+if a vertex is deleted, all connected edges are also automatically deleted.
 
-For more information on the HTTP REST API for vertices and vertex collections
-refer to this `page <https://docs.arangodb.com/HTTP/Gharial/Vertices.html>`__.
-
-
-**Example:**
+Here is an example showing how vertex collections and vertices can be used:
 
 .. code-block:: python
 
@@ -89,24 +85,21 @@ Edge Definitions
 ================
 
 An **edge definition** specifies which vertex and edge collections are used in
-a particular graph (see example below).
+a particular graph.
 
 .. _edge-collections:
 
-An **edge collection** consists of edge documents. Same as vertex collections
-it is uniquely identified by its name which must consist only of alphanumeric
-characters, hyphen and the underscore characters. Edge collections share their
-namespace with other types of collections.
+An **edge collection** consists of edge documents. It is uniquely identified
+by its name which must consist only of alphanumeric characters, hyphen and the
+underscore characters. Edge collections share their namespace with other types
+of collections.
 
 The documents in an edge collection are fully accessible from a standard
 collection. Managing documents through an edge collection, however, adds
-additional *guarantees*: all modifications are executed in transactions and
-edge documents are checked against the edge definitions on *insert*.
+additional safeguards: all modifications are executed in transactions and
+edge documents are checked against the edge definitions on insert.
 
-For more information on the HTTP REST API for edge definitions and collections
-refer to this `page <https://docs.arangodb.com/HTTP/Gharial/Edges.html>`__.
-
-**Example:**
+Here is an example showing how an edge definition can be created and used:
 
 .. code-block:: python
 
@@ -116,7 +109,7 @@ refer to this `page <https://docs.arangodb.com/HTTP/Gharial/Edges.html>`__.
     db = client.db('my_database')
     schedule = db.graph('schedule')
 
-    # Create some vertex collections
+    # Create a couple of vertex collections
     schedule.create_vertex_collection('profs')
     schedule.create_vertex_collection('courses')
 
@@ -135,14 +128,14 @@ refer to this `page <https://docs.arangodb.com/HTTP/Gharial/Edges.html>`__.
 
     # Edge collections have a similar interface to standard collections
     teaches.insert({
-        '_key': 'michelle-CSC101'
+        '_key': 'michelle-CSC101',
         '_from': 'profs/michelle',
         '_to': 'courses/CSC101'
     })
     print(teaches.get('michelle-CSC101'))
 
     # Delete an existing edge definition (and the collection)
-    schedule.delete_edge_definition('teaches', purge=False)
+    schedule.delete_edge_definition('teaches', purge=True)
 
 Refer to :ref:`Graph` and :ref:`EdgeCollection` classes for more details.
 
@@ -151,14 +144,11 @@ Refer to :ref:`Graph` and :ref:`EdgeCollection` classes for more details.
 Graph Traversals
 ================
 
-**Graph traversals** (which are executed on the server) can be initiated using
-the :func:`~arango.graph.Graph.traverse` method in python-arango. A traversal
-can span across multiple vertex collections but only a single edge collection,
-and walk over the documents in a variety of ways (see example below). For more
-information on the HTTP REST API for executing graph traversals refer to this
-`page <https://docs.arangodb.com/HTTP/Traversal/index.html>`__.
+**Graph traversals** can executed via the :func:`~arango.graph.Graph.traverse`
+method. A traversal can span across multiple vertex collections and walk over
+the documents in a variety of ways.
 
-**Example:**
+Here is an example of a graph traversal:
 
 .. code-block:: python
 
@@ -166,9 +156,9 @@ information on the HTTP REST API for executing graph traversals refer to this
 
     client = ArangoClient()
     db = client.db('my_database')
-    schedule = db.create_graph('schedule')
 
-    # Define the vertex collections and edge definitions
+    # Define a new graph
+    schedule = db.create_graph('schedule')
     profs = schedule.create_vertex_collection('profs')
     courses = schedule.create_vertex_collection('courses')
     teaches = schedule.create_edge_definition(
@@ -176,13 +166,13 @@ information on the HTTP REST API for executing graph traversals refer to this
         from_collections=['profs'],
         to_collections=['courses']
     )
-    # Insert vertices
+    # Insert vertices into the graph
     profs.insert({'_key': 'michelle', 'name': 'Professor Michelle'})
     courses.insert({'_key': 'CSC101', 'name': 'Introduction to CS'})
     courses.insert({'_key': 'MAT223', 'name': 'Linear Algebra'})
     courses.insert({'_key': 'STA201', 'name': 'Statistics'})
 
-    # Insert edges
+    # Insert edges into the graph
     teaches.insert({'_from': 'profs/michelle', '_to': 'courses/CSC101'})
     teaches.insert({'_from': 'profs/michelle', '_to': 'courses/STA201'})
     teaches.insert({'_from': 'profs/michelle', '_to': 'courses/MAT223'})
@@ -195,6 +185,6 @@ information on the HTTP REST API for executing graph traversals refer to this
         edge_uniqueness='global',
         vertex_uniqueness='global',
     )
-    print(traversal_results['visited'])
+    print(traversal_results)
 
 Refer to :ref:`Graph` class for more details.

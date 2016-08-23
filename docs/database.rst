@@ -3,50 +3,46 @@
 Databases
 ---------
 
-A single ArangoDB instance can house multiple databases. Each database in turn
-can have its own set of collections, graphs, and dedicated worker processes.
-There is always a default database named ``_system`` which cannot be dropped,
-can only be accessed with root privileges, and provides special operations for
-creating, deleting and enumerating other user-defined databases.
+A single ArangoDB instance can house multiple databases, which in turn can have
+their own set of worker processes,  :ref:`collections <collection-page>`, and
+:ref:`graphs <graph-page>`. There is also a default database named ``_system``.
+This database cannot be dropped, can only be accessed with root privileges, and
+provides operations for managing other user-defined databases.
 
-For more information on the HTTP REST API for database management visit this
-`page <https://docs.arangodb.com/HTTP/Database/NotesOnDatabases.html>`_.
-
-**Example:**
+Here is an example showing how databases can be managed with different users:
 
 .. code-block:: python
 
     from arango import ArangoClient
 
-    # Initialize the ArangoDB client as user "greg"
-    client = ArangoClient(username='greg', password='pass')
+    # Initialize the ArangoDB client as root
+    client = ArangoClient(username='root', password='')
 
-    # List all existing databases
-    client.databases()
+    # Create a database, again as root (the user is inherited if not specified)
+    db = client.create_database('my_database', username=None, password=None)
 
-    # Create a database with default user, which in this case would be "greg"
-    db1 = client.create_database('test_db_01')
+    # Retrieve the properties of the new database
+    db.properties()
 
-    # Create another database with new users "jane", "john" and "anna"
-    db2 = client.create_database(
-        name='test_db_02',
+    # Create another database, this time with a predefined set of users
+    db = client.create_database(
+        name='another_database',
         users=[
             {'username': 'jane', 'password': 'foo', 'active': True},
             {'username': 'john', 'password': 'bar', 'active': True},
-            {'username': 'anna', 'password': 'baz', 'active': True},
-        ]
+            {'username': 'jake', 'password': 'baz', 'active': True},
+        ],
+        username='jake',  # The new database object uses jake's credentials
+        password='baz'
     )
 
-    # Retrieve the database properties
-    print(db1.properties())
-    print(db2.properties())
+    # To switch to a different user, simply create a new database object with
+    # the credentials of the desired user (which in this case would be jane's)
+    db = client.database('another_database', username='jane', password='bar')
 
-    # Retrieve an existing database as user "john"
-    db2 = client.db('test_db_02', username='john', password='bar')
-
-    # Delete an existing database
-    client.delete_database('test_db_01')
+    # Delete an existing database as root
+    client.delete_database('another_database')
 
 Refer to :ref:`ArangoClient` and :ref:`Database` classes for more details
-on database management, and the :ref:`user-page` page for more details on how
-to create, update, replace or delete database users separately.
+on database management, and the :ref:`user-page` page for more details on user
+management and database access control.

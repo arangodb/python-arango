@@ -154,14 +154,15 @@ class Connection(object):
         :returns: the ArangoDB http response
         :rtype: arango.response.Response
         """
+        url = self._url_prefix + endpoint
         res = self._http.head(
-            url=self._url_prefix + endpoint,
+            url=url,
             params=params,
             headers=headers,
             auth=(self._username, self._password)
         )
         if self._logging:
-            logger.debug('HEAD {} {}'.format(endpoint, res.status_code))
+            logger.debug('HEAD {} {}'.format(url, res.status_code))
         return res
 
     def get(self, endpoint, params=None, headers=None, **_):
@@ -176,14 +177,15 @@ class Connection(object):
         :returns: the ArangoDB http response
         :rtype: arango.response.Response
         """
+        url = self._url_prefix + endpoint
         res = self._http.get(
-            url=self._url_prefix + endpoint,
+            url=url,
             params=params,
             headers=headers,
             auth=(self._username, self._password)
         )
         if self._logging:
-            logger.debug('GET {} {}'.format(endpoint, res.status_code))
+            logger.debug('GET {} {}'.format(url, res.status_code))
         return res
 
     def put(self, endpoint, data=None, params=None, headers=None, **_):
@@ -200,15 +202,16 @@ class Connection(object):
         :returns: the ArangoDB http response
         :rtype: arango.response.Response
         """
+        url = self._url_prefix + endpoint
         res = self._http.put(
-            url=self._url_prefix + endpoint,
+            url=url,
             data=sanitize(data),
             params=params,
             headers=headers,
             auth=(self._username, self._password)
         )
         if self._logging:
-            logger.debug('PUT {} {}'.format(endpoint, res.status_code))
+            logger.debug('PUT {} {}'.format(url, res.status_code))
         return res
 
     def post(self, endpoint, data=None, params=None, headers=None, **_):
@@ -225,15 +228,16 @@ class Connection(object):
         :returns: the ArangoDB http response
         :rtype: arango.response.Response
         """
+        url = self._url_prefix + endpoint
         res = self._http.post(
-            url=self._url_prefix + endpoint,
+            url=url,
             data=sanitize(data),
             params=params,
             headers=headers,
             auth=(self._username, self._password)
         )
         if self._logging:
-            logger.debug('POST {} {}'.format(endpoint, res.status_code))
+            logger.debug('POST {} {}'.format(url, res.status_code))
         return res
 
     def patch(self, endpoint, data=None, params=None, headers=None, **_):
@@ -250,15 +254,16 @@ class Connection(object):
         :returns: the ArangoDB http response
         :rtype: arango.response.Response
         """
+        url = self._url_prefix + endpoint
         res = self._http.patch(
-            url=self._url_prefix + endpoint,
+            url=url,
             data=sanitize(data),
             params=params,
             headers=headers,
             auth=(self._username, self._password)
         )
         if self._logging:
-            logger.debug('PATCH {} {}'.format(endpoint, res.status_code))
+            logger.debug('PATCH {} {}'.format(url, res.status_code))
         return res
 
     def delete(self, endpoint, data=None, params=None, headers=None, **_):
@@ -275,13 +280,14 @@ class Connection(object):
         :returns: the ArangoDB http response
         :rtype: arango.response.Response
         """
+        url = self._url_prefix + endpoint
         res = self._http.delete(
-            url=self._url_prefix + endpoint,
+            url=url,
             data=sanitize(data),
             params=params,
             headers=headers,
             auth=(self._username, self._password)
         )
         if self._logging:
-            logger.debug('DELETE {} {}'.format(endpoint, res.status_code))
+            logger.debug('DELETE {} {}'.format(url, res.status_code))
         return res

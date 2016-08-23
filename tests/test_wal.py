@@ -39,7 +39,7 @@ def test_wal_configure():
         oversized_ops=False,
         log_size=30000000,
         reserve_logs=5,
-        throttle_limit=1000,
+        throttle_limit=0,
         throttle_wait=16000
     )
     properties = arango_client.wal.properties()
@@ -47,7 +47,7 @@ def test_wal_configure():
     assert properties['oversized_ops'] is False
     assert properties['log_size'] == 30000000
     assert properties['reserve_logs'] == 5
-    assert properties['throttle_limit'] == 1000
+    assert properties['throttle_limit'] == 0
     assert properties['throttle_wait'] == 16000
 
 

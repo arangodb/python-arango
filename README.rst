@@ -31,7 +31,7 @@
 |
 
 Welcome to the GitHub page for **python-arango**, a Python driver for
-`ArangoDB's REST API <https://www.arangodb.com/>`__.
+`ArangoDB <https://www.arangodb.com/>`__.
 
 Features
 ========
@@ -100,12 +100,12 @@ Here is a simple usage example:
 
     # Insert new documents into the collection
     students.insert({'name': 'jane', 'age': 19})
-    students.insert({'name': 'josh', 'age': 13})
+    students.insert({'name': 'josh', 'age': 18})
     students.insert({'name': 'jake', 'age': 21})
 
-    # Execute an AQL query and iterate through the result cursor
-    cursor = db.aql.execute('FOR s IN students RETURN s')
-    print(student['name'] for student in cursor)
+    # Execute an AQL query
+    result = db.aql.execute('FOR s IN students RETURN s')
+    print([student['name'] for student in result])
 
 Please read the full `API documentation`_ for more details!
 
