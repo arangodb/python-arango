@@ -31,7 +31,7 @@
 |
 
 Welcome to the GitHub page for **python-arango**, a Python driver for
-`ArangoDB's REST API <https://www.arangodb.com/>`__.
+`ArangoDB <https://www.arangodb.com/>`__.
 
 Features
 ========
