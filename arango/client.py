@@ -34,7 +34,7 @@ class ArangoClient(object):
 
     def __init__(self,
                  protocol='http',
-                 host='localhost',
+                 host='127.0.0.1',
                  port=8529,
                  username='root',
                  password='',

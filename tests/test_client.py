@@ -34,7 +34,7 @@ def test_verify():
 
 def test_properties():
     assert arango_client.protocol == 'http'
-    assert arango_client.host == 'localhost'
+    assert arango_client.host == '127.0.0.1'
     assert arango_client.port == 8529
     assert arango_client.username == 'root'
     assert arango_client.password == ''

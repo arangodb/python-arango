@@ -1,4 +1,6 @@
-.. image:: https://cloud.githubusercontent.com/assets/2701938/17761717/892d37c0-64d7-11e6-84a8-665adc9f4cfc.png
+.. image:: https://cloud.githubusercontent.com/assets/2701938/18018900/668e15d2-6ba7-11e6-85a9-7997b3c6218a.png
+
+|
 
 .. image:: https://travis-ci.org/joowani/python-arango.svg?branch=master
     :target: https://travis-ci.org/joowani/python-arango

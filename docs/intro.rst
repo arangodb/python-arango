@@ -5,6 +5,8 @@
 
 .. image:: /static/logo.png
 
+|
+
 Welcome to the documentation for **python-arango**, a Python driver for
 `ArangoDB <https://www.arangodb.com/>`__.
 
