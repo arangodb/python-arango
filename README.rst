@@ -109,6 +109,50 @@ Here is a simple usage example:
     result = db.aql.execute('FOR s IN students RETURN s')
     print([student['name'] for student in result])
 
+
+Here is another example involving graphs:
+
+.. code-block:: python
+
+    from arango import ArangoClient
+
+    client = ArangoClient()
+
+    # Create a new graph
+    graph = client.db('my_database').create_graph('my_graph')
+    students = graph.create_vertex_collection('students')
+    courses = graph.create_vertex_collection('courses')
+    takes = graph.create_edge_definition(
+        name='takes',
+        from_collections=['students'],
+        to_collections=['courses']
+    )
+
+    # Insert vertices
+    students.insert({'_key': '01', 'full_name': 'Anna Smith'})
+    students.insert({'_key': '02', 'full_name': 'Jake Clark'})
+    students.insert({'_key': '03', 'full_name': 'Lisa Jones'})
+
+    courses.insert({'_key': 'MAT101', 'title': 'Calculus'})
+    courses.insert({'_key': 'STA101', 'title': 'Statistics'})
+    courses.insert({'_key': 'CSC101', 'title': 'Algorithms'})
+
+    # Insert edges
+    takes.insert({'_from': 'students/01', '_to': 'courses/MAT101'})
+    takes.insert({'_from': 'students/01', '_to': 'courses/STA101'})
+    takes.insert({'_from': 'students/01', '_to': 'courses/CSC101'})
+    takes.insert({'_from': 'students/02', '_to': 'courses/MAT101'})
+    takes.insert({'_from': 'students/02', '_to': 'courses/STA101'})
+    takes.insert({'_from': 'students/03', '_to': 'courses/CSC101'})
+
+    # Traverse the graph in outbound direction, breath-first
+    traversal_results = graph.traverse(
+        start_vertex='students/01',
+        strategy='bfs',
+        direction='outbound'
+    )
+    print(traversal_results['vertices'])
+
 Please read the full `API documentation`_ for more details!
 
 .. _API documentation:

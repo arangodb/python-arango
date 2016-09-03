@@ -154,13 +154,13 @@ class BatchExecution(Connection):
             self._batch_jobs = []
 
     def clear(self):
-        """Clear the API requests queue and discard any batch job pointers.
+        """Clear the requests queue and discard pointers to batch jobs issued.
 
-        :returns: the number of API requests and batch job pointers discarded
+        :returns: the number of requests (and batch job pointers) discarded
         :rtype: int
 
         .. warning::
-            This method will orphan any batch jobs that were issues
+            This method will orphan any batch jobs that were issued
         """
         count = len(self._requests)
         self._requests = []
