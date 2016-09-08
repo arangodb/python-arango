@@ -12,12 +12,13 @@ class DefaultHTTPClient(BaseHTTPClient):
     .. _requests: http://docs.python-requests.org/en/master/
     """
 
-    def __init__(self, use_session=True):
+    def __init__(self, use_session=True, check_cert=True):
         """Initialize the session."""
         if use_session:
             self._session = requests.Session()
         else:
             self._session = requests
+        self._check_cert = check_cert
 
     def head(self, url, params=None, headers=None, auth=None):
         """Execute an HTTP **HEAD** method.
@@ -37,7 +38,8 @@ class DefaultHTTPClient(BaseHTTPClient):
             url=url,
             params=params,
             headers=headers,
-            auth=auth
+            auth=auth,
+            verify=self._check_cert
         )
         return Response(
             url=url,
@@ -66,7 +68,8 @@ class DefaultHTTPClient(BaseHTTPClient):
             url=url,
             params=params,
             headers=headers,
-            auth=auth
+            auth=auth,
+            verify=self._check_cert
         )
         return Response(
             url=url,
@@ -98,7 +101,8 @@ class DefaultHTTPClient(BaseHTTPClient):
             data=data,
             params=params,
             headers=headers,
-            auth=auth
+            auth=auth,
+            verify=self._check_cert
         )
         return Response(
             url=url,
@@ -130,7 +134,8 @@ class DefaultHTTPClient(BaseHTTPClient):
             data=data,
             params=params,
             headers=headers,
-            auth=auth
+            auth=auth,
+            verify=self._check_cert
         )
         return Response(
             url=url,
@@ -162,7 +167,8 @@ class DefaultHTTPClient(BaseHTTPClient):
             data=data,
             params=params,
             headers=headers,
-            auth=auth
+            auth=auth,
+            verify=self._check_cert
         )
         return Response(
             url=url,
@@ -194,7 +200,8 @@ class DefaultHTTPClient(BaseHTTPClient):
             data=data,
             params=params,
             headers=headers,
-            auth=auth
+            auth=auth,
+            verify=self._check_cert
         )
         return Response(
             url=url,

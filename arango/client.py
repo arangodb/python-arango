@@ -30,6 +30,10 @@ class ArangoClient(object):
     :type http_client: arango.http_clients.base.BaseHTTPClient
     :param enable_logging: log all API requests
     :type enable_logging: bool
+    :param check_cert: verify SSL certificate when making HTTP requests
+    :type check_cert: bool
+    :param use_session: use session when making HTTP requests
+    :type use_session: bool
     """
 
     def __init__(self,
@@ -40,14 +44,19 @@ class ArangoClient(object):
                  password='',
                  verify=False,
                  http_client=None,
-                 enable_logging=True):
+                 enable_logging=True,
+                 check_cert=True,
+                 use_session=True):
 
         self._protocol = protocol
         self._host = host
         self._port = port
         self._username = username
         self._password = password
-        self._http_client = http_client or DefaultHTTPClient()
+        self._http_client = DefaultHTTPClient(
+            use_session=use_session,
+            check_cert=check_cert
+        ) if http_client is None else http_client
         self._logging = enable_logging
         self._conn = Connection(
             protocol=self._protocol,
