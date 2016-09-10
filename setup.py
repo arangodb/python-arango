@@ -6,7 +6,7 @@ with open('./arango/version.py') as fp:
 
 setup(
     name='python-arango',
-    description='Python Driver for ArangoDB REST API',
+    description='Python Driver for ArangoDB',
     version=version['VERSION'],
     author='Joohwan Oh',
     author_email='joohwan.oh@outlook.com',
