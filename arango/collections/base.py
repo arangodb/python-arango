@@ -488,8 +488,7 @@ class BaseCollection(APIWrapper):
             filter_type='include'):
         """"Return all documents in the collection using a server cursor.
 
-        :param flush: flush the WAL prior to the export (if this flag is not
-            set, )
+        :param flush: flush the WAL prior to the export
         :type flush: bool
         :param flush_wait: the max wait time in seconds for the WAL flush
         :type flush_wait: int
