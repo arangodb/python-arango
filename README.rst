@@ -154,4 +154,4 @@ Here is another example involving graphs:
 Please read the full `API documentation`_ for more details!
 
 .. _API documentation:
-    http://python-driver-for-arangodb.readthedocs.io/en/master/intro.html
+    http://python-driver-for-arangodb.readthedocs.io/en/master/index.html
