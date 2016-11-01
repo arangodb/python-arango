@@ -206,6 +206,11 @@ class Database(object):
                           index_bucket_count=None):
         """Create a new collection.
 
+        .. note::
+
+            Starting from ArangoDB version 3.1+, system collections must have
+            a name with a leading underscore ``_`` character.
+
         :param name: the name of the collection
         :type name: str | unicode
         :param sync: wait for the operation to sync to disk
@@ -275,19 +280,27 @@ class Database(object):
             raise CollectionCreateError(res)
         return self.collection(name)
 
-    def delete_collection(self, name, ignore_missing=False):
+    def delete_collection(self, name, ignore_missing=False, system=None):
         """Delete a collection.
 
         :param name: the name of the collection to delete
         :type name: str | unicode
         :param ignore_missing: do not raise if the collection is missing
         :type ignore_missing: bool
+        :param system: whether the collection is a system collection (this
+            option is only available with ArangoDB 3.1+, lower versions do
+            distinguish between system or non-system collections)
+        :type system: bool
         :returns: whether the deletion was successful
         :rtype: bool
         :raises arango.exceptions.CollectionDeleteError: if the collection
             cannot be deleted from the database
         """
-        res = self._conn.delete('/_api/collection/{}'.format(name))
+        res = self._conn.delete(
+            '/_api/collection/{}'.format(name),
+            params={'isSystem': system}
+            if system is not None else None  # pragma: no cover
+        )
         if res.status_code not in HTTP_OK:
             if not (res.status_code == 404 and ignore_missing):
                 raise CollectionDeleteError(res)

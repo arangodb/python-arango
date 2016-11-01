@@ -411,6 +411,10 @@ class ArangoClient(object):
     def log_levels(self):
         """Return the current logging levels.
 
+        .. note::
+
+            This method is only compatible with ArangoDB version 3.1+ only.
+
         :return: the current logging levels
         :rtype: dict
         """
@@ -435,7 +439,11 @@ class ArangoClient(object):
 
         .. note::
 
-        Keys that are not valid logger names are simply ignored.
+            Keys that are not valid logger names are simply ignored.
+
+        .. note::
+
+            This method is only compatible with ArangoDB version 3.1+ only.
 
         :return: the new logging levels
         :rtype: dict
