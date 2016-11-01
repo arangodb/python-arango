@@ -12,17 +12,17 @@ class Connection(object):
     """ArangoDB database connection.
 
     :param protocol: the internet transfer protocol (default: ``"http"``)
-    :type protocol: str
+    :type protocol: str | unicode
     :param host: ArangoDB host (default: ``"localhost"``)
-    :type host: str
+    :type host: str | unicode
     :param port: ArangoDB port (default: ``8529``)
-    :type port: int | str
+    :type port: int | str | unicode
     :param database: the name of the target database (default: ``"_system"``)
-    :type database: str
+    :type database: str | unicode
     :param username: ArangoDB username (default: ``"root"``)
-    :type username: str
+    :type username: str | unicode
     :param password: ArangoDB password (default: ``""``)
-    :type password: str
+    :type password: str | unicode
     :param http_client: the HTTP client
     :type http_client: arango.clients.base.BaseHTTPClient
     :param enable_logging: log all API requests with a logger named "arango"
@@ -63,7 +63,7 @@ class Connection(object):
         """Return the internet transfer protocol.
 
         :returns: the internet transfer protocol
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._protocol
 
@@ -72,7 +72,7 @@ class Connection(object):
         """Return the ArangoDB host.
 
         :returns: the ArangoDB host
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._host
 
@@ -90,7 +90,7 @@ class Connection(object):
         """Return the ArangoDB username.
 
         :returns: the ArangoDB username
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._username
 
@@ -99,7 +99,7 @@ class Connection(object):
         """Return the ArangoDB user password.
 
         :returns: the ArangoDB user password
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._password
 
@@ -108,7 +108,7 @@ class Connection(object):
         """Return the name of the connected database.
 
         :returns: the name of the connected database
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._database
 
@@ -135,7 +135,7 @@ class Connection(object):
         """Return the connection type.
 
         :return: the connection type
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._type
 
@@ -146,7 +146,7 @@ class Connection(object):
         """Execute a **HEAD** API method.
 
         :param endpoint: the API endpoint
-        :type endpoint: str
+        :type endpoint: str | unicode
         :param params: the request parameters
         :type params: dict
         :param headers: the request headers
@@ -169,7 +169,7 @@ class Connection(object):
         """Execute a **GET** API method.
 
         :param endpoint: the API endpoint
-        :type endpoint: str
+        :type endpoint: str | unicode
         :param params: the request parameters
         :type params: dict
         :param headers: the request headers
@@ -192,9 +192,9 @@ class Connection(object):
         """Execute a **PUT** API method.
 
         :param endpoint: the API endpoint
-        :type endpoint: str
+        :type endpoint: str | unicode
         :param data: the request payload
-        :type data: str | dict
+        :type data: str | unicode | dict
         :param params: the request parameters
         :type params: dict
         :param headers: the request headers
@@ -218,9 +218,9 @@ class Connection(object):
         """Execute a **POST** API method.
 
         :param endpoint: the API endpoint
-        :type endpoint: str
+        :type endpoint: str | unicode
         :param data: the request payload
-        :type data: str | dict
+        :type data: str | unicode | dict
         :param params: the request parameters
         :type params: dict
         :param headers: the request headers
@@ -244,9 +244,9 @@ class Connection(object):
         """Execute a **PATCH** API method.
 
         :param endpoint: the API endpoint
-        :type endpoint: str
+        :type endpoint: str | unicode
         :param data: the request payload
-        :type data: str | dict
+        :type data: str | unicode | dict
         :param params: the request parameters
         :type params: dict
         :param headers: the request headers
@@ -270,9 +270,9 @@ class Connection(object):
         """Execute a **DELETE** API method.
 
         :param endpoint: the API endpoint
-        :type endpoint: str
+        :type endpoint: str | unicode
         :param data: the request payload
-        :type data: str | dict
+        :type data: str | unicode | dict
         :param params: the request parameters
         :type params: dict
         :param headers: the request headers

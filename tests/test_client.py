@@ -2,15 +2,15 @@ from __future__ import absolute_import, unicode_literals
 
 from datetime import datetime
 
-from six import string_types
 import pytest
+from six import string_types
 
 from arango import ArangoClient
 from arango.http_clients import DefaultHTTPClient
 from arango.database import Database
 from arango.exceptions import *
 
-from .utils import generate_db_name
+from .utils import generate_db_name, arango_version
 
 http_client = DefaultHTTPClient(use_session=False)
 arango_client = ArangoClient(http_client=http_client)
@@ -164,6 +164,38 @@ def test_reload_routing():
 
     with pytest.raises(ServerReloadRoutingError):
         bad_arango_client.reload_routing()
+
+
+def test_log_levels():
+    major, minor = arango_version(arango_client)
+    if major == 3 and minor >= 1:
+
+        result = arango_client.log_levels()
+        assert isinstance(result, dict)
+
+        with pytest.raises(ServerLogLevelError):
+            bad_arango_client.log_levels()
+
+
+def test_set_log_levels():
+    major, minor = arango_version(arango_client)
+    if major == 3 and minor >= 1:
+
+        new_levels = {
+            'agency': 'DEBUG',
+            'collector': 'INFO',
+            'threads': 'WARNING'
+        }
+        result = arango_client.set_log_levels(**new_levels)
+
+        for key, value in new_levels.items():
+            assert result[key] == value
+
+        for key, value in arango_client.log_levels().items():
+            assert result[key] == value
+
+        with pytest.raises(ServerLogLevelSetError):
+            bad_arango_client.set_log_levels(**new_levels)
 
 
 def test_endpoints():

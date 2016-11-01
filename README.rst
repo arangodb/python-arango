@@ -56,16 +56,14 @@ To install a stable version from PyPi_:
 
 .. code-block:: bash
 
-    pip install python-arango
+    ~$ pip install python-arango
 
 
 To install the latest version directly from GitHub_:
 
 .. code-block:: bash
 
-    git clone https://github.com/joowani/python-arango.git
-    cd python-arango
-    python setup.py install
+    ~$ pip install -e git+git@github.com:joowani/python-arango.git@master#egg=python-arango
 
 You may need to use ``sudo`` depending on your environment setup.
 

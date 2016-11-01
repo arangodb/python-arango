@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from json import dumps
+from six import string_types
 
 from arango.api import api_method
 from arango.collections.base import BaseCollection
@@ -23,7 +24,7 @@ class Collection(BaseCollection):
     :param connection: ArangoDB database connection
     :type connection: arango.connection.Connection
     :param name: the name of the collection
-    :type name: str
+    :type name: str | unicode
     """
 
     def __init__(self, connection, name):
@@ -37,9 +38,9 @@ class Collection(BaseCollection):
         """Retrieve a document by its key.
 
         :param key: the document key
-        :type key: str
+        :type key: str | unicode
         :param rev: the revision to compare with that of the retrieved document
-        :type rev: str
+        :type rev: str | unicode
         :param match_rev: if ``True``, check if the given revision and
             the target document's revisions are the same, otherwise check if
             the revisions are different (this flag has an effect only when
@@ -693,7 +694,7 @@ class Collection(BaseCollection):
         """Delete a document by its key.
 
         :param document: the document to delete or its key
-        :type document: dict | str
+        :type document: dict | str | unicode
         :param ignore_missing: ignore missing documents (default: ``False``)
         :type ignore_missing: bool
         :param return_old: if ``True``, the full body of the old document is
@@ -728,7 +729,7 @@ class Collection(BaseCollection):
         if sync is not None:
             params['waitForSync'] = sync
 
-        full_doc = not isinstance(document, string)
+        full_doc = not isinstance(document, string_types)
         if check_rev and full_doc and '_rev' in document:
             headers = {'If-Match': document['_rev']}
         else:

@@ -24,7 +24,7 @@ class DefaultHTTPClient(BaseHTTPClient):
         """Execute an HTTP **HEAD** method.
 
         :param url: request URL
-        :type url: str
+        :type url: str | unicode
         :param params: request parameters
         :type params: dict
         :param headers: request headers
@@ -54,7 +54,7 @@ class DefaultHTTPClient(BaseHTTPClient):
         """Execute an HTTP **GET** method.
 
         :param url: request URL
-        :type url: str
+        :type url: str | unicode
         :param params: request parameters
         :type params: dict
         :param headers: request headers
@@ -84,9 +84,9 @@ class DefaultHTTPClient(BaseHTTPClient):
         """Execute an HTTP **PUT** method.
 
         :param url: request URL
-        :type url: str
+        :type url: str | unicode
         :param data: request payload
-        :type data: str | dict
+        :type data: str | unicode | dict
         :param params: request parameters
         :type params: dict
         :param headers: request headers
@@ -117,9 +117,9 @@ class DefaultHTTPClient(BaseHTTPClient):
         """Execute an HTTP **POST** method.
 
         :param url: request URL
-        :type url: str
+        :type url: str | unicode
         :param data: request payload
-        :type data: str | dict
+        :type data: str | unicode | dict
         :param params: request parameters
         :type params: dict
         :param headers: request headers
@@ -150,9 +150,9 @@ class DefaultHTTPClient(BaseHTTPClient):
         """Execute an HTTP **PATCH** method.
 
         :param url: request URL
-        :type url: str
+        :type url: str | unicode
         :param data: request payload
-        :type data: str | dict
+        :type data: str | unicode | dict
         :param params: request parameters
         :type params: dict
         :param headers: request headers
@@ -183,9 +183,9 @@ class DefaultHTTPClient(BaseHTTPClient):
         """Execute an HTTP **DELETE** method.
 
         :param url: request URL
-        :type url: str
+        :type url: str | unicode
         :param data: request payload
-        :type data: str | dict
+        :type data: str | unicode | dict
         :param params: request parameters
         :type params: dict
         :param headers: request headers

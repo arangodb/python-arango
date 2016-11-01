@@ -9,7 +9,7 @@ class ArangoError(Exception):
     """Base class for all ArangoDB exceptions.
 
     :param data: the response object or string
-    :type data: arango.response.Response | str
+    :type data: arango.response.Response | str | unicode
     """
 
     def __init__(self, data, message=None):
@@ -107,6 +107,14 @@ class ServerRequiredDBVersionError(ArangoError):
 
 class ServerReadLogError(ArangoError):
     """Failed to retrieve the global log."""
+
+
+class ServerLogLevelError(ArangoError):
+    """Failed to return the log level."""
+
+
+class ServerLogLevelSetError(ArangoError):
+    """Failed to set the log level."""
 
 
 class ServerReloadRoutingError(ArangoError):

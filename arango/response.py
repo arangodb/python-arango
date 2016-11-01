@@ -8,15 +8,15 @@ class Response(object):
     an instance of this.
 
     :param method: the HTTP method
-    :type method: str
+    :type method: str | unicode
     :param url: the request URL
-    :type url: str
+    :type url: str | unicode
     :param http_code: the HTTP status code
     :type http_code: int
     :param http_text: the HTTP status text
-    :type http_text: str
+    :type http_text: str | unicode
     :param body: the HTTP response body
-    :type body: str | dict
+    :type body: str | unicode | dict
 
     .. note::
         This class is meant to be used internally only.

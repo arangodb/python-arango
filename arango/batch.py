@@ -65,7 +65,7 @@ class BatchExecution(Connection):
         """Return the UUID of the batch request.
 
         :return: the UUID of the batch request
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._id
 
@@ -187,7 +187,7 @@ class BatchExecution(Connection):
         and committed as a whole in a single HTTP call to the ArangoDB server.
 
         :param name: the name of the collection
-        :type name: str
+        :type name: str | unicode
         :returns: the collection object
         :rtype: arango.collections.Collection
         """
@@ -200,7 +200,7 @@ class BatchExecution(Connection):
         and committed as a whole in a single HTTP call to the ArangoDB server.
 
         :param name: the name of the graph
-        :type name: str
+        :type name: str | unicode
         :returns: the graph object
         :rtype: arango.graph.Graph
         """
@@ -226,7 +226,7 @@ class BatchJob(object):
         """Return the UUID of the batch job.
 
         :return: the UUID of the batch job
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._id
 
@@ -249,7 +249,7 @@ class BatchJob(object):
         :returns: the batch job status, which can be ``"pending"`` (the job is
             still waiting to be committed), ``"done"`` (the job completed) or
             ``"error"`` (the job raised an exception)
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._status
 

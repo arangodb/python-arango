@@ -90,7 +90,7 @@ class AsyncExecution(Connection):
         a fire-and-forget style.
 
         :param name: the name of the collection
-        :type name: str
+        :type name: str | unicode
         :returns: the collection object
         :rtype: arango.collections.Collection
         """
@@ -104,7 +104,7 @@ class AsyncExecution(Connection):
         style.
 
         :param name: the name of the graph
-        :type name: str
+        :type name: str | unicode
         :returns: the graph object
         :rtype: arango.graph.Graph
         """
@@ -119,7 +119,7 @@ class AsyncJob(object):
     :param connection: ArangoDB database connection
     :type connection: arango.connection.Connection
     :param job_id: the ID of the async job
-    :type job_id: str
+    :type job_id: str | unicode
     :param handler: the response handler
     :type handler: callable
     """
@@ -137,7 +137,7 @@ class AsyncJob(object):
         """Return the ID of the async job.
 
         :returns: the ID of the async job
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._id
 
@@ -147,7 +147,7 @@ class AsyncJob(object):
         :returns: the status of the async job, which can be ``"pending"`` (the
             job is still in the queue), ``"done"`` (the job finished or raised
             an exception)
-        :rtype: str
+        :rtype: str | unicode
         :raises arango.exceptions.AsyncJobStatusError: if the status of the
             async job cannot be retrieved from the server
         """

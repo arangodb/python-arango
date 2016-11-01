@@ -36,6 +36,16 @@ Example:
     # Read the server log
     client.read_log(level="debug")
 
+    # Get the log levels
+    client.log_level()
+
+    # Set the log levels
+    client.set_log_level(
+        agency='DEBUG',
+        collector='INFO',
+        threads='WARNING'
+    )
+
     # List the endpoints the server is listening on
     client.endpoints()
 

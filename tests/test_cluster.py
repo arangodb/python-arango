@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import pytest
-from six import string_types as string
+from six import string_types
 
 from arango import ArangoClient
 from arango.aql import AQL

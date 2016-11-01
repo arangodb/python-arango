@@ -23,9 +23,9 @@ class EdgeCollection(BaseCollection):
     :param connection: ArangoDB database connection
     :type connection: arango.connection.Connection
     :param graph_name: the name of the graph
-    :type graph_name: str
+    :type graph_name: str | unicode
     :param name: the name of the edge collection
-    :type name: str
+    :type name: str | unicode
     """
 
     def __init__(self, connection, graph_name, name):
@@ -42,7 +42,7 @@ class EdgeCollection(BaseCollection):
     def graph_name(self):
         """Return the name of the graph.
         :returns: the name of the graph
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._graph_name
 
@@ -51,9 +51,9 @@ class EdgeCollection(BaseCollection):
         """Fetch a document by key from the edge collection.
 
         :param key: the document key
-        :type key: str
+        :type key: str | unicode
         :param rev: the document revision
-        :type rev: str | None
+        :type rev: str | unicode | None
         :returns: the vertex document or ``None`` if not found
         :rtype: dict | None
         :raises arango.exceptions.DocumentRevisionError: if the given revision

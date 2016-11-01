@@ -43,7 +43,7 @@ class Database(object):
         """Return the name of the database.
 
         :returns: the name of the database
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._conn.database
 
@@ -95,9 +95,9 @@ class Database(object):
         Refer to :class:`arango.transaction.Transaction` for more information.
 
         :param read: the name(s) of the collection(s) to read from
-        :type read: str | list
+        :type read: str | unicode | list
         :param write: the name(s) of the collection(s) to write to
-        :type write: str | list
+        :type write: str | unicode | list
         :param sync: wait for the operation to sync to disk
         :type sync: bool
         :param timeout: timeout on the collection locks
@@ -121,9 +121,9 @@ class Database(object):
         """Return the cluster round-trip test object.
 
         :param shard_id: the ID of the shard to which the request is sent
-        :type shard_id: str
+        :type shard_id: str | unicode
         :param transaction_id: the transaction ID for the request
-        :type transaction_id: str
+        :type transaction_id: str | unicode
         :param timeout: the timeout in seconds for the cluster operation, where
             an error is returned if the response does not arrive within the
             given limit (default: 24 hrs)
@@ -183,7 +183,7 @@ class Database(object):
         """Return the collection object.
 
         :param name: the name of the collection
-        :type name: str
+        :type name: str | unicode
         :returns: the collection object
         :rtype: arango.collections.Collection
         """
@@ -207,7 +207,7 @@ class Database(object):
         """Create a new collection.
 
         :param name: the name of the collection
-        :type name: str
+        :type name: str | unicode
         :param sync: wait for the operation to sync to disk
         :type sync: bool
         :param compact: compact the collection
@@ -221,7 +221,7 @@ class Database(object):
         :param volatile: the collection is in-memory only
         :type volatile: bool
         :param key_generator: "traditional" or "autoincrement"
-        :type key_generator: str
+        :type key_generator: str | unicode
         :param user_keys: allow users to supply keys
         :type user_keys: bool
         :param key_increment: the increment value (autoincrement only)
@@ -279,7 +279,7 @@ class Database(object):
         """Delete a collection.
 
         :param name: the name of the collection to delete
-        :type name: str
+        :type name: str | unicode
         :param ignore_missing: do not raise if the collection is missing
         :type ignore_missing: bool
         :returns: whether the deletion was successful
@@ -321,7 +321,7 @@ class Database(object):
         """Return the graph object.
 
         :param name: the name of the graph
-        :type name: str
+        :type name: str | unicode
         :returns: the requested graph object
         :rtype: arango.graph.Graph
         """
@@ -344,7 +344,7 @@ class Database(object):
             }
 
         :param name: name of the new graph
-        :type name: str
+        :type name: str | unicode
         :param edge_definitions: list of edge definitions
         :type edge_definitions: list
         :param orphan_collections: names of additional vertex collections
@@ -373,7 +373,7 @@ class Database(object):
         """Drop the graph of the given name from the database.
 
         :param name: the name of the graph to delete
-        :type name: str
+        :type name: str | unicode
         :param ignore_missing: ignore HTTP 404
         :type ignore_missing: bool
         :returns: whether the drop was successful
@@ -408,7 +408,7 @@ class Database(object):
         """Return the active server task with the given id.
 
         :param task_id: the ID of the server task
-        :type task_id: str
+        :type task_id: str | unicode
         :returns: the details on the active server task
         :rtype: dict
         :raises arango.exceptions.TaskGetError: if the task cannot be retrieved
@@ -432,9 +432,9 @@ class Database(object):
         """Create a new server task.
 
         :param name: the name of the server task
-        :type name: str
+        :type name: str | unicode
         :param command: the Javascript code to execute
-        :type command: str
+        :type command: str | unicode
         :param params: the parameters passed into the command
         :type params: dict
         :param period: the number of seconds to wait between executions (if
@@ -444,7 +444,7 @@ class Database(object):
         :param offset: the initial delay before execution in seconds
         :type offset: int
         :param task_id: pre-defined ID for the new server task
-        :type task_id: str
+        :type task_id: str | unicode
         :returns: the details on the new task
         :rtype: dict
         :raises arango.exceptions.TaskCreateError: if the task cannot be
@@ -475,7 +475,7 @@ class Database(object):
         """Delete the server task specified by ID.
 
         :param task_id: the ID of the server task
-        :type task_id: str
+        :type task_id: str | unicode
         :param ignore_missing: ignore missing tasks
         :type ignore_missing: bool
         :returns: whether the deletion was successful
