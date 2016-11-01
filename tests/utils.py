@@ -3,6 +3,18 @@ from __future__ import absolute_import, unicode_literals
 from random import randint
 
 
+def arango_version(client):
+    """Return the major and minor version of ArangoDB.
+
+    :param client: ArangoDB client
+    :type client: arango.ArangoClient
+    :return: the major and minor version numbers
+    :rtype: tuple
+    """
+    version_nums = client.version().split('.')
+    return map(int, version_nums[:2])
+
+
 def generate_db_name(client, exclude=None):
     """Generate and return the next available database name.
 
@@ -11,7 +23,7 @@ def generate_db_name(client, exclude=None):
     :param exclude: set of names to exclude
     :type exclude: set
     :returns: the next available database name
-    :rtype: str
+    :rtype: str | unicode
     """
     num = randint(100000, 999999)
     existing = set(client.databases())
@@ -30,7 +42,7 @@ def generate_col_name(database, exclude=None):
     :param exclude: set of names to exclude
     :type exclude: set
     :returns: the next available collection name
-    :rtype: str
+    :rtype: str | unicode
     """
     num = randint(100000, 999999)
     existing = set(col['name'] for col in database.collections())
@@ -49,7 +61,7 @@ def generate_graph_name(database, exclude=None):
     :param exclude: set of names to exclude
     :type exclude: set
     :returns: the next available graph name
-    :rtype: str
+    :rtype: str | unicode
     """
     num = randint(100000, 999999)
     existing = set(g['name'] for g in database.graphs())
@@ -68,7 +80,7 @@ def generate_task_name(database, exclude=None):
     :param exclude: set of names to exclude
     :type exclude: set
     :returns: the next available task name
-    :rtype: str
+    :rtype: str | unicode
     """
     num = randint(100000, 999999)
     existing = set(task['name'] for task in database.tasks())
@@ -87,7 +99,7 @@ def generate_task_id(database, exclude=None):
     :param exclude: set of names to exclude
     :type exclude: set
     :returns: the next available task ID
-    :rtype: str
+    :rtype: str | unicode
     """
     num = randint(100000, 999999)
     existing = set(task['id'] for task in database.tasks())
@@ -106,7 +118,7 @@ def generate_user_name(client, exclude=None):
     :param exclude: set of names to exclude
     :type exclude: set
     :returns: the next available database name
-    :rtype: str
+    :rtype: str | unicode
     """
     num = randint(100000, 999999)
     existing = set(user['username'] for user in client.users())

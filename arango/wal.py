@@ -140,4 +140,4 @@ class WriteAheadLog(object):
         )
         if res.status_code not in HTTP_OK:
             raise WALFlushError(res)
-        return not res.body['error']
+        return not res.body.get('error')

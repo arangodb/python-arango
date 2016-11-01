@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from time import sleep, time
 
 import pytest
-from six import string_types as string
+from six import string_types
 
 from arango import ArangoClient
 from arango.aql import AQL
@@ -115,7 +115,7 @@ def test_async_inserts_with_result():
     # Test get result from finished but with existing jobs
     for job in [job1, job2, job3]:
         assert 'ArangoDB asynchronous job {}'.format(job.id) in repr(job)
-        assert isinstance(job.id, string)
+        assert isinstance(job.id, string_types)
         wait_on_job(job)
         assert len(job.result()) == 10000
 

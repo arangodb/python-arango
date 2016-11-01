@@ -14,9 +14,9 @@ class ClusterTest(Connection):
     :param connection: ArangoDB database connection
     :type connection: arango.connection.Connection
     :param shard_id: the ID of the shard to which the request is sent
-    :type shard_id: str
+    :type shard_id: str | unicode
     :param transaction_id: the transaction ID for the request
-    :type transaction_id: str
+    :type transaction_id: str | unicode
     :param timeout: the timeout in seconds for the cluster operation, where
         an error is returned if the response does not arrive within the given
         limit (default: 24 hrs)
@@ -99,7 +99,7 @@ class ClusterTest(Connection):
         a fire-and-forget style.
 
         :param name: the name of the collection
-        :type name: str
+        :type name: str | unicode
         :returns: the collection object
         :rtype: arango.collections.Collection
         """
@@ -113,7 +113,7 @@ class ClusterTest(Connection):
         style.
 
         :param name: the name of the graph
-        :type name: str
+        :type name: str | unicode
         :returns: the graph object
         :rtype: arango.graph.Graph
         """

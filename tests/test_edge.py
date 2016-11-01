@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import pytest
+from six import string_types
 
 from arango import ArangoClient
 from arango.exceptions import *
@@ -45,7 +46,7 @@ def test_insert():
     assert len(ecol) == 1
     assert result['_id'] == '{}/{}'.format(ecol_name, edge1['_key'])
     assert result['_key'] == edge1['_key']
-    assert result['_rev'].isdigit()
+    assert isinstance(result['_rev'], string_types)
     assert result['new']['_key'] == edge1['_key']
     assert result['new']['_from'] == edge1['_from']
     assert result['new']['_to'] == edge1['_to']
@@ -76,7 +77,7 @@ def test_insert():
     assert len(ecol) == 2
     assert result['_id'] == '{}/{}'.format(ecol_name, edge2['_key'])
     assert result['_key'] == edge2['_key']
-    assert result['_rev'].isdigit()
+    assert isinstance(result['_rev'], string_types)
     assert 'new' not in result
     assert result['sync'] is False
     assert ecol['2']['_key'] == edge2['_key']
@@ -91,7 +92,7 @@ def test_insert_many():
         key = edge['_key']
         assert result['_id'] == '{}/{}'.format(ecol_name, key)
         assert result['_key'] == key
-        assert result['_rev'].isdigit()
+        assert isinstance(result['_rev'], string_types)
         assert result['new']['_key'] == key
         assert result['new']['_from'] == edge['_from']
         assert result['new']['_to'] == edge['_to']
@@ -129,7 +130,7 @@ def test_update():
     result = ecol.update(edge, return_old=True, return_new=True)
     assert result['_id'] == '{}/{}'.format(ecol.name, edge['_key'])
     assert result['_key'] == edge['_key']
-    assert result['_rev'].isdigit()
+    assert isinstance(result['_rev'], string_types)
     assert result['new']['_key'] == edge['_key']
     assert result['new']['_from'] is None
     assert result['new']['_to'] is None
@@ -148,7 +149,7 @@ def test_update():
     result = ecol.update(edge, return_old=True, return_new=True)
     assert result['_id'] == '{}/{}'.format(ecol.name, edge['_key'])
     assert result['_key'] == edge['_key']
-    assert result['_rev'].isdigit()
+    assert isinstance(result['_rev'], string_types)
     assert result['new']['_key'] == edge1['_key']
     assert result['new']['_from'] == edge2['_from']
     assert result['new']['_to'] == edge2['_to']
@@ -349,7 +350,7 @@ def test_delete():
     result = ecol.delete(edge1)
     assert result['_id'] == '{}/{}'.format(ecol.name, edge1['_key'])
     assert result['_key'] == edge1['_key']
-    assert result['_rev'].isdigit()
+    assert isinstance(result['_rev'], string_types)
     assert result['sync'] is False
     assert 'old' not in result
     assert edge1['_key'] not in ecol
@@ -359,7 +360,7 @@ def test_delete():
     result = ecol.delete(edge2['_key'])
     assert result['_id'] == '{}/{}'.format(ecol.name, edge2['_key'])
     assert result['_key'] == edge2['_key']
-    assert result['_rev'].isdigit()
+    assert isinstance(result['_rev'], string_types)
     assert result['sync'] is False
     assert 'old' not in result
     assert edge2['_key'] not in ecol
@@ -369,7 +370,7 @@ def test_delete():
     result = ecol.delete(edge3, return_old=True)
     assert result['_id'] == '{}/{}'.format(ecol.name, edge3['_key'])
     assert result['_key'] == edge3['_key']
-    assert result['_rev'].isdigit()
+    assert isinstance(result['_rev'], string_types)
     assert result['sync'] is False
     assert result['old']['_key'] == edge3['_key']
     assert result['old']['_to'] == edge3['_to']
@@ -381,7 +382,7 @@ def test_delete():
     result = ecol.delete(edge4, sync=True)
     assert result['_id'] == '{}/{}'.format(ecol.name, edge4['_key'])
     assert result['_key'] == edge4['_key']
-    assert result['_rev'].isdigit()
+    assert isinstance(result['_rev'], string_types)
     assert result['sync'] is True
     assert edge4['_key'] not in ecol
     assert len(ecol) == 1
@@ -390,7 +391,7 @@ def test_delete():
     rev = ecol[edge5['_key']]['_rev'] + '000'
     bad_edge = edge5.copy()
     bad_edge.update({'_rev': rev})
-    with pytest.raises(DocumentRevisionError):
+    with pytest.raises(ArangoError):
         ecol.delete(bad_edge, check_rev=True)
     assert bad_edge['_key'] in ecol
     assert len(ecol) == 1
@@ -422,7 +423,7 @@ def test_delete_many():
     for result, key in zip(results, test_edge_keys):
         assert result['_id'] == '{}/{}'.format(ecol.name, key)
         assert result['_key'] == key
-        assert result['_rev'].isdigit()
+        assert isinstance(result['_rev'], string_types)
         assert result['sync'] is False
         assert 'old' not in result
         assert key not in ecol
@@ -435,7 +436,7 @@ def test_delete_many():
     for result, key in zip(results, test_edge_keys):
         assert result['_id'] == '{}/{}'.format(ecol.name, key)
         assert result['_key'] == key
-        assert result['_rev'].isdigit()
+        assert isinstance(result['_rev'], string_types)
         assert result['sync'] is False
         assert 'old' not in result
         assert key not in ecol
@@ -449,7 +450,7 @@ def test_delete_many():
         key = edge['_key']
         assert result['_id'] == '{}/{}'.format(ecol.name, key)
         assert result['_key'] == key
-        assert result['_rev'].isdigit()
+        assert isinstance(result['_rev'], string_types)
         assert result['sync'] is False
         assert result['old']['_key'] == key
         assert result['old']['_to'] == edge['_to']
@@ -465,7 +466,7 @@ def test_delete_many():
         key = edge['_key']
         assert result['_id'] == '{}/{}'.format(ecol.name, key)
         assert result['_key'] == key
-        assert result['_rev'].isdigit()
+        assert isinstance(result['_rev'], string_types)
         assert result['sync'] is True
         assert 'old' not in result
         assert key not in ecol

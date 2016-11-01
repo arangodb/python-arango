@@ -45,7 +45,7 @@ class AQL(APIWrapper):
         """Inspect the query and return its metadata.
 
         :param query: the query to inspect
-        :type query: str
+        :type query: str | unicode
         :param all_plans: if ``True`` all possible execution plans are
             returned, otherwise only the optimal one is returned
         :type all_plans: bool
@@ -82,7 +82,7 @@ class AQL(APIWrapper):
         """Validate the query.
 
         :param query: the query to validate
-        :type query: str
+        :type query: str | unicode
         :returns: whether the validation was successful
         :rtype: bool
         :raises arango.exceptions.AQLQueryValidateError: if the query cannot be
@@ -110,7 +110,7 @@ class AQL(APIWrapper):
         """Execute the query and return the result cursor.
 
         :param query: the AQL query to execute
-        :type query: str
+        :type query: str | unicode
         :param count: whether the document count should be returned
         :type count: bool
         :param batch_size: maximum number of documents in one round trip
@@ -186,9 +186,9 @@ class AQL(APIWrapper):
         """Create a new AQL function.
 
         :param name: the name of the new AQL function to create
-        :type name: str
+        :type name: str | unicode
         :param code: the definition of the function in Javascript
-        :type code: str
+        :type code: str | unicode
         :returns: whether the AQL function was created successfully
         :rtype: bool
         :raises arango.exceptions.AQLFunctionCreateError: if the AQL function
@@ -218,7 +218,7 @@ class AQL(APIWrapper):
         including any namespaces.
 
         :param name: the name of the AQL function to delete
-        :type name: str
+        :type name: str | unicode
         :param group: treat the name as a namespace prefix
         :type group: bool
         :param ignore_missing: ignore missing functions
@@ -279,7 +279,7 @@ class AQLQueryCache(APIWrapper):
         """Configure the AQL query cache.
 
         :param mode: the operation mode (``"off"``, ``"on"`` or ``"demand"``)
-        :type mode: str
+        :type mode: str | unicode
         :param limit: the maximum number of results to be stored
         :type limit: int
         :returns: the result of the operation

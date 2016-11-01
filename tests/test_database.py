@@ -10,7 +10,8 @@ from arango.exceptions import *
 from .utils import (
     generate_db_name,
     generate_col_name,
-    generate_graph_name
+    generate_graph_name,
+    arango_version
 )
 
 arango_client = ArangoClient()
@@ -105,6 +106,29 @@ def test_create_collection():
 
 
 @pytest.mark.order5
+def test_create_system_collection():
+    major, minor = arango_version(arango_client)
+    if major == 3 and minor >= 1:
+
+        system_col_name = '_' + col_name_1
+        col = db.create_collection(
+            name=system_col_name,
+            system=True,
+        )
+        properties = col.properties()
+        assert properties['system'] is True
+        assert system_col_name in [c['name'] for c in db.collections()]
+        assert db.collection(system_col_name).properties()['system'] is True
+
+        with pytest.raises(CollectionDeleteError):
+            db.delete_collection(system_col_name)
+        assert system_col_name in [c['name'] for c in db.collections()]
+
+        db.delete_collection(system_col_name, system=True)
+        assert system_col_name not in [c['name'] for c in db.collections()]
+
+
+@pytest.mark.order6
 def test_drop_collection():
     # Test drop collection
     result = db.delete_collection(col_name_2)
@@ -120,7 +144,7 @@ def test_drop_collection():
     assert result is False
 
 
-@pytest.mark.order6
+@pytest.mark.order7
 def test_list_graphs():
     graphs = db.graphs()
     assert len(graphs) == 1
@@ -135,14 +159,14 @@ def test_list_graphs():
         bad_db.graphs()
 
 
-@pytest.mark.order7
+@pytest.mark.order8
 def test_get_graph():
     graph = db.graph(graph_name)
     assert isinstance(graph, Graph)
     assert graph.name == graph_name
 
 
-@pytest.mark.order8
+@pytest.mark.order9
 def test_create_graph():
     # Test create duplicate graph
     with pytest.raises(GraphCreateError):
@@ -153,7 +177,7 @@ def test_create_graph():
     assert new_graph_name in [g['name'] for g in db.graphs()]
 
 
-@pytest.mark.order9
+@pytest.mark.order10
 def test_drop_graph():
     # Test drop graph
     result = db.delete_graph(graph_name)

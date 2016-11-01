@@ -16,13 +16,13 @@ class ArangoClient(object):
     """ArangoDB client.
 
     :param protocol: the internet transfer protocol (default: ``"http"``)
-    :type protocol: str
+    :type protocol: str | unicode
     :param host: ArangoDB host (default: ``"localhost"``)
-    :type host: str
+    :type host: str | unicode
     :param port: ArangoDB port (default: ``8529``)
     :type port: int or str
     :param username: ArangoDB username (default: ``"root"``)
-    :type username: str
+    :type username: str | unicode
     :param password: ArangoDB password (default: ``""``)
     :param verify: check the connection during initialization
     :type verify: bool
@@ -94,7 +94,7 @@ class ArangoClient(object):
         """Return the internet transfer protocol.
 
         :returns: the internet transfer protocol
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._protocol
 
@@ -103,7 +103,7 @@ class ArangoClient(object):
         """Return the ArangoDB host.
 
         :returns: the ArangoDB host
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._host
 
@@ -121,7 +121,7 @@ class ArangoClient(object):
         """Return the ArangoDB username.
 
         :returns: the ArangoDB username
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._username
 
@@ -130,7 +130,7 @@ class ArangoClient(object):
         """Return the ArangoDB user password.
 
         :returns: the ArangoDB user password
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._password
 
@@ -165,7 +165,7 @@ class ArangoClient(object):
         """Return the version of the ArangoDB server.
 
         :returns: the server version
-        :rtype: str
+        :rtype: str | unicode
         :raises arango.exceptions.ServerVersionError: if the server version
             cannot be retrieved
         """
@@ -197,7 +197,7 @@ class ArangoClient(object):
         """Return the required version of the target database.
 
         :returns: the required version of the target database
-        :rtype: str
+        :rtype: str | unicode
         :raises arango.exceptions.ServerRequiredDBVersionError: if the
             required database version cannot be retrieved
         """
@@ -233,7 +233,7 @@ class ArangoClient(object):
             the cluster), ``"SECONDARY"`` (the server is a secondary database
             in the cluster) or ``"UNDEFINED"`` (the server role is undefined,
             the only possible value for a single server)
-        :rtype: str
+        :rtype: str | unicode
         :raises arango.exceptions.ServerRoleError: if the server role cannot
             be retrieved
         """
@@ -338,9 +338,9 @@ class ArangoClient(object):
         """Execute a Javascript program on the server.
 
         :param program: the body of the Javascript program to execute.
-        :type program: str
+        :type program: str | unicode
         :returns: the result of the execution
-        :rtype: str
+        :rtype: str | unicode
         :raises arango.exceptions.ServerExecuteError: if the program cannot
             be executed on the server
         """
@@ -362,11 +362,11 @@ class ArangoClient(object):
         :param upto: return the log entries up to the given level (mutually
             exclusive with argument **level**), which must be ``"fatal"``,
             ``"error"``, ``"warning"``, ``"info"`` (default) or ``"debug"``
-        :type upto: str | int
+        :type upto: str | unicode | int
         :param level: return the log entries of only the given level (mutually
             exclusive with **upto**), which must be ``"fatal"``, ``"error"``,
             ``"warning"``, ``"info"`` (default) or ``"debug"``
-        :type level: str | int
+        :type level: str | unicode | int
         :param start: return the log entries whose ID is greater or equal to
             the given value
         :type start: int
@@ -377,10 +377,10 @@ class ArangoClient(object):
             can be setting can be used for pagination)
         :type offset: int
         :param search: return only the log entries containing the given text
-        :type search: str
+        :type search: str | unicode
         :param sort: sort the log entries according to the given fashion, which
             can be ``"sort"`` or ``"desc"``
-        :type sort: str
+        :type sort: str | unicode
         :returns: the server log entries
         :rtype: dict
         :raises arango.exceptions.ServerReadLogError: if the server log entries
@@ -406,6 +406,51 @@ class ArangoClient(object):
             raise ServerReadLogError(res)
         if 'totalAmount' in res.body:
             res.body['total_amount'] = res.body.pop('totalAmount')
+        return res.body
+
+    def log_levels(self):
+        """Return the current logging levels.
+
+        .. note::
+
+            This method is only compatible with ArangoDB version 3.1+ only.
+
+        :return: the current logging levels
+        :rtype: dict
+        """
+        res = self._conn.get('/_admin/log/level')
+        if res.status_code not in HTTP_OK:
+            raise ServerLogLevelError(res)
+        return res.body
+
+    def set_log_levels(self, **kwargs):
+        """Set the logging levels.
+
+        This method takes arbitrary keyword arguments where the keys are the
+        logger names and the values are the logging levels. For example:
+
+        .. code-block:: python
+
+            arango.set_log_level(
+                agency='DEBUG',
+                collector='INFO',
+                threads='WARNING'
+            )
+
+        .. note::
+
+            Keys that are not valid logger names are simply ignored.
+
+        .. note::
+
+            This method is only compatible with ArangoDB version 3.1+ only.
+
+        :return: the new logging levels
+        :rtype: dict
+        """
+        res = self._conn.put('/_admin/log/level', data=kwargs)
+        if res.status_code not in HTTP_OK:
+            raise ServerLogLevelSetError(res)
         return res.body
 
     def reload_routing(self):
@@ -449,13 +494,13 @@ class ArangoClient(object):
         This is an alias for :func:`~arango.client.ArangoClient.database`.
 
         :param name: the name of the database
-        :type name: str
+        :type name: str | unicode
         :param username: the username for authentication (if set, overrides
             the username specified during the client initialization)
-        :type username: str
+        :type username: str | unicode
         :param password: the password for authentication (if set, overrides
             the password specified during the client initialization
-        :type password: str
+        :type password: str | unicode
         :returns: the database object
         :rtype: arango.database.Database
         """
@@ -465,13 +510,13 @@ class ArangoClient(object):
         """Return the database object.
 
         :param name: the name of the database
-        :type name: str
+        :type name: str | unicode
         :param username: the username for authentication (if set, overrides
             the username specified during the client initialization)
-        :type username: str
+        :type username: str | unicode
         :param password: the password for authentication (if set, overrides
             the password specified during the client initialization
-        :type password: str
+        :type password: str | unicode
         :returns: the database object
         :rtype: arango.database.Database
         """
@@ -490,17 +535,17 @@ class ArangoClient(object):
         """Create a new database.
 
         :param name: the name of the new database
-        :type name: str
+        :type name: str | unicode
         :param users: the list of users with access to the new database, where
             each user is a dictionary with keys ``"username"``, ``"password"``,
             ``"active"`` and ``"extra"``.
         :type users: [dict]
         :param username: the username for authentication (if set, overrides
             the username specified during the client initialization)
-        :type username: str
+        :type username: str | unicode
         :param password: the password for authentication (if set, overrides
             the password specified during the client initialization
-        :type password: str
+        :type password: str | unicode
         :returns: the database object
         :rtype: arango.database.Database
         :raises arango.exceptions.DatabaseCreateError: if the create fails
@@ -540,7 +585,7 @@ class ArangoClient(object):
         """Delete the database of the specified name.
 
         :param name: the name of the database to delete
-        :type name: str
+        :type name: str | unicode
         :param ignore_missing: ignore missing databases
         :type ignore_missing: bool
         :returns: whether the database was deleted successfully
@@ -581,7 +626,7 @@ class ArangoClient(object):
         """Return the details of a user.
 
         :param username: the details of the user
-        :type username: str
+        :type username: str | unicode
         :returns: the user details
         :rtype: dict
         :raises arango.exceptions.UserGetError: if the retrieval fails
@@ -603,9 +648,9 @@ class ArangoClient(object):
         """Create a new user.
 
         :param username: the name of the user
-        :type username: str
+        :type username: str | unicode
         :param password: the user's password
-        :type password: str
+        :type password: str | unicode
         :param active: whether the user is active
         :type active: bool
         :param extra: any extra data on the user
@@ -637,9 +682,9 @@ class ArangoClient(object):
         """Update an existing user.
 
         :param username: the name of the existing user
-        :type username: str
+        :type username: str | unicode
         :param password: the user's new password
-        :type password: str
+        :type password: str | unicode
         :param active: whether the user is active
         :type active: bool
         :param extra: any extra data on the user
@@ -676,9 +721,9 @@ class ArangoClient(object):
         """Replace an existing user.
 
         :param username: the name of the existing user
-        :type username: str
+        :type username: str | unicode
         :param password: the user's new password
-        :type password: str
+        :type password: str | unicode
         :param active: whether the user is active
         :type active: bool
         :param extra: any extra data on the user
@@ -713,7 +758,7 @@ class ArangoClient(object):
         """Delete an existing user.
 
         :param username: the name of the existing user
-        :type username: str
+        :type username: str | unicode
         :param ignore_missing: ignore missing users
         :type ignore_missing: bool
         :returns: ``True`` if the operation was successful, ``False`` if the
@@ -736,7 +781,7 @@ class ArangoClient(object):
         """Return the database access details of a user.
 
         :param username: the name of the user
-        :type username: str
+        :type username: str | unicode
         :returns: the names of the databases the user can access
         :rtype: [str]
         :raises: arango.exceptions.UserAccessError: if the retrieval fails
@@ -754,9 +799,9 @@ class ArangoClient(object):
         """Grant user access to a database.
 
         :param username: the name of the user
-        :type username: str
+        :type username: str | unicode
         :param database: the name of the database
-        :type database: str
+        :type database: str | unicode
         :returns: whether the operation was successful
         :rtype: bool
         :raises arango.exceptions.UserGrantAccessError: if the operation fails
@@ -777,9 +822,9 @@ class ArangoClient(object):
         """Revoke user access to a database.
 
         :param username: the name of the user
-        :type username: str
+        :type username: str | unicode
         :param database: the name of the database
-        :type database: str
+        :type database: str | unicode | unicode
         :returns: whether the operation was successful
         :rtype: bool
         :raises arango.exceptions.UserRevokeAccessError: if the operation fails
@@ -804,7 +849,7 @@ class ArangoClient(object):
         """Return the IDs of asynchronous jobs with the specified status.
 
         :param status: the job status (``"pending"`` or ``"done"``)
-        :type status: str
+        :type status: str | unicode
         :param count: the maximum number of job IDs to return
         :type count: int
         :returns: the list of job IDs

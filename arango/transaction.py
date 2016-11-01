@@ -17,9 +17,9 @@ class Transaction(Connection):
     :param connection: ArangoDB database connection
     :type connection: arango.connection.Connection
     :param read: the name(s) of the collection(s) to read from
-    :type read: str | list
+    :type read: str | unicode | list
     :param write: the name(s) of the collection(s) to write to
-    :type write: str | list
+    :type write: str | unicode | list
     :param sync: wait for the operation to sync to disk
     :type sync: bool
     :param timeout: timeout on the collection locks
@@ -78,7 +78,7 @@ class Transaction(Connection):
         """Return the UUID of the transaction.
 
         :return: the UUID of the transaction
-        :rtype: str
+        :rtype: str | unicode
         """
         return self._id
 
@@ -100,7 +100,7 @@ class Transaction(Connection):
         """Execute raw Javascript code in a transaction.
 
         :param command: the raw Javascript code
-        :type command: str
+        :type command: str | unicode
         :param params: optional arguments passed into the code
         :type params: dict
         :param sync: wait for the operation to sync to disk (overrides the
@@ -164,7 +164,7 @@ class Transaction(Connection):
         and committed as a whole in a single HTTP call to the ArangoDB server.
 
         :param name: the name of the collection
-        :type name: str
+        :type name: str | unicode
         :returns: the collection object
         :rtype: arango.collections.Collection
         """

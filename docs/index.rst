@@ -1,43 +1,73 @@
-.. _index-page:
+.. python-arango documentation master file, created by
+   sphinx-quickstart on Sun Jul 24 17:17:48 2016.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
 
-Indexes
--------
+.. image:: /static/logo.png
 
-**Indexes** can be added to collections to speed up document lookups. Every
-collection has a primary hash index on the ``"_key"`` field by default. This
-index cannot be deleted or modified. Every edge collection has additional edge
-index on fields ``"_from"`` and ``"_to"``.
+|
 
-Here is an example showing how indexes can be added or removed:
+Welcome to the documentation for **python-arango**, a Python driver for
+`ArangoDB <https://www.arangodb.com/>`__.
 
-.. code-block:: python
 
-    from arango import ArangoClient
+Features
+========
 
-    client = ArangoClient()
-    db = client.db('my_database')
-    cities = db.create_collection('cities')
+- Clean, Pythonic interface
+- Lightweight
+- 95%+ ArangoDB REST API coverage
 
-    # List the indexes in the collection
-    cities.indexes()
+Compatibility
+=============
 
-    # Add a new hash index on fields 'continent' and 'country'
-    cities.add_hash_index(fields=['continent', 'country'], unique=True)
+- Python versions 2.7.x, 3.4.x and 3.5.x are supported
+- Latest version of python-arango (3.x) supports ArangoDB 3.x only
+- Older versions of python-arango support ArangoDB 1.x ~ 2.x only
 
-    # Add new fulltext indices on fields 'continent' and 'country'
-    cities.add_fulltext_index(fields=['continent'])
-    cities.add_fulltext_index(fields=['country'])
+Installation
+============
 
-    # Add a new skiplist index on field 'population'
-    cities.add_skiplist_index(fields=['population'], sparse=False)
+To install a stable version from PyPi_:
 
-    # Add a new geo-spatial index on field 'coordinates'
-    cities.add_geo_index(fields=['coordinates'])
+.. code-block:: bash
 
-    # Add a new persistent index on fields 'currency'
-    cities.add_persistent_index(fields=['currency'], unique=True, sparse=True)
+    ~$ pip install python-arango
 
-    # Delete an existing index from the collection
-    cities.delete_index('some_index_id')
 
-Refer to :ref:`Collection` class for more details.
+To install the latest version directly from GitHub_:
+
+.. code-block:: bash
+
+    ~$ pip install -e git+git@github.com:joowani/python-arango.git@master#egg=python-arango
+
+
+You may need to use ``sudo`` depending on your environment.
+
+.. _PyPi: https://pypi.python.org/pypi/python-arango
+.. _GitHub: https://github.com/joowani/python-arango
+
+
+Contents
+========
+
+.. toctree::
+    :maxdepth: 1
+
+    client
+    database
+    collection
+    document
+    indexes
+    graph
+    aql
+    cursor
+    async
+    batch
+    transaction
+    admin
+    user
+    task
+    wal
+    errors
+    classes

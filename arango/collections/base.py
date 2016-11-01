@@ -13,7 +13,7 @@ class BaseCollection(APIWrapper):
     :param connection: ArangoDB connection object
     :type connection: arango.connection.Connection
     :param name: the name of the collection
-    :type name: str
+    :type name: str  | unicode
     """
 
     TYPES = {
@@ -68,7 +68,7 @@ class BaseCollection(APIWrapper):
         """Return a document by its key from the collection.
 
         :param key: the document key
-        :type key: str
+        :type key: str  | unicode
         :returns: the document
         :rtype: dict
         :raises arango.exceptions.DocumentGetError: if the document cannot
@@ -85,7 +85,7 @@ class BaseCollection(APIWrapper):
         """Check if a document exists in the collection by its key.
 
         :param key: the document key
-        :type key: dict | str
+        :type key: dict | str | unicode
         :returns: whether the document exists
         :rtype: bool
         :raises arango.exceptions.DocumentInError: if the check cannot
@@ -104,7 +104,7 @@ class BaseCollection(APIWrapper):
         :param code: the collection status code
         :type code: int
         :returns: the collection status text
-        :rtype: str
+        :rtype: str  | unicode
         :raises arango.exceptions.CollectionBadStatusError: if the collection
             status code is unknown
         """
@@ -120,7 +120,7 @@ class BaseCollection(APIWrapper):
         """Return the name of the collection.
 
         :returns: the name of the collection
-        :rtype: str
+        :rtype: str  | unicode
         """
         return self._name
 
@@ -129,7 +129,7 @@ class BaseCollection(APIWrapper):
         """Rename the collection.
 
         :param new_name: the new name for the collection
-        :type new_name: str
+        :type new_name: str  | unicode
         :returns: the new collection details
         :rtype: dict
         :raises arango.exceptions.CollectionRenameError: if the collection
@@ -189,7 +189,7 @@ class BaseCollection(APIWrapper):
         """Return the collection revision.
 
         :returns: the collection revision
-        :rtype: str
+        :rtype: str  | unicode
         :raises arango.exceptions.CollectionRevisionError: if the
             collection revision cannot be retrieved
         """
@@ -297,7 +297,7 @@ class BaseCollection(APIWrapper):
         """Load the collection into memory.
 
         :returns: the collection status
-        :rtype: str
+        :rtype: str  | unicode
         :raises arango.exceptions.CollectionLoadError: if the collection
             cannot be loaded into memory
         """
@@ -319,7 +319,7 @@ class BaseCollection(APIWrapper):
         """Unload the collection from memory.
 
         :returns: the collection status
-        :rtype: str
+        :rtype: str  | unicode
         :raises arango.exceptions.CollectionUnloadError: if the collection
             cannot be unloaded from memory
         """
@@ -440,10 +440,10 @@ class BaseCollection(APIWrapper):
         """Check if a document exists in the collection by its key.
 
         :param key: the document key
-        :type key: dict | str
+        :type key: dict | str | unicode
         :param rev: the document revision to be compared against the revision
             of the target document
-        :type rev: str
+        :type rev: str  | unicode
         :param match_rev: if ``True``, check if the given revision and
             the target document's revisions are the same, otherwise check if
             the revisions are different (this flag has an effect only when
@@ -506,7 +506,7 @@ class BaseCollection(APIWrapper):
         :param filter_fields: list of document fields to filter by
         :type filter_fields: list
         :param filter_type: ``"include"`` (default) or ``"exclude"``
-        :type filter_type: str
+        :type filter_type: str  | unicode
         :returns: the document cursor
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: if the documents in
@@ -687,7 +687,7 @@ class BaseCollection(APIWrapper):
         """Return documents within a given range in a random order.
 
         :param field: the name of the field to use
-        :type field: str
+        :type field: str  | unicode
         :param lower: the lower bound
         :type lower: int
         :param upper: the upper bound
@@ -755,7 +755,7 @@ class BaseCollection(APIWrapper):
         :param radius: the maximum radius
         :type radius: int
         :param distance_field: the key containing the distance
-        :type distance_field: str
+        :type distance_field: str  | unicode
         :returns: the document cursor
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: if the documents
@@ -817,7 +817,7 @@ class BaseCollection(APIWrapper):
             documents are returned)
         :type limit: int
         :param geo_field: the field to use for geo index
-        :type geo_field: str
+        :type geo_field: str  | unicode
         :returns: the document cursor
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: if the documents
@@ -855,9 +855,9 @@ class BaseCollection(APIWrapper):
         """Return documents that match the specified fulltext **query**.
 
         :param key: the key with a fulltext index
-        :type key: str
+        :type key: str  | unicode
         :param query: the fulltext query
-        :type query: str
+        :type query: str  | unicode
         :param limit: the max number of documents to return
         :type limit: int
         :returns: the document cursor
@@ -1084,7 +1084,7 @@ class BaseCollection(APIWrapper):
         """Delete an index from the collection.
 
         :param index_id: the ID of the index to delete
-        :type index_id: str
+        :type index_id: str  | unicode
         :param ignore_missing: ignore missing indexes
         :type ignore_missing: bool
         :returns: whether the index was deleted successfully

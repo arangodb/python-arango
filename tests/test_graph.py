@@ -1,6 +1,7 @@
-#from __future__ import absolute_import, unicode_literals
+from __future__ import absolute_import, unicode_literals
 
 import pytest
+from six import string_types
 
 from arango import ArangoClient
 from arango.collections import (
@@ -67,7 +68,7 @@ def test_properties():
     properties = graph.properties()
     assert properties['id'] == '_graphs/{}'.format(graph_name)
     assert properties['name'] == graph_name
-    assert properties['revision'].isdigit()
+    assert isinstance(properties['revision'], string_types)
 
     # Test if exception is raised properly
     with pytest.raises(GraphPropertiesError):
@@ -378,7 +379,7 @@ def test_insert_vertex():
     result = vcol.insert(vertex1)
     assert result['_id'] == 'vcol1/1'
     assert result['_key'] == '1'
-    assert result['_rev'].isdigit()
+    assert isinstance(result['_rev'], string_types)
     assert '1' in vcol
     assert len(vcol) == 1
     assert vcol['1']['value'] == 1
@@ -398,7 +399,7 @@ def test_insert_vertex():
     result = vcol.insert(vertex2, sync=True)
     assert result['_id'] == 'vcol1/2'
     assert result['_key'] == '2'
-    assert result['_rev'].isdigit()
+    assert isinstance(result['_rev'], string_types)
     assert '2' in vcol
     assert len(vcol) == 2
     assert vcol['2']['value'] == 2
@@ -421,8 +422,8 @@ def test_get_vertex():
     assert clean_keys(result) == {'_key': '1', 'value': 1}
 
     # Test get existing vertex with wrong revision
-    with pytest.raises(DocumentRevisionError):
-        vcol.get('1', rev=str(int(old_rev) + 1))
+    with pytest.raises(ArangoError):
+        vcol.get('1', rev=old_rev + '1')
 
     # Test get existing vertex from missing vertex collection
     with pytest.raises(DocumentGetError):
@@ -463,7 +464,7 @@ def test_update_vertex():
     old_rev = result['_rev']
 
     # Test update vertex with incorrect revision
-    new_rev = str(int(old_rev) + 10)
+    new_rev = old_rev + '1'
     with pytest.raises(DocumentRevisionError):
         vcol.update({'_key': '1', '_rev': new_rev, 'bar': 500})
     assert vcol['1']['foo'] == 200
@@ -538,7 +539,7 @@ def test_replace_vertex():
     old_rev = result['_rev']
 
     # Test replace vertex with incorrect revision
-    new_rev = str(int(old_rev) + 10)
+    new_rev = old_rev + '10'
     vertex = {'_key': '1', '_rev': new_rev, 'bar': 600}
     with pytest.raises(DocumentRevisionError):
         vcol.replace(vertex)
@@ -582,7 +583,7 @@ def test_delete_vertex():
 
     # Test delete vertex with incorrect revision
     old_rev = vcol['2']['_rev']
-    vertex2['_rev'] = str(int(old_rev) + 10)
+    vertex2['_rev'] = old_rev + '10'
     with pytest.raises(DocumentRevisionError):
         vcol.delete(vertex2)
     assert '2' in vcol
@@ -626,7 +627,7 @@ def test_insert_edge():
     result = ecol.insert(edge1)
     assert result['_id'] == 'ecol2/1'
     assert result['_key'] == '1'
-    assert result['_rev'].isdigit()
+    assert isinstance(result['_rev'], string_types)
     assert '1' in ecol
     assert len(ecol) == 1
     assert ecol['1']['_from'] == 'vcol1/1'
@@ -671,7 +672,7 @@ def test_insert_edge():
     result = ecol.insert(edge4)
     assert result['_id'] == 'ecol2/4'
     assert result['_key'] == '4'
-    assert result['_rev'].isdigit()
+    assert isinstance(result['_rev'], string_types)
     assert '4' in ecol
     assert len(ecol) == 3
     assert ecol['4']['_from'] == 'vcol1/8'
@@ -699,7 +700,7 @@ def test_get_edge():
 
     # Test get existing edge with wrong revision
     with pytest.raises(DocumentRevisionError):
-        ecol.get('1', rev=str(int(old_rev) + 1))
+        ecol.get('1', rev=old_rev + '1')
 
     # Test get existing edge from missing edge collection
     with pytest.raises(DocumentGetError):
@@ -742,7 +743,7 @@ def test_update_edge():
     old_rev = result['_rev']
 
     # Test update edge with incorrect revision
-    new_rev = str(int(old_rev) + 10)
+    new_rev = old_rev + '1'
     with pytest.raises(DocumentRevisionError):
         ecol.update({'_key': '1', '_rev': new_rev, 'bar': 500})
     assert ecol['1']['foo'] == 200
@@ -852,7 +853,7 @@ def test_replace_edge():
 
     # Test replace edge with incorrect revision
     edge['bar'] = 500
-    edge['_rev'] = str(int(old_rev) + 10)
+    edge['_rev'] = old_rev + '1'
     with pytest.raises(DocumentRevisionError):
         ecol.replace(edge)
     assert ecol['1']['foo'] == 300
@@ -922,7 +923,7 @@ def test_delete_edge():
 
     # Test delete edge with incorrect revision
     old_rev = ecol['2']['_rev']
-    edge2['_rev'] = str(int(old_rev) + 10)
+    edge2['_rev'] = old_rev + '1'
     with pytest.raises(DocumentRevisionError):
         ecol.delete(edge2)
     assert '2' in ecol
