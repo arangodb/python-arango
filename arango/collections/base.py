@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from arango.api import APIWrapper, api_method
-from arango.cursor import Cursor
+from arango.cursor import Cursor, ExportCursor
 from arango.exceptions import *
 from arango.request import Request
 from arango.utils import HTTP_OK
@@ -49,7 +49,7 @@ class BaseCollection(APIWrapper):
         )
         if res.status_code not in HTTP_OK:
             raise DocumentGetError(res)
-        return Cursor(self._conn, res.body)
+        return ExportCursor(self._conn, res.body)
 
     def __len__(self):
         """Return the number of documents in the collection.
@@ -542,7 +542,7 @@ class BaseCollection(APIWrapper):
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
-            return Cursor(self._conn, res.body)
+            return ExportCursor(self._conn, res.body)
 
         return request, handler
 

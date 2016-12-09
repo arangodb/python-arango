@@ -1152,6 +1152,20 @@ def test_all():
     with pytest.raises(DocumentGetError):
         bad_col.all()
 
+    # Test closing export cursor
+    result = col.all(count=True, batch_size=1)
+    assert result.close(ignore_missing=False) is True
+    assert result.close(ignore_missing=True) is False
+
+    assert clean_keys(result.next()) == doc1
+    with pytest.raises(CursorNextError):
+        result.next()
+    with pytest.raises(CursorCloseError):
+        result.close(ignore_missing=False)
+
+    result = col.all(count=True)
+    assert result.close(ignore_missing=True) is False
+
 
 def test_random():
     # Set up test documents

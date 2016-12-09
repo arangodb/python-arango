@@ -3,7 +3,8 @@
 Getting Started
 ---------------
 
-Here is an example showing how **python-arango** client can be used:
+Here is an example showing how a **python-arango** client can be initialized
+and used:
 
 .. code-block:: python
 
@@ -41,4 +42,4 @@ Here is an example showing how **python-arango** client can be used:
     result = db.aql.execute('FOR s IN students RETURN s')
     print([student['name'] for student in result])
 
-Read the rest of the documentation to discover much more!
+Pretty simple right? Read the rest of the documentation to discover much more!

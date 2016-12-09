@@ -142,3 +142,45 @@ class Cursor(object):
                 return False
             raise CursorCloseError(res)
         return True
+
+
+class ExportCursor(Cursor):
+    """ArangoDB cursor for export queries only.
+
+    .. note::
+        This class is designed to be instantiated internally only.
+    """
+
+    def next(self):
+        """Read the next result from the cursor.
+
+        :returns: the next item in the cursor
+        :rtype: dict
+        :raises: StopIteration, CursorNextError
+        """
+        if not self.batch() and self.has_more():
+            res = self._conn.put("/_api/export/{}".format(self.id))
+            if res.status_code not in HTTP_OK:
+                raise CursorNextError(res)
+            self._data = res.body
+        elif not self.batch() and not self.has_more():
+            raise StopIteration
+        return self.batch().pop(0)
+
+    def close(self, ignore_missing=True):
+        """Close the cursor and free the resources tied to it.
+
+        :returns: whether the cursor was closed successfully
+        :rtype: bool
+        :param ignore_missing: ignore missing cursors
+        :type ignore_missing: bool
+        :raises: CursorCloseError
+        """
+        if not self.id:
+            return False
+        res = self._conn.delete("/_api/export/{}".format(self.id))
+        if res.status_code not in HTTP_OK:
+            if res.status_code == 404 and ignore_missing:
+                return False
+            raise CursorCloseError(res)
+        return True

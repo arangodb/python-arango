@@ -3,11 +3,11 @@
 Databases
 ---------
 
-A single ArangoDB instance can house multiple databases, which in turn can have
+A single ArangoDB instance can house multiple databases, which in turn contain
 their own set of worker processes,  :ref:`collections <collection-page>`, and
-:ref:`graphs <graph-page>`. There is also a default database named ``_system``.
-This database cannot be dropped, can only be accessed with root privileges, and
-provides operations for managing other user-defined databases.
+:ref:`graphs <graph-page>`. There must always be a default database named
+``_system``. This database cannot be dropped, can only be accessed with root
+privileges, and provides operations for managing other user-defined databases.
 
 Here is an example showing how databases can be managed with different users:
 
@@ -18,7 +18,8 @@ Here is an example showing how databases can be managed with different users:
     # Initialize the ArangoDB client as root
     client = ArangoClient(username='root', password='')
 
-    # Create a database, again as root (the user is inherited if not specified)
+    # Create a database, again as root (the user is inherited from client
+    # initialization if the username and password are not specified)
     db = client.create_database('my_database', username=None, password=None)
 
     # Retrieve the properties of the new database
@@ -27,12 +28,14 @@ Here is an example showing how databases can be managed with different users:
     # Create another database, this time with a predefined set of users
     db = client.create_database(
         name='another_database',
+        # Users jane, john and jake will have access to the new database
         users=[
             {'username': 'jane', 'password': 'foo', 'active': True},
             {'username': 'john', 'password': 'bar', 'active': True},
             {'username': 'jake', 'password': 'baz', 'active': True},
         ],
-        username='jake',  # The new database object uses jake's credentials
+        # API calls through this database object uses jake's credentials
+        username='jake',
         password='baz'
     )
 

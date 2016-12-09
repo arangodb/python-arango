@@ -3,21 +3,21 @@
 AQL
 ----
 
-**ArangoDB AQL Language (AQL)** is used to retrieve and modify data stored in
-ArangoDB. AQL is similar to SQL for relational databases but without the
-support for data-definition operations such as creating or deleting
+**ArangoDB Query Language (AQL)** is used to retrieve and modify data in
+ArangoDB. AQL is similar to SQL for relational databases, but without the
+support for data definition operations such as creating/deleting
 :ref:`databases <database-page>`, :ref:`collections <collection-page>` and
-:ref:`indexes <index-page>` etc. For more general information on AQL visit this
-`page <https://docs.arangodb.com/AQL>`__.
+:ref:`indexes <index-page>`. For more general information on AQL visit
+`here <https://docs.arangodb.com/AQL>`__.
 
 AQL Queries
 ===========
 
-**AQL queries** can be invoked using the :ref:`AQL` class, which returns
-instances of :ref:`Cursor`. For more information on AQL syntax visit this
-`page <https://docs.arangodb.com/AQL/Fundamentals/Syntax.html>`__.
+**AQL queries** can be invoked using the :ref:`AQL` class, which outputs
+instances of the :ref:`Cursor` class. For more information on the syntax of AQL
+visit `here <https://docs.arangodb.com/AQL/Fundamentals/Syntax.html>`__.
 
-Here is an example showing how AQL queries can be executed:
+Below is an example of executing a query:
 
 .. code-block:: python
 
@@ -51,13 +51,13 @@ Here is an example showing how AQL queries can be executed:
 AQL User Functions
 ==================
 
-**AQL user functions** are custom functions defined by the users to extend the
-functionality of AQL. Although python-arango provides ways to add, delete and
-retrieve user functions in Python, the functions themselves must be defined in
-Javascript. For more general information on AQL user functions visit this
-`page <https://docs.arangodb.com/AQL/Extending>`__.
+**AQL user functions** are custom functions which can be defined by users to
+extend the functionality of AQL. While python-arango provides ways to add,
+delete and retrieve user functions in Python, the functions themselves must be
+defined in Javascript. For more general information on AQL user functions visit
+this `page <https://docs.arangodb.com/AQL/Extending>`__.
 
-Here is an example showing how AQL functions can be created or deleted:
+Below is an example of creating and deleting an AQL function:
 
 .. code-block:: python
 
@@ -83,9 +83,9 @@ Refer to :ref:`AQL` class for more details.
 AQL Query Cache
 ===============
 
-**AQL query cache** minimizes redundant calculation of the same query results.
-If it useful when read queries are called frequently and write queries are not.
-For more general information on AQL query caches visit this
+**AQL query cache** is used to minimize redundant calculation of the same
+query result. It is useful when read queries are called frequently and write
+queries are not. For more general information on AQL query caches visit this
 `page <https://docs.arangodb.com/AQL/ExecutionAndPerformance/QueryCache.html>`__.
 
 Here is an example showing how the AQL query cache can be used:
