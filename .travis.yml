@@ -14,5 +14,6 @@ install:
     - python setup.py install
 script:
     - py.test --cov-report= --cov=arango tests/
-# after_success:
-#    - coveralls
+after_success:
+    - coveralls
+    - pkill -9 -f arango

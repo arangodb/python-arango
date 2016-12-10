@@ -48,12 +48,4 @@ fi
 echo "Waiting until ArangoDB is ready on port 8529"
 sleep 10
 
-
-if [[ n -eq timeout ]];
-then
-    echo "Could not start ArangoDB. Timeout reached."
-    exit 1
-fi
-
-
 echo "ArangoDB is up"
