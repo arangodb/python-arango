@@ -174,7 +174,8 @@ class AsyncJob(object):
             once fetched and will *not* be available in subsequent calls.
         """
         res = self._conn.put('/_api/job/{}'.format(self._id))
-        if 'X-Arango-Async-Id' in res.headers:
+        if ('X-Arango-Async-Id' in res.headers
+                or 'x-arango-async-id' in res.headers):
             try:
                 result = self._handler(res)
             except Exception as error:
@@ -188,7 +189,7 @@ class AsyncJob(object):
         else:
             raise AsyncJobResultError(res)
 
-    def cancel(self, ignore_missing=False):
+    def cancel(self, ignore_missing=False):  # pragma: no cover
         """Cancel the async job if it is still pending.
 
         :param ignore_missing: ignore missing async jobs

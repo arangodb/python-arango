@@ -140,6 +140,28 @@ class Connection(object):
         return self._type
 
     def handle_request(self, request, handler):
+        # from arango.async import AsyncExecution
+        # from arango.exceptions import ArangoError
+        #
+        # async = AsyncExecution(self, return_result=True)
+        # response = async.handle_request(request, handler)
+        # while response.status() != 'done':
+        #     pass
+        # result = response.result()
+        # if isinstance(result, ArangoError):
+        #     raise result
+        # return result
+
+        # from arango.batch import BatchExecution
+        # from arango.exceptions import ArangoError
+        #
+        # batch = BatchExecution(self, return_result=True)
+        # response = batch.handle_request(request, handler)
+        # batch.commit()
+        # result = response.result()
+        # if isinstance(result, ArangoError):
+        #     raise result
+        # return result
         return handler(getattr(self, request.method)(**request.kwargs))
 
     def head(self, endpoint, params=None, headers=None, **_):

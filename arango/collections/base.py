@@ -466,9 +466,7 @@ class BaseCollection(APIWrapper):
         )
 
         def handler(res):
-            if res.status_code in {304, 412}:
-                raise DocumentRevisionError(res)
-            elif res.status_code == 404 and res.error_code == 1202:
+            if res.status_code == 404 and res.error_code == 1202:
                 return False
             elif res.status_code in HTTP_OK:
                 return True

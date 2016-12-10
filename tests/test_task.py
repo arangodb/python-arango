@@ -17,7 +17,7 @@ db_name = generate_db_name(arango_client)
 db = arango_client.create_database(db_name)
 bad_db_name = generate_db_name(arango_client)
 bad_db = arango_client.db(bad_db_name)
-test_cmd = "(function(p){require('@arangodb').print(p);})(p)"
+test_cmd = "require('@arangodb').print(params);"
 
 
 def teardown_module(*_):
@@ -61,7 +61,7 @@ def test_create_task():
         offset=1,
     )
     assert new_task['name'] == task_name
-    assert new_task['command'] == test_cmd
+    assert 'print(params)' in new_task['command']
     assert new_task['type'] == 'timed'
     assert new_task['database'] == db_name
     assert isinstance(new_task['created'], float)
@@ -81,7 +81,7 @@ def test_create_task():
     )
     assert new_task['name'] == task_name
     assert new_task['id'] == task_id
-    assert new_task['command'] == test_cmd
+    assert 'print(params)' in new_task['command']
     assert new_task['type'] == 'periodic'
     assert new_task['database'] == db_name
     assert isinstance(new_task['created'], float)
