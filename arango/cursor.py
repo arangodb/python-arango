@@ -38,6 +38,8 @@ class Cursor(object):
         self.close(ignore_missing=True)
 
     def __repr__(self):
+        if self.id is None:
+            return '<ArangoDB cursor>'
         return '<ArangoDB cursor {}>'.format(self.id)
 
     @property

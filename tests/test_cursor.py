@@ -295,3 +295,18 @@ def test_cursor_context_manager():
     with pytest.raises(CursorCloseError):
         cursor.close(ignore_missing=False)
     assert cursor.close(ignore_missing=True) is False
+
+
+@pytest.mark.order12
+def test_cursor_repr_no_id():
+    col.truncate()
+    col.import_bulk([doc1, doc2, doc3, doc4])
+    cursor = db.aql.execute(
+        'FOR d IN {} RETURN d'.format(col_name),
+        count=True,
+        batch_size=2,
+        ttl=1000,
+        optimizer_rules=['+all']
+    )
+    getattr(cursor, '_data')['id'] = None
+    assert repr(cursor) == '<ArangoDB cursor>'

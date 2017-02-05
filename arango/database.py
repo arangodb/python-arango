@@ -156,6 +156,40 @@ class Database(object):
         result['system'] = result.pop('isSystem')
         return result
 
+    def get_document(self, id, rev=None, match_rev=True):
+        """Retrieve a document by its ID (collection/key)
+
+        :param id: the document ID
+        :type id: str | unicode
+        :returns: the document or ``None`` if the document is missing
+        :rtype: dict
+        :param rev: the revision to compare with that of the retrieved document
+        :type rev: str | unicode
+        :param match_rev: if ``True``, check if the given revision and
+            the target document's revisions are the same, otherwise check if
+            the revisions are different (this flag has an effect only when
+            **rev** is given)
+        :type match_rev: bool
+        :raises arango.exceptions.DocumentRevisionError: if the given revision
+            does not match the revision of the retrieved document
+        :raises arango.exceptions.DocumentGetError: if the document cannot
+            be retrieved from the collection
+        """
+        res = self._conn.get(
+            '/_api/document/{}'.format(id),
+            headers=(
+                {'If-Match' if match_rev else 'If-None-Match': rev}
+                if rev is not None else {}
+            )
+        )
+        if res.status_code in {304, 412}:
+            raise DocumentRevisionError(res)
+        elif res.status_code == 404 and res.error_code == 1202:
+            return None
+        elif res.status_code in HTTP_OK:
+            return res.body
+        raise DocumentGetError(res)
+
     #########################
     # Collection Management #
     #########################

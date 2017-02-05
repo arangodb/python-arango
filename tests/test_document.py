@@ -1033,7 +1033,8 @@ def test_get():
     with pytest.raises(ArangoError):
         col.get('5', rev='bad_rev')
 
-    # Test get with correct revision and match_rev turned off
+    # TODO uncomment once match_rev flag is fixed
+    # # Test get with correct revision and match_rev turned off
     # bad_rev = col['5']['_rev'] + '000'
     # result = col.get('5', rev=bad_rev, match_rev=False)
     # assert result['_key'] == '5'
@@ -1049,6 +1050,41 @@ def test_get():
 
     with pytest.raises(DocumentGetError):
         iter(bad_col)
+
+
+def test_get_from_db():
+    # Set up test documents
+    col.import_bulk(test_docs)
+
+    # Test get existing document
+    result = db.get_document(col_name + '/1')
+    assert result['_key'] == '1'
+    assert result['val'] == 100
+
+    # Test get another existing document
+    result = db.get_document(col_name + '/2')
+    assert result['_key'] == '2'
+    assert result['val'] == 100
+
+    # Test get missing document
+    assert db.get_document(col_name + '/6') is None
+
+    # Test get with correct revision
+    good_rev = db.get_document(col_name + '/5')['_rev']
+    result = db.get_document(col_name + '/5', rev=good_rev)
+    assert result['_key'] == '5'
+    assert result['val'] == 300
+
+    # Test get with invalid revision
+    bad_rev = db.get_document(col_name + '/5')['_rev'] + '000'
+    with pytest.raises(ArangoError):
+        db.get_document(col_name + '/5', rev=bad_rev, match_rev=True)
+    with pytest.raises(ArangoError):
+        db.get_document(col_name + '/5', rev="bad_rev")
+
+    # Test get with missing collection
+    with pytest.raises(DocumentGetError):
+        _ = db.get_document(bad_col_name + '/1')
 
 
 def test_get_many():
