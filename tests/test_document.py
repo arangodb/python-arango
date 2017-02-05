@@ -1091,7 +1091,7 @@ def test_get_many():
 
 def test_all():
     # Check preconditions
-    assert len(list(col.all())) == 0
+    assert len(list(col.export())) == 0
 
     # Set up test documents
     col.import_bulk(test_docs)
@@ -1100,71 +1100,132 @@ def test_all():
     result = list(col.all())
     assert ordered(clean_keys(result)) == test_docs
 
-    # Test all with flush
-    # result = list(col.all(flush=True, flush_wait=1))
-    # assert ordered(clean_keys(result)) == test_docs
-
-    # Test all with count
-    result = col.all(count=True)
+    # Test all with a skip of 0
+    result = col.all(skip=0)
     assert result.count() == len(test_docs)
     assert ordered(clean_keys(result)) == test_docs
 
-    # Test all with batch size
-    result = col.all(count=True, batch_size=1)
-    assert result.count() == len(test_docs)
-    assert ordered(clean_keys(result)) == test_docs
+    # Test all with a skip of 1
+    result = col.all(skip=1)
+    assert result.count() == 4
+    assert len(list(result)) == 4
+    for doc in list(clean_keys(result)):
+        assert doc in test_docs
 
-    # Test all with time-to-live
-    result = col.all(count=True, ttl=1000)
-    assert result.count() == len(test_docs)
-    assert ordered(clean_keys(result)) == test_docs
-
-    # Test all with filters
-    result = col.all(
-        count=True,
-        filter_fields=['text'],
-        filter_type='exclude'
-    )
-    assert result.count() == 5
-    for doc in result:
-        assert 'text' not in doc
+    # Test all with a skip of 3
+    result = col.all(skip=3)
+    assert result.count() == 2
+    assert len(list(result)) == 2
+    for doc in list(clean_keys(list(result))):
+        assert doc in test_docs
 
     # Test all with a limit of 0
-    result = col.all(count=True, limit=0)
-    assert result.count() == len(test_docs)
-    assert ordered(clean_keys(result)) == test_docs
+    result = col.all(limit=0)
+    assert result.count() == 0
+    assert ordered(clean_keys(result)) == []
 
     # Test all with a limit of 1
-    result = col.all(count=True, limit=1)
+    result = col.all(limit=1)
     assert result.count() == 1
     assert len(list(result)) == 1
     for doc in list(clean_keys(result)):
         assert doc in test_docs
 
     # Test all with a limit of 3
-    result = col.all(count=True, limit=3)
+    result = col.all(limit=3)
     assert result.count() == 3
     assert len(list(result)) == 3
     for doc in list(clean_keys(list(result))):
         assert doc in test_docs
 
-    # Test all in missing collection
+    # Test all with skip and limit
+    result = col.all(skip=4, limit=2)
+    assert result.count() == 1
+    assert len(list(result)) == 1
+    for doc in list(clean_keys(list(result))):
+        assert doc in test_docs
+
+    # Test export in missing collection
     with pytest.raises(DocumentGetError):
         bad_col.all()
 
-    # Test closing export cursor
-    result = col.all(count=True, batch_size=1)
-    assert result.close(ignore_missing=False) is True
-    assert result.close(ignore_missing=True) is False
-
-    assert clean_keys(result.next()) == doc1
-    with pytest.raises(CursorNextError):
-        result.next()
-    with pytest.raises(CursorCloseError):
-        result.close(ignore_missing=False)
-
-    result = col.all(count=True)
-    assert result.close(ignore_missing=True) is False
+# TODO uncomment when export with flush works properly
+# def test_export():
+#     # Check preconditions
+#     assert len(list(col.export())) == 0
+#
+#     # Set up test documents
+#     col.import_bulk(test_docs)
+#
+#     # Test export with default options
+#     result = list(col.export())
+#     assert ordered(clean_keys(result)) == test_docs
+#
+#     # Test export with flush
+#     # result = list(col.export(flush=True, flush_wait=1))
+#     # assert ordered(clean_keys(result)) == test_docs
+#
+#     # Test export with count
+#     result = col.export(count=True)
+#     assert result.count() == len(test_docs)
+#     assert ordered(clean_keys(result)) == test_docs
+#
+#     # Test export with batch size
+#     result = col.export(count=True, batch_size=1)
+#     assert result.count() == len(test_docs)
+#     assert ordered(clean_keys(result)) == test_docs
+#
+#     # Test export with time-to-live
+#     result = col.export(count=True, ttl=1000)
+#     assert result.count() == len(test_docs)
+#     assert ordered(clean_keys(result)) == test_docs
+#
+#     # Test export with filters
+#     result = col.export(
+#         count=True,
+#         filter_fields=['text'],
+#         filter_type='exclude'
+#     )
+#     assert result.count() == 5
+#     for doc in result:
+#         assert 'text' not in doc
+#
+#     # Test export with a limit of 0
+#     result = col.export(count=True, limit=0)
+#     assert result.count() == len(test_docs)
+#     assert ordered(clean_keys(result)) == test_docs
+#
+#     # Test export with a limit of 1
+#     result = col.export(count=True, limit=1)
+#     assert result.count() == 1
+#     assert len(list(result)) == 1
+#     for doc in list(clean_keys(result)):
+#         assert doc in test_docs
+#
+#     # Test export with a limit of 3
+#     result = col.export(count=True, limit=3)
+#     assert result.count() == 3
+#     assert len(list(result)) == 3
+#     for doc in list(clean_keys(list(result))):
+#         assert doc in test_docs
+#
+#     # Test export in missing collection
+#     with pytest.raises(DocumentGetError):
+#         bad_col.export()
+#
+#     # Test closing export cursor
+#     result = col.export(count=True, batch_size=1)
+#     assert result.close(ignore_missing=False) is True
+#     assert result.close(ignore_missing=True) is False
+#
+#     assert clean_keys(result.next()) == doc1
+#     with pytest.raises(CursorNextError):
+#         result.next()
+#     with pytest.raises(CursorCloseError):
+#         result.close(ignore_missing=False)
+#
+#     result = col.export(count=True)
+#     assert result.close(ignore_missing=True) is False
 
 
 def test_random():

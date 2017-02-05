@@ -144,7 +144,7 @@ class Cursor(object):
         return True
 
 
-class ExportCursor(Cursor):
+class ExportCursor(Cursor):  # pragma: no cover
     """ArangoDB cursor for export queries only.
 
     .. note::

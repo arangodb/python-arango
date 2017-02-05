@@ -42,14 +42,13 @@ class BaseCollection(APIWrapper):
         :raises arango.exceptions.DocumentGetError: if the documents cannot
             be fetched from the collection
         """
-        res = self._conn.post(
-            endpoint='/_api/export',
-            params={'collection': self._name},
-            data={'flush': False, 'count': False}
+        res = self._conn.put(
+            endpoint='/_api/simple/all',
+            data={'collection': self._name}
         )
         if res.status_code not in HTTP_OK:
             raise DocumentGetError(res)
-        return ExportCursor(self._conn, res.body)
+        return Cursor(self._conn, res.body)
 
     def __len__(self):
         """Return the number of documents in the collection.
@@ -476,15 +475,50 @@ class BaseCollection(APIWrapper):
 
     @api_method
     def all(self,
-            limit=None,
-            count=False,
-            batch_size=None,
-            flush=None,
-            flush_wait=None,
-            ttl=None,
-            filter_fields=None,
-            filter_type='include'):
-        """"Return all documents in the collection using a server cursor.
+            skip=None,
+            limit=None):
+        """Return all documents in the collection using a server cursor.
+
+        :param skip: the number of documents to skip
+        :type skip: int
+        :param limit: the max number of documents fetched by the cursor
+        :type limit: int
+        :returns: the document cursor
+        :rtype: arango.cursor.Cursor
+        :raises arango.exceptions.DocumentGetError: if the documents in
+            the collection cannot be retrieved
+        """
+
+        data = {'collection': self._name}
+        if skip is not None:
+            data['skip'] = skip
+        if limit is not None:
+            data['limit'] = limit
+
+        request = Request(
+            method='put',
+            endpoint='/_api/simple/all',
+            data=data
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise DocumentGetError(res)
+            return Cursor(self._conn, res.body)
+
+        return request, handler
+
+    @api_method
+    def export(self,
+               limit=None,
+               count=False,
+               batch_size=None,
+               flush=None,
+               flush_wait=None,
+               ttl=None,
+               filter_fields=None,
+               filter_type='include'):  # pragma: no cover
+        """"Export all documents in the collection using a server cursor.
 
         :param flush: flush the WAL prior to the export
         :type flush: bool
@@ -496,8 +530,7 @@ class BaseCollection(APIWrapper):
         :param batch_size: the max number of documents in the batch fetched by
             th cursor in one round trip
         :type batch_size: int
-        :param limit: the max number of documents fetched by the cursor (if 0
-            is given all documents are returned)
+        :param limit: the max number of documents fetched by the cursor
         :type limit: int
         :param ttl: time-to-live for the cursor on the server
         :type ttl: int
@@ -505,8 +538,8 @@ class BaseCollection(APIWrapper):
         :type filter_fields: list
         :param filter_type: ``"include"`` (default) or ``"exclude"``
         :type filter_type: str  | unicode
-        :returns: the document cursor
-        :rtype: arango.cursor.Cursor
+        :returns: the document export cursor
+        :rtype: arango.cursor.ExportCursor
         :raises arango.exceptions.DocumentGetError: if the documents in
             the collection cannot be exported
 
