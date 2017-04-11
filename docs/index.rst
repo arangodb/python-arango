@@ -21,7 +21,7 @@ Features
 Compatibility
 =============
 
-- Python versions 2.7.x, 3.4.x and 3.5.x are supported
+- Python versions 2.7.x, 3.4.x, 3.5.x and 3.6.x are supported
 - Latest version of python-arango (3.x) supports ArangoDB 3.x only
 - Older versions of python-arango support ArangoDB 1.x ~ 2.x only
 

@@ -14,7 +14,7 @@
     :target: https://badge.fury.io/py/python-arango
     :alt: Package Version
 
-.. image:: https://img.shields.io/badge/python-2.7%2C%203.4%2C%203.5-blue.svg
+.. image:: https://img.shields.io/badge/python-2.7%2C%203.4%2C%203.5%2C%203.6-blue.svg
     :target: https://github.com/joowani/python-arango
     :alt: Python Versions
 
@@ -45,7 +45,7 @@ Features
 Compatibility
 =============
 
-- Python versions 2.7.x, 3.4.x and 3.5.x are supported
+- Python versions 2.7.x, 3.4.x, 3.5.x and 3.6.x are supported
 - Latest version of python-arango (3.x) supports ArangoDB 3.x only
 - Older versions of python-arango support ArangoDB 1.x ~ 2.x only
 
