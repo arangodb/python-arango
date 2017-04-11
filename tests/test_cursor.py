@@ -56,7 +56,7 @@ def test_read_cursor_init():
     assert cursor.warnings() == []
     assert cursor.count() == 4
     assert clean_keys(cursor.batch()) == [doc1, doc2]
-    assert isinstance(cursor.statistics()['execution_time'], float)
+    assert isinstance(cursor.statistics()['execution_time'], (int, float))
 
 
 @pytest.mark.order2
@@ -73,7 +73,7 @@ def test_read_cursor_first():
     assert cursor.warnings() == []
     assert cursor.count() == 4
     assert clean_keys(cursor.batch()) == [doc2]
-    assert isinstance(cursor.statistics()['execution_time'], float)
+    assert isinstance(cursor.statistics()['execution_time'], (int, float))
 
 
 @pytest.mark.order3
@@ -90,7 +90,7 @@ def test_read_cursor_second():
     assert cursor.warnings() == []
     assert cursor.count() == 4
     assert clean_keys(cursor.batch()) == []
-    assert isinstance(cursor.statistics()['execution_time'], float)
+    assert isinstance(cursor.statistics()['execution_time'], (int, float))
 
 
 @pytest.mark.order4
@@ -107,7 +107,7 @@ def test_read_cursor_third():
     assert cursor.warnings() == []
     assert cursor.count() == 4
     assert clean_keys(cursor.batch()) == [doc3]
-    assert isinstance(cursor.statistics()['execution_time'], float)
+    assert isinstance(cursor.statistics()['execution_time'], (int, float))
 
 
 @pytest.mark.order5
@@ -124,7 +124,7 @@ def test_read_cursor_finish():
     assert cursor.warnings() == []
     assert cursor.count() == 4
     assert clean_keys(cursor.batch()) == []
-    assert isinstance(cursor.statistics()['execution_time'], float)
+    assert isinstance(cursor.statistics()['execution_time'], (int, float))
     with pytest.raises(StopIteration):
         cursor.next()
     assert cursor.close(ignore_missing=True) is False
@@ -185,7 +185,7 @@ def test_write_cursor_init():
     assert cursor.warnings() == []
     assert cursor.count() == 2
     assert clean_keys(cursor.batch()) == [doc1]
-    assert isinstance(cursor.statistics()['execution_time'], float)
+    assert isinstance(cursor.statistics()['execution_time'], (int, float))
 
 
 @pytest.mark.order8
@@ -202,7 +202,7 @@ def test_write_cursor_first():
     assert cursor.warnings() == []
     assert cursor.count() == 2
     assert clean_keys(cursor.batch()) == []
-    assert isinstance(cursor.statistics()['execution_time'], float)
+    assert isinstance(cursor.statistics()['execution_time'], (int, float))
 
 
 @pytest.mark.order9
@@ -219,7 +219,7 @@ def test_write_cursor_second():
     assert cursor.warnings() == []
     assert cursor.count() == 2
     assert clean_keys(cursor.batch()) == []
-    assert isinstance(cursor.statistics()['execution_time'], float)
+    assert isinstance(cursor.statistics()['execution_time'], (int, float))
     with pytest.raises(StopIteration):
         cursor.next()
     assert cursor.close(ignore_missing=True) is False

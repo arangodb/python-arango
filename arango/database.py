@@ -237,7 +237,8 @@ class Database(object):
                           key_generator="traditional",
                           shard_fields=None,
                           shard_count=None,
-                          index_bucket_count=None):
+                          index_bucket_count=None,
+                          replication_factor=None):
         """Create a new collection.
 
         .. note::
@@ -280,6 +281,21 @@ class Database(object):
             parallel (e.g. 64 might be a sensible value for a collection with
             100,000,000 documents.
         :type index_bucket_count: int
+        :param replication_factor: the number of copies of each shard on
+            different servers in a cluster, whose allowed values are:
+
+            .. code-block:: none
+
+                1: only one copy is kept (no synchronous replication).
+
+                k: k-1 replicas are kept and any two copies are replicated
+                   across different DBServers synchronously, meaning every
+                   write to the master is copied to all slaves before the
+                   operation is reported successful.
+
+            Default: ``1``.
+
+        :type replication_factor: int
         :returns: the new collection object
         :rtype: arango.collections.Collection
         :raises arango.exceptions.CollectionCreateError: if the collection
@@ -308,6 +324,8 @@ class Database(object):
             data['shardKeys'] = shard_fields
         if index_bucket_count is not None:
             data['indexBuckets'] = index_bucket_count
+        if replication_factor is not None:
+            data['replicationFactor'] = replication_factor
 
         res = self._conn.post('/_api/collection', data=data)
         if res.status_code not in HTTP_OK:

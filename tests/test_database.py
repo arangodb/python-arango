@@ -89,6 +89,7 @@ def test_create_collection():
         shard_count=2,
         shard_fields=["test_attr"],
         index_bucket_count=10,
+        replication_factor=1
     )
     properties = col.properties()
     assert 'id' in properties
