@@ -143,7 +143,7 @@ Here is another example involving graphs:
     takes.insert({'_from': 'students/02', '_to': 'courses/STA101'})
     takes.insert({'_from': 'students/03', '_to': 'courses/CSC101'})
 
-    # Traverse the graph in outbound direction, breath-first
+    # Traverse the graph in outbound direction, breadth-first
     traversal_results = graph.traverse(
         start_vertex='students/01',
         strategy='bfs',
