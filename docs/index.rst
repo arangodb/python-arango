@@ -70,4 +70,5 @@ Contents
     task
     wal
     errors
+    logging
     classes
