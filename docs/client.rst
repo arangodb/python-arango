@@ -42,4 +42,4 @@ and used:
     result = db.aql.execute('FOR s IN students RETURN s')
     print([student['name'] for student in result])
 
-Pretty simple right? Read the rest of the documentation to discover much more!
+Read the rest of the documentation to discover much more!

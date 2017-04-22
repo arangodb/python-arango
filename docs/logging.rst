@@ -3,7 +3,7 @@
 Logging
 -------
 
-By default, :class:`arango.ArangoClient` logs API call history using the
+By default, :class:`arango.ArangoClient` records API call history using the
 ``arango`` logger at ``logging.DEBUG`` level.
 
 Here is an example showing how the logger can be enabled and customized:
@@ -19,7 +19,7 @@ Here is an example showing how the logger can be enabled and customized:
     # Set the logging level
     logger.setLevel(logging.DEBUG)
 
-    # Attach a custom handler
+    # Attach a handler
     handler = logging.StreamHandler()
     formatter = logging.Formatter('[%(levelname)s] %(message)s')
     handler.setFormatter(formatter)

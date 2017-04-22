@@ -5,11 +5,11 @@ Databases
 
 A single ArangoDB instance can house multiple databases, which in turn contain
 their own set of worker processes,  :ref:`collections <collection-page>`, and
-:ref:`graphs <graph-page>`. There must always be a default database named
-``_system``. This database cannot be dropped, can only be accessed with root
+:ref:`graphs <graph-page>`. There is always a default database named ``_system``.
+This default database cannot be dropped, can only be accessed with root
 privileges, and provides operations for managing other user-defined databases.
 
-Here is an example showing how databases can be managed with different users:
+Here is an example showing how databases can be managed with multiple users:
 
 .. code-block:: python
 
@@ -41,7 +41,7 @@ Here is an example showing how databases can be managed with different users:
 
     # To switch to a different user, simply create a new database object with
     # the credentials of the desired user (which in this case would be jane's)
-    db = client.database('another_database', username='jane', password='bar')
+    db = client.database('another_database', username='jane', password='foo')
 
     # Delete an existing database as root
     client.delete_database('another_database')

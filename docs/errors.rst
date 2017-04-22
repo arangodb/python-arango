@@ -6,7 +6,7 @@ which lightly wraps around the HTTP error responses returned from ArangoDB.
 The majority of the error messages in the exceptions raised by python-arango
 come directly from the server.
 
-Here is an example showing how a python-arango exception can be caught:
+Here is an example showing how a python-arango exception can be handled:
 
 .. code-block:: python
 
