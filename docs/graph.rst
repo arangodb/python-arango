@@ -3,7 +3,7 @@
 Graphs
 ------
 
-An **graph** consists of **vertices** and **edges**. Edges are stored as
+A **graph** consists of **vertices** and **edges**. Edges are stored as
 documents in :ref:`edge collections <edge-collections>`, whereas vertices
 are stored as documents in :ref:`vertex collections <vertex-collections>`
 (edges can be vertices also). The combination of edge and vertex collections
@@ -144,7 +144,7 @@ Refer to :ref:`Graph` and :ref:`EdgeCollection` classes for more details.
 Graph Traversals
 ================
 
-**Graph traversals** can executed via the :func:`~arango.graph.Graph.traverse`
+**Graph traversals** are executed via the :func:`~arango.graph.Graph.traverse`
 method. A traversal can span across multiple vertex collections and walk over
 the documents in a variety of ways.
 
