@@ -104,13 +104,14 @@ class BatchExecution(Connection):
         try:
             if not self._requests:
                 return
-            raw_data = ''
+            raw_data_list = []
             for content_id, request in enumerate(self._requests, start=1):
-                raw_data += '--XXXsubpartXXX\r\n'
-                raw_data += 'Content-Type: application/x-arango-batchpart\r\n'
-                raw_data += 'Content-Id: {}\r\n\r\n'.format(content_id)
-                raw_data += '{}\r\n'.format(request.stringify())
-            raw_data += '--XXXsubpartXXX--\r\n\r\n'
+                raw_data_list.append('--XXXsubpartXXX\r\n')
+                raw_data_list.append('Content-Type: application/x-arango-batchpart\r\n')
+                raw_data_list.append('Content-Id: {}\r\n\r\n'.format(content_id))
+                raw_data_list.append('{}\r\n'.format(request.stringify()))
+            raw_data_list.append('--XXXsubpartXXX--\r\n\r\n')
+            raw_data = ''.join(raw_data_list)
 
             res = self.post(
                 endpoint='/_api/batch',
