@@ -888,36 +888,106 @@ class Collection(BaseCollection):
         return request, handler
 
     @api_method
-    def import_bulk(self, documents, halt_on_error=True, details=True):
+    def import_bulk(self,
+                    documents,
+                    halt_on_error=None,
+                    details=True,
+                    from_prefix=None,
+                    to_prefix=None,
+                    overwrite=None,
+                    on_duplicate=None,
+                    sync=None):
         """Insert multiple documents into the collection.
 
         This is faster than :func:`~arango.collections.Collection.insert_many`
         but does not return as much information. Any ``"_id"`` and ``"_rev"``
         fields in **documents** are ignored.
 
-        :param documents: the list of the new documents to insert
+        :param documents: the list of the new documents to insert in bulk
         :type documents: list
-        :param halt_on_error: halt the whole import on a failure
+        :param halt_on_error: halt the entire import on an error
             (default: ``True``)
         :type halt_on_error: bool
         :param details: if ``True``, the returned result will include an
-            additional list of details error messages (default: ``True``)
+            additional list of detailed error messages (default: ``True``)
         :type details: bool
+        :param from_prefix: the string prefix to prepend to the ``"_from"``
+            field of each edge document inserted. *This only works for edge
+            collections.*
+        :type from_prefix: str | unicode
+        :param to_prefix: the string prefix to prepend to the ``"_to"`` field
+            of each edge document inserted. *This only works for edge
+            collections.*
+        :type to_prefix: str | unicode
+        :param overwrite: if ``True``, all existing documents in the collection
+            are removed prior to the import. Indexes are still preserved.
+        :type overwrite: bool
+        :param on_duplicate: the action to take on unique key constraint
+            violations. Possible values are:
+
+            .. code-block:: none
+
+                "error"   : do not import the new documents and count them as
+                            errors (this is the default)
+
+                "update"  : update the existing documents while preserving any
+                            fields missing in the new ones
+
+                "replace" : replace the existing documents with the new ones
+
+                "ignore"  : do not import the new documents and count them as
+                            ignored, as opposed to counting them as errors
+
+        :type on_duplicate: str | unicode
+        :param sync: wait for the operation to sync to disk
+        :type sync: bool
         :returns: the result of the bulk import
         :rtype: dict
         :raises arango.exceptions.DocumentInsertError: if the documents cannot
             be inserted into the collection
+
+        .. note::
+            Parameters **from_prefix** and **to_prefix** only work for edge
+            collections. When the prefix is prepended, it is followed by a
+            ``"/"`` character. For example, prefix ``"foo"`` prepended to an
+            edge document with ``"_from": "bar"`` will result in a new value
+            ``"_from": "foo/bar"``.
+
+        .. note::
+            Parameter **on_duplicate** actions ``"update"``, ``"replace"``
+            and ``"ignore"`` will work only when **documents** contain the
+            ``"_key"`` fields.
+
+        .. warning::
+            Parameter **on_duplicate** actions  ``"update"`` and ``"replace"``
+            may fail on secondary unique key constraint violations.
         """
+        params = {
+            'type': 'array',
+            'collection': self._name,
+            'complete': halt_on_error,
+            'details': details,
+        }
+        if halt_on_error is not None:
+            params['complete'] = halt_on_error
+        if details is not None:
+            params['details'] = details
+        if from_prefix is not None:
+            params['fromPrefix'] = from_prefix
+        if to_prefix is not None:
+            params['toPrefix'] = to_prefix
+        if overwrite is not None:
+            params['overwrite'] = overwrite
+        if on_duplicate is not None:
+            params['onDuplicate'] = on_duplicate
+        if sync is not None:
+            params['waitForSync'] = sync
+
         request = Request(
             method='post',
             endpoint='/_api/import',
             data=documents,
-            params={
-                'type': 'array',
-                'collection': self._name,
-                'complete': halt_on_error,
-                'details': details
-            }
+            params=params
         )
 
         def handler(res):
