@@ -18,6 +18,8 @@ db_name = generate_db_name(arango_client)
 db = arango_client.create_database(db_name)
 col_name = generate_col_name(db)
 col = db.create_collection(col_name)
+edge_col_name = generate_col_name(db)
+edge_col = db.create_collection(edge_col_name, edge=True)
 geo_index = col.add_geo_index(['coordinates'])
 bad_col_name = generate_col_name(db)
 bad_col = db.collection(bad_col_name)
@@ -29,6 +31,13 @@ doc4 = {'_key': '4', 'val': 200, 'text': 'foo', 'coordinates': [4, 4]}
 doc5 = {'_key': '5', 'val': 300, 'text': 'foo', 'coordinates': [5, 5]}
 test_docs = [doc1, doc2, doc3, doc4, doc5]
 test_doc_keys = [d['_key'] for d in test_docs]
+
+edge1 = {'_key': '1', '_to': '1', '_from': '2'}
+edge2 = {'_key': '2', '_to': '2', '_from': '3'}
+edge3 = {'_key': '3', '_to': '3', '_from': '4'}
+edge4 = {'_key': '4', '_to': '4', '_from': '5'}
+edge5 = {'_key': '5', '_to': '5', '_from': '1'}
+test_edges = [edge1, edge2, edge3, edge4, edge5]
 
 
 def teardown_module(*_):
@@ -1000,7 +1009,7 @@ def test_has():
         bad_col.has('1')
 
     with pytest.raises(DocumentInError):
-        '1' in bad_col
+        assert '1' in bad_col
 
 
 def test_get():
@@ -1495,6 +1504,9 @@ def test_import_bulk():
     result = col.import_bulk(test_docs)
     assert result['created'] == 5
     assert result['errors'] == 0
+    assert result['empty'] == 0
+    assert result['updated'] == 0
+    assert result['ignored'] == 0
     assert 'details' in result
     assert len(col) == 5
     for doc in test_docs:
@@ -1505,10 +1517,13 @@ def test_import_bulk():
         assert col[key]['coordinates'] == doc['coordinates']
     col.truncate()
 
-    # Test import bulk without details
-    result = col.import_bulk(test_docs, details=False)
+    # Test import bulk without details and with sync
+    result = col.import_bulk(test_docs, details=False, sync=True)
     assert result['created'] == 5
     assert result['errors'] == 0
+    assert result['empty'] == 0
+    assert result['updated'] == 0
+    assert result['ignored'] == 0
     assert 'details' not in result
     assert len(col) == 5
     for doc in test_docs:
@@ -1528,9 +1543,88 @@ def test_import_bulk():
     result = col.import_bulk([doc2, doc2], halt_on_error=False)
     assert result['created'] == 1
     assert result['errors'] == 1
+    assert result['empty'] == 0
+    assert result['updated'] == 0
+    assert result['ignored'] == 0
     assert len(col) == 1
 
     # Test import bulk in missing collection
     with pytest.raises(DocumentInsertError):
         bad_col.import_bulk([doc3, doc4], halt_on_error=True)
     assert len(col) == 1
+
+    # Test import bulk with overwrite
+    result = col.import_bulk([doc3, doc4], overwrite=True)
+    assert result['created'] == 2
+    assert result['errors'] == 0
+    assert result['empty'] == 0
+    assert result['updated'] == 0
+    assert result['ignored'] == 0
+    assert '1' not in col
+    assert '2' not in col
+    assert '3' in col
+    assert '4' in col
+    col.truncate()
+
+    # Test import bulk to_prefix and from_prefix
+    result = edge_col.import_bulk(
+        test_edges, from_prefix='foo', to_prefix='bar'
+    )
+    assert result['created'] == 5
+    assert result['errors'] == 0
+    assert result['empty'] == 0
+    assert result['updated'] == 0
+    assert result['ignored'] == 0
+    for edge in test_edges:
+        key = edge['_key']
+        assert key in edge_col
+        assert edge_col[key]['_from'] == 'foo/' + edge['_from']
+        assert edge_col[key]['_to'] == 'bar/' + edge['_to']
+    edge_col.truncate()
+
+    # Test import bulk on_duplicate actions
+    old_doc = {'_key': '1', 'foo': '2'}
+    new_doc = {'_key': '1', 'bar': '3'}
+
+    col.insert(old_doc)
+    result = col.import_bulk([new_doc], on_duplicate='error')
+    assert len(col) == 1
+    assert result['created'] == 0
+    assert result['errors'] == 1
+    assert result['empty'] == 0
+    assert result['updated'] == 0
+    assert result['ignored'] == 0
+    assert col['1']['foo'] == '2'
+    assert 'bar' not in col['1']
+
+    result = col.import_bulk([new_doc], on_duplicate='ignore')
+    assert len(col) == 1
+    assert result['created'] == 0
+    assert result['errors'] == 0
+    assert result['empty'] == 0
+    assert result['updated'] == 0
+    assert result['ignored'] == 1
+    assert col['1']['foo'] == '2'
+    assert 'bar' not in col['1']
+
+    result = col.import_bulk([new_doc], on_duplicate='update')
+    assert len(col) == 1
+    assert result['created'] == 0
+    assert result['errors'] == 0
+    assert result['empty'] == 0
+    assert result['updated'] == 1
+    assert result['ignored'] == 0
+    assert col['1']['foo'] == '2'
+    assert col['1']['bar'] == '3'
+
+    col.truncate()
+    col.insert(old_doc)
+    result = col.import_bulk([new_doc], on_duplicate='replace')
+    assert len(col) == 1
+    assert result['created'] == 0
+    assert result['errors'] == 0
+    assert result['empty'] == 0
+    assert result['updated'] == 1
+    assert result['ignored'] == 0
+    assert 'foo' not in col['1']
+    assert col['1']['bar'] == '3'

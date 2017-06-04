@@ -412,7 +412,6 @@ class ArangoClient(object):
         """Return the current logging levels.
 
         .. note::
-
             This method is only compatible with ArangoDB version 3.1+ only.
 
         :return: the current logging levels
@@ -438,11 +437,9 @@ class ArangoClient(object):
             )
 
         .. note::
-
             Keys that are not valid logger names are simply ignored.
 
         .. note::
-
             This method is only compatible with ArangoDB version 3.1+ only.
 
         :return: the new logging levels
@@ -611,7 +608,7 @@ class ArangoClient(object):
 
         .. note::
             Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method
+            required to use this method.
         """
         res = self._conn.get('/_api/user')
         if res.status_code not in HTTP_OK:
@@ -633,7 +630,7 @@ class ArangoClient(object):
 
         .. note::
             Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method
+            required to use this method.
         """
         res = self._conn.get('/_api/user/{}'.format(username))
         if res.status_code not in HTTP_OK:
@@ -661,7 +658,7 @@ class ArangoClient(object):
 
         .. note::
             Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method
+            required to use this method.
         """
         data = {'user': username, 'passwd': password}
         if active is not None:
@@ -695,7 +692,7 @@ class ArangoClient(object):
 
         .. note::
             Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method
+            required to use this method.
         """
         data = {}
         if password is not None:
@@ -734,7 +731,7 @@ class ArangoClient(object):
 
         .. note::
             Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method
+            required to use this method.
         """
         data = {'user': username, 'passwd': password}
         if active is not None:
@@ -768,7 +765,7 @@ class ArangoClient(object):
 
         .. note::
             Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method
+            required to use this method.
         """
         res = self._conn.delete('/_api/user/{user}'.format(user=username))
         if res.status_code in HTTP_OK:
@@ -788,7 +785,7 @@ class ArangoClient(object):
 
         .. note::
             Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method
+            required to use this method.
         """
         res = self._conn.get('/_api/user/{}/database'.format(username))
         if res.status_code in HTTP_OK:
@@ -808,7 +805,7 @@ class ArangoClient(object):
 
         .. note::
             Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method
+            required to use this method.
         """
         res = self._conn.put(
             '/_api/user/{}/database/{}'.format(username, database),
@@ -831,7 +828,7 @@ class ArangoClient(object):
 
         .. note::
             Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method
+            required to use this method.
         """
         res = self._conn.put(
             '/_api/user/{}/database/{}'.format(username, database),

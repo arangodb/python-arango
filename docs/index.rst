@@ -16,7 +16,7 @@ Features
 
 - Clean, Pythonic interface
 - Lightweight
-- 95%+ ArangoDB REST API coverage
+- High ArangoDB REST API coverage
 
 Compatibility
 =============
