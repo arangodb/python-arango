@@ -24,7 +24,8 @@ class ArangoClient(object):
     :param username: ArangoDB username (default: ``"root"``)
     :type username: str | unicode
     :param password: ArangoDB password (default: ``""``)
-    :param verify: check the connection during initialization
+    :param verify: check the connection during initialization. Root privileges
+        are required to use this check.
     :type verify: bool
     :param http_client: the HTTP client object
     :type http_client: arango.http_clients.base.BaseHTTPClient
@@ -83,6 +84,10 @@ class ArangoClient(object):
         :rtype: bool
         :raises arango.exceptions.ServerConnectionError: if the connection to
             the ArangoDB server fails
+
+        .. note::
+            Root privileges (i.e. access to the ``_system`` database) are
+            required to use this method.
         """
         res = self._conn.head('/_api/version')
         if res.status_code not in HTTP_OK:
