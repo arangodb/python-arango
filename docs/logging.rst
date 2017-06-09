@@ -3,8 +3,8 @@
 Logging
 -------
 
-By default, :class:`arango.ArangoClient` records API call history using the
-``arango`` logger at ``logging.DEBUG`` level.
+By default, :class:`arango.client.ArangoClient` records API call history using
+the ``arango`` logger at ``logging.DEBUG`` level.
 
 Here is an example showing how the logger can be enabled and customized:
 

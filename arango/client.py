@@ -86,8 +86,9 @@ class ArangoClient(object):
             the ArangoDB server fails
 
         .. note::
-            Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method.
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.verify` (via a database
+            the users have access to) instead.
         """
         res = self._conn.head('/_api/version')
         if res.status_code not in HTTP_OK:
@@ -173,6 +174,11 @@ class ArangoClient(object):
         :rtype: str | unicode
         :raises arango.exceptions.ServerVersionError: if the server version
             cannot be retrieved
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.version` (via a database
+            the users have access to) instead.
         """
         res = self._conn.get(
             endpoint='/_api/version',
@@ -189,6 +195,11 @@ class ArangoClient(object):
         :rtype: dict
         :raises arango.exceptions.ServerDetailsError: if the server details
             cannot be retrieved
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.details` (via a database
+            the users have access to) instead.
         """
         res = self._conn.get(
             endpoint='/_api/version',
@@ -205,6 +216,11 @@ class ArangoClient(object):
         :rtype: str | unicode
         :raises arango.exceptions.ServerRequiredDBVersionError: if the
             required database version cannot be retrieved
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.required_db_version` (via
+            a database the users have access to) instead.
         """
         res = self._conn.get('/_admin/database/target-version')
         if res.status_code not in HTTP_OK:
@@ -218,6 +234,11 @@ class ArangoClient(object):
         :rtype: dict
         :raises arango.exceptions.ServerStatisticsError: if the server
             statistics cannot be retrieved
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.statistics` (via a database
+            the users have access to) instead.
         """
         res = self._conn.get(
             '/_admin/statistics-description'
@@ -241,6 +262,11 @@ class ArangoClient(object):
         :rtype: str | unicode
         :raises arango.exceptions.ServerRoleError: if the server role cannot
             be retrieved
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.role` (via a database the
+            users have access to) instead.
         """
         res = self._conn.get('/_admin/server/role')
         if res.status_code not in HTTP_OK:
@@ -254,6 +280,11 @@ class ArangoClient(object):
         :rtype: datetime.datetime
         :raises arango.exceptions.ServerTimeError: if the server time
             cannot be retrieved
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.time` (via a database the
+            users have access to) instead.
         """
         res = self._conn.get('/_admin/time')
         if res.status_code not in HTTP_OK:
@@ -272,6 +303,9 @@ class ArangoClient(object):
         :rtype: list
         :raises arango.exceptions.ServerEndpointsError: if the endpoints
             cannot be retrieved from the server
+
+        .. note::
+            Only the root user can access this method.
         """
         res = self._conn.get('/_api/endpoint')
         if res.status_code not in HTTP_OK:
@@ -285,6 +319,11 @@ class ArangoClient(object):
         :rtype: dict
         :raises arango.exceptions.ServerEchoError: if the last request cannot
             be retrieved from the server
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.echo` (via a database the
+            users have access to) instead.
         """
         res = self._conn.get('/_admin/echo')
         if res.status_code not in HTTP_OK:
@@ -300,6 +339,11 @@ class ArangoClient(object):
         :rtype: int
         :raises arango.exceptions.ServerSleepError: if the server cannot be
             suspended
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.sleep` (via a database the
+            users have access to) instead.
         """
         res = self._conn.get(
             '/_admin/sleep',
@@ -316,6 +360,11 @@ class ArangoClient(object):
         :rtype: bool
         :raises arango.exceptions.ServerShutdownError: if the server shutdown
             sequence cannot be initiated
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.shutdown` (via a database
+            the users have access to) instead.
         """
         try:
             res = self._conn.delete('/_admin/shutdown')
@@ -333,6 +382,11 @@ class ArangoClient(object):
         :returns: the test results
         :rtype: dict
         :raises arango.exceptions.ServerRunTestsError: if the test suites fail
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.run_tests` (via a database
+            the users have access to) instead.
         """
         res = self._conn.post('/_admin/test', data={'tests': tests})
         if res.status_code not in HTTP_OK:
@@ -348,6 +402,11 @@ class ArangoClient(object):
         :rtype: str | unicode
         :raises arango.exceptions.ServerExecuteError: if the program cannot
             be executed on the server
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.execute` (via a database
+            the users have access to) instead.
         """
         res = self._conn.post('/_admin/execute', data=program)
         if res.status_code not in HTTP_OK:
@@ -390,6 +449,11 @@ class ArangoClient(object):
         :rtype: dict
         :raises arango.exceptions.ServerReadLogError: if the server log entries
             cannot be read
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.read_log` (via a database
+            the users have access to) instead.
         """
         params = dict()
         if upto is not None:
@@ -421,6 +485,11 @@ class ArangoClient(object):
 
         :return: the current logging levels
         :rtype: dict
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.log_levels` (via a database
+            the users have access to) instead.
         """
         res = self._conn.get('/_admin/log/level')
         if res.status_code not in HTTP_OK:
@@ -441,14 +510,19 @@ class ArangoClient(object):
                 threads='WARNING'
             )
 
+        :return: the new logging levels
+        :rtype: dict
+
         .. note::
             Keys that are not valid logger names are simply ignored.
 
         .. note::
             This method is only compatible with ArangoDB version 3.1+ only.
 
-        :return: the new logging levels
-        :rtype: dict
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.set_log_levels` (via a
+            database the users have access to) instead.
         """
         res = self._conn.put('/_admin/log/level', data=kwargs)
         if res.status_code not in HTTP_OK:
@@ -462,6 +536,11 @@ class ArangoClient(object):
         :rtype: bool
         :raises arango.exceptions.ServerReloadRoutingError: if the routing
             cannot be reloaded
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.reload_routing` (via a
+            database the users have access to) instead.
         """
         res = self._conn.post('/_admin/routing/reload')
         if res.status_code not in HTTP_OK:
@@ -473,13 +552,16 @@ class ArangoClient(object):
     #######################
 
     def databases(self, user_only=False):
-        """"Return the database names.
+        """Return the database names.
 
         :param user_only: list only the databases accessible by the user
         :type user_only: bool
         :returns: the database names
         :rtype: list
         :raises arango.exceptions.DatabaseListError: if the retrieval fails
+
+        .. note::
+            Only the root user can access this method.
         """
         # Get the current user's databases
         res = self._conn.get(
@@ -493,7 +575,7 @@ class ArangoClient(object):
     def db(self, name, username=None, password=None):
         """Return the database object.
 
-        This is an alias for :func:`~arango.client.ArangoClient.database`.
+        This is an alias for :func:`arango.client.ArangoClient.database`.
 
         :param name: the name of the database
         :type name: str | unicode
@@ -566,6 +648,10 @@ class ArangoClient(object):
 
             If **users** is not set, only the root and the current user are
             granted access to the new database by default.
+
+        .. note::
+            Root privileges (i.e. access to the ``_system`` database) are
+            required to use this method.
         """
         res = self._conn.post(
             '/_api/database',
@@ -593,6 +679,10 @@ class ArangoClient(object):
         :returns: whether the database was deleted successfully
         :rtype: bool
         :raises arango.exceptions.DatabaseDeleteError: if the delete fails
+
+        .. note::
+            Root privileges (i.e. access to the ``_system`` database) are
+            required to use this method.
         """
         res = self._conn.delete('/_api/database/{}'.format(name))
         if res.status_code not in HTTP_OK:
@@ -612,8 +702,9 @@ class ArangoClient(object):
         :raises arango.exceptions.UserListError: if the retrieval fails
 
         .. note::
-            Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method.
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.users` (via a database the
+            users have access to) instead.
         """
         res = self._conn.get('/_api/user')
         if res.status_code not in HTTP_OK:
@@ -634,8 +725,9 @@ class ArangoClient(object):
         :raises arango.exceptions.UserGetError: if the retrieval fails
 
         .. note::
-            Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method.
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.user` (via a database the
+            users have access to) instead.
         """
         res = self._conn.get('/_api/user/{}'.format(username))
         if res.status_code not in HTTP_OK:
@@ -662,8 +754,9 @@ class ArangoClient(object):
         :raises arango.exceptions.UserCreateError: if the user create fails
 
         .. note::
-            Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method.
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.create_user` (via a database
+            the users have access to) instead.
         """
         data = {'user': username, 'passwd': password}
         if active is not None:
@@ -696,8 +789,9 @@ class ArangoClient(object):
         :raises arango.exceptions.UserUpdateError: if the user update fails
 
         .. note::
-            Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method.
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.update_user` (via a database
+            the users have access to) instead.
         """
         data = {}
         if password is not None:
@@ -735,8 +829,9 @@ class ArangoClient(object):
         :raises arango.exceptions.UserReplaceError: if the user replace fails
 
         .. note::
-            Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method.
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.replace_user` (via a database
+            the users have access to) instead.
         """
         data = {'user': username, 'passwd': password}
         if active is not None:
@@ -769,8 +864,9 @@ class ArangoClient(object):
         :raises arango.exceptions.UserDeleteError: if the user delete fails
 
         .. note::
-            Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method.
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.delete_user` (via a database
+            the users have access to) instead.
         """
         res = self._conn.delete('/_api/user/{user}'.format(user=username))
         if res.status_code in HTTP_OK:
@@ -789,8 +885,9 @@ class ArangoClient(object):
         :raises: arango.exceptions.UserAccessError: if the retrieval fails
 
         .. note::
-            Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method.
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.user_access` (via a database
+            the users have access to) instead.
         """
         res = self._conn.get('/_api/user/{}/database'.format(username))
         if res.status_code in HTTP_OK:
@@ -809,8 +906,9 @@ class ArangoClient(object):
         :raises arango.exceptions.UserGrantAccessError: if the operation fails
 
         .. note::
-            Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method.
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.grant_user_access` (via a
+            database the users have access to) instead.
         """
         res = self._conn.put(
             '/_api/user/{}/database/{}'.format(username, database),
@@ -832,8 +930,9 @@ class ArangoClient(object):
         :raises arango.exceptions.UserRevokeAccessError: if the operation fails
 
         .. note::
-            Root privileges (i.e. access to the ``_system`` database) are
-            required to use this method.
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.revoke_user_access` (via a
+            database the users have access to) instead.
         """
         res = self._conn.put(
             '/_api/user/{}/database/{}'.format(username, database),
@@ -857,6 +956,11 @@ class ArangoClient(object):
         :returns: the list of job IDs
         :rtype: [str]
         :raises arango.exceptions.AsyncJobListError: if the retrieval fails
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.async_jobs` (via a database
+            the users have access to) instead.
         """
         res = self._conn.get(
             '/_api/job/{}'.format(status),
@@ -879,6 +983,11 @@ class ArangoClient(object):
 
         .. note::
             Async jobs currently queued or running are not stopped.
+
+        .. note::
+            Only the root user can access this method. For non-root users,
+            use :func:`arango.database.Database.clear_async_jobs` (via a
+            database the users have access to) instead.
         """
         if threshold is None:
             res = self._conn.delete('/_api/job/all')

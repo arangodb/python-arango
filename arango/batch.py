@@ -74,7 +74,7 @@ class BatchExecution(Connection):
 
         :param request: the API request queued as part of the current batch
             request scope, and executed only when the batch is committed via
-            method :func:`~arango.batch.BatchExecution.commit`
+            method :func:`arango.batch.BatchExecution.commit`
         :type request: arango.request.Request
         :param handler: the response handler
         :type handler: callable
@@ -95,7 +95,7 @@ class BatchExecution(Connection):
 
         If `return_response` was set to ``True`` during initialization, the
         responses are saved within an :class:`arango.batch.BatchJob` object
-        for later retrieval via its :func:`~arango.batch.BatchJob.result`
+        for later retrieval via its :func:`arango.batch.BatchJob.result`
         method
 
         :raises arango.exceptions.BatchExecuteError: if the batch request
