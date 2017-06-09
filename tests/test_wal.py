@@ -10,12 +10,13 @@ from arango.exceptions import (
     WALTransactionListError
 )
 
-from .utils import generate_user_name
+from .utils import generate_user_name, generate_db_name
 
 arango_client = ArangoClient()
-wal = arango_client.wal
 username = generate_user_name(arango_client)
 user = arango_client.create_user(username, 'password')
+db_name = generate_db_name(arango_client)
+db = arango_client.create_database(db_name)
 
 
 def teardown_module(*_):
@@ -24,8 +25,8 @@ def teardown_module(*_):
 
 @pytest.mark.order1
 def test_wal_properties():
-    properties = wal.properties()
-    assert 'ArangoDB write-ahead log' in repr(wal)
+    properties = arango_client.wal.properties()
+    assert 'ArangoDB write-ahead log' in repr(arango_client.wal)
     assert 'oversized_ops' in properties
     assert 'log_size' in properties
     assert 'historic_logs' in properties
@@ -34,7 +35,7 @@ def test_wal_properties():
 
 @pytest.mark.order2
 def test_wal_configure():
-    wal.configure(
+    arango_client.wal.configure(
         historic_logs=15,
         oversized_ops=False,
         log_size=30000000,
@@ -53,7 +54,7 @@ def test_wal_configure():
 
 @pytest.mark.order3
 def test_wal_list_transactions():
-    result = wal.transactions()
+    result = arango_client.wal.transactions()
     assert 'count' in result
     assert 'last_sealed' in result
     assert 'last_collected' in result
@@ -61,7 +62,7 @@ def test_wal_list_transactions():
 
 @pytest.mark.order4
 def test_flush_wal():
-    result = wal.flush(garbage_collect=False, sync=False)
+    result = arango_client.wal.flush(garbage_collect=False, sync=False)
     assert isinstance(result, bool)
 
 
@@ -73,6 +74,69 @@ def test_wal_errors():
         verify=False
     )
     bad_wal = client_with_bad_user.wal
+    with pytest.raises(WALPropertiesError):
+        bad_wal.properties()
+
+    with pytest.raises(WALConfigureError):
+        bad_wal.configure(log_size=2000000)
+
+    with pytest.raises(WALTransactionListError):
+        bad_wal.transactions()
+
+    with pytest.raises(WALFlushError):
+        bad_wal.flush(garbage_collect=False, sync=False)
+
+
+@pytest.mark.order6
+def test_wal_properties_db_level():
+    properties = db.wal.properties()
+    assert 'ArangoDB write-ahead log' in repr(arango_client.wal)
+    assert 'oversized_ops' in properties
+    assert 'log_size' in properties
+    assert 'historic_logs' in properties
+    assert 'reserve_logs' in properties
+
+
+@pytest.mark.order7
+def test_wal_configure_db_level():
+    db.wal.configure(
+        historic_logs=15,
+        oversized_ops=False,
+        log_size=30000000,
+        reserve_logs=5,
+        throttle_limit=0,
+        throttle_wait=16000
+    )
+    properties = db.wal.properties()
+    assert properties['historic_logs'] == 15
+    assert properties['oversized_ops'] is False
+    assert properties['log_size'] == 30000000
+    assert properties['reserve_logs'] == 5
+    assert properties['throttle_limit'] == 0
+    assert properties['throttle_wait'] == 16000
+
+
+@pytest.mark.order8
+def test_wal_list_transactions_db_level():
+    result = db.wal.transactions()
+    assert 'count' in result
+    assert 'last_sealed' in result
+    assert 'last_collected' in result
+
+
+@pytest.mark.order9
+def test_flush_wal_db_level():
+    result = db.wal.flush(garbage_collect=False, sync=False)
+    assert isinstance(result, bool)
+
+
+@pytest.mark.order10
+def test_wal_errors_db_level():
+    bad_wal = ArangoClient(
+        username=username,
+        password='incorrect',
+        verify=False
+    ).db(db_name).wal
     with pytest.raises(WALPropertiesError):
         bad_wal.properties()
 

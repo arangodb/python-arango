@@ -14,6 +14,9 @@ class WriteAheadLog(object):
 
     :param connection: ArangoDB database connection
     :type connection: arango.connection.Connection
+
+    .. note::
+        This class is designed to be instantiated internally only.
     """
 
     def __init__(self, connection):

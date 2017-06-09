@@ -296,3 +296,203 @@ def test_create_user_with_database():
     with pytest.raises(DatabasePropertiesError) as err:
         user_db.properties()
     assert err.value.http_code == 401
+
+def test_list_users_db_level():
+    for user in db.users():
+        assert isinstance(user['username'], string_types)
+        assert isinstance(user['active'], bool)
+        assert isinstance(user['extra'], dict)
+
+    with pytest.raises(UserListError) as err:
+        bad_client.db(db_name).users()
+    assert err.value.http_code == 401
+
+
+def test_get_user_db_level():
+    # Get existing user
+    for user in db.users():
+        assert db.user(user['username']) == user
+
+    # Get a missing user
+    bad_username = generate_user_name(arango_client)
+    with pytest.raises(UserGetError) as err:
+        db.user(bad_username)
+    assert err.value.http_code == 404
+
+
+def test_create_user_db_level():
+    # Create a new user
+    username = generate_user_name(arango_client)
+    new_user = db.create_user(
+        username=username,
+        password='password',
+        active=True,
+        extra={'foo': 'bar'},
+    )
+    assert new_user['username'] == username
+    assert new_user['active'] is True
+    assert new_user['extra'] == {'foo': 'bar'}
+    assert db.user(username) == new_user
+
+    # Create a duplicate user
+    with pytest.raises(UserCreateError) as err:
+        db.create_user(username=username, password='foo')
+    assert 'duplicate' in err.value.message
+
+
+def test_update_user_db_level():
+    username = generate_user_name(arango_client)
+    db.create_user(
+        username=username,
+        password='password',
+        active=True,
+        extra={'foo': 'bar'},
+    )
+
+    # Update an existing user
+    new_user = db.update_user(
+        username=username,
+        password='new_password',
+        active=False,
+        extra={'bar': 'baz'},
+    )
+    assert new_user['username'] == username
+    assert new_user['active'] is False
+    assert new_user['extra'] == {'foo': 'bar', 'bar': 'baz'}
+    assert db.user(username) == new_user
+
+    # Update a missing user
+    bad_username = generate_user_name(arango_client)
+    with pytest.raises(UserUpdateError) as err:
+        db.update_user(
+            username=bad_username,
+            password='new_password'
+        )
+    assert err.value.http_code == 404
+
+
+def test_replace_user_db_level():
+    username = generate_user_name(arango_client)
+    db.create_user(
+        username=username,
+        password='password',
+        active=True,
+        extra={'foo': 'bar'},
+    )
+
+    # Replace an existing user
+    new_user = db.replace_user(
+        username=username,
+        password='password',
+        active=False,
+        extra={'bar': 'baz'},
+    )
+    assert new_user['username'] == username
+    assert new_user['active'] is False
+    assert new_user['extra'] == {'bar': 'baz'}
+    assert db.user(username) == new_user
+
+    # Replace a missing user
+    bad_username = generate_user_name(arango_client)
+    with pytest.raises(UserReplaceError) as err:
+        db.replace_user(
+            username=bad_username,
+            password='new_password'
+        )
+    assert err.value.http_code == 404
+
+
+def test_delete_user_db_level():
+    username = generate_user_name(arango_client)
+    db.create_user(
+        username=username,
+        password='password'
+    )
+
+    # Delete an existing user
+    assert db.delete_user(username) is True
+
+    # Delete a missing user without ignore_missing
+    with pytest.raises(UserDeleteError) as err:
+        db.delete_user(username, ignore_missing=False)
+    assert err.value.http_code == 404
+
+    # Delete a missing user with ignore_missing
+    assert db.delete_user(username, ignore_missing=True) is False
+
+
+def test_grant_user_access_db_level():
+    # Create a test user and login as that user
+    username = generate_user_name(arango_client)
+    db.create_user(username=username, password='password')
+    user_db = arango_client.database(
+        name=db_name,
+        username=username,
+        password='password'
+    )
+
+    # Create a collection with the user (should have no access)
+    col_name = generate_col_name(db)
+    with pytest.raises(CollectionCreateError) as err:
+        user_db.create_collection(col_name)
+    assert err.value.http_code == 401
+    assert col_name not in set(col['name'] for col in db.collections())
+
+    # Grant the user access and try again
+    db.grant_user_access(username, db_name)
+    db.create_collection(col_name)
+    assert col_name in set(col['name'] for col in db.collections())
+
+    # Grant access to a missing user
+    bad_username = generate_user_name(arango_client)
+    with pytest.raises(UserGrantAccessError) as err:
+        db.grant_user_access(bad_username, db_name)
+    assert err.value.http_code == 404
+
+
+def test_revoke_user_access_db_level():
+    # Create a test user with access and login as that user
+    username = generate_user_name(arango_client)
+    db.create_user(username=username, password='password')
+    db.grant_user_access(username, db_name)
+    user_db = arango_client.database(
+        name=db_name,
+        username=username,
+        password='password'
+    )
+
+    # Test user access by creating a collection
+    col_name = generate_col_name(db)
+    user_db.create_collection(col_name)
+    assert col_name in set(col['name'] for col in db.collections())
+
+    # Revoke access from the user
+    db.revoke_user_access(username, db_name)
+    with pytest.raises(CollectionDeleteError) as err:
+        user_db.delete_collection(col_name)
+    assert err.value.http_code == 401
+
+    # Test revoke access to missing user
+    bad_username = generate_user_name(arango_client)
+    with pytest.raises(UserRevokeAccessError) as err:
+        db.revoke_user_access(bad_username, db_name)
+    assert err.value.http_code == 404
+
+
+def test_get_user_access_db_level():
+    # Create a test user
+    username = generate_user_name(arango_client)
+    db.create_user(username=username, password='password')
+
+    # Get user access (should be empty initially)
+    assert db.user_access(username) == []
+
+    # Grant user access to the database and check again
+    db.grant_user_access(username, db_name)
+    assert db.user_access(username) == [db_name]
+
+    # Get access of a missing user
+    bad_username = generate_user_name(arango_client)
+    with pytest.raises(UserAccessError) as err:
+        db.user_access(bad_username)
+    assert err.value.http_code == 404

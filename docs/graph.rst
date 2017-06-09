@@ -144,7 +144,7 @@ Refer to :ref:`Graph` and :ref:`EdgeCollection` classes for more details.
 Graph Traversals
 ================
 
-**Graph traversals** are executed via the :func:`~arango.graph.Graph.traverse`
+**Graph traversals** are executed via the :func:`arango.graph.Graph.traverse`
 method. A traversal can span across multiple vertex collections and walk over
 the documents in a variety of ways.
 

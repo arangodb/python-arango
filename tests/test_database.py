@@ -1,6 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 
+from datetime import datetime
+
 import pytest
+from six import string_types
 
 from arango import ArangoClient
 from arango.collections import Collection
@@ -192,3 +195,177 @@ def test_drop_graph():
     # Test drop missing graph (ignore_missing)
     result = db.delete_graph(graph_name, ignore_missing=True)
     assert result is False
+
+
+@pytest.mark.order11
+def test_verify():
+    assert db.verify() is True
+    with pytest.raises(ServerConnectionError):
+        bad_db.verify()
+
+
+@pytest.mark.order12
+def test_version():
+    version = db.version()
+    assert isinstance(version, string_types)
+
+    with pytest.raises(ServerVersionError):
+        bad_db.version()
+
+
+@pytest.mark.order13
+def test_details():
+    details = db.details()
+    assert 'architecture' in details
+    assert 'server-version' in details
+
+    with pytest.raises(ServerDetailsError):
+        bad_db.details()
+
+
+@pytest.mark.order14
+def test_required_db_version():
+    version = db.required_db_version()
+    assert isinstance(version, string_types)
+
+    with pytest.raises(ServerRequiredDBVersionError):
+        bad_db.required_db_version()
+
+
+@pytest.mark.order15
+def test_statistics():
+    statistics = db.statistics(description=False)
+    assert isinstance(statistics, dict)
+    assert 'time' in statistics
+    assert 'system' in statistics
+    assert 'server' in statistics
+
+    description = db.statistics(description=True)
+    assert isinstance(description, dict)
+    assert 'figures' in description
+    assert 'groups' in description
+
+    with pytest.raises(ServerStatisticsError):
+        bad_db.statistics()
+
+
+@pytest.mark.order16
+def test_role():
+    assert db.role() in {
+        'SINGLE',
+        'COORDINATOR',
+        'PRIMARY',
+        'SECONDARY',
+        'UNDEFINED'
+    }
+    with pytest.raises(ServerRoleError):
+        bad_db.role()
+
+
+@pytest.mark.order17
+def test_time():
+    system_time = db.time()
+    assert isinstance(system_time, datetime)
+
+    with pytest.raises(ServerTimeError):
+        bad_db.time()
+
+
+@pytest.mark.order18
+def test_echo():
+    last_request = db.echo()
+    assert 'protocol' in last_request
+    assert 'user' in last_request
+    assert 'requestType' in last_request
+    assert 'rawRequestBody' in last_request
+
+    with pytest.raises(ServerEchoError):
+        bad_db.echo()
+
+
+@pytest.mark.order19
+def test_sleep():
+    assert db.sleep(0) == 0
+
+    with pytest.raises(ServerSleepError):
+        bad_db.sleep(0)
+
+
+@pytest.mark.order20
+def test_execute():
+    assert db.execute('return 1') == '1'
+    assert db.execute('return "test"') == '"test"'
+    with pytest.raises(ServerExecuteError) as err:
+        db.execute('return invalid')
+    assert 'Internal Server Error' in err.value.message
+
+
+@pytest.mark.order21
+def test_log():
+    # Test read_log with default arguments
+    log = db.read_log(upto='fatal')
+    assert 'lid' in log
+    assert 'level' in log
+    assert 'text' in log
+    assert 'total_amount' in log
+
+    # Test read_log with specific arguments
+    log = db.read_log(
+        level='error',
+        start=0,
+        size=100000,
+        offset=0,
+        search='test',
+        sort='desc',
+    )
+    assert 'lid' in log
+    assert 'level' in log
+    assert 'text' in log
+    assert 'total_amount' in log
+
+    # Test read_log with incorrect auth
+    with pytest.raises(ServerReadLogError):
+        bad_db.read_log()
+
+
+@pytest.mark.order22
+def test_reload_routing():
+    result = db.reload_routing()
+    assert isinstance(result, bool)
+
+    with pytest.raises(ServerReloadRoutingError):
+        bad_db.reload_routing()
+
+
+@pytest.mark.order23
+def test_log_levels():
+    major, minor = arango_version(arango_client)
+    if major == 3 and minor >= 1:
+
+        result = db.log_levels()
+        assert isinstance(result, dict)
+
+        with pytest.raises(ServerLogLevelError):
+            bad_db.log_levels()
+
+
+@pytest.mark.order24
+def test_set_log_levels():
+    major, minor = arango_version(arango_client)
+    if major == 3 and minor >= 1:
+
+        new_levels = {
+            'agency': 'DEBUG',
+            'collector': 'INFO',
+            'threads': 'WARNING'
+        }
+        result = db.set_log_levels(**new_levels)
+
+        for key, value in new_levels.items():
+            assert result[key] == value
+
+        for key, value in db.log_levels().items():
+            assert result[key] == value
+
+        with pytest.raises(ServerLogLevelSetError):
+            bad_db.set_log_levels(**new_levels)

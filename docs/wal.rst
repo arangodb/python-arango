@@ -20,16 +20,51 @@ Example:
 
     client = ArangoClient()
 
+    wal = client.wal
+
     # Configure the properties of the WAL
-    client.wal.configure(oversized_ops=10000)
+    wal.configure(oversized_ops=True)
 
     # Retrieve the properties of the WAL
-    client.wal.properties()
+    wal.properties()
 
     # List currently running WAL transactions
-    client.wal.transactions()
+    wal.transactions()
 
     # Flush the WAL with garbage collection
-    client.wal.flush(garbage_collect=True)
+    wal.flush(garbage_collect=True)
 
-Refer to :ref:`WriteAheadLog` class for more details.
+
+Note that the methods of :attr:`arango.client.ArangoClient.wal` above can only
+be called by root user with access to ``_system`` database. Non-root users can
+call the methods of :attr:`arango.database.Database.wal` using a database they
+have access to instead. For example:
+
+.. code-block:: python
+
+    from arango import ArangoClient
+
+    client = ArangoClient()
+    db = client.database(
+        name='database-the-user-has-access-to',
+        username='username',
+        password='password'
+    )
+
+    # The WAL object now knows of the user and the database
+    wal = db.wal
+
+    # Configure the properties of the WAL
+    wal.configure(oversized_ops=True)
+
+    # Retrieve the properties of the WAL
+    wal.properties()
+
+    # List currently running WAL transactions
+    wal.transactions()
+
+    # Flush the WAL with garbage collection
+    wal.flush(garbage_collect=True)
+
+
+Refer to :class:`arango.wal.WriteAheadLog` for more details on the methods.

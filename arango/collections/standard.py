@@ -899,7 +899,7 @@ class Collection(BaseCollection):
                     sync=None):
         """Insert multiple documents into the collection.
 
-        This is faster than :func:`~arango.collections.Collection.insert_many`
+        This is faster than :func:`arango.collections.Collection.insert_many`
         but does not return as much information. Any ``"_id"`` and ``"_rev"``
         fields in **documents** are ignored.
 

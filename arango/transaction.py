@@ -87,7 +87,7 @@ class Transaction(Connection):
 
         :param request: the API request queued as part of the transaction, and
             executed only when the current transaction is committed via method
-            :func:`~arango.batch.BatchExecution.commit`
+            :func:`arango.batch.BatchExecution.commit`
         :type request: arango.request.Request
         :param handler: the response handler
         :type handler: callable
