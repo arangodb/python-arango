@@ -68,11 +68,35 @@ def test_properties():
     properties = graph.properties()
     assert properties['id'] == '_graphs/{}'.format(graph_name)
     assert properties['name'] == graph_name
+    assert properties['edge_definitions'] == []
+    assert properties['orphan_collections'] == []
     assert isinstance(properties['revision'], string_types)
+    assert properties['smart'] == False
+    assert 'smart_field' in properties
+    assert 'shard_count' in properties
 
     # Test if exception is raised properly
     with pytest.raises(GraphPropertiesError):
         bad_graph.properties()
+
+    new_graph_name = generate_graph_name(db)
+    new_graph = db.create_graph(
+        new_graph_name,
+        # TODO only possible with enterprise edition
+        # smart=True,
+        # smart_field='foo',
+        # shard_count=2
+    )
+    properties = new_graph.properties()
+    assert properties['id'] == '_graphs/{}'.format(new_graph_name)
+    assert properties['name'] == new_graph_name
+    assert properties['edge_definitions'] == []
+    assert properties['orphan_collections'] == []
+    assert isinstance(properties['revision'], string_types)
+    # TODO only possible with enterprise edition
+    # assert properties['smart'] == True
+    # assert properties['smart_field'] == 'foo'
+    # assert properties['shard_count'] == 2
 
 
 @pytest.mark.order2
@@ -937,7 +961,7 @@ def test_delete_edge():
         ecol.delete(edge3, ignore_missing=False)
 
     # Test delete missing edge while ignoring missing
-    ecol.delete(edge3, ignore_missing=True) is None
+    assert ecol.delete(edge3, ignore_missing=True) == False
 
 
 @pytest.mark.order20

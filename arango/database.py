@@ -701,13 +701,17 @@ class Database(object):
         res = self._conn.get('/_api/gharial')
         if res.status_code not in HTTP_OK:
             raise GraphListError(res)
+
         return [
             {
-                'name': graph['_key'],
-                'revision': graph['_rev'],
-                'edge_definitions': graph['edgeDefinitions'],
-                'orphan_collections': graph['orphanCollections']
-            } for graph in map(dict, res.body['graphs'])
+                'name': record['_key'],
+                'revision': record['_rev'],
+                'edge_definitions': record['edgeDefinitions'],
+                'orphan_collections': record['orphanCollections'],
+                'smart': record.get('isSmart'),
+                'smart_field': record.get('smartGraphAttribute'),
+                'shard_count': record.get('numberOfShards')
+            } for record in map(dict, res.body['graphs'])
         ]
 
     def graph(self, name):
@@ -723,7 +727,10 @@ class Database(object):
     def create_graph(self,
                      name,
                      edge_definitions=None,
-                     orphan_collections=None):
+                     orphan_collections=None,
+                     smart=None,
+                     smart_field=None,
+                     shard_count=None):
         """Create a new graph in the database.
 
         An edge definition should look like this:
@@ -736,12 +743,25 @@ class Database(object):
                 'to_collections': ['to_vertex_collection_name']
             }
 
-        :param name: name of the new graph
+        :param name: The name of the new graph.
         :type name: str | unicode
-        :param edge_definitions: list of edge definitions
+        :param edge_definitions: The list of edge definitions.
         :type edge_definitions: list
-        :param orphan_collections: names of additional vertex collections
+        :param orphan_collections: The names of additional vertex collections.
         :type orphan_collections: list
+        :param smart: Whether or not the graph is smart. Set this to ``True``
+            to enable sharding (see parameter **smart_field** below). This
+            parameter only has an effect for the enterprise version of ArangoDB.
+        :type smart: bool
+        :param smart_field: The document field used to shard the vertices of
+            the graph. To use this option, parameter **smart** must be set to
+            ``True`` and every vertex in the graph must contain the smart field.
+        :type smart_field: str | unicode
+        :param shard_count: The number of shards used for every collection in
+            the graph. To use this option, parameter **smart** must be set to
+            ``True`` and every vertex in the graph must contain the smart field.
+            This number cannot be modified later once set.
+        :type shard_count: int
         :returns: the graph object
         :rtype: arango.graph.Graph
         :raises arango.exceptions.GraphCreateError: if the graph cannot be
@@ -756,25 +776,43 @@ class Database(object):
             } for definition in edge_definitions]
         if orphan_collections is not None:
             data['orphanCollections'] = orphan_collections
+        if smart is not None:
+            data['isSmart'] = smart
+        if smart_field is not None:
+            data['smartGraphAttribute'] = smart_field
+        if shard_count is not None:
+            data['numberOfShards'] = shard_count
 
         res = self._conn.post('/_api/gharial', data=data)
         if res.status_code not in HTTP_OK:
             raise GraphCreateError(res)
         return Graph(self._conn, name)
 
-    def delete_graph(self, name, ignore_missing=False):
+    def delete_graph(self, name, ignore_missing=False, drop_collections=None):
         """Drop the graph of the given name from the database.
 
-        :param name: the name of the graph to delete
+        :param name: The name of the graph to delete/drop.
         :type name: str | unicode
-        :param ignore_missing: ignore HTTP 404
+        :param ignore_missing: Ignore HTTP 404 (graph not found) from the
+            server. If this is set to ``True`` an exception is not raised.
         :type ignore_missing: bool
-        :returns: whether the drop was successful
+        :param drop_collections: Whether to drop the collections of the graph
+            as well. The collections can only be dropped if they are not in use
+            by other graphs.
+        :type drop_collections: bool
+        :returns: Whether the deletion was successful.
         :rtype: bool
         :raises arango.exceptions.GraphDeleteError: if the graph cannot be
             deleted from the database
         """
-        res = self._conn.delete('/_api/gharial/{}'.format(name))
+        params = {}
+        if drop_collections is not None:
+            params['dropCollections'] = drop_collections
+
+        res = self._conn.delete(
+            '/_api/gharial/{}'.format(name),
+            params=params
+        )
         if res.status_code not in HTTP_OK:
             if not (res.status_code == 404 and ignore_missing):
                 raise GraphDeleteError(res)
