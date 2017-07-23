@@ -18,7 +18,7 @@ class Graph(APIWrapper):
     :param connection: ArangoDB connection object
     :type connection: arango.connection.Connection
     :param name: the name of the graph
-    :type name: str
+    :type name: str | unicode
     """
 
     def __init__(self, connection, name):
@@ -41,7 +41,7 @@ class Graph(APIWrapper):
         """Return the vertex collection object.
 
         :param name: the name of the vertex collection
-        :type name: str
+        :type name: str | unicode
         :returns: the vertex collection object
         :rtype: arango.collections.vertex.VertexCollection
         """
@@ -51,7 +51,7 @@ class Graph(APIWrapper):
         """Return the edge collection object.
 
         :param name: the name of the edge collection
-        :type name: str
+        :type name: str | unicode
         :returns: the edge collection object
         :rtype: arango.collections.edge.EdgeCollection
         """
@@ -74,11 +74,23 @@ class Graph(APIWrapper):
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise GraphPropertiesError(res)
-            graph = res.body['graph']
+            record = res.body['graph']
             return {
-                'id': graph['_id'],
-                'name': graph['name'],
-                'revision': graph['_rev']
+                'id': record['_id'],
+                'name': record['name'],
+                'revision': record['_rev'],
+                'orphan_collections': record['orphanCollections'],
+                'edge_definitions': [
+                    {
+                        'name': edge_definition['collection'],
+                        'to_collections': edge_definition['to'],
+                        'from_collections': edge_definition['from']
+                    }
+                    for edge_definition in record['edgeDefinitions']
+                ],
+                'smart': record.get('isSmart'),
+                'smart_field': record.get('smartGraphAttribute'),
+                'shard_count': record.get('numberOfShards')
             }
         return request, handler
 
@@ -133,7 +145,7 @@ class Graph(APIWrapper):
         """Create a vertex collection for the graph.
 
         :param name: the name of the new vertex collection to create
-        :type name: str
+        :type name: str | unicode
         :returns: the vertex collection object
         :rtype: arango.collections.vertex.VertexCollection
         :raises arango.exceptions.VertexCollectionCreateError: if the vertex
@@ -157,7 +169,7 @@ class Graph(APIWrapper):
         """Remove the vertex collection from the graph.
 
         :param name: the name of the vertex collection to remove
-        :type name: str
+        :type name: str | unicode
         :param purge: delete the vertex collection completely
         :type purge: bool
         :returns: whether the operation was successful
@@ -219,7 +231,7 @@ class Graph(APIWrapper):
         vertex collections, one or more "to" vertex collections.
 
         :param name: the name of the new edge collection
-        :type name: str
+        :type name: str | unicode
         :param from_collections: the name(s) of the "from" vertex collections
         :type from_collections: list
         :param to_collections: the names of the "to" vertex collections
@@ -251,7 +263,7 @@ class Graph(APIWrapper):
         """Replace an edge definition in the graph.
 
         :param name: the name of the edge definition to replace
-        :type name: str
+        :type name: str | unicode
         :param from_collections: the names of the "from" vertex collections
         :type from_collections: list
         :param to_collections: the names of the "to" vertex collections
@@ -285,7 +297,7 @@ class Graph(APIWrapper):
         """Remove an edge definition from the graph.
 
         :param name: the name of the edge collection
-        :type name: str
+        :type name: str | unicode
         :param purge: delete the edge collection completely
         :type purge: bool
         :returns: whether the operation was successful
@@ -331,20 +343,20 @@ class Graph(APIWrapper):
 
         :param start_vertex: the collection and the key of the start vertex in
             the format ``"collection/key"``
-        :type start_vertex: str
+        :type start_vertex: str | unicode
         :param direction: ``"outbound"`` (default), ``"inbound"`` or ``"any"``
-        :type direction: str
+        :type direction: str | unicode
         :param item_order: ``"forward"`` (default) or ``"backward"``
-        :type item_order: str
+        :type item_order: str | unicode
         :param strategy: ``"dfs"`` or ``"bfs"``
-        :type strategy: str
+        :type strategy: str | unicode
         :param order: ``"preorder"``, ``"postorder"``, ``"preorder-expander"``
             or ``None`` (default)
-        :type order: str
+        :type order: str | unicode
         :param vertex_uniqueness: ``"global"``, ``"path"`` or ``None``
-        :type vertex_uniqueness: str
+        :type vertex_uniqueness: str | unicode
         :param edge_uniqueness: ``"global"``, ``"path"`` or ``None``
-        :type edge_uniqueness: str
+        :type edge_uniqueness: str | unicode
         :param min_depth: the minimum depth of the nodes to visit
         :type min_depth: int
         :param max_depth: the maximum depth of the nodes to visit
@@ -354,11 +366,11 @@ class Graph(APIWrapper):
         :type max_iter: int
         :param init_func: init function in Javascript with signature
             ``(config, result) -> void``, which is used to initialize values
-        :type init_func: str
+        :type init_func: str | unicode
         :param sort_func: sort function in Javascript with signature
             ``(left, right) -> integer``, which returns ``-1`` if ``left <
             right``, ``+1`` if ``left > right``, and ``0`` if ``left == right``
-        :type sort_func: str
+        :type sort_func: str | unicode
         :param filter_func: filter function in Javascript with signature
             ``(config, vertex, path) -> mixed``, where mixed can be one of four
             possible values: ``"exclude"`` (do not visit the vertex),
@@ -366,18 +378,18 @@ class Graph(APIWrapper):
             ``undefined`` (visit the vertex and its edges), or an Array
             (any combinations of the ``"mixed"``, ``"prune"``, ``""`` or
             ``undefined``).
-        :type filter_func: str
+        :type filter_func: str | unicode
         :param visitor_func: visitor function in Javascript with signature
             ``(config, result, vertex, path, connected) -> void``, where the
             return value is ignored, ``result`` is modified by reference, and
             ``connected`` is populated only when argument **order** is set to
             ``"preorder-expander"``
-        :type visitor_func: str
+        :type visitor_func: str | unicode
         :param expander_func: expander function in Javascript with signature
             ``(config, vertex, path) -> mixed``, which must return an array of
             the connections for vertex where each connection is an object with
             attributes edge and vertex
-        :type expander_func: str
+        :type expander_func: str | unicode
         :returns: the visited edges and vertices
         :rtype: dict
         :raises arango.exceptions.GraphTraverseError: if the graph traversal

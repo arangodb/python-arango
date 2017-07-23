@@ -133,7 +133,7 @@ def test_create_system_collection():
 
 
 @pytest.mark.order6
-def test_drop_collection():
+def test_delete_collection():
     # Test drop collection
     result = db.delete_collection(col_name_2)
     assert result is True
@@ -182,19 +182,58 @@ def test_create_graph():
 
 
 @pytest.mark.order10
-def test_drop_graph():
-    # Test drop graph
+def test_delete_graph():
+    # Test delete graph from the last test
     result = db.delete_graph(graph_name)
     assert result is True
     assert graph_name not in db.graphs()
 
-    # Test drop missing graph
+    # Test delete missing graph
     with pytest.raises(GraphDeleteError):
         db.delete_graph(graph_name)
 
-    # Test drop missing graph (ignore_missing)
+    # Test delete missing graph (ignore_missing)
     result = db.delete_graph(graph_name, ignore_missing=True)
     assert result is False
+
+    major, minor = arango_version(arango_client)
+
+    if not (major == 3 and minor >= 1):
+        # Create a graph with vertex and edge collections and delete them all
+        new_graph_name = generate_graph_name(db)
+        graph = db.create_graph(new_graph_name)
+        vcol_name_1 = generate_col_name(db)
+        graph.create_vertex_collection(vcol_name_1)
+        vcol_name_2 = generate_col_name(db)
+        graph.create_vertex_collection(vcol_name_2)
+        ecol_name = generate_col_name(db)
+        graph.create_edge_definition(
+            name=ecol_name,
+            from_collections=[vcol_name_1],
+            to_collections=[vcol_name_2]
+        )
+        collections = set(col['name'] for col in db.collections())
+        assert vcol_name_1 in collections
+        assert vcol_name_2 in collections
+        assert ecol_name in collections
+
+        db.delete_graph(new_graph_name)
+        collections = set(col['name'] for col in db.collections())
+        assert vcol_name_1 in collections
+        assert vcol_name_2 in collections
+        assert ecol_name in collections
+
+        graph = db.create_graph(new_graph_name)
+        graph.create_edge_definition(
+            name=ecol_name,
+            from_collections=[vcol_name_1],
+            to_collections=[vcol_name_2]
+        )
+        db.delete_graph(new_graph_name, drop_collections=True)
+        collections = set(col['name'] for col in db.collections())
+        assert vcol_name_1 not in collections
+        assert vcol_name_2 not in collections
+        assert ecol_name not in collections
 
 
 @pytest.mark.order11
@@ -293,11 +332,15 @@ def test_sleep():
 
 @pytest.mark.order20
 def test_execute():
-    assert db.execute('return 1') == '1'
-    assert db.execute('return "test"') == '"test"'
-    with pytest.raises(ServerExecuteError) as err:
-        db.execute('return invalid')
-    assert 'Internal Server Error' in err.value.message
+    major, minor = arango_version(arango_client)
+
+    # TODO ArangoDB 3.2 seems to be missing this API endpoint
+    if not (major == 3 and minor == 2):
+        assert db.execute('return 1') == '1'
+        assert db.execute('return "test"') == '"test"'
+        with pytest.raises(ServerExecuteError) as err:
+            db.execute('return invalid')
+        assert 'Internal Server Error' in err.value.message
 
 
 @pytest.mark.order21
