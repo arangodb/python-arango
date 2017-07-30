@@ -1018,7 +1018,7 @@ class BaseCollection(APIWrapper):
             the index per document. Trying to insert a value into the index
             that already exists will always fail, regardless of the value of
             this field.
-        :param deduplicate: bool
+        :type deduplicate: bool
         :returns: the details on the new index
         :rtype: dict
         :raises arango.exceptions.IndexCreateError: if the hash index cannot
@@ -1056,7 +1056,7 @@ class BaseCollection(APIWrapper):
             the index per document. Trying to insert a value into the index
             that already exists will always fail, regardless of the value of
             this field.
-        :param deduplicate: bool
+        :type deduplicate: bool
         :returns: the details on the new index
         :rtype: dict
         :raises arango.exceptions.IndexCreateError: if the skiplist index
