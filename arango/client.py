@@ -393,7 +393,7 @@ class ArangoClient(object):
             raise ServerRunTestsError(res)
         return res.body
 
-    def execute(self, program):
+    def execute(self, program):  # pragma: no cover
         """Execute a Javascript program on the server.
 
         :param program: the body of the Javascript program to execute.
@@ -875,21 +875,28 @@ class ArangoClient(object):
             return False
         raise UserDeleteError(res)
 
-    def user_access(self, username):
-        """Return the database access details of a user.
+    def user_access(self, username, full=False):
+        """Return a user's access details for databases (and collections).
 
-        :param username: the name of the user
+        :param username: The name of the user.
         :type username: str | unicode
-        :returns: the names of the databases the user can access
-        :rtype: [str]
-        :raises: arango.exceptions.UserAccessError: if the retrieval fails
+        :param full: Return the full set of access levels for all databases and
+            collections for the user.
+        :type full: bool
+        :returns: The names of the databases (and collections) the user has
+            access to.
+        :rtype: [str] | [unicode]
+        :raises: arango.exceptions.UserAccessError: If the retrieval fails.
 
         .. note::
             Only the root user can access this method. For non-root users,
             use :func:`arango.database.Database.user_access` (via a database
             the users have access to) instead.
         """
-        res = self._conn.get('/_api/user/{}/database'.format(username))
+        res = self._conn.get(
+            '/_api/user/{}/database'.format(username),
+            params={'full': full}
+        )
         if res.status_code in HTTP_OK:
             return list(res.body['result'])
         raise UserAccessError(res)
@@ -897,13 +904,13 @@ class ArangoClient(object):
     def grant_user_access(self, username, database):
         """Grant user access to a database.
 
-        :param username: the name of the user
+        :param username: The name of the user.
         :type username: str | unicode
-        :param database: the name of the database
+        :param database: The name of the database.
         :type database: str | unicode
-        :returns: whether the operation was successful
+        :returns: Whether the operation was successful or not.
         :rtype: bool
-        :raises arango.exceptions.UserGrantAccessError: if the operation fails
+        :raises arango.exceptions.UserGrantAccessError: If the operation fails.
 
         .. note::
             Only the root user can access this method. For non-root users,
@@ -921,22 +928,21 @@ class ArangoClient(object):
     def revoke_user_access(self, username, database):
         """Revoke user access to a database.
 
-        :param username: the name of the user
+        :param username: The name of the user.
         :type username: str | unicode
-        :param database: the name of the database
+        :param database: The name of the database.
         :type database: str | unicode | unicode
-        :returns: whether the operation was successful
+        :returns: Whether the operation was successful or not.
         :rtype: bool
-        :raises arango.exceptions.UserRevokeAccessError: if the operation fails
+        :raises arango.exceptions.UserRevokeAccessError: If the operation fails.
 
         .. note::
             Only the root user can access this method. For non-root users,
             use :func:`arango.database.Database.revoke_user_access` (via a
             database the users have access to) instead.
         """
-        res = self._conn.put(
-            '/_api/user/{}/database/{}'.format(username, database),
-            data={'grant': 'none'}
+        res = self._conn.delete(
+            '/_api/user/{}/database/{}'.format(username, database)
         )
         if res.status_code in HTTP_OK:
             return True

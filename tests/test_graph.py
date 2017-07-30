@@ -17,15 +17,15 @@ from .utils import (
 )
 
 arango_client = ArangoClient()
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 db = arango_client.create_database(db_name)
-col_name = generate_col_name(db)
+col_name = generate_col_name()
 col = db.create_collection(col_name)
-graph_name = generate_graph_name(db)
+graph_name = generate_graph_name()
 graph = db.create_graph(graph_name)
-bad_graph_name = generate_graph_name(db)
+bad_graph_name = generate_graph_name()
 bad_graph = db.graph(bad_graph_name)
-bad_col_name = generate_col_name(db)
+bad_col_name = generate_col_name()
 bad_vcol = bad_graph.vertex_collection(bad_col_name)
 bad_ecol = bad_graph.edge_collection(bad_col_name)
 
@@ -79,7 +79,7 @@ def test_properties():
     with pytest.raises(GraphPropertiesError):
         bad_graph.properties()
 
-    new_graph_name = generate_graph_name(db)
+    new_graph_name = generate_graph_name()
     new_graph = db.create_graph(
         new_graph_name,
         # TODO only possible with enterprise edition
@@ -374,7 +374,7 @@ def test_delete_edge_definition():
 
 @pytest.mark.order9
 def test_create_graph_with_vertices_ane_edges():
-    new_graph_name = generate_graph_name(db)
+    new_graph_name = generate_graph_name()
     edge_definitions = [
         {
             'name': 'ecol1',

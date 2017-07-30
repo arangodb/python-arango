@@ -142,7 +142,6 @@ class Connection(object):
     def handle_request(self, request, handler):
         # from arango.async import AsyncExecution
         # from arango.exceptions import ArangoError
-        #
         # async = AsyncExecution(self, return_result=True)
         # response = async.handle_request(request, handler)
         # while response.status() != 'done':

@@ -123,6 +123,15 @@ class BaseCollection(APIWrapper):
         """
         return self._name
 
+    @property
+    def database(self):
+        """Return the name of the database the collection belongs to.
+
+        :returns: The name of the database.
+        :rtype: str | unicode
+        """
+        return self._conn.database
+
     @api_method
     def rename(self, new_name):
         """Rename the collection.
@@ -930,6 +939,7 @@ class BaseCollection(APIWrapper):
         :rtype: [dict]
         :raises arango.exceptions.IndexListError: if the list of indexes
             cannot be retrieved
+
         """
         request = Request(
             method='get',
@@ -988,7 +998,11 @@ class BaseCollection(APIWrapper):
         return request, handler
 
     @api_method
-    def add_hash_index(self, fields, unique=None, sparse=None):
+    def add_hash_index(self,
+                       fields,
+                       unique=None,
+                       sparse=None,
+                       deduplicate=None):
         """Create a new hash index in the collection.
 
         :param fields: the document fields to index
@@ -997,6 +1011,14 @@ class BaseCollection(APIWrapper):
         :type unique: bool
         :param sparse: index ``None``'s
         :type sparse: bool
+        :param deduplicate: Controls whether inserting duplicate index values
+            from the same document into a unique array index leads to a unique
+            constraint error or not. If set to ``True`` (default), only a
+            single instance of each non-unique index values is inserted into
+            the index per document. Trying to insert a value into the index
+            that already exists will always fail, regardless of the value of
+            this field.
+        :param deduplicate: bool
         :returns: the details on the new index
         :rtype: dict
         :raises arango.exceptions.IndexCreateError: if the hash index cannot
@@ -1007,10 +1029,16 @@ class BaseCollection(APIWrapper):
             data['unique'] = unique
         if sparse is not None:
             data['sparse'] = sparse
+        if deduplicate is not None:
+            data['deduplicate'] = deduplicate
         return self._add_index(data)
 
     @api_method
-    def add_skiplist_index(self, fields, unique=None, sparse=None):
+    def add_skiplist_index(self,
+                           fields,
+                           unique=None,
+                           sparse=None,
+                           deduplicate=None):
         """Create a new skiplist index in the collection.
 
         A skiplist index is used to find the ranges of documents (e.g. time).
@@ -1021,6 +1049,14 @@ class BaseCollection(APIWrapper):
         :type unique: bool
         :param sparse: index ``None``'s
         :type sparse: bool
+        :param deduplicate: Controls whether inserting duplicate index values
+            from the same document into a unique array index leads to a unique
+            constraint error or not. If set to ``True`` (default), only a
+            single instance of each non-unique index values is inserted into
+            the index per document. Trying to insert a value into the index
+            that already exists will always fail, regardless of the value of
+            this field.
+        :param deduplicate: bool
         :returns: the details on the new index
         :rtype: dict
         :raises arango.exceptions.IndexCreateError: if the skiplist index
@@ -1031,6 +1067,8 @@ class BaseCollection(APIWrapper):
             data['unique'] = unique
         if sparse is not None:
             data['sparse'] = sparse
+        if deduplicate is not None:
+            data['deduplicate'] = deduplicate
         return self._add_index(data)
 
     @api_method
@@ -1136,5 +1174,85 @@ class BaseCollection(APIWrapper):
             if res.status_code not in HTTP_OK:
                 raise IndexDeleteError(res)
             return not res.body['error']
+
+        return request, handler
+
+    @api_method
+    def user_access(self, username):
+        """Return a user's access details for the collection.
+
+        Appropriate permissions are required in order to execute this method.
+
+        :param username: The name of the user.
+        :type username: str | unicode
+        :returns: The access details (e.g. ``"rw"``, ``None``)
+        :rtype: str | unicode | None
+        :raises: arango.exceptions.UserAccessError: If the retrieval fails.
+        """
+        request = Request(
+            method='get',
+            endpoint='/_api/user/{}/database/{}/{}'.format(
+                username, self.database, self.name
+            )
+        )
+
+        def handler(res):
+            if res.status_code in HTTP_OK:
+                result = res.body['result'].lower()
+                return None if result == 'none' else result
+            raise UserAccessError(res)
+
+        return request, handler
+
+    @api_method
+    def grant_user_access(self, username):
+        """Grant user access to the collection.
+
+        Appropriate permissions are required in order to execute this method.
+
+        :param username: The name of the user.
+        :type username: str | unicode
+        :returns: Whether the operation was successful or not.
+        :rtype: bool
+        :raises arango.exceptions.UserGrantAccessError: If the operation fails.
+        """
+        request = Request(
+            method='put',
+            endpoint='/_api/user/{}/database/{}/{}'.format(
+                username, self.database, self.name
+            ),
+            data={'grant': 'rw'}
+        )
+
+        def handler(res):
+            if res.status_code in HTTP_OK:
+                return True
+            raise UserGrantAccessError(res)
+
+        return request, handler
+
+    @api_method
+    def revoke_user_access(self, username):
+        """Revoke user access to the collection.
+
+        Appropriate permissions are required in order to execute this method.
+
+        :param username: The name of the user.
+        :type username: str | unicode
+        :returns: Whether the operation was successful or not.
+        :rtype: bool
+        :raises arango.exceptions.UserRevokeAccessError: If the operation fails.
+        """
+        request = Request(
+            method='delete',
+            endpoint='/_api/user/{}/database/{}/{}'.format(
+                username, self.database, self.name
+            )
+        )
+
+        def handler(res):
+            if res.status_code in HTTP_OK:
+                return True
+            raise UserRevokeAccessError(res)
 
         return request, handler

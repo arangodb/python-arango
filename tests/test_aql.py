@@ -4,17 +4,7 @@ import pytest
 
 from arango import ArangoClient
 from arango.aql import AQL
-from arango.exceptions import (
-    AQLQueryExecuteError,
-    AQLQueryExplainError,
-    AQLQueryValidateError,
-    AQLFunctionListError,
-    AQLFunctionCreateError,
-    AQLFunctionDeleteError,
-    AQLCacheClearError,
-    AQLCacheConfigureError,
-    AQLCachePropertiesError,
-)
+from arango.exceptions import *
 
 from .utils import (
     generate_db_name,
@@ -25,11 +15,11 @@ from .utils import (
 
 arango_client = ArangoClient()
 
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 db = arango_client.create_database(db_name)
-col_name = generate_col_name(db)
+col_name = generate_col_name()
 db.create_collection(col_name)
-username = generate_user_name(arango_client)
+username = generate_user_name()
 user = arango_client.create_user(username, 'password')
 func_name = ''
 func_body = ''
@@ -198,17 +188,29 @@ def test_clear_query_cache():
 
 @pytest.mark.order10
 def test_aql_errors():
-    bad_db_name = generate_db_name(arango_client)
+    bad_db_name = generate_db_name()
     bad_aql = arango_client.database(bad_db_name).aql
 
-    with pytest.raises(AQLFunctionListError):
+    with pytest.raises(ArangoError) as err:
         bad_aql.functions()
+    assert isinstance(err.value, AQLFunctionListError) \
+           or isinstance(err.value, AsyncExecuteError) \
+           or isinstance(err.value, BatchExecuteError)
 
-    with pytest.raises(AQLCachePropertiesError):
+    with pytest.raises(ArangoError) as err:
         bad_aql.cache.properties()
+    assert isinstance(err.value, AQLCachePropertiesError) \
+           or isinstance(err.value, AsyncExecuteError) \
+           or isinstance(err.value, BatchExecuteError)
 
-    with pytest.raises(AQLCacheConfigureError):
+    with pytest.raises(ArangoError) as err:
         bad_aql.cache.configure(mode='on')
+    assert isinstance(err.value, AQLCacheConfigureError) \
+           or isinstance(err.value, AsyncExecuteError) \
+           or isinstance(err.value, BatchExecuteError)
 
-    with pytest.raises(AQLCacheClearError):
+    with pytest.raises(ArangoError) as err:
         bad_aql.cache.clear()
+    assert isinstance(err.value, AQLCacheClearError) \
+           or isinstance(err.value, AsyncExecuteError) \
+           or isinstance(err.value, BatchExecuteError)

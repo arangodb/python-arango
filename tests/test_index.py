@@ -15,11 +15,11 @@ from .utils import (
 )
 
 arango_client = ArangoClient()
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 db = arango_client.create_database(db_name)
-col_name = generate_col_name(db)
+col_name = generate_col_name()
 col = db.create_collection(col_name)
-bad_col_name = generate_col_name(db)
+bad_col_name = generate_col_name()
 bad_col = db.collection(bad_col_name)
 col.add_geo_index(['coordinates'])
 
@@ -54,7 +54,8 @@ def test_add_hash_index():
     result = col.add_hash_index(
         fields=fields,
         unique=True,
-        sparse=True
+        sparse=True,
+        deduplicate=True
     )
 
     expected_index = {
@@ -63,6 +64,7 @@ def test_add_hash_index():
         'type': 'hash',
         'fields': ['attr1', 'attr2'],
         'unique': True,
+        'deduplicate': True
     }
     for key, value in expected_index.items():
         assert result[key] == value
@@ -76,14 +78,16 @@ def test_add_skiplist_index():
     result = col.add_skiplist_index(
         fields=fields,
         unique=True,
-        sparse=True
+        sparse=True,
+        deduplicate=True
     )
 
     expected_index = {
         'sparse': True,
         'type': 'skiplist',
         'fields': ['attr1', 'attr2'],
-        'unique': True
+        'unique': True,
+        'deduplicate': True
     }
     for key, value in expected_index.items():
         assert result[key] == value

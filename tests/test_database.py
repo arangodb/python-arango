@@ -18,14 +18,14 @@ from .utils import (
 )
 
 arango_client = ArangoClient()
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 db = arango_client.create_database(db_name)
-bad_db_name = generate_db_name(arango_client)
+bad_db_name = generate_db_name()
 bad_db = arango_client.db(bad_db_name)
-col_name_1 = generate_col_name(db)
+col_name_1 = generate_col_name()
 col_name_2 = ''
 db.create_collection(col_name_1)
-graph_name = generate_graph_name(db)
+graph_name = generate_graph_name()
 db.create_graph(graph_name)
 
 
@@ -76,7 +76,7 @@ def test_create_collection():
         db.create_collection(col_name_1)
 
     # Test create collection with parameters
-    col_name_2 = generate_col_name(db)
+    col_name_2 = generate_col_name()
     col = db.create_collection(
         name=col_name_2,
         sync=True,
@@ -176,7 +176,7 @@ def test_create_graph():
     with pytest.raises(GraphCreateError):
         db.create_graph(graph_name)
 
-    new_graph_name = generate_graph_name(db)
+    new_graph_name = generate_graph_name()
     db.create_graph(new_graph_name)
     assert new_graph_name in [g['name'] for g in db.graphs()]
 
@@ -198,15 +198,15 @@ def test_delete_graph():
 
     major, minor = arango_version(arango_client)
 
-    if not (major == 3 and minor >= 1):
+    if major == 3 and minor >= 1:
         # Create a graph with vertex and edge collections and delete them all
-        new_graph_name = generate_graph_name(db)
+        new_graph_name = generate_graph_name()
         graph = db.create_graph(new_graph_name)
-        vcol_name_1 = generate_col_name(db)
+        vcol_name_1 = generate_col_name()
         graph.create_vertex_collection(vcol_name_1)
-        vcol_name_2 = generate_col_name(db)
+        vcol_name_2 = generate_col_name()
         graph.create_vertex_collection(vcol_name_2)
-        ecol_name = generate_col_name(db)
+        ecol_name = generate_col_name()
         graph.create_edge_definition(
             name=ecol_name,
             from_collections=[vcol_name_1],

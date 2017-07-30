@@ -13,11 +13,11 @@ from .utils import (
 )
 
 arango_client = ArangoClient()
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 db = arango_client.create_database(db_name)
-col_name = generate_col_name(db)
+col_name = generate_col_name()
 col = db.create_collection(col_name)
-bad_col_name = generate_col_name(db)
+bad_col_name = generate_col_name()
 bad_col = db.collection(bad_col_name)
 
 
@@ -80,9 +80,9 @@ def test_configure():
 
 def test_rename():
     assert col.name == col_name
-    new_name = generate_col_name(db)
+    new_name = generate_col_name()
     while new_name == bad_col_name:
-        new_name = generate_col_name(db)
+        new_name = generate_col_name()
 
     # Test rename collection
     result = col.rename(new_name)

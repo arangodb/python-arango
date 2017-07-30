@@ -12,14 +12,14 @@ from .utils import (
 )
 
 arango_client = ArangoClient()
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 db = arango_client.create_database(db_name)
-ecol_name = generate_col_name(db)
+ecol_name = generate_col_name()
 ecol = db.create_collection(ecol_name, edge=True)
 ecol.add_geo_index(['coordinates'])
 
 # Set up test collection and edges
-col_name = generate_col_name(db)
+col_name = generate_col_name()
 db.create_collection(col_name).import_bulk([
     {'_key': '1'}, {'_key': '2'}, {'_key': '3'}, {'_key': '4'}, {'_key': '5'}
 ])
@@ -232,7 +232,7 @@ def test_update_match():
     assert 'foo' not in ecol['2']
 
     # Test update matching documents in missing collection
-    bad_ecol_name = generate_col_name(db)
+    bad_ecol_name = generate_col_name()
     with pytest.raises(DocumentUpdateError):
         bad_ecol = db.collection(bad_ecol_name)
         bad_ecol.update_match({'_key': '1'}, {'foo': 100})
@@ -336,7 +336,7 @@ def test_replace_match():
     assert 'foo' not in ecol['2']
 
     # Test replace matching documents in missing collection
-    bad_ecol_name = generate_col_name(db)
+    bad_ecol_name = generate_col_name()
     with pytest.raises(DocumentReplaceError):
         bad_ecol = db.collection(bad_ecol_name)
         bad_ecol.replace_match({'_key': '1'}, {'foo': 100})
@@ -403,11 +403,11 @@ def test_delete():
     assert len(ecol) == 1
 
     # Test delete with missing edge collection
-    bad_col = generate_col_name(db)
+    bad_col = generate_col_name()
     with pytest.raises(DocumentDeleteError):
         db.collection(bad_col).delete(edge5)
 
-    bad_col = generate_col_name(db)
+    bad_col = generate_col_name()
     with pytest.raises(DocumentDeleteError):
         db.collection(bad_col).delete(edge5['_key'])
 
@@ -490,11 +490,11 @@ def test_delete_many():
     assert len(ecol) == 0
 
     # Test delete_many with missing edge collection
-    bad_ecol = generate_col_name(db)
+    bad_ecol = generate_col_name()
     with pytest.raises(DocumentDeleteError):
         db.collection(bad_ecol).delete_many(edges)
 
-    bad_ecol = generate_col_name(db)
+    bad_ecol = generate_col_name()
     with pytest.raises(DocumentDeleteError):
         db.collection(bad_ecol).delete_many(test_edge_keys)
 
