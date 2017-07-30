@@ -1,9 +1,10 @@
 .. _user-page:
 
-User Management
----------------
+User and Access Management
+--------------------------
 
-Python-arango provides operations for managing users and database access.
+Python-arango provides operations for managing users and database/collection
+access.
 
 Example:
 
@@ -39,8 +40,8 @@ Example:
         username='johndoe@gmail.com',
         database='my_database'
     )
-    # Get database access details of an existing user
-    client.user_access('johndoe@gmail.com')
+    # Get full database and collection access details of an existing user
+    client.user_access('johndoe@gmail.com', full=True)
 
     # Revoke database access from an existing user
     client.revoke_user_access(
@@ -90,22 +91,33 @@ database they have access to instead. For example:
         extra={'team': 'frontend', 'title': 'architect'}
     )
     # Grant database access to an existing user
-    db.grant_user_access(
-        username='johndoe@gmail.com',
-        database='database-the-user-has-access-to'
-    )
+    db.grant_user_access('johndoe@gmail.com')
+
     # Get database access details of an existing user
     db.user_access('johndoe@gmail.com')
 
     # Revoke database access from an existing user
-    db.revoke_user_access(
-        username='johndoe@gmail.com',
-        database='database-the-user-has-access-to'
-    )
+    db.revoke_user_access('johndoe@gmail.com')
 
     # Delete an existing user
     client.delete_user(username='johndoe@gmail.com')
 
+Collection-specific user access management is also possible:
 
-Refer to classes :class:`arango.client.ArangoClient` and
-:ref::class:`arango.database.Database` for more details on the methods.
+.. code-block:: python
+
+    col = db.collection('some-collection')
+
+    # Grant collection access to an existing user
+    col.grant_user_access('johndoe@gmail.com')
+
+    # Get collection access details of an existing user
+    col.user_access('johndoe@gmail.com')
+
+    # Revoke collection access from an existing user
+    col.revoke_user_access('johndoe@gmail.com')
+
+
+Refer to classes :class:`arango.client.ArangoClient`,
+:class:`arango.database.Database`, and :class:`arango.collections.Collection`
+classes for more details.

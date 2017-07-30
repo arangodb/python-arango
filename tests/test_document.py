@@ -14,14 +14,15 @@ from .utils import (
 )
 
 arango_client = ArangoClient()
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 db = arango_client.create_database(db_name)
-col_name = generate_col_name(db)
+col_name = generate_col_name()
 col = db.create_collection(col_name)
-edge_col_name = generate_col_name(db)
+edge_col_name = generate_col_name()
 edge_col = db.create_collection(edge_col_name, edge=True)
 geo_index = col.add_geo_index(['coordinates'])
-bad_col_name = generate_col_name(db)
+bad_db = arango_client.database(db_name, password='invalid')
+bad_col_name = generate_col_name()
 bad_col = db.collection(bad_col_name)
 
 doc1 = {'_key': '1', 'val': 100, 'text': 'foo', 'coordinates': [1, 1]}
@@ -804,10 +805,15 @@ def test_delete():
     # Test delete with missing collection
     with pytest.raises(ArangoError):
         bad_col.delete(doc5)
-
     with pytest.raises(ArangoError):
         bad_col.delete(doc5['_key'])
 
+    # Test delete with wrong user credentials
+    with pytest.raises(ArangoError) as err:
+        bad_db.collection(col_name).delete(doc5)
+    assert isinstance(err.value, DocumentDeleteError) \
+           or isinstance(err.value, AsyncExecuteError) \
+           or isinstance(err.value, BatchExecuteError)
 
 def test_delete_many():
     # Set up test documents

@@ -15,7 +15,7 @@ from .utils import generate_db_name, arango_version
 http_client = DefaultHTTPClient(use_session=False)
 arango_client = ArangoClient(http_client=http_client)
 bad_arango_client = ArangoClient(username='root', password='incorrect')
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 
 
 def teardown_module(*_):

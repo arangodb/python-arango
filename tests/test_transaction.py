@@ -12,9 +12,9 @@ from .utils import (
 )
 
 arango_client = ArangoClient()
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 db = arango_client.create_database(db_name)
-col_name = generate_col_name(db)
+col_name = generate_col_name()
 col = db.create_collection(col_name)
 
 doc1 = {'_key': '1', 'data': {'val': 100}}
@@ -88,7 +88,7 @@ def test_execute_with_params():
 
 def test_execute_with_errors():
     txn = db.transaction(write=col_name)
-    bad_col_name = generate_col_name(db)
+    bad_col_name = generate_col_name()
     with pytest.raises(TransactionError):
         txn.execute(
             command='''

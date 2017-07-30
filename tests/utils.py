@@ -1,132 +1,73 @@
 from __future__ import absolute_import, unicode_literals
 
 from random import randint
+from uuid import uuid4
 
 
 def arango_version(client):
     """Return the major and minor version of ArangoDB.
 
-    :param client: ArangoDB client
+    :param client: The ArangoDB client.
     :type client: arango.ArangoClient
-    :return: the major and minor version numbers
-    :rtype: tuple
+    :return: The major and minor version numbers.
+    :rtype: (int, int)
     """
     version_nums = client.version().split('.')
     return map(int, version_nums[:2])
 
 
-def generate_db_name(client, exclude=None):
-    """Generate and return the next available database name.
+def generate_db_name():
+    """Generate and return a random database name.
 
-    :param client: ArangoDB client
-    :type client: arango.ArangoClient
-    :param exclude: set of names to exclude
-    :type exclude: set
-    :returns: the next available database name
+    :returns: A random database name.
     :rtype: str | unicode
     """
-    num = randint(100000, 999999)
-    existing = set(client.databases())
-    if exclude is not None:
-        existing |= set(exclude)
-    while 'test_database_{num:06d}'.format(num=num) in existing:
-        num = randint(100000, 999999)
-    return 'test_database_{num:06d}'.format(num=num)
+    return 'test_database_{}'.format(uuid4().hex)
 
 
-def generate_col_name(database, exclude=None):
-    """Generate and return the next available collection name.
+def generate_col_name():
+    """Generate and return a random collection name.
 
-    :param database: ArangoDB database
-    :type database: arango.database.ArangoDatabase
-    :param exclude: set of names to exclude
-    :type exclude: set
-    :returns: the next available collection name
+    :returns: A random collection name.
     :rtype: str | unicode
     """
-    num = randint(100000, 999999)
-    existing = set(col['name'] for col in database.collections())
-    if exclude is not None:
-        existing |= set(exclude)
-    while 'test_collection_{num:06d}'.format(num=num) in existing:
-        num = randint(100000, 999999)
-    return 'test_collection_{num:06d}'.format(num=num)
+    return 'test_collection_{}'.format(uuid4().hex)
 
 
-def generate_graph_name(database, exclude=None):
-    """Generate and return the next available collection name.
+def generate_graph_name():
+    """Generate and return a random graph name.
 
-    :param database: ArangoDB database
-    :type database: arango.database.ArangoDatabase
-    :param exclude: set of names to exclude
-    :type exclude: set
-    :returns: the next available graph name
+    :returns: A random graph name.
     :rtype: str | unicode
     """
-    num = randint(100000, 999999)
-    existing = set(g['name'] for g in database.graphs())
-    if exclude is not None:
-        existing |= set(exclude)
-    while 'test_graph_{num:06d}'.format(num=num) in existing:
-        num = randint(100000, 999999)
-    return 'test_graph_{num:06d}'.format(num=num)
+    return 'test_graph_{}'.format(uuid4().hex)
 
 
-def generate_task_name(database, exclude=None):
-    """Generate and return the next available task name.
+def generate_task_name():
+    """Generate and return a random task name.
 
-    :param database: ArangoDB database
-    :type database: arango.database.ArangoDatabase
-    :param exclude: set of names to exclude
-    :type exclude: set
-    :returns: the next available task name
+    :returns: A random task name.
     :rtype: str | unicode
     """
-    num = randint(100000, 999999)
-    existing = set(task['name'] for task in database.tasks())
-    if exclude is not None:
-        existing |= set(exclude)
-    while 'test_task_{num:06d}'.format(num=num) in existing:
-        num = randint(100000, 999999)
-    return 'test_task_{num:06d}'.format(num=num)
+    return 'test_task_{}'.format(uuid4().hex)
 
 
-def generate_task_id(database, exclude=None):
-    """Generate and return the next available task ID.
+def generate_task_id():
+    """Generate and return a random task ID.
 
-    :param database: ArangoDB database
-    :type database: arango.database.ArangoDatabase
-    :param exclude: set of names to exclude
-    :type exclude: set
-    :returns: the next available task ID
+    :returns: A random task ID
     :rtype: str | unicode
     """
-    num = randint(100000, 999999)
-    existing = set(task['id'] for task in database.tasks())
-    if exclude is not None:
-        existing |= set(exclude)
-    while 'test_task_id_{num:06d}'.format(num=num) in existing:
-        num = randint(100000, 999999)
-    return 'test_task_id_{num:06d}'.format(num=num)
+    return 'test_task_id_{}'.format(uuid4().hex)
 
 
-def generate_user_name(client, exclude=None):
-    """Generate and return the next available user name.
+def generate_user_name():
+    """Generate and return a random username.
 
-    :param client: ArangoDB client
-    :type client: arango.ArangoClient
-    :param exclude: set of names to exclude
-    :type exclude: set
-    :returns: the next available database name
+    :returns: A random username.
     :rtype: str | unicode
     """
-    num = randint(100000, 999999)
-    existing = set(user['username'] for user in client.users())
-    if exclude is not None:
-        existing |= set(exclude)
-    while 'test_user_{num:06d}'.format(num=num) in existing:
-        num = randint(100000, 999999)
-    return 'test_user_{num:06d}'.format(num=num)
+    return 'test_user_{}'.format(uuid4().hex)
 
 
 def clean_keys(obj):
