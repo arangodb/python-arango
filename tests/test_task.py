@@ -13,9 +13,9 @@ from .utils import (
 )
 
 arango_client = ArangoClient()
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 db = arango_client.create_database(db_name)
-bad_db_name = generate_db_name(arango_client)
+bad_db_name = generate_db_name()
 bad_db = arango_client.db(bad_db_name)
 test_cmd = "require('@arangodb').print(params);"
 
@@ -48,12 +48,12 @@ def test_get_task():
 
     # Test get missing task
     with pytest.raises(TaskGetError):
-        db.task(generate_task_id(db))
+        db.task(generate_task_id())
 
 
 def test_create_task():
     # Test create task with random ID
-    task_name = generate_task_name(db)
+    task_name = generate_task_name()
     new_task = db.create_task(
         name=task_name,
         command=test_cmd,
@@ -69,8 +69,8 @@ def test_create_task():
     assert db.task(new_task['id']) == new_task
 
     # Test create task with specific ID
-    task_name = generate_task_name(db)
-    task_id = generate_task_id(db)
+    task_name = generate_task_name()
+    task_id = generate_task_id()
     new_task = db.create_task(
         name=task_name,
         command=test_cmd,
@@ -99,8 +99,8 @@ def test_create_task():
 
 def test_delete_task():
     # Set up a test task to delete
-    task_name = generate_task_name(db)
-    task_id = generate_task_id(db)
+    task_name = generate_task_name()
+    task_id = generate_task_id()
     db.create_task(
         name=task_name,
         command=test_cmd,

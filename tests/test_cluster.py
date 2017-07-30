@@ -16,13 +16,13 @@ from .utils import (
 )
 
 arango_client = ArangoClient()
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 db = arango_client.create_database(db_name)
-col_name = generate_col_name(db)
+col_name = generate_col_name()
 col = db.create_collection(col_name)
-graph_name = generate_graph_name(db)
+graph_name = generate_graph_name()
 graph = db.create_graph(graph_name)
-vcol_name = generate_col_name(db)
+vcol_name = generate_col_name()
 graph.create_vertex_collection(vcol_name)
 
 

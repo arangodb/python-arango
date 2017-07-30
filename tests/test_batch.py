@@ -20,11 +20,11 @@ from .utils import (
 )
 
 arango_client = ArangoClient()
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 db = arango_client.create_database(db_name)
-bad_db_name = generate_db_name(arango_client)
+bad_db_name = generate_db_name()
 bad_db = arango_client.db(bad_db_name)
-col_name = generate_col_name(db)
+col_name = generate_col_name()
 col = db.create_collection(col_name)
 
 

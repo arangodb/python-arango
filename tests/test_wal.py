@@ -13,9 +13,9 @@ from arango.exceptions import (
 from .utils import generate_user_name, generate_db_name
 
 arango_client = ArangoClient()
-username = generate_user_name(arango_client)
+username = generate_user_name()
 user = arango_client.create_user(username, 'password')
-db_name = generate_db_name(arango_client)
+db_name = generate_db_name()
 db = arango_client.create_database(db_name)
 
 

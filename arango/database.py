@@ -241,7 +241,7 @@ class Database(object):
             raise ServerRunTestsError(res)
         return res.body
 
-    def execute(self, program):
+    def execute(self, program):  # pragma: no cover
         """Execute a Javascript program on the server.
 
         :param program: the body of the Javascript program to execute.
@@ -449,9 +449,9 @@ class Database(object):
         """Return the cluster round-trip test object.
 
         :param shard_id: the ID of the shard to which the request is sent
-        :type shard_id: str | unicode
+        :type shard_id: str | unicode | int
         :param transaction_id: the transaction ID for the request
-        :type transaction_id: str | unicode
+        :type transaction_id: str | unicode | int
         :param timeout: the timeout in seconds for the cluster operation, where
             an error is returned if the response does not arrive within the
             given limit (default: 24 hrs)
@@ -776,11 +776,11 @@ class Database(object):
             } for definition in edge_definitions]
         if orphan_collections is not None:
             data['orphanCollections'] = orphan_collections
-        if smart is not None:
+        if smart is not None:  # pragma: no cover
             data['isSmart'] = smart
-        if smart_field is not None:
+        if smart_field is not None:  # pragma: no cover
             data['smartGraphAttribute'] = smart_field
-        if shard_count is not None:
+        if shard_count is not None:  # pragma: no cover
             data['numberOfShards'] = shard_count
 
         res = self._conn.post('/_api/gharial', data=data)
@@ -1076,30 +1076,41 @@ class Database(object):
         raise UserDeleteError(res)
 
     def user_access(self, username):
-        """Return the database access details of a user.
+        """Return a user's access details for the database.
 
-        :param username: the name of the user
+        Appropriate permissions are required in order to execute this method.
+
+        :param username: The name of the user.
         :type username: str | unicode
-        :returns: the names of the databases the user can access
-        :rtype: [str]
-        :raises: arango.exceptions.UserAccessError: if the retrieval fails
+        :returns: The access details (e.g. ``"rw"``, ``None``)
+        :rtype: str | unicode | None
+        :raises: arango.exceptions.UserAccessError: If the retrieval fails.
         """
-        res = self._conn.get('/_api/user/{}/database'.format(username))
+        res = self._conn.get(
+            '/_api/user/{}/database/{}'.format(username, self.name),
+        )
         if res.status_code in HTTP_OK:
-            return list(res.body['result'])
+            result = res.body['result'].lower()
+            return None if result == 'none' else result
         raise UserAccessError(res)
 
-    def grant_user_access(self, username, database):
-        """Grant user access to a database.
+    def grant_user_access(self, username, database=None):
+        """Grant user access to the database.
 
-        :param username: the name of the user
+        Appropriate permissions are required in order to execute this method.
+
+        :param username: The name of the user.
         :type username: str | unicode
-        :param database: the name of the database
+        :param database: The name of the database. If a name is not specified,
+            the name of the current database is used.
         :type database: str | unicode
-        :returns: whether the operation was successful
+        :returns: Whether the operation was successful or not.
         :rtype: bool
-        :raises arango.exceptions.UserGrantAccessError: if the operation fails
+        :raises arango.exceptions.UserGrantAccessError: If the operation fails.
         """
+        if database is None:
+            database = self.name
+
         res = self._conn.put(
             '/_api/user/{}/database/{}'.format(username, database),
             data={'grant': 'rw'}
@@ -1108,20 +1119,25 @@ class Database(object):
             return True
         raise UserGrantAccessError(res)
 
-    def revoke_user_access(self, username, database):
-        """Revoke user access to a database.
+    def revoke_user_access(self, username, database=None):
+        """Revoke user access to the database.
 
-        :param username: the name of the user
+        Appropriate permissions are required in order to execute this method.
+
+        :param username: The name of the user.
         :type username: str | unicode
-        :param database: the name of the database
+        :param database: The name of the database. If a name is not specified,
+            the name of the current database is used.
         :type database: str | unicode | unicode
-        :returns: whether the operation was successful
+        :returns: Whether the operation was successful or not.
         :rtype: bool
-        :raises arango.exceptions.UserRevokeAccessError: if the operation fails
+        :raises arango.exceptions.UserRevokeAccessError: If the operation fails.
         """
-        res = self._conn.put(
-            '/_api/user/{}/database/{}'.format(username, database),
-            data={'grant': 'none'}
+        if database is None:
+            database = self.name
+
+        res = self._conn.delete(
+            '/_api/user/{}/database/{}'.format(username, database)
         )
         if res.status_code in HTTP_OK:
             return True
