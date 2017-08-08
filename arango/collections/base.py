@@ -102,11 +102,13 @@ class BaseCollection(APIWrapper):
 
         :param code: the collection status code
         :type code: int
-        :returns: the collection status text
-        :rtype: str  | unicode
+        :returns: the collection status text or ``None``
+        :rtype: str  | unicode | None
         :raises arango.exceptions.CollectionBadStatusError: if the collection
             status code is unknown
         """
+        if code is None:  # pragma: no cover
+            return None
         try:
             return self.STATUSES[code]
         except KeyError:
@@ -217,10 +219,10 @@ class BaseCollection(APIWrapper):
     def properties(self):
         """Return the collection properties.
 
-        :returns: the collection properties
+        :returns: The collection properties.
         :rtype: dict
-        :raises arango.exceptions.CollectionPropertiesError: if the
-            collection properties cannot be retrieved
+        :raises arango.exceptions.CollectionPropertiesError: If the
+            collection properties cannot be retrieved.
         """
         request = Request(
             method='get',
@@ -230,24 +232,24 @@ class BaseCollection(APIWrapper):
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise CollectionPropertiesError(res)
-            result = {
-                'id': res.body['id'],
-                'name': res.body['name'],
-                'edge': res.body['type'] == 3,
-                'sync': res.body['waitForSync'],
-                'status': self._status(res.body['status']),
-                'compact': res.body['doCompact'],
-                'system': res.body['isSystem'],
-                'volatile': res.body['isVolatile'],
-                'journal_size': res.body['journalSize'],
-                'keygen': res.body['keyOptions']['type'],
-                'user_keys': res.body['keyOptions']['allowUserKeys'],
+
+            key_options = res.body.get('keyOptions', {})
+
+            return {
+                'id': res.body.get('id'),
+                'name': res.body.get('name'),
+                'edge': res.body.get('type') == 3,
+                'sync': res.body.get('waitForSync'),
+                'status': self._status(res.body.get('status')),
+                'compact': res.body.get('doCompact'),
+                'system': res.body.get('isSystem'),
+                'volatile': res.body.get('isVolatile'),
+                'journal_size': res.body.get('journalSize'),
+                'keygen': key_options.get('type'),
+                'user_keys': key_options.get('allowUserKeys'),
+                'key_increment': key_options.get('increment'),
+                'key_offset': key_options.get('offset')
             }
-            if 'increment' in res.body['keyOptions']:
-                result['key_increment'] = res.body['keyOptions']['increment']
-            if 'offset' in res.body['keyOptions']:
-                result['key_offset'] = res.body['keyOptions']['offset']
-            return result
 
         return request, handler
 
@@ -257,9 +259,9 @@ class BaseCollection(APIWrapper):
 
         Only *sync* and *journal_size* properties are configurable.
 
-        :param sync: wait for the operation to sync to disk
+        :param sync: Wait for the operation to sync to disk.
         :type sync: bool
-        :param journal_size: the journal size
+        :param journal_size: The journal size.
         :type journal_size: int
         :returns: the new collection properties
         :rtype: dict
@@ -281,22 +283,24 @@ class BaseCollection(APIWrapper):
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise CollectionConfigureError(res)
-            result = {
-                'id': res.body['id'],
-                'name': res.body['name'],
-                'edge': res.body['type'] == 3,
-                'sync': res.body['waitForSync'],
-                'status': self._status(res.body['status']),
-                'compact': res.body['doCompact'],
-                'system': res.body['isSystem'],
-                'volatile': res.body['isVolatile'],
-                'journal_size': res.body['journalSize'],
-                'keygen': res.body['keyOptions']['type'],
-                'user_keys': res.body['keyOptions']['allowUserKeys'],
-                'key_increment': res.body['keyOptions'].get('increment'),
-                'key_offset': res.body['keyOptions'].get('offset')
+
+            key_options = res.body.get('keyOptions', {})
+
+            return {
+                'id': res.body.get('id'),
+                'name': res.body.get('name'),
+                'edge': res.body.get('type') == 3,
+                'sync': res.body.get('waitForSync'),
+                'status': self._status(res.body.get('status')),
+                'compact': res.body.get('doCompact'),
+                'system': res.body.get('isSystem'),
+                'volatile': res.body.get('isVolatile'),
+                'journal_size': res.body.get('journalSize'),
+                'keygen': key_options.get('type'),
+                'user_keys': key_options.get('allowUserKeys'),
+                'key_increment': key_options.get('increment'),
+                'key_offset': key_options.get('offset')
             }
-            return result
 
         return request, handler
 
