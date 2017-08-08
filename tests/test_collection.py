@@ -44,9 +44,9 @@ def test_properties():
     assert isinstance(properties['journal_size'], int)
     assert properties['keygen'] in ('autoincrement', 'traditional')
     assert isinstance(properties['user_keys'], bool)
-    if 'key_increment' in properties:
+    if properties['key_increment'] is not None:
         assert isinstance(properties['key_increment'], int)
-    if 'key_offset' in properties:
+    if properties['key_offset'] is not None :
         assert isinstance(properties['key_offset'], int)
     with pytest.raises(CollectionBadStatusError):
         assert getattr(col, '_status')(10)
