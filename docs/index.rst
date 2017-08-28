@@ -47,6 +47,13 @@ You may need to use ``sudo`` depending on your environment.
 .. _PyPi: https://pypi.python.org/pypi/python-arango
 .. _GitHub: https://github.com/joowani/python-arango
 
+A Note on Thread Safety and Eventlet
+========
+
+This driver should be compatible with eventlet for the most part. By default, python-arango makes API calls using the requests library, which eventlet seems to be able to monkey patch.
+
+Assuming that, all python-arango APIs except Batch Execution and Asynchronous Execution should be thread-safe.
+
 
 Contents
 ========
