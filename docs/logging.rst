@@ -48,7 +48,7 @@ The logging output for above would look something like this:
 In order to see the full request information, turn on logging for the requests_
 library which **python-arango** uses under the hood:
 
-.. _requests: https://github.com/kennethreitz/requests
+.. _requests: https://github.com/requests/requests
 
 .. code-block:: python
 

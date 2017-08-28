@@ -955,13 +955,13 @@ class ArangoClient(object):
     def async_jobs(self, status, count=None):
         """Return the IDs of asynchronous jobs with the specified status.
 
-        :param status: the job status (``"pending"`` or ``"done"``)
+        :param status: The job status (``"pending"`` or ``"done"``).
         :type status: str | unicode
-        :param count: the maximum number of job IDs to return
+        :param count: The maximum number of job IDs to return.
         :type count: int
-        :returns: the list of job IDs
+        :returns: The list of job IDs.
         :rtype: [str]
-        :raises arango.exceptions.AsyncJobListError: if the retrieval fails
+        :raises arango.exceptions.AsyncJobListError: If the retrieval fails.
 
         .. note::
             Only the root user can access this method. For non-root users,
@@ -979,13 +979,13 @@ class ArangoClient(object):
     def clear_async_jobs(self, threshold=None):
         """Delete asynchronous job results from the server.
 
-        :param threshold: if specified, only the job results created prior to
+        :param threshold: If specified, only the job results created prior to
             the threshold (a unix timestamp) are deleted, otherwise *all* job
-            results are deleted
+            results are deleted.
         :type threshold: int
-        :returns: whether the deletion of results was successful
+        :returns: Whether the deletion of results was successful.
         :rtype: bool
-        :raises arango.exceptions.AsyncJobClearError: if the operation fails
+        :raises arango.exceptions.AsyncJobClearError: If the operation fails.
 
         .. note::
             Async jobs currently queued or running are not stopped.

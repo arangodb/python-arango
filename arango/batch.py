@@ -28,6 +28,10 @@ class BatchExecution(Connection):
         so far are committed even if an exception is raised before existing
         out of the context (default: ``False``)
     :type commit_on_error: bool
+
+    .. warning::
+        Batch execution is currently an experimental feature and is not
+        thread-safe.
     """
 
     def __init__(self, connection, return_result=True, commit_on_error=False):
