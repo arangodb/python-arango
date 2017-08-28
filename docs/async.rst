@@ -12,6 +12,10 @@ fire-and-forget style. The results of the requests can be retrieved later via
     The user should be mindful of the server-side memory while using
     asynchronous executions with a large number of requests.
 
+.. warning::
+    Asynchronous execution is currently an experimental feature and is not
+    thread-safe.
+
 Here is an example showing how asynchronous executions can be used:
 
 .. code-block:: python

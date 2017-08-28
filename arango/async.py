@@ -26,6 +26,10 @@ class AsyncExecution(Connection):
         instance (which holds the result of the request) is returned each
         time an API request is queued, otherwise ``None`` is returned
     :type return_result: bool
+
+    .. warning::
+        Asynchronous execution is currently an experimental feature and is not
+        thread-safe.
     """
 
     def __init__(self, connection, return_result=True):

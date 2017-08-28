@@ -12,6 +12,10 @@ retrieved via :ref:`BatchJob` objects.
     The user should be mindful of the client-side memory while using batch
     executions with a large number of requests.
 
+.. warning::
+    Batch execution is currently an experimental feature and is not
+    thread-safe.
+
 Here is an example showing how batch executions can be used:
 
 .. code-block:: python

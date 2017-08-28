@@ -1150,13 +1150,13 @@ class Database(object):
     def async_jobs(self, status, count=None):
         """Return the IDs of asynchronous jobs with the specified status.
 
-        :param status: the job status (``"pending"`` or ``"done"``)
+        :param status: The job status (``"pending"`` or ``"done"``).
         :type status: str | unicode
-        :param count: the maximum number of job IDs to return
+        :param count: The maximum number of job IDs to return.
         :type count: int
-        :returns: the list of job IDs
+        :returns: The list of job IDs.
         :rtype: [str]
-        :raises arango.exceptions.AsyncJobListError: if the retrieval fails
+        :raises arango.exceptions.AsyncJobListError: If the retrieval fails.
         """
         res = self._conn.get(
             '/_api/job/{}'.format(status),
@@ -1169,13 +1169,13 @@ class Database(object):
     def clear_async_jobs(self, threshold=None):
         """Delete asynchronous job results from the server.
 
-        :param threshold: if specified, only the job results created prior to
+        :param threshold: If specified, only the job results created prior to
             the threshold (a unix timestamp) are deleted, otherwise *all* job
-            results are deleted
+            results are deleted.
         :type threshold: int
-        :returns: whether the deletion of results was successful
+        :returns: Whether the deletion of results was successful.
         :rtype: bool
-        :raises arango.exceptions.AsyncJobClearError: if the operation fails
+        :raises arango.exceptions.AsyncJobClearError: If the operation fails.
 
         .. note::
             Async jobs currently queued or running are not stopped.
@@ -1190,3 +1190,71 @@ class Database(object):
         if res.status_code in HTTP_OK:
             return True
         raise AsyncJobClearError(res)
+
+    ###############
+    # Pregel Jobs #
+    ###############
+
+    def create_pregel_job(self, algorithm, graph):
+        """Start/create a Pregel job.
+
+        :param algorithm: The name of the algorithm (e.g. ``"pagerank"``).
+        :type algorithm: str | unicode
+        :param graph: The name of the graph.
+        :type graph: str | unicode
+        :returns: The ID of the Pregel job.
+        :rtype: int
+        :raises arango.exceptions.PregelJobCreateError: If the operation fails.
+
+        """
+        res = self._conn.post(
+            '/_api/control_pregel',
+            data={
+                'algorithm': algorithm,
+                'graphName': graph,
+            }
+        )
+        if res.status_code in HTTP_OK:
+            return res.body
+        raise PregelJobCreateError(res)
+
+    def pregel_job(self, job_id):
+        """Return the details of a Pregel job.
+
+        :param job_id: The Pregel job ID.
+        :type job_id: int
+        :returns: The details of the Pregel job.
+        :rtype: dict
+        :raises arango.exceptions.PregelJobGetError: If the lookup fails.
+        """
+        res = self._conn.get(
+            '/_api/control_pregel/{}'.format(job_id)
+        )
+        if res.status_code in HTTP_OK:
+            return {
+                'aggregators': res.body['aggregators'],
+                'edge_count': res.body.get('edgeCount'),
+                'gss': res.body['gss'],
+                'received_count': res.body['receivedCount'],
+                'send_count': res.body['sendCount'],
+                'state': res.body['state'],
+                'total_runtime': res.body['totalRuntime'],
+                'vertex_count': res.body.get('vertexCount')
+            }
+        raise PregelJobGetError(res)
+
+    def delete_pregel_job(self, job_id):
+        """Cancel/delete a Pregel job.
+
+        :param job_id: The Pregel job ID.
+        :type job_id: int
+        :returns: ``True`` if the Pregel job was successfully cancelled.
+        :rtype: bool
+        :raises arango.exceptions.PregelJobDeleteError: If the deletion fails.
+        """
+        res = self._conn.delete(
+            '/_api/control_pregel/{}'.format(job_id)
+        )
+        if res.status_code in HTTP_OK:
+            return True
+        raise PregelJobDeleteError(res)
