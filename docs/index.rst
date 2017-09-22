@@ -73,4 +73,5 @@ Contents
     threading
     errors
     logging
+    http
     classes

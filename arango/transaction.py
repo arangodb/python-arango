@@ -49,7 +49,7 @@ class Transaction(Connection):
             password=connection.password,
             http_client=connection.http_client,
             database=connection.database,
-            enable_logging=connection.has_logging
+            enable_logging=connection.logging_enabled
         )
         self._id = uuid4()
         self._actions = ['db = require("internal").db']

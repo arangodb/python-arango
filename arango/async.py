@@ -41,7 +41,7 @@ class AsyncExecution(Connection):
             password=connection.password,
             http_client=connection.http_client,
             database=connection.database,
-            enable_logging=connection.has_logging
+            enable_logging=connection.logging_enabled
         )
         self._return_result = return_result
         self._aql = AQL(self)
