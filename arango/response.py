@@ -4,22 +4,24 @@ import json
 class Response(object):
     """ArangoDB HTTP response.
 
-    Methods of :class:`arango.http_clients.base.BaseHTTPClient` must return
-    an instance of this.
+    Overridden methods of :class:`arango.http_clients.base.BaseHTTPClient` must
+    return instances of this.
 
-    :param method: the HTTP method
+    :param method: The HTTP method name (e.g. ``"post"``).
     :type method: str | unicode
-    :param url: the request URL
+    :param url: The request URL
+        (e.g. ``"http://localhost:8529/_db/_system/_api/database"``)
     :type url: str | unicode
-    :param http_code: the HTTP status code
+    :param headers: A dict-like mapping object containing the HTTP headers.
+        Must allow case-insensitive key access.
+    :type headers: collections.MutableMapping
+    :param http_code: The HTTP status code.
     :type http_code: int
-    :param http_text: the HTTP status text
+    :param http_text: The HTTP status text. This is used only for printing
+        error messages, and has no specification to follow.
     :type http_text: str | unicode
-    :param body: the HTTP response body
+    :param body: The HTTP response body.
     :type body: str | unicode | dict
-
-    .. note::
-        This class is meant to be used internally only.
     """
 
     __slots__ = (

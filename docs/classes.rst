@@ -45,6 +45,15 @@ AQLQueryCache
 .. autoclass:: arango.aql.AQLQueryCache
     :members:
 
+.. _BaseHTTPClient:
+
+BaseHTTPClient
+==============
+
+.. autoclass:: arango.http_clients.base.BaseHTTPClient
+    :members:
+
+
 .. _BatchExecution:
 
 BatchExecution

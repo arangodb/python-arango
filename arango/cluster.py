@@ -40,7 +40,7 @@ class ClusterTest(Connection):
             password=connection.password,
             http_client=connection.http_client,
             database=connection.database,
-            enable_logging=connection.has_logging
+            enable_logging=connection.logging_enabled
         )
         self._shard_id = shard_id
         self._trans_id = transaction_id

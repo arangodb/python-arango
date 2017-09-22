@@ -5,8 +5,6 @@ import logging
 from arango.http_clients import DefaultHTTPClient
 from arango.utils import sanitize
 
-logger = logging.getLogger('arango')
-
 
 class Connection(object):
     """ArangoDB database connection.
@@ -37,7 +35,8 @@ class Connection(object):
                  username='root',
                  password='',
                  http_client=None,
-                 enable_logging=True):
+                 enable_logging=True,
+                 logger=None):
 
         self._protocol = protocol.strip('/')
         self._host = host.strip('/')
@@ -52,8 +51,9 @@ class Connection(object):
         self._username = username
         self._password = password
         self._http = http_client or DefaultHTTPClient()
-        self._logging = enable_logging
+        self._enable_logging = enable_logging
         self._type = 'standard'
+        self._logger = logger or logging.getLogger('arango')
 
     def __repr__(self):
         return '<ArangoDB connection to database "{}">'.format(self._database)
@@ -122,13 +122,26 @@ class Connection(object):
         return self._http
 
     @property
-    def has_logging(self):
+    def logging_enabled(self):
         """Return ``True`` if logging is enabled, ``False`` otherwise.
 
         :returns: whether logging is enabled or not
         :rtype: bool
         """
-        return self._logging
+        return self._enable_logging
+
+    @property
+    def has_logging(self):  # pragma: no cover
+        """Return ``True`` if logging is enabled, ``False`` otherwise.
+
+        :returns: whether logging is enabled or not
+        :rtype: bool
+
+        .. warning::
+            This property will be deprecated in the future.
+            Use **logging_enabled** instead.
+        """
+        return self._enable_logging
 
     @property
     def type(self):
@@ -182,8 +195,8 @@ class Connection(object):
             headers=headers,
             auth=(self._username, self._password)
         )
-        if self._logging:
-            logger.debug('HEAD {} {}'.format(url, res.status_code))
+        if self._enable_logging:
+            self._logger.debug('HEAD {} {}'.format(url, res.status_code))
         return res
 
     def get(self, endpoint, params=None, headers=None, **_):
@@ -205,8 +218,8 @@ class Connection(object):
             headers=headers,
             auth=(self._username, self._password)
         )
-        if self._logging:
-            logger.debug('GET {} {}'.format(url, res.status_code))
+        if self._enable_logging:
+            self._logger.debug('GET {} {}'.format(url, res.status_code))
         return res
 
     def put(self, endpoint, data=None, params=None, headers=None, **_):
@@ -231,8 +244,8 @@ class Connection(object):
             headers=headers,
             auth=(self._username, self._password)
         )
-        if self._logging:
-            logger.debug('PUT {} {}'.format(url, res.status_code))
+        if self._enable_logging:
+            self._logger.debug('PUT {} {}'.format(url, res.status_code))
         return res
 
     def post(self, endpoint, data=None, params=None, headers=None, **_):
@@ -257,8 +270,8 @@ class Connection(object):
             headers=headers,
             auth=(self._username, self._password)
         )
-        if self._logging:
-            logger.debug('POST {} {}'.format(url, res.status_code))
+        if self._enable_logging:
+            self._logger.debug('POST {} {}'.format(url, res.status_code))
         return res
 
     def patch(self, endpoint, data=None, params=None, headers=None, **_):
@@ -283,8 +296,8 @@ class Connection(object):
             headers=headers,
             auth=(self._username, self._password)
         )
-        if self._logging:
-            logger.debug('PATCH {} {}'.format(url, res.status_code))
+        if self._enable_logging:
+            self._logger.debug('PATCH {} {}'.format(url, res.status_code))
         return res
 
     def delete(self, endpoint, data=None, params=None, headers=None, **_):
@@ -309,6 +322,6 @@ class Connection(object):
             headers=headers,
             auth=(self._username, self._password)
         )
-        if self._logging:
-            logger.debug('DELETE {} {}'.format(url, res.status_code))
+        if self._enable_logging:
+            self._logger.debug('DELETE {} {}'.format(url, res.status_code))
         return res
