@@ -18,7 +18,6 @@ define your ``MyCustomHTTPClient`` class as follows:
 
     from __future__ import absolute_import, unicode_literals
 
-    from requests.packages.urllib3.util import Retry
     from requests.adapters import HTTPAdapter
     from requests import Session, exceptions
 
@@ -28,11 +27,9 @@ define your ``MyCustomHTTPClient`` class as follows:
 
     class MyCustomHTTPClient(BaseHTTPClient):
 
-        def __init__(self, max_retries=5):
+        def __init__(self, retries=5):
             self._session = Session()
-            self._session.mount('https://', HTTPAdapter(
-                max_retries=Retry(total=max_retries, status_forcelist=[500])
-            ))
+            self._session.mount('https://', HTTPAdapter(max_retries=retries))
             self._check_cert = False
 
         def head(self, url, params=None, headers=None, auth=None):
@@ -153,7 +150,7 @@ Then you would inject your HTTP client as shown below:
     client = ArangoClient(
         username='root',
         password='',
-        http_client=MyCustomHTTPClient(max_retries=10),
+        http_client=MyCustomHTTPClient(retries=10),
         use_session=True,  # This flag (used in the default client) is now ignored
         check_cert=True    # This flag (used in the default client) is now ignored
     )
