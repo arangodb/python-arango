@@ -15,6 +15,7 @@ setup(
     include_package_data=True,
     install_requires=['requests', 'six'],
     tests_require=['pytest'],
+    license='MIT',
     classifiers=[
         'Intended Audience :: Developers',
         'Intended Audience :: End Users/Desktop',
