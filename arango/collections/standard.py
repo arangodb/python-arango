@@ -3,7 +3,6 @@ from __future__ import absolute_import, unicode_literals
 from json import dumps
 from six import string_types
 
-from arango.api import api_method
 from arango.collections.base import BaseCollection
 from arango.exceptions import *
 from arango.request import Request
@@ -33,7 +32,6 @@ class Collection(BaseCollection):
     def __repr__(self):
         return '<ArangoDB collection "{}">'.format(self._name)
 
-    @api_method
     def get(self, key, rev=None, match_rev=True):
         """Retrieve a document by its key.
 
@@ -71,9 +69,8 @@ class Collection(BaseCollection):
                 return res.body
             raise DocumentGetError(res)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def insert(self, document, return_new=False, sync=None):
         """Insert a new document into the collection.
 
@@ -127,9 +124,8 @@ class Collection(BaseCollection):
                 res.body['sync'] = True
             return res.body
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def insert_many(self, documents, return_new=False, sync=None):
         """Insert multiple documents into the collection.
 
@@ -191,9 +187,8 @@ class Collection(BaseCollection):
                 results.append(result)
             return results
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def update(self,
                document,
                merge=True,
@@ -283,9 +278,8 @@ class Collection(BaseCollection):
             res.body['_old_rev'] = res.body.pop('_oldRev')
             return res.body
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def update_many(self,
                     documents,
                     merge=True,
@@ -388,9 +382,8 @@ class Collection(BaseCollection):
 
             return results
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def update_match(self,
                      filters,
                      body,
@@ -449,9 +442,8 @@ class Collection(BaseCollection):
                 raise DocumentUpdateError(res)
             return res.body['updated']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def replace(self,
                 document,
                 return_new=False,
@@ -536,9 +528,8 @@ class Collection(BaseCollection):
             res.body['_old_rev'] = res.body.pop('_oldRev')
             return res.body
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def replace_many(self,
                      documents,
                      return_new=False,
@@ -631,9 +622,8 @@ class Collection(BaseCollection):
 
             return results
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def replace_match(self, filters, body, limit=None, sync=None):
         """Replace matching documents in the collection.
 
@@ -682,9 +672,8 @@ class Collection(BaseCollection):
                 raise DocumentReplaceError(res)
             return res.body['replaced']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def delete(self,
                document,
                ignore_missing=False,
@@ -769,9 +758,8 @@ class Collection(BaseCollection):
                 res.body['sync'] = True
             return res.body
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def delete_many(self,
                     documents,
                     return_old=False,
@@ -846,9 +834,8 @@ class Collection(BaseCollection):
 
             return results
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def delete_match(self, filters, limit=None, sync=None):
         """Delete matching documents from the collection.
 
@@ -885,9 +872,8 @@ class Collection(BaseCollection):
                 raise DocumentDeleteError(res)
             return res.body['deleted']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def import_bulk(self,
                     documents,
                     halt_on_error=None,
@@ -995,4 +981,4 @@ class Collection(BaseCollection):
                 raise DocumentInsertError(res)
             return res.body
 
-        return request, handler
+        return self.handle_request(request, handler)
