@@ -1,6 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.api import api_method
 from arango.collections.base import BaseCollection
 from arango.exceptions import *
 from arango.request import Request
@@ -47,7 +46,6 @@ class VertexCollection(BaseCollection):
         """
         return self._graph_name
 
-    @api_method
     def get(self, key, rev=None):
         """Fetch a document by key from the vertex collection.
 
@@ -80,9 +78,8 @@ class VertexCollection(BaseCollection):
                 raise DocumentGetError(res)
             return res.body['vertex']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def insert(self, document, sync=None):
         """Insert a new document into the vertex collection.
 
@@ -116,9 +113,8 @@ class VertexCollection(BaseCollection):
                 raise DocumentInsertError(res)
             return res.body['vertex']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def update(self, document, keep_none=True, sync=None):
         """Update a document by its key in the vertex collection.
 
@@ -169,9 +165,8 @@ class VertexCollection(BaseCollection):
             vertex['_old_rev'] = vertex.pop('_oldRev')
             return vertex
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def replace(self, document, sync=None):
         """Replace a document by its key in the vertex collection.
 
@@ -218,9 +213,8 @@ class VertexCollection(BaseCollection):
             vertex['_old_rev'] = vertex.pop('_oldRev')
             return vertex
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def delete(self, document, ignore_missing=False, sync=None):
         """Delete a document by its key from the vertex collection.
 
@@ -270,4 +264,4 @@ class VertexCollection(BaseCollection):
                 raise DocumentDeleteError(res)
             return res.body['removed']
 
-        return request, handler
+        return self.handle_request(request, handler)

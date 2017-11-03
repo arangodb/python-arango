@@ -1,6 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.api import api_method
 from arango.collections.base import BaseCollection
 from arango.exceptions import *
 from arango.request import Request
@@ -46,7 +45,6 @@ class EdgeCollection(BaseCollection):
         """
         return self._graph_name
 
-    @api_method
     def get(self, key, rev=None):
         """Fetch a document by key from the edge collection.
 
@@ -78,9 +76,8 @@ class EdgeCollection(BaseCollection):
                 raise DocumentGetError(res)
             return res.body["edge"]
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def insert(self, document, sync=None):
         """Insert a new document into the edge collection.
 
@@ -115,9 +112,8 @@ class EdgeCollection(BaseCollection):
                 raise DocumentInsertError(res)
             return res.body["edge"]
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def update(self, document, keep_none=True, sync=None):
         """Update a document by its key in the edge collection.
 
@@ -167,9 +163,8 @@ class EdgeCollection(BaseCollection):
             edge['_old_rev'] = edge.pop('_oldRev')
             return edge
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def replace(self, document, sync=None):
         """Replace a document by its key in the edge collection.
 
@@ -214,9 +209,8 @@ class EdgeCollection(BaseCollection):
             edge['_old_rev'] = edge.pop('_oldRev')
             return edge
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def delete(self, document, ignore_missing=False, sync=None):
         """Delete a document from the collection by its key.
 
@@ -266,4 +260,4 @@ class EdgeCollection(BaseCollection):
                 raise DocumentDeleteError(res)
             return res.body['removed']
 
-        return request, handler
+        return self.handle_request(request, handler)

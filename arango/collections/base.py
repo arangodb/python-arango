@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.api import APIWrapper, api_method
+from arango.api import APIWrapper
 from arango.cursor import Cursor, ExportCursor
 from arango.exceptions import *
 from arango.request import Request
@@ -31,7 +31,7 @@ class BaseCollection(APIWrapper):
     }
 
     def __init__(self, connection, name):
-        self._conn = connection
+        super(BaseCollection, self).__init__(connection)
         self._name = name
 
     def __iter__(self):
@@ -134,7 +134,6 @@ class BaseCollection(APIWrapper):
         """
         return self._conn.database
 
-    @api_method
     def rename(self, new_name):
         """Rename the collection.
 
@@ -163,9 +162,8 @@ class BaseCollection(APIWrapper):
                 'type': self.TYPES[res.body['type']]
             }
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def statistics(self):
         """Return the collection statistics.
 
@@ -192,9 +190,8 @@ class BaseCollection(APIWrapper):
             )
             return stats
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def revision(self):
         """Return the collection revision.
 
@@ -213,9 +210,8 @@ class BaseCollection(APIWrapper):
                 raise CollectionRevisionError(res)
             return res.body['revision']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def properties(self):
         """Return the collection properties.
 
@@ -251,9 +247,8 @@ class BaseCollection(APIWrapper):
                 'key_offset': key_options.get('offset')
             }
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def configure(self, sync=None, journal_size=None):
         """Configure the collection properties.
 
@@ -302,9 +297,8 @@ class BaseCollection(APIWrapper):
                 'key_offset': key_options.get('offset')
             }
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def load(self):
         """Load the collection into memory.
 
@@ -324,9 +318,8 @@ class BaseCollection(APIWrapper):
                 raise CollectionLoadError(res)
             return self._status(res.body['status'])
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def unload(self):
         """Unload the collection from memory.
 
@@ -346,9 +339,8 @@ class BaseCollection(APIWrapper):
                 raise CollectionUnloadError(res)
             return self._status(res.body['status'])
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def rotate(self):
         """Rotate the collection journal.
 
@@ -368,9 +360,8 @@ class BaseCollection(APIWrapper):
                 raise CollectionRotateJournalError(res)
             return res.body['result']  # pragma: no cover
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def checksum(self, with_rev=False, with_data=False):
         """Return the collection checksum.
 
@@ -396,9 +387,8 @@ class BaseCollection(APIWrapper):
                 raise CollectionChecksumError(res)
             return int(res.body['checksum'])
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def truncate(self):
         """Truncate the collection.
 
@@ -424,9 +414,8 @@ class BaseCollection(APIWrapper):
                 'type': self.TYPES[res.body['type']]
             }
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def count(self):
         """Return the number of documents in the collection.
 
@@ -445,9 +434,8 @@ class BaseCollection(APIWrapper):
                 raise DocumentCountError(res)
             return res.body['count']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def has(self, key, rev=None, match_rev=True):
         """Check if a document exists in the collection by its key.
 
@@ -484,9 +472,8 @@ class BaseCollection(APIWrapper):
                 return True
             raise DocumentInError(res)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def all(self,
             skip=None,
             limit=None):
@@ -519,9 +506,8 @@ class BaseCollection(APIWrapper):
                 raise DocumentGetError(res)
             return Cursor(self._conn, res.body)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def export(self,
                limit=None,
                count=False,
@@ -588,9 +574,8 @@ class BaseCollection(APIWrapper):
                 raise DocumentGetError(res)
             return ExportCursor(self._conn, res.body)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def find(self, filters, offset=None, limit=None):
         """Return all documents that match the given filters.
 
@@ -622,9 +607,8 @@ class BaseCollection(APIWrapper):
                 raise DocumentGetError(res)
             return Cursor(self._conn, res.body)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def get_many(self, keys):
         """Return multiple documents by their keys.
 
@@ -646,9 +630,8 @@ class BaseCollection(APIWrapper):
                 raise DocumentGetError(res)
             return res.body['documents']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def random(self):
         """Return a random document from the collection.
 
@@ -668,9 +651,8 @@ class BaseCollection(APIWrapper):
                 raise DocumentGetError(res)
             return res.body['document']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def find_near(self, latitude, longitude, limit=None):
         """Return documents near a given coordinate.
 
@@ -718,9 +700,8 @@ class BaseCollection(APIWrapper):
                 raise DocumentGetError(res)
             return Cursor(self._conn, res.body)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def find_in_range(self,
                       field,
                       lower,
@@ -785,10 +766,9 @@ class BaseCollection(APIWrapper):
                 raise DocumentGetError(res)
             return Cursor(self._conn, res.body)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
     # TODO the WITHIN geo function does not seem to work properly
-    @api_method
     def find_in_radius(self, latitude, longitude, radius, distance_field=None):
         """Return documents within a given radius in a random order.
 
@@ -834,9 +814,8 @@ class BaseCollection(APIWrapper):
                 raise DocumentGetError(res)
             return Cursor(self._conn, res.body)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def find_in_box(self,
                     latitude1,
                     longitude1,
@@ -892,9 +871,8 @@ class BaseCollection(APIWrapper):
                 raise DocumentGetError(res)
             return Cursor(self._conn, res.body)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def find_by_text(self, key, query, limit=None):
         """Return documents that match the specified fulltext **query**.
 
@@ -933,9 +911,8 @@ class BaseCollection(APIWrapper):
                 raise DocumentGetError(res)
             return Cursor(self._conn, res.body)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def indexes(self):
         """Return the collection indexes.
 
@@ -969,7 +946,7 @@ class BaseCollection(APIWrapper):
                 indexes.append(index)
             return indexes
 
-        return request, handler
+        return self.handle_request(request, handler)
 
     def _add_index(self, data):
         """Helper method for creating a new index."""
@@ -999,9 +976,8 @@ class BaseCollection(APIWrapper):
                 details['new'] = details.pop('isNewlyCreated')
             return details
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def add_hash_index(self,
                        fields,
                        unique=None,
@@ -1037,7 +1013,6 @@ class BaseCollection(APIWrapper):
             data['deduplicate'] = deduplicate
         return self._add_index(data)
 
-    @api_method
     def add_skiplist_index(self,
                            fields,
                            unique=None,
@@ -1075,7 +1050,6 @@ class BaseCollection(APIWrapper):
             data['deduplicate'] = deduplicate
         return self._add_index(data)
 
-    @api_method
     def add_geo_index(self, fields, ordered=None):
         """Create a geo-spatial index in the collection.
 
@@ -1096,7 +1070,6 @@ class BaseCollection(APIWrapper):
             data['geoJson'] = ordered
         return self._add_index(data)
 
-    @api_method
     def add_fulltext_index(self, fields, min_length=None):
         """Create a fulltext index in the collection.
 
@@ -1124,7 +1097,6 @@ class BaseCollection(APIWrapper):
             data['minLength'] = min_length
         return self._add_index(data)
 
-    @api_method
     def add_persistent_index(self, fields, unique=None, sparse=None):
         """Create a persistent index in the collection.
 
@@ -1152,7 +1124,6 @@ class BaseCollection(APIWrapper):
             data['sparse'] = sparse
         return self._add_index(data)
 
-    @api_method
     def delete_index(self, index_id, ignore_missing=False):
         """Delete an index from the collection.
 
@@ -1179,9 +1150,8 @@ class BaseCollection(APIWrapper):
                 raise IndexDeleteError(res)
             return not res.body['error']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def user_access(self, username):
         """Return a user's access details for the collection.
 
@@ -1206,9 +1176,8 @@ class BaseCollection(APIWrapper):
                 return None if result == 'none' else result
             raise UserAccessError(res)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def grant_user_access(self, username):
         """Grant user access to the collection.
 
@@ -1233,9 +1202,8 @@ class BaseCollection(APIWrapper):
                 return True
             raise UserGrantAccessError(res)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def revoke_user_access(self, username):
         """Revoke user access to the collection.
 
@@ -1259,4 +1227,4 @@ class BaseCollection(APIWrapper):
                 return True
             raise UserRevokeAccessError(res)
 
-        return request, handler
+        return self.handle_request(request, handler)
