@@ -1,6 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.api import APIWrapper, api_method
 from arango.utils import HTTP_OK
 from arango.cursor import Cursor
 from arango.exceptions import (
@@ -16,6 +15,8 @@ from arango.exceptions import (
 )
 from arango.request import Request
 
+from arango.api import APIWrapper
+
 
 class AQL(APIWrapper):
     """Wrapper for invoking ArangoDB Query Language (AQL).
@@ -25,7 +26,7 @@ class AQL(APIWrapper):
     """
 
     def __init__(self, connection):
-        self._conn = connection
+        super(AQL, self).__init__(connection)
         self._cache = AQLQueryCache(self._conn)
 
     def __repr__(self):
@@ -40,7 +41,6 @@ class AQL(APIWrapper):
         """
         return self._cache
 
-    @api_method
     def explain(self, query, all_plans=False, max_plans=None, opt_rules=None):
         """Inspect the query and return its metadata.
 
@@ -75,9 +75,8 @@ class AQL(APIWrapper):
                 raise AQLQueryExplainError(res)
             return res.body['plan' if 'plan' in res.body else 'plans']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def validate(self, query):
         """Validate the query.
 
@@ -101,9 +100,8 @@ class AQL(APIWrapper):
             res.body.pop('error', None)
             return res.body
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def execute(self, query, count=False, batch_size=None, ttl=None,
                 bind_vars=None, full_count=None, max_plans=None,
                 optimizer_rules=None):
@@ -160,9 +158,8 @@ class AQL(APIWrapper):
                 raise AQLQueryExecuteError(res)
             return Cursor(self._conn, res.body)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def functions(self):
         """List the AQL functions defined in this database.
 
@@ -179,9 +176,8 @@ class AQL(APIWrapper):
             body = res.body or {}
             return {func['name']: func['code'] for func in map(dict, body)}
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def create_function(self, name, code):
         """Create a new AQL function.
 
@@ -205,9 +201,8 @@ class AQL(APIWrapper):
                 raise AQLFunctionCreateError(res)
             return not res.body['error']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def delete_function(self, name, group=None, ignore_missing=False):
         """Delete the AQL function of the given name.
 
@@ -240,7 +235,7 @@ class AQL(APIWrapper):
                     raise AQLFunctionDeleteError(res)
             return not res.body['error']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
 
 class AQLQueryCache(APIWrapper):
@@ -250,10 +245,6 @@ class AQLQueryCache(APIWrapper):
     :type connection: arango.connection.Connection
     """
 
-    def __init__(self, connection):
-        self._conn = connection
-
-    @api_method
     def properties(self):
         """Return the properties of the query cache.
 
@@ -272,9 +263,8 @@ class AQLQueryCache(APIWrapper):
                 raise AQLCachePropertiesError(res)
             return {'mode': res.body['mode'], 'limit': res.body['maxResults']}
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def configure(self, mode=None, limit=None):
         """Configure the AQL query cache.
 
@@ -304,9 +294,8 @@ class AQLQueryCache(APIWrapper):
                 raise AQLCacheConfigureError(res)
             return {'mode': res.body['mode'], 'limit': res.body['maxResults']}
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def clear(self):
         """Clear any results in the query cache.
 
@@ -322,4 +311,4 @@ class AQLQueryCache(APIWrapper):
                 raise AQLCacheClearError(res)
             return not res.body['error']
 
-        return request, handler
+        return self.handle_request(request, handler)

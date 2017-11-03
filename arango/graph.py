@@ -7,7 +7,7 @@ from arango.collections import (
 from arango.utils import HTTP_OK
 from arango.exceptions import *
 from arango.request import Request
-from arango.api import APIWrapper, api_method
+from arango.api import APIWrapper
 
 
 class Graph(APIWrapper):
@@ -22,7 +22,7 @@ class Graph(APIWrapper):
     """
 
     def __init__(self, connection, name):
-        self._conn = connection
+        super(Graph, self).__init__(connection)
         self._name = name
 
     def __repr__(self):
@@ -57,7 +57,6 @@ class Graph(APIWrapper):
         """
         return EdgeCollection(self._conn, self._name, name)
 
-    @api_method
     def properties(self):
         """Return the graph properties.
 
@@ -92,13 +91,12 @@ class Graph(APIWrapper):
                 'smart_field': record.get('smartGraphAttribute'),
                 'shard_count': record.get('numberOfShards')
             }
-        return request, handler
+        return self.handle_request(request, handler)
 
     ################################
     # Vertex Collection Management #
     ################################
 
-    @api_method
     def orphan_collections(self):
         """Return the orphan vertex collections of the graph.
 
@@ -117,9 +115,8 @@ class Graph(APIWrapper):
                 raise OrphanCollectionListError(res)
             return res.body['graph']['orphanCollections']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def vertex_collections(self):
         """Return the vertex collections of the graph.
 
@@ -138,9 +135,8 @@ class Graph(APIWrapper):
                 raise VertexCollectionListError(res)
             return res.body['collections']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def create_vertex_collection(self, name):
         """Create a vertex collection for the graph.
 
@@ -162,9 +158,8 @@ class Graph(APIWrapper):
                 raise VertexCollectionCreateError(res)
             return VertexCollection(self._conn, self._name, name)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def delete_vertex_collection(self, name, purge=False):
         """Remove the vertex collection from the graph.
 
@@ -188,13 +183,12 @@ class Graph(APIWrapper):
                 raise VertexCollectionDeleteError(res)
             return not res.body['error']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
     ##############################
     # Edge Definition Management #
     ##############################
 
-    @api_method
     def edge_definitions(self):
         """Return the edge definitions of the graph.
 
@@ -221,9 +215,8 @@ class Graph(APIWrapper):
                 res.body['graph']['edgeDefinitions']
             ]
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def create_edge_definition(self, name, from_collections, to_collections):
         """Create a new edge definition for the graph.
 
@@ -256,9 +249,8 @@ class Graph(APIWrapper):
                 raise EdgeDefinitionCreateError(res)
             return EdgeCollection(self._conn, self._name, name)
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def replace_edge_definition(self, name, from_collections, to_collections):
         """Replace an edge definition in the graph.
 
@@ -290,9 +282,8 @@ class Graph(APIWrapper):
                 raise EdgeDefinitionReplaceError(res)
             return not res.body['error']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
-    @api_method
     def delete_edge_definition(self, name, purge=False):
         """Remove an edge definition from the graph.
 
@@ -316,13 +307,12 @@ class Graph(APIWrapper):
                 raise EdgeDefinitionDeleteError(res)
             return not res.body['error']
 
-        return request, handler
+        return self.handle_request(request, handler)
 
     ####################
     # Graph Traversals #
     ####################
 
-    @api_method
     def traverse(self,
                  start_vertex,
                  direction='outbound',
@@ -435,4 +425,4 @@ class Graph(APIWrapper):
                 raise GraphTraverseError(res)
             return res.body['result']['visited']
 
-        return request, handler
+        return self.handle_request(request, handler)

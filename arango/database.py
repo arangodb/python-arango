@@ -368,7 +368,7 @@ class Database(object):
         res = self._conn.post('/_admin/routing/reload')
         if res.status_code not in HTTP_OK:
             raise ServerReloadRoutingError(res)
-        return not res.body['error']
+        return 'error' not in res.body
 
     def async(self, return_result=True):
         """Return the asynchronous request object.
