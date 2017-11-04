@@ -1,1 +1,2 @@
 from arango.http_clients.default import DefaultHTTPClient
+from arango.http_clients.aio import AsyncioHTTPClient
