@@ -57,9 +57,6 @@ class AsyncioHTTPClient(BaseHTTPClient):
 
     def __init__(self):
         """Initialize the client"""
-        if sys.version_info[0] < 3 or sys.version_info[1] < 5:
-            raise RuntimeError("Error: Async event loops not compatible with python versions < 3.5")
-
         self._loop = asyncio.new_event_loop()
 
         self._async_thread = Thread(target=start_background_loop, args=(self._loop, ), daemon=True)

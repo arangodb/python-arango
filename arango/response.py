@@ -75,8 +75,6 @@ class Response(object):
 class FutureResponse(Response):
     def __init__(self,
                  future):
-        if sys.version_info[0] < 3 or sys.version_info[1] < 5:
-            raise RuntimeError("Error: Async event loops not compatible with python versions < 3.5")
         self._future = future
 
     def __getattr__(self, item):
