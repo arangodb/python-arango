@@ -5,7 +5,6 @@ import aiohttp
 from arango.http_clients.base import BaseHTTPClient
 from arango.response import FutureResponse
 import asyncio
-import sys
 from threading import Thread
 
 
@@ -68,7 +67,7 @@ class AsyncioHTTPClient(BaseHTTPClient):
         asyncio.wait_for(future, 100)
         self._async_thread.join()
 
-    def returnFuture(self, method, url, params=None, headers=None, data=None, auth=None):
+    def return_future(self, method, url, params=None, headers=None, data=None, auth=None):
         """Get a FutureResponse for the given parameters
 
         :param url: request method string
@@ -117,7 +116,7 @@ class AsyncioHTTPClient(BaseHTTPClient):
         :returns: ArangoDB HTTP response object
         :rtype: arango.response.FutureResponse
         """
-        return self.returnFuture(
+        return self.return_future(
             method="HEAD",
             url=url,
             params=params,
@@ -139,7 +138,7 @@ class AsyncioHTTPClient(BaseHTTPClient):
         :returns: ArangoDB HTTP response object
         :rtype: arango.response.FutureResponse
         """
-        return self.returnFuture(
+        return self.return_future(
             method="GET",
             url=url,
             params=params,
@@ -163,7 +162,7 @@ class AsyncioHTTPClient(BaseHTTPClient):
         :returns: ArangoDB HTTP response object
         :rtype: arango.response.FutureResponse
         """
-        return self.returnFuture(
+        return self.return_future(
             method="PUT",
             url=url,
             data=data,
@@ -188,7 +187,7 @@ class AsyncioHTTPClient(BaseHTTPClient):
         :returns: ArangoDB HTTP response object
         :rtype: arango.response.FutureResponse
         """
-        return self.returnFuture(
+        return self.return_future(
             method="POST",
             url=url,
             data=data,
@@ -213,7 +212,7 @@ class AsyncioHTTPClient(BaseHTTPClient):
         :returns: ArangoDB HTTP response object
         :rtype: arango.response.FutureResponse
         """
-        return self.returnFuture(
+        return self.return_future(
             method="PATCH",
             url=url,
             data=data,
@@ -238,7 +237,7 @@ class AsyncioHTTPClient(BaseHTTPClient):
         :returns: ArangoDB HTTP response object
         :rtype: arango.response.FutureResponse
         """
-        return self.returnFuture(
+        return self.return_future(
             method="DELETE",
             url=url,
             data=data,
