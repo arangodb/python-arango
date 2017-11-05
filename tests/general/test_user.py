@@ -7,7 +7,7 @@ from arango import ArangoClient
 from arango.utils import HTTP_AUTH_ERR
 from arango.exceptions import *
 
-from .utils import (
+from tests.utils import (
     generate_user_name,
     generate_db_name,
     generate_col_name

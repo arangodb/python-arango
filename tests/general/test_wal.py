@@ -10,7 +10,7 @@ from arango.exceptions import (
     WALTransactionListError
 )
 
-from .utils import generate_user_name, generate_db_name
+from tests.utils import generate_user_name, generate_db_name
 
 arango_client = ArangoClient()
 username = generate_user_name()

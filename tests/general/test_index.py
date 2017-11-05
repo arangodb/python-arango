@@ -9,7 +9,7 @@ from arango.exceptions import (
     IndexDeleteError
 )
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name
 )
