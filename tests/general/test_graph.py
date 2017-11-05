@@ -9,7 +9,7 @@ from arango.collections import (
     VertexCollection
 )
 from arango.exceptions import *
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name,
     generate_graph_name,

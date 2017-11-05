@@ -14,7 +14,7 @@ from arango.exceptions import (
 )
 from arango.graph import Graph
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name,
 )

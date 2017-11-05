@@ -10,7 +10,7 @@ from arango.http_clients import AsyncioHTTPClient
 from arango.database import Database
 from arango.exceptions import *
 
-from .utils import generate_db_name, arango_version
+from tests.utils import generate_db_name, arango_version
 
 http_client = AsyncioHTTPClient()
 arango_client = ArangoClient(http_client=http_client)

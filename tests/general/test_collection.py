@@ -7,7 +7,7 @@ from arango import ArangoClient
 from arango.collections import Collection
 from arango.exceptions import *
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name
 )

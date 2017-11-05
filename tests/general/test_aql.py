@@ -6,7 +6,7 @@ from arango import ArangoClient
 from arango.aql import AQL
 from arango.exceptions import *
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name,
     generate_user_name
