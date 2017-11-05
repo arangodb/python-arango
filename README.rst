@@ -151,7 +151,14 @@ Here is another example involving graphs:
     )
     print(traversal_results['vertices'])
 
-Please read the full `API documentation`_ for more details!
+Refer to the full `API documentation`_ for more details!
+
+Contributing
+============
+
+Please take a look at the following page_ before you submit a PR. Thanks!
 
 .. _API documentation:
     http://python-driver-for-arangodb.readthedocs.io/en/master/index.html
+.. _page:
+    http://python-driver-for-arangodb.readthedocs.io/en/master/contributing.html

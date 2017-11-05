@@ -1,7 +1,7 @@
 .. _async-page:
 
-Async Execution
----------------
+Asynchronous Execution
+----------------------
 
 Python-arango provides support for **asynchronous executions**, where incoming
 requests are placed in a server-side, in-memory task queue and executed in a

@@ -4,12 +4,28 @@ import pytest
 from six import string_types
 
 from arango import ArangoClient
-from arango.collections import (
-    EdgeCollection,
-    VertexCollection
+from arango.collections.edge import EdgeCollection
+from arango.collections.vertex import VertexCollection
+from arango.exceptions import (
+    ArangoError,
+    DocumentDeleteError,
+    DocumentGetError,
+    DocumentInsertError,
+    DocumentReplaceError,
+    DocumentRevisionError,
+    DocumentUpdateError,
+    EdgeDefinitionCreateError,
+    EdgeDefinitionDeleteError,
+    EdgeDefinitionListError,
+    EdgeDefinitionReplaceError,
+    GraphPropertiesError,
+    GraphTraverseError,
+    OrphanCollectionListError,
+    VertexCollectionCreateError,
+    VertexCollectionDeleteError,
+    VertexCollectionListError,
 )
-from arango.exceptions import *
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name,
     generate_graph_name,
@@ -71,7 +87,7 @@ def test_properties():
     assert properties['edge_definitions'] == []
     assert properties['orphan_collections'] == []
     assert isinstance(properties['revision'], string_types)
-    assert properties['smart'] == False
+    assert not properties['smart']
     assert 'smart_field' in properties
     assert 'shard_count' in properties
 
@@ -961,7 +977,7 @@ def test_delete_edge():
         ecol.delete(edge3, ignore_missing=False)
 
     # Test delete missing edge while ignoring missing
-    assert ecol.delete(edge3, ignore_missing=True) == False
+    assert not ecol.delete(edge3, ignore_missing=True)
 
 
 @pytest.mark.order20

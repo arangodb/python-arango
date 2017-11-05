@@ -6,39 +6,29 @@ import pytest
 from six import string_types
 
 from arango import ArangoClient
-from arango.http_clients import DefaultHTTPClient
 from arango.database import Database
 from arango.exceptions import (
     DatabaseCreateError,
     DatabaseDeleteError,
-    DatabaseListError,
     ServerConnectionError,
-    ServerDetailsError,
-    ServerEchoError,
-    ServerEndpointsError,
     ServerExecuteError,
-    ServerLogLevelError,
-    ServerLogLevelSetError,
-    ServerReadLogError,
-    ServerReloadRoutingError,
-    ServerRequiredDBVersionError,
-    ServerRoleError,
-    ServerSleepError,
-    ServerStatisticsError,
-    ServerTimeError,
-    ServerVersionError
 )
 
-from tests.utils import generate_db_name, arango_version
+from tests.utils import (
+    arango_version,
+    generate_db_name,
+    generate_user_name
+)
 
-http_client = DefaultHTTPClient(use_session=False)
-arango_client = ArangoClient(http_client=http_client)
-bad_arango_client = ArangoClient(username='root', password='incorrect')
+asyncio_client_module = pytest.importorskip("arango.http_clients.asyncio")
+asyncio_client = asyncio_client_module.AsyncioHTTPClient()
+arango_client = ArangoClient(http_client=asyncio_client)
 db_name = generate_db_name()
 
 
 def teardown_module(*_):
     arango_client.delete_database(db_name, ignore_missing=True)
+    asyncio_client.stop_client_loop()
 
 
 def test_verify():
@@ -57,7 +47,7 @@ def test_properties():
     assert arango_client.port == 8529
     assert arango_client.username == 'root'
     assert arango_client.password == ''
-    assert arango_client.http_client == http_client
+    assert arango_client.http_client == asyncio_client
     assert arango_client.logging_enabled is True
     assert 'ArangoDB client for' in repr(arango_client)
 
@@ -66,25 +56,16 @@ def test_version():
     version = arango_client.version()
     assert isinstance(version, string_types)
 
-    with pytest.raises(ServerVersionError):
-        bad_arango_client.version()
-
 
 def test_details():
     details = arango_client.details()
     assert 'architecture' in details
     assert 'server-version' in details
 
-    with pytest.raises(ServerDetailsError):
-        bad_arango_client.details()
-
 
 def test_required_db_version():
     version = arango_client.required_db_version()
     assert isinstance(version, string_types)
-
-    with pytest.raises(ServerRequiredDBVersionError):
-        bad_arango_client.required_db_version()
 
 
 def test_statistics():
@@ -99,9 +80,6 @@ def test_statistics():
     assert 'figures' in description
     assert 'groups' in description
 
-    with pytest.raises(ServerStatisticsError):
-        bad_arango_client.statistics()
-
 
 def test_role():
     assert arango_client.role() in {
@@ -111,16 +89,11 @@ def test_role():
         'SECONDARY',
         'UNDEFINED'
     }
-    with pytest.raises(ServerRoleError):
-        bad_arango_client.role()
 
 
 def test_time():
     system_time = arango_client.time()
     assert isinstance(system_time, datetime)
-
-    with pytest.raises(ServerTimeError):
-        bad_arango_client.time()
 
 
 def test_echo():
@@ -130,15 +103,9 @@ def test_echo():
     assert 'requestType' in last_request
     assert 'rawRequestBody' in last_request
 
-    with pytest.raises(ServerEchoError):
-        bad_arango_client.echo()
-
 
 def test_sleep():
     assert arango_client.sleep(0) == 0
-
-    with pytest.raises(ServerSleepError):
-        bad_arango_client.sleep(0)
 
 
 def test_execute():
@@ -176,17 +143,10 @@ def test_log():
     assert 'text' in log
     assert 'total_amount' in log
 
-    # Test read_log with incorrect auth
-    with pytest.raises(ServerReadLogError):
-        bad_arango_client.read_log()
-
 
 def test_reload_routing():
     result = arango_client.reload_routing()
     assert isinstance(result, bool)
-
-    with pytest.raises(ServerReloadRoutingError):
-        bad_arango_client.reload_routing()
 
 
 def test_log_levels():
@@ -195,9 +155,6 @@ def test_log_levels():
 
         result = arango_client.log_levels()
         assert isinstance(result, dict)
-
-        with pytest.raises(ServerLogLevelError):
-            bad_arango_client.log_levels()
 
 
 def test_set_log_levels():
@@ -217,18 +174,12 @@ def test_set_log_levels():
         for key, value in arango_client.log_levels().items():
             assert result[key] == value
 
-        with pytest.raises(ServerLogLevelSetError):
-            bad_arango_client.set_log_levels(**new_levels)
-
 
 def test_endpoints():
     endpoints = arango_client.endpoints()
     assert isinstance(endpoints, list)
     for endpoint in endpoints:
         assert 'endpoint' in endpoint
-
-    with pytest.raises(ServerEndpointsError):
-        bad_arango_client.endpoints()
 
 
 def test_database_management():
@@ -239,9 +190,6 @@ def test_database_management():
     result = arango_client.databases(user_only=True)
     assert '_system' in result
     assert db_name not in arango_client.databases()
-
-    with pytest.raises(DatabaseListError):
-        bad_arango_client.databases()
 
     # Test create database
     result = arango_client.create_database(db_name)
@@ -271,3 +219,26 @@ def test_database_management():
     # Test delete missing database (ignore missing)
     result = arango_client.delete_database(db_name, ignore_missing=True)
     assert result is False
+
+
+def test_update_user():
+    # added for full coverage of patch command
+    username = generate_user_name()
+    arango_client.create_user(
+        username=username,
+        password='password',
+        active=True,
+        extra={'foo': 'bar'},
+    )
+
+    # Update an existing user
+    new_user = arango_client.update_user(
+        username=username,
+        password='new_password',
+        active=False,
+        extra={'bar': 'baz'},
+    )
+    assert new_user['username'] == username
+    assert new_user['active'] is False
+    assert new_user['extra'] == {'foo': 'bar', 'bar': 'baz'}
+    assert arango_client.user(username) == new_user

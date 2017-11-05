@@ -4,14 +4,26 @@ import pytest
 
 from arango import ArangoClient
 from arango.aql import AQL
-from arango.exceptions import *
+from arango.exceptions import (
+    AsyncExecuteError,
+    BatchExecuteError,
+    ArangoError,
+    AQLCacheClearError,
+    AQLCacheConfigureError,
+    AQLCachePropertiesError,
+    AQLFunctionCreateError,
+    AQLFunctionDeleteError,
+    AQLFunctionListError,
+    AQLQueryExecuteError,
+    AQLQueryExplainError,
+    AQLQueryValidateError
+)
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name,
     generate_user_name
 )
-
 
 arango_client = ArangoClient()
 
@@ -28,6 +40,7 @@ func_body = ''
 def teardown_module(*_):
     arango_client.delete_database(db_name, ignore_missing=True)
     arango_client.delete_user(username, ignore_missing=True)
+
 
 @pytest.mark.order1
 def test_init():
@@ -194,23 +207,23 @@ def test_aql_errors():
     with pytest.raises(ArangoError) as err:
         bad_aql.functions()
     assert isinstance(err.value, AQLFunctionListError) \
-           or isinstance(err.value, AsyncExecuteError) \
-           or isinstance(err.value, BatchExecuteError)
+        or isinstance(err.value, AsyncExecuteError) \
+        or isinstance(err.value, BatchExecuteError)
 
     with pytest.raises(ArangoError) as err:
         bad_aql.cache.properties()
     assert isinstance(err.value, AQLCachePropertiesError) \
-           or isinstance(err.value, AsyncExecuteError) \
-           or isinstance(err.value, BatchExecuteError)
+        or isinstance(err.value, AsyncExecuteError) \
+        or isinstance(err.value, BatchExecuteError)
 
     with pytest.raises(ArangoError) as err:
         bad_aql.cache.configure(mode='on')
     assert isinstance(err.value, AQLCacheConfigureError) \
-           or isinstance(err.value, AsyncExecuteError) \
-           or isinstance(err.value, BatchExecuteError)
+        or isinstance(err.value, AsyncExecuteError) \
+        or isinstance(err.value, BatchExecuteError)
 
     with pytest.raises(ArangoError) as err:
         bad_aql.cache.clear()
     assert isinstance(err.value, AQLCacheClearError) \
-           or isinstance(err.value, AsyncExecuteError) \
-           or isinstance(err.value, BatchExecuteError)
+        or isinstance(err.value, AsyncExecuteError) \
+        or isinstance(err.value, BatchExecuteError)

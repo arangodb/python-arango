@@ -1,11 +1,20 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.collections import (
-    EdgeCollection,
-    VertexCollection
-)
+from arango.collections.edge import EdgeCollection
+from arango.collections.vertex import VertexCollection
 from arango.utils import HTTP_OK
-from arango.exceptions import *
+from arango.exceptions import (
+    EdgeDefinitionCreateError,
+    EdgeDefinitionDeleteError,
+    EdgeDefinitionListError,
+    EdgeDefinitionReplaceError,
+    GraphPropertiesError,
+    GraphTraverseError,
+    OrphanCollectionListError,
+    VertexCollectionCreateError,
+    VertexCollectionDeleteError,
+    VertexCollectionListError
+)
 from arango.request import Request
 from arango.api import APIWrapper
 
@@ -91,6 +100,7 @@ class Graph(APIWrapper):
                 'smart_field': record.get('smartGraphAttribute'),
                 'shard_count': record.get('numberOfShards')
             }
+
         return self.handle_request(request, handler)
 
     ################################

@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.collections import Collection
+from arango.collections.standard import Collection
 from arango.connection import Connection
 from arango.utils import HTTP_OK
 from arango.exceptions import (

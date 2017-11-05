@@ -13,7 +13,7 @@ class DefaultHTTPClient(BaseHTTPClient):
     """
 
     def __init__(self, use_session=True, check_cert=True):
-        """Initialize the session."""
+        """Initialize the client and the session if applicable."""
         if use_session:
             self._session = requests.Session()
         else:

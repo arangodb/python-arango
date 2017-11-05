@@ -6,11 +6,33 @@ import pytest
 from six import string_types
 
 from arango import ArangoClient
-from arango.collections import Collection
+from arango.collections.standard import Collection
 from arango.graph import Graph
-from arango.exceptions import *
+from arango.exceptions import (
+    CollectionCreateError,
+    CollectionDeleteError,
+    CollectionListError,
+    DatabasePropertiesError,
+    GraphListError,
+    GraphCreateError,
+    GraphDeleteError,
+    ServerConnectionError,
+    ServerDetailsError,
+    ServerEchoError,
+    ServerExecuteError,
+    ServerLogLevelError,
+    ServerLogLevelSetError,
+    ServerReadLogError,
+    ServerReloadRoutingError,
+    ServerRequiredDBVersionError,
+    ServerRoleError,
+    ServerSleepError,
+    ServerStatisticsError,
+    ServerTimeError,
+    ServerVersionError,
+)
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name,
     generate_graph_name,

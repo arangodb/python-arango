@@ -8,20 +8,20 @@ class Response(object):
     return instances of this.
 
     :param method: The HTTP method name (e.g. ``"post"``).
-    :type method: str | unicode
+    :type method: str | unicode | None
     :param url: The request URL
         (e.g. ``"http://localhost:8529/_db/_system/_api/database"``)
-    :type url: str | unicode
+    :type url: str | unicode | None
     :param headers: A dict-like mapping object containing the HTTP headers.
         Must allow case-insensitive key access.
-    :type headers: collections.MutableMapping
+    :type headers: collections.MutableMapping | None
     :param http_code: The HTTP status code.
-    :type http_code: int
+    :type http_code: int | None
     :param http_text: The HTTP status text. This is used only for printing
         error messages, and has no specification to follow.
-    :type http_text: str | unicode
+    :type http_text: str | unicode | None
     :param body: The HTTP response body.
-    :type body: str | unicode | dict
+    :type body: str | unicode | dict | None
     """
 
     __slots__ = (

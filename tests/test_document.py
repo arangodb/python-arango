@@ -4,9 +4,21 @@ import pytest
 from six import string_types
 
 from arango import ArangoClient
-from arango.exceptions import *
+from arango.exceptions import (
+    ArangoError,
+    AsyncExecuteError,
+    BatchExecuteError,
+    DocumentCountError,
+    DocumentDeleteError,
+    DocumentGetError,
+    DocumentInError,
+    DocumentInsertError,
+    DocumentReplaceError,
+    DocumentRevisionError,
+    DocumentUpdateError
+)
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name,
     clean_keys,
@@ -169,7 +181,7 @@ def test_insert_many():
     results = col.insert_many(test_docs, return_new=False)
     for result, doc in zip(results, test_docs):
         isinstance(result, DocumentInsertError)
-        
+
     # Test get with missing collection
     with pytest.raises(DocumentInsertError):
         bad_col.insert_many(test_docs)
@@ -812,8 +824,9 @@ def test_delete():
     with pytest.raises(ArangoError) as err:
         bad_db.collection(col_name).delete(doc5)
     assert isinstance(err.value, DocumentDeleteError) \
-           or isinstance(err.value, AsyncExecuteError) \
-           or isinstance(err.value, BatchExecuteError)
+        or isinstance(err.value, AsyncExecuteError) \
+        or isinstance(err.value, BatchExecuteError)
+
 
 def test_delete_many():
     # Set up test documents
@@ -1058,10 +1071,10 @@ def test_get():
 
     # Test get with missing collection
     with pytest.raises(DocumentGetError):
-        _ = bad_col.get('1')
+        print(bad_col.get('1'))
 
     with pytest.raises(DocumentGetError):
-        _ = bad_col['1']
+        print(bad_col['1'])
 
     with pytest.raises(DocumentGetError):
         iter(bad_col)
@@ -1099,7 +1112,7 @@ def test_get_from_db():
 
     # Test get with missing collection
     with pytest.raises(DocumentGetError):
-        _ = db.get_document(bad_col_name + '/1')
+        db.get_document(bad_col_name + '/1')
 
 
 def test_get_many():

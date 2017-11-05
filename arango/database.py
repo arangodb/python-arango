@@ -7,9 +7,53 @@ from requests import ConnectionError
 from arango.async import AsyncExecution
 from arango.batch import BatchExecution
 from arango.cluster import ClusterTest
-from arango.collections import Collection
+from arango.collections.standard import Collection
 from arango.utils import HTTP_OK
-from arango.exceptions import *
+from arango.exceptions import (
+    AsyncJobClearError,
+    AsyncJobListError,
+    CollectionCreateError,
+    CollectionDeleteError,
+    CollectionListError,
+    DatabasePropertiesError,
+    DocumentGetError,
+    DocumentRevisionError,
+    GraphListError,
+    GraphCreateError,
+    GraphDeleteError,
+    PregelJobCreateError,
+    PregelJobDeleteError,
+    PregelJobGetError,
+    ServerConnectionError,
+    ServerDetailsError,
+    ServerEchoError,
+    ServerExecuteError,
+    ServerLogLevelError,
+    ServerLogLevelSetError,
+    ServerReadLogError,
+    ServerReloadRoutingError,
+    ServerRequiredDBVersionError,
+    ServerRoleError,
+    ServerRunTestsError,
+    ServerShutdownError,
+    ServerSleepError,
+    ServerStatisticsError,
+    ServerTimeError,
+    ServerVersionError,
+    TaskCreateError,
+    TaskDeleteError,
+    TaskGetError,
+    TaskListError,
+    UserAccessError,
+    UserCreateError,
+    UserDeleteError,
+    UserGetError,
+    UserGrantAccessError,
+    UserListError,
+    UserRevokeAccessError,
+    UserReplaceError,
+    UserUpdateError,
+)
 from arango.graph import Graph
 from arango.transaction import Transaction
 from arango.aql import AQL
@@ -370,22 +414,6 @@ class Database(object):
             raise ServerReloadRoutingError(res)
         return 'error' not in res.body
 
-    def async(self, return_result=True):
-        """Return the asynchronous request object.
-
-        Refer to :class:`arango.async.AsyncExecution` for more information.
-
-        :param return_result: store and return the result
-        :type return_result: bool
-        :returns: the async request object
-        :rtype: arango.async.AsyncExecution
-
-        .. warning::
-            This method will be deprecated in the future! Use
-            :func:`arango.database.Database.asynchronous` instead.
-        """
-        return AsyncExecution(self._conn, return_result)
-
     def asynchronous(self, return_result=True):
         """Return the asynchronous request object.
 
@@ -484,11 +512,11 @@ class Database(object):
         result['system'] = result.pop('isSystem')
         return result
 
-    def get_document(self, id, rev=None, match_rev=True):
+    def get_document(self, document_id, rev=None, match_rev=True):
         """Retrieve a document by its ID (collection/key)
 
-        :param id: the document ID
-        :type id: str | unicode
+        :param document_id: the document ID
+        :type document_id: str | unicode
         :returns: the document or ``None`` if the document is missing
         :rtype: dict
         :param rev: the revision to compare with that of the retrieved document
@@ -504,7 +532,7 @@ class Database(object):
             be retrieved from the collection
         """
         res = self._conn.get(
-            '/_api/document/{}'.format(id),
+            '/_api/document/{}'.format(document_id),
             headers=(
                 {'If-Match' if match_rev else 'If-None-Match': rev}
                 if rev is not None else {}
@@ -751,15 +779,15 @@ class Database(object):
         :type orphan_collections: list
         :param smart: Whether or not the graph is smart. Set this to ``True``
             to enable sharding (see parameter **smart_field** below). This
-            parameter only has an effect for the enterprise version of ArangoDB.
+            only has an effect for the enterprise version of ArangoDB.
         :type smart: bool
         :param smart_field: The document field used to shard the vertices of
             the graph. To use this option, parameter **smart** must be set to
-            ``True`` and every vertex in the graph must contain the smart field.
+            ``True`` and every vertex in the graph must have the smart field.
         :type smart_field: str | unicode
         :param shard_count: The number of shards used for every collection in
             the graph. To use this option, parameter **smart** must be set to
-            ``True`` and every vertex in the graph must contain the smart field.
+            ``True`` and every vertex in the graph must have the smart field.
             This number cannot be modified later once set.
         :type shard_count: int
         :returns: the graph object
@@ -924,6 +952,7 @@ class Database(object):
     # User Management #
     ###################
 
+    # noinspection PyTypeChecker
     def users(self):
         """Return the details of all users.
 
@@ -1131,7 +1160,7 @@ class Database(object):
         :type database: str | unicode | unicode
         :returns: Whether the operation was successful or not.
         :rtype: bool
-        :raises arango.exceptions.UserRevokeAccessError: If the operation fails.
+        :raises arango.exceptions.UserRevokeAccessError: If operation fails.
         """
         if database is None:
             database = self.name
@@ -1195,24 +1224,67 @@ class Database(object):
     # Pregel Jobs #
     ###############
 
-    def create_pregel_job(self, algorithm, graph):
+    def create_pregel_job(self,
+                          algorithm,
+                          graph,
+                          store=None,
+                          max_gss=None,
+                          thread_count=None,
+                          async_mode=None,
+                          result_field=None,
+                          algorithm_params=None):
         """Start/create a Pregel job.
 
         :param algorithm: The name of the algorithm (e.g. ``"pagerank"``).
         :type algorithm: str | unicode
         :param graph: The name of the graph.
         :type graph: str | unicode
+        :param store: If set to ``True`` (default), the Pregel engine writes
+            results back to the database. If set to ``False``, the results can
+            be queried via AQL.
+        :type store: bool
+        :param max_gss: The maximum number of global iterations for the
+            algorithm.
+        :type max_gss: int
+        :param thread_count: The number of parallel threads to use per worker.
+            This does not influence the number of threads used to load or store
+            data from the database (depends on the number of shards).
+        :type thread_count: int
+        :param async_mode: Algorithms which support async mode will run without
+            synchronized global iterations. This might lead to performance
+            increase if there are load imbalances.
+        :type async_mode: bool
+        :param result_field: If set, most algorithms write the result into
+            this field.
+        :type result_field: str | unicode
+        :param algorithm_params: Algorithm specific parameters.
+        :type algorithm_params: dict
         :returns: The ID of the Pregel job.
         :rtype: int
         :raises arango.exceptions.PregelJobCreateError: If the operation fails.
 
         """
+        data = {
+            'algorithm': algorithm,
+            'graphName': graph,
+        }
+        algorithm_params = algorithm_params or {}
+        if store is not None:
+            algorithm_params['store'] = store
+        if max_gss is not None:
+            algorithm_params['maxGSS'] = max_gss
+        if thread_count is not None:
+            algorithm_params['parallelism'] = thread_count
+        if async_mode is not None:
+            algorithm_params['async'] = async_mode
+        if result_field is not None:
+            algorithm_params['resultField'] = result_field
+        if algorithm_params:
+            data['params'] = algorithm_params
+
         res = self._conn.post(
             '/_api/control_pregel',
-            data={
-                'algorithm': algorithm,
-                'graphName': graph,
-            }
+            data=data
         )
         if res.status_code in HTTP_OK:
             return res.body
@@ -1231,16 +1303,17 @@ class Database(object):
             '/_api/control_pregel/{}'.format(job_id)
         )
         if res.status_code in HTTP_OK:
-            return {
-                'aggregators': res.body['aggregators'],
-                'edge_count': res.body.get('edgeCount'),
-                'gss': res.body['gss'],
-                'received_count': res.body['receivedCount'],
-                'send_count': res.body['sendCount'],
-                'state': res.body['state'],
-                'total_runtime': res.body['totalRuntime'],
-                'vertex_count': res.body.get('vertexCount')
-            }
+            if 'edgeCount' in res.body:
+                res.body['edge_count'] = res.body.pop('edgeCount')
+            if 'receivedCount' in res.body:
+                res.body['received_count'] = res.body.pop('receivedCount')
+            if 'sendCount' in res.body:
+                res.body['send_count'] = res.body.pop('sendCount')
+            if 'totalRuntime' in res.body:
+                res.body['total_runtime'] = res.body.pop('totalRuntime')
+            if 'vertexCount' in res.body:
+                res.body['vertex_count'] = res.body.pop('vertexCount')
+            return res.body
         raise PregelJobGetError(res)
 
     def delete_pregel_job(self, job_id):

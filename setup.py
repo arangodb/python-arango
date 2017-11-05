@@ -1,8 +1,15 @@
+
 from setuptools import setup, find_packages
+import sys
 
 version = {}
 with open('./arango/version.py') as fp:
     exec(fp.read(), version)
+
+if sys.version_info < (3, 5):
+    requires = ['requests', 'six']
+else:
+    requires = ['requests', 'six', 'aiohttp']
 
 setup(
     name='python-arango',
@@ -13,7 +20,7 @@ setup(
     url='https://github.com/joowani/python-arango',
     packages=find_packages(),
     include_package_data=True,
-    install_requires=['requests', 'six'],
+    install_requires=requires,
     tests_require=['pytest'],
     license='MIT',
     classifiers=[

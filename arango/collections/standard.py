@@ -4,7 +4,14 @@ from json import dumps
 from six import string_types
 
 from arango.collections.base import BaseCollection
-from arango.exceptions import *
+from arango.exceptions import (
+    DocumentDeleteError,
+    DocumentGetError,
+    DocumentInsertError,
+    DocumentReplaceError,
+    DocumentRevisionError,
+    DocumentUpdateError
+)
 from arango.request import Request
 from arango.utils import HTTP_OK
 
@@ -653,7 +660,7 @@ class Collection(BaseCollection):
         if self._conn.type != 'transaction':
             command = None
         else:
-            command ='db.{}.replaceByExample({},{},{})'.format(
+            command = 'db.{}.replaceByExample({},{},{})'.format(
                 self._name,
                 dumps(filters),
                 dumps(body),

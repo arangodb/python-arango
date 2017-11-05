@@ -448,6 +448,7 @@ class AsyncJobResultError(ArangoError):
 class AsyncJobClearError(ArangoError):
     """Failed to delete the asynchronous job result from the server."""
 
+
 #####################
 # Pregel Exceptions #
 #####################

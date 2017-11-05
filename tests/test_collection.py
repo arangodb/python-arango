@@ -4,10 +4,22 @@ import pytest
 from six import string_types
 
 from arango import ArangoClient
-from arango.collections import Collection
-from arango.exceptions import *
+from arango.collections.standard import Collection
+from arango.exceptions import (
+    CollectionBadStatusError,
+    CollectionChecksumError,
+    CollectionConfigureError,
+    CollectionLoadError,
+    CollectionPropertiesError,
+    CollectionRenameError,
+    CollectionRevisionError,
+    CollectionRotateJournalError,
+    CollectionStatisticsError,
+    CollectionTruncateError,
+    CollectionUnloadError
+)
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name
 )
@@ -46,7 +58,7 @@ def test_properties():
     assert isinstance(properties['user_keys'], bool)
     if properties['key_increment'] is not None:
         assert isinstance(properties['key_increment'], int)
-    if properties['key_offset'] is not None :
+    if properties['key_offset'] is not None:
         assert isinstance(properties['key_offset'], int)
     with pytest.raises(CollectionBadStatusError):
         assert getattr(col, '_status')(10)

@@ -10,7 +10,7 @@ from arango.exceptions import (
     WALTransactionListError
 )
 
-from .utils import generate_user_name, generate_db_name
+from tests.utils import generate_user_name, generate_db_name
 
 arango_client = ArangoClient()
 username = generate_user_name()
@@ -21,6 +21,7 @@ db = arango_client.create_database(db_name)
 
 def teardown_module(*_):
     arango_client.delete_user(username, ignore_missing=True)
+    arango_client.delete_database(db_name, ignore_missing=True)
 
 
 @pytest.mark.order1

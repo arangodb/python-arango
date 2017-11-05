@@ -1,6 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-from random import randint
 from uuid import uuid4
 
 

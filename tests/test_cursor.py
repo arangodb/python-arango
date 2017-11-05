@@ -8,7 +8,7 @@ from arango.exceptions import (
     CursorCloseError
 )
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name,
     clean_keys

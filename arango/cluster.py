@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from arango.aql import AQL
-from arango.collections import Collection
+from arango.collections.standard import Collection
 from arango.connection import Connection
 from arango.exceptions import ClusterTestError
 from arango.graph import Graph

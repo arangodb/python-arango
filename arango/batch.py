@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from uuid import uuid4
 
-from arango.collections import Collection
+from arango.collections.standard import Collection
 from arango.connection import Connection
 from arango.utils import HTTP_OK
 from arango.exceptions import BatchExecuteError, ArangoError
@@ -48,8 +48,8 @@ class BatchExecution(Connection):
         self._id = uuid4()
         self._return_result = return_result
         self._commit_on_error = commit_on_error
-        self._requests = []    # The queue for requests
-        self._handlers = []    # The queue for response handlers
+        self._requests = []  # The queue for requests
+        self._handlers = []  # The queue for response handlers
         self._batch_jobs = []  # For tracking batch jobs
         self._aql = AQL(self)
         self._type = 'batch'
@@ -111,8 +111,10 @@ class BatchExecution(Connection):
             raw_data_list = []
             for content_id, request in enumerate(self._requests, start=1):
                 raw_data_list.append('--XXXsubpartXXX\r\n')
-                raw_data_list.append('Content-Type: application/x-arango-batchpart\r\n')
-                raw_data_list.append('Content-Id: {}\r\n\r\n'.format(content_id))
+                raw_data_list.append(
+                    'Content-Type: application/x-arango-batchpart\r\n')
+                raw_data_list.append(
+                    'Content-Id: {}\r\n\r\n'.format(content_id))
                 raw_data_list.append('{}\r\n'.format(request.stringify()))
             raw_data_list.append('--XXXsubpartXXX--\r\n\r\n')
             raw_data = ''.join(raw_data_list)
@@ -132,7 +134,7 @@ class BatchExecution(Connection):
                 return
 
             for index, raw_response in enumerate(
-                res.raw_body.split('--XXXsubpartXXX')[1:-1]
+                    res.raw_body.split('--XXXsubpartXXX')[1:-1]
             ):
                 request = self._requests[index]
                 handler = self._handlers[index]

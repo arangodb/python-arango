@@ -131,19 +131,6 @@ class Connection(object):
         return self._enable_logging
 
     @property
-    def has_logging(self):  # pragma: no cover
-        """Return ``True`` if logging is enabled, ``False`` otherwise.
-
-        :returns: whether logging is enabled or not
-        :rtype: bool
-
-        .. warning::
-            This property will be deprecated in the future.
-            Use **logging_enabled** instead.
-        """
-        return self._enable_logging
-
-    @property
     def type(self):
         """Return the connection type.
 

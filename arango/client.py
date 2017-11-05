@@ -8,7 +8,39 @@ from arango.http_clients import DefaultHTTPClient
 from arango.connection import Connection
 from arango.utils import HTTP_OK
 from arango.database import Database
-from arango.exceptions import *
+from arango.exceptions import (
+    AsyncJobClearError,
+    AsyncJobListError,
+    DatabaseCreateError,
+    DatabaseDeleteError,
+    DatabaseListError,
+    ServerConnectionError,
+    ServerDetailsError,
+    ServerEchoError,
+    ServerEndpointsError,
+    ServerExecuteError,
+    ServerLogLevelError,
+    ServerLogLevelSetError,
+    ServerReadLogError,
+    ServerReloadRoutingError,
+    ServerRequiredDBVersionError,
+    ServerRoleError,
+    ServerRunTestsError,
+    ServerShutdownError,
+    ServerSleepError,
+    ServerStatisticsError,
+    ServerTimeError,
+    ServerVersionError,
+    UserCreateError,
+    UserDeleteError,
+    UserGetError,
+    UserGrantAccessError,
+    UserListError,
+    UserRevokeAccessError,
+    UserUpdateError,
+    UserReplaceError,
+    UserAccessError
+)
 from arango.wal import WriteAheadLog
 
 
@@ -848,7 +880,7 @@ class ArangoClient(object):
             data['extra'] = extra
 
         res = self._conn.put(
-            '/_api/user/{user}'.format(user=username), 
+            '/_api/user/{user}'.format(user=username),
             data=data
         )
         if res.status_code not in HTTP_OK:
@@ -942,7 +974,7 @@ class ArangoClient(object):
         :type database: str | unicode | unicode
         :returns: Whether the operation was successful or not.
         :rtype: bool
-        :raises arango.exceptions.UserRevokeAccessError: If the operation fails.
+        :raises arango.exceptions.UserRevokeAccessError: If operation fails.
 
         .. note::
             Only the root user can access this method. For non-root users,

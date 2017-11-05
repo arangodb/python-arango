@@ -1,15 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
 import pytest
-from six import string_types
 
 from arango import ArangoClient
 from arango.aql import AQL
-from arango.collections import Collection
+from arango.collections.standard import Collection
 from arango.exceptions import ClusterTestError
 from arango.graph import Graph
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name,
     generate_graph_name

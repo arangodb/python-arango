@@ -4,11 +4,16 @@ import pytest
 from six import string_types
 
 from arango import ArangoClient
-from arango.exceptions import *
+from arango.exceptions import (
+    TaskCreateError,
+    TaskDeleteError,
+    TaskGetError,
+    TaskListError
+)
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
-    generate_task_name, 
+    generate_task_name,
     generate_task_id
 )
 

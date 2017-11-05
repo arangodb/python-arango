@@ -1,6 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-
 import pytest
 
 from arango import ArangoClient
@@ -10,7 +9,7 @@ from arango.exceptions import (
     PregelJobDeleteError
 )
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name,
     generate_graph_name,
@@ -49,8 +48,16 @@ def test_start_pregel_job():
 @pytest.mark.order2
 def test_get_pregel_job():
     # Create a test Pregel job
-    job_id = db.create_pregel_job('pagerank', graph_name)
-
+    job_id = db.create_pregel_job(
+        "pagerank",
+        graph_name,
+        store=False,
+        max_gss=100,
+        thread_count=1,
+        async_mode=False,
+        result_field="result",
+        algorithm_params={"threshold": 0.0000001}
+    )
     # Test pregel_job with existing job ID (happy path)
     job = db.pregel_job(job_id)
     assert isinstance(job['aggregators'], dict)
@@ -59,8 +66,6 @@ def test_get_pregel_job():
     assert isinstance(job['send_count'], int)
     assert isinstance(job['total_runtime'], float)
     assert job['state'] == 'running'
-    assert 'edge_count' in job
-    assert 'vertex_count' in job
 
     # Test pregel_job with an invalid job ID
     with pytest.raises(PregelJobGetError):
@@ -70,14 +75,23 @@ def test_get_pregel_job():
 @pytest.mark.order3
 def test_delete_pregel_job():
     # Create a test Pregel job
-    job_id = db.create_pregel_job('pagerank', graph_name)
+    job_id = db.create_pregel_job(
+        "pagerank",
+        graph_name,
+        store=False,
+        max_gss=999,
+        thread_count=1,
+        async_mode=False,
+        result_field="result",
+        algorithm_params={"threshold": 0.0000001}
+    )
 
     # Get the newly created job
     job = db.pregel_job(job_id)
-    assert job['state'] == 'running'
+    assert job['state'] in {'running', 'done'}
 
     # Test delete_pregel_job with existing job ID (happy path)
-    assert db.delete_pregel_job(job_id) == True
+    assert db.delete_pregel_job(job_id)
 
     # The fetch for the same job should now fail
     with pytest.raises(PregelJobGetError):

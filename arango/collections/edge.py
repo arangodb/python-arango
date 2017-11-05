@@ -1,7 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
 from arango.collections.base import BaseCollection
-from arango.exceptions import *
+from arango.exceptions import (
+    DocumentGetError,
+    DocumentDeleteError,
+    DocumentInsertError,
+    DocumentReplaceError,
+    DocumentRevisionError,
+    DocumentUpdateError,
+)
 from arango.request import Request
 from arango.utils import HTTP_OK
 

@@ -2,7 +2,28 @@ from __future__ import absolute_import, unicode_literals
 
 from arango.api import APIWrapper
 from arango.cursor import Cursor, ExportCursor
-from arango.exceptions import *
+from arango.exceptions import (
+    CollectionBadStatusError,
+    CollectionChecksumError,
+    CollectionConfigureError,
+    CollectionLoadError,
+    CollectionPropertiesError,
+    CollectionRenameError,
+    CollectionRevisionError,
+    CollectionRotateJournalError,
+    CollectionStatisticsError,
+    CollectionTruncateError,
+    CollectionUnloadError,
+    DocumentCountError,
+    DocumentGetError,
+    DocumentInError,
+    IndexCreateError,
+    IndexDeleteError,
+    IndexListError,
+    UserAccessError,
+    UserRevokeAccessError,
+    UserGrantAccessError
+)
 from arango.request import Request
 from arango.utils import HTTP_OK
 
@@ -1213,7 +1234,7 @@ class BaseCollection(APIWrapper):
         :type username: str | unicode
         :returns: Whether the operation was successful or not.
         :rtype: bool
-        :raises arango.exceptions.UserRevokeAccessError: If the operation fails.
+        :raises arango.exceptions.UserRevokeAccessError: If operation fails.
         """
         request = Request(
             method='delete',

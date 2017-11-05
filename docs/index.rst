@@ -74,4 +74,6 @@ Contents
     errors
     logging
     http
+    asyncio
+    contributing
     classes
