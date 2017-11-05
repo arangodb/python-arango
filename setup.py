@@ -19,7 +19,7 @@ setup(
     url='https://github.com/joowani/python-arango',
     packages=find_packages(),
     include_package_data=True,
-    install_requires=['requests', 'six'],
+    install_requires=requires,
     tests_require=['pytest'],
     license='MIT',
     classifiers=[
