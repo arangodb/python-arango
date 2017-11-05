@@ -1,4 +1,5 @@
 import json
+import sys
 
 
 class Response(object):
@@ -69,3 +70,26 @@ class Response(object):
             http_text=self.status_text,
             body=new_body
         )
+
+
+class FutureResponse(Response):
+    def __init__(self,
+                 future):
+        if sys.version_info[0] < 3 or sys.version_info[1] < 5:
+            raise RuntimeError("Error: Async event loops not compatible with python versions < 3.5")
+        self._future = future
+
+    def __getattr__(self, item):
+        if item in self.__slots__:
+            result = self._future.result()
+            response = result[0]
+            text = result[1]
+            super().__init__(method=response.method,
+                             url=response.url,
+                             headers=response.headers,
+                             http_code=response.status,
+                             http_text=response.reason,
+                             body=text)
+            self.__getattr__ = None
+        else:
+            raise AttributeError

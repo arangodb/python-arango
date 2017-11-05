@@ -1,8 +1,14 @@
 from setuptools import setup, find_packages
+import sys
 
 version = {}
 with open('./arango/version.py') as fp:
     exec(fp.read(), version)
+
+if sys.version_info < (3,5):
+    requires = ['requests', 'six']
+else:
+    requires = ['requests', 'six', 'aiohttp']
 
 setup(
     name='python-arango',

@@ -14,7 +14,8 @@ install:
     - pip install python-coveralls
     - python setup.py install
 script:
-    - py.test --cov-report= --cov=arango tests/
+    - if [[ $TRAVIS_PYTHON_VERSION < 3.5 ]]; then py.test --cov-report= --cov=arango tests/general/; fi
+    - if [[$TRAVIS_PYTHON_VERSION >= 3.5 ]]; then py.test --cov-report= --cov=arango tests/general/ tests/py35/; fi
 after_success:
     - coveralls
     - pkill -9 -f arango
