@@ -10,7 +10,7 @@ from arango.http_clients import AsyncioHTTPClient
 from arango.database import Database
 from arango.exceptions import *
 
-from tests.utils import generate_db_name, arango_version
+from tests.utils import generate_db_name, arango_version, generate_user_name
 
 http_client = AsyncioHTTPClient()
 arango_client = ArangoClient(http_client=http_client)
@@ -253,3 +253,35 @@ def test_database_management():
     # Test delete missing database (ignore missing)
     result = arango_client.delete_database(db_name, ignore_missing=True)
     assert result is False
+
+
+def test_update_user():
+    # added for full coverage of patch command
+    username = generate_user_name()
+    arango_client.create_user(
+        username=username,
+        password='password',
+        active=True,
+        extra={'foo': 'bar'},
+    )
+
+    # Update an existing user
+    new_user = arango_client.update_user(
+        username=username,
+        password='new_password',
+        active=False,
+        extra={'bar': 'baz'},
+    )
+    assert new_user['username'] == username
+    assert new_user['active'] is False
+    assert new_user['extra'] == {'foo': 'bar', 'bar': 'baz'}
+    assert arango_client.user(username) == new_user
+
+    # Update a missing user
+    bad_username = generate_user_name()
+    with pytest.raises(UserUpdateError) as err:
+        arango_client.update_user(
+            username=bad_username,
+            password='new_password'
+        )
+    assert err.value.http_code == 404
