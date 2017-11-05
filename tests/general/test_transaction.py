@@ -6,7 +6,7 @@ from arango import ArangoClient
 from arango.collections import Collection
 from arango.exceptions import TransactionError
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name,
 )

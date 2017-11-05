@@ -10,7 +10,7 @@ from arango.exceptions import (
     PregelJobDeleteError
 )
 
-from .utils import (
+from tests.utils import (
     generate_db_name,
     generate_col_name,
     generate_graph_name,
