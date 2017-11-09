@@ -422,11 +422,12 @@ class Database(object):
         :param return_result: store and return the result
         :type return_result: bool
         :returns: the async request object
-        :rtype: arango.async.AsyncExecution
+        :rtype: :class:`arango.async.AsyncExecution`
         """
         return AsyncExecution(self._conn, return_result)
 
-    def batch(self, return_result=True, commit_on_error=True):
+    def batch(self, return_result=True, commit_on_error=True,
+              submit_timeout=-1):
         """Return the batch request object.
 
         Refer to :class:`arango.batch.BatchExecution` for more information.
@@ -435,10 +436,18 @@ class Database(object):
         :type return_result: bool
         :param commit_on_error: commit when an exception is raised
             (this is only applicable when context managers are used)
+        :type commit_on_error: bool
+        :param submit_timeout: the timeout to use for acquiring the lock
+        necessary to submit a batch.  Only relevant in multi-threaded contexts.
+        In single threaded contexts, acquiring this lock will never fail.
+        A value of <= 0 means wait forever, a positive value indicates the
+        number of seconds to wait.
+        :type submit_timeout: int
         :returns: the batch request object
-        :rtype: arango.batch.BatchExecution
+        :rtype: :class:`arango.batch.BatchExecution`
         """
-        return BatchExecution(self._conn, return_result, commit_on_error)
+        return BatchExecution(self._conn, return_result, commit_on_error,
+                              submit_timeout)
 
     def transaction(self,
                     read=None,
