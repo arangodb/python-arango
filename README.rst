@@ -156,7 +156,7 @@ Refer to the full `API documentation`_ for more details!
 Contributing
 ============
 
-Please take a look at the following page_ before you submit a PR. Thanks!
+Please have a look at this page_ before submitting a pull request. Thanks!
 
 .. _API documentation:
     http://python-driver-for-arangodb.readthedocs.io/en/master/index.html
