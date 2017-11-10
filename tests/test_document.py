@@ -1103,6 +1103,12 @@ def test_get_from_db():
     assert result['_key'] == '5'
     assert result['val'] == 300
 
+    # Test get with "If-None-Match" and bad revision
+    bad_rev = db.get_document(col_name + '/5')['_rev'] + '000'
+    result = db.get_document(col_name + '/5', rev=bad_rev, match_rev=False)
+    assert result['_key'] == '5'
+    assert result['val'] == 300
+
     # Test get with invalid revision
     bad_rev = db.get_document(col_name + '/5')['_rev'] + '000'
     with pytest.raises(ArangoError):

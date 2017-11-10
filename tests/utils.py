@@ -7,7 +7,7 @@ def arango_version(client):
     """Return the major and minor version of ArangoDB.
 
     :param client: The ArangoDB client.
-    :type client: arango.ArangoClient
+    :type client: arango.SystemDatabase
     :return: The major and minor version numbers.
     :rtype: (int, int)
     """

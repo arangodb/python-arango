@@ -6,8 +6,9 @@ import pytest
 from six import string_types
 
 from arango import ArangoClient
+from arango.connections import BaseConnection
 from arango.http_clients import DefaultHTTPClient
-from arango.database import Database
+from arango.api.databases.base import BaseDatabase
 from arango.exceptions import (
     DatabaseCreateError,
     DatabaseDeleteError,
@@ -39,6 +40,11 @@ db_name = generate_db_name()
 
 def teardown_module(*_):
     arango_client.delete_database(db_name, ignore_missing=True)
+
+
+def test_default_connection():
+    conn = BaseConnection()
+    assert isinstance(conn.http_client, DefaultHTTPClient)
 
 
 def test_verify():
@@ -245,11 +251,11 @@ def test_database_management():
 
     # Test create database
     result = arango_client.create_database(db_name)
-    assert isinstance(result, Database)
+    assert isinstance(result, BaseDatabase)
     assert db_name in arango_client.databases()
 
     # Test get after create database
-    assert isinstance(arango_client.db(db_name), Database)
+    assert isinstance(arango_client.db(db_name), BaseDatabase)
     assert arango_client.db(db_name).name == db_name
 
     # Test create duplicate database

@@ -6,7 +6,7 @@ import pytest
 from six import string_types
 
 from arango import ArangoClient
-from arango.database import Database
+from arango.api.databases.base import BaseDatabase
 from arango.exceptions import (
     DatabaseCreateError,
     DatabaseDeleteError,
@@ -193,11 +193,11 @@ def test_database_management():
 
     # Test create database
     result = arango_client.create_database(db_name)
-    assert isinstance(result, Database)
+    assert isinstance(result, BaseDatabase)
     assert db_name in arango_client.databases()
 
     # Test get after create database
-    assert isinstance(arango_client.db(db_name), Database)
+    assert isinstance(arango_client.db(db_name), BaseDatabase)
     assert arango_client.db(db_name).name == db_name
 
     # Test create duplicate database

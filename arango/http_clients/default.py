@@ -2,8 +2,8 @@ from __future__ import absolute_import, unicode_literals
 
 import requests
 
-from arango.response import Response
-from arango.http_clients.base import BaseHTTPClient
+from arango.responses import BaseResponse
+from arango.http_clients import BaseHTTPClient
 
 
 class DefaultHTTPClient(BaseHTTPClient):
@@ -20,194 +20,36 @@ class DefaultHTTPClient(BaseHTTPClient):
             self._session = requests
         self._check_cert = check_cert
 
-    def head(self, url, params=None, headers=None, auth=None):
-        """Execute an HTTP **HEAD** method.
+    def make_request(self, request, response_mapper=None):
+        """Use the :class:arango.request.Request object to make an HTTP request
 
-        :param url: request URL
-        :type url: str | unicode
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.response.Response
+        :param request: The request to make
+        :type request: arango.request.Request
+        :param response_mapper: Function that maps responses to a dictionary of
+         parameters to create an :class:`arango.responses.Response`. If
+         none, uses self.response_mapper.
+        :type response_mapper: callable
+        :return: The response to this request
+        :rtype: arango.responses.BaseResponse
         """
-        res = self._session.head(
-            url=url,
-            params=params,
-            headers=headers,
-            auth=auth,
-            verify=self._check_cert
-        )
-        return Response(
-            url=url,
-            method="head",
-            headers=res.headers,
-            http_code=res.status_code,
-            http_text=res.reason,
-            body=res.text
-        )
 
-    def get(self, url, params=None, headers=None, auth=None):
-        """Execute an HTTP **GET** method.
+        if response_mapper is None:
+            response_mapper = self.response_mapper
 
-        :param url: request URL
-        :type url: str | unicode
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.response.Response
-        """
-        res = self._session.get(
-            url=url,
-            params=params,
-            headers=headers,
-            auth=auth,
-            verify=self._check_cert
-        )
-        return Response(
-            url=url,
-            method="get",
-            headers=res.headers,
-            http_code=res.status_code,
-            http_text=res.reason,
-            body=res.text
-        )
+        method = request.method
 
-    def put(self, url, data, params=None, headers=None, auth=None):
-        """Execute an HTTP **PUT** method.
+        res = self._session.request(method, **request.kwargs)
+        return BaseResponse(res, response_mapper)
 
-        :param url: request URL
-        :type url: str | unicode
-        :param data: request payload
-        :type data: str | unicode | dict
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.response.Response
-        """
-        res = self._session.put(
-            url=url,
-            data=data,
-            params=params,
-            headers=headers,
-            auth=auth,
-            verify=self._check_cert
-        )
-        return Response(
-            url=url,
-            method="put",
-            headers=res.headers,
-            http_code=res.status_code,
-            http_text=res.reason,
-            body=res.text
-        )
+    @staticmethod
+    def response_mapper(response):
+        outputs = {}
 
-    def post(self, url, data, params=None, headers=None, auth=None):
-        """Execute an HTTP **POST** method.
+        outputs["url"] = response.url
+        outputs["method"] = response.request.method
+        outputs["headers"] = response.headers
+        outputs["status_code"] = response.status_code
+        outputs["status_text"] = response.reason
+        outputs["body"] = response.text
 
-        :param url: request URL
-        :type url: str | unicode
-        :param data: request payload
-        :type data: str | unicode | dict
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.response.Response
-        """
-        res = self._session.post(
-            url=url,
-            data=data,
-            params=params,
-            headers=headers,
-            auth=auth,
-            verify=self._check_cert
-        )
-        return Response(
-            url=url,
-            method="post",
-            headers=res.headers,
-            http_code=res.status_code,
-            http_text=res.reason,
-            body=res.text
-        )
-
-    def patch(self, url, data, params=None, headers=None, auth=None):
-        """Execute an HTTP **PATCH** method.
-
-        :param url: request URL
-        :type url: str | unicode
-        :param data: request payload
-        :type data: str | unicode | dict
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.response.Response
-        """
-        res = self._session.patch(
-            url=url,
-            data=data,
-            params=params,
-            headers=headers,
-            auth=auth,
-            verify=self._check_cert
-        )
-        return Response(
-            url=url,
-            method="patch",
-            headers=res.headers,
-            http_code=res.status_code,
-            http_text=res.reason,
-            body=res.text
-        )
-
-    def delete(self, url, data=None, params=None, headers=None, auth=None):
-        """Execute an HTTP **DELETE** method.
-
-        :param url: request URL
-        :type url: str | unicode
-        :param data: request payload
-        :type data: str | unicode | dict
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.response.Response
-        """
-        res = self._session.delete(
-            url=url,
-            data=data,
-            params=params,
-            headers=headers,
-            auth=auth,
-            verify=self._check_cert
-        )
-        return Response(
-            url=url,
-            method="delete",
-            headers=res.headers,
-            http_code=res.status_code,
-            http_text=res.reason,
-            body=res.text
-        )
+        return outputs

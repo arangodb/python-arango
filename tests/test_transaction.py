@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 import pytest
 
 from arango import ArangoClient
-from arango.collections.standard import Collection
+from arango.api.collections import Collection
 from arango.exceptions import TransactionError
 
 from tests.utils import (
@@ -424,3 +424,14 @@ def test_bad_collections():
         ) as txn:
             txn_col = txn.collection(col_name)
             txn_col.insert(doc2)
+
+
+def test_transaction_result():
+    txn = db.transaction(write=col_name)
+
+    txn_col = txn.collection(col_name)
+    txn_col.insert_many(test_docs)
+
+    x = txn.commit()
+
+    assert len(x[0]) == len(test_docs)

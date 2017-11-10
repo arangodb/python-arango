@@ -4,8 +4,8 @@ import pytest
 from six import string_types
 
 from arango import ArangoClient
-from arango.collections.edge import EdgeCollection
-from arango.collections.vertex import VertexCollection
+from arango.api.collections.edge import EdgeCollection
+from arango.api.collections.vertex import VertexCollection
 from arango.exceptions import (
     ArangoError,
     DocumentDeleteError,

@@ -1,21 +1,20 @@
 from __future__ import absolute_import, unicode_literals
 
-from uuid import UUID
-
 import pytest
 
 from threading import Thread, Event
 import time
 
 from arango import ArangoClient
-from arango.aql import AQL
-from arango.collections.standard import Collection
+from arango.api.wrappers.aql import AQL
+from arango.api.collections import Collection
 from arango.exceptions import (
     DocumentRevisionError,
     DocumentInsertError,
-    BatchExecuteError
+    BatchExecuteError,
+    JobResultError
 )
-from arango.graph import Graph
+from arango.api.wrappers.graph import Graph
 
 from tests.utils import (
     generate_db_name,
@@ -53,7 +52,6 @@ def test_batch_job_properties():
         batch_col = batch.collection(col_name)
         job = batch_col.insert({'_key': '1', 'val': 1})
 
-    assert isinstance(job.id, UUID)
     assert 'ArangoDB batch job {}'.format(job.id) in repr(job)
 
 
@@ -139,7 +137,10 @@ def test_batch_insert_context_manager_no_commit_on_error():
     except ValueError:
         assert len(col) == 0
         assert job1.status() == 'pending'
-        assert job1.result() is None
+        # TODO CHANGED Behavior: Result of jobs without a response fails on
+        # error
+        with pytest.raises(JobResultError):
+            job1.result()
 
 
 def test_batch_insert_no_context_manager_with_result():
@@ -152,13 +153,17 @@ def test_batch_insert_no_context_manager_with_result():
 
     assert len(col) == 0
     assert job1.status() == 'pending'
-    assert job1.result() is None
+    # TODO CHANGED Behavior: Result of jobs without a response fails on error
+    with pytest.raises(JobResultError):
+        job1.result()
 
     assert job2.status() == 'pending'
-    assert job2.result() is None
+    with pytest.raises(JobResultError):
+        job2.result()
 
     assert job3.status() == 'pending'
-    assert job3.result() is None
+    with pytest.raises(JobResultError):
+        job3.result()
 
     batch.commit()
     assert len(col) == 2

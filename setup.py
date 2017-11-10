@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 import sys
 
 version = {}
-with open('./arango/version.py') as fp:
+with open('./arango/utils/constants.py') as fp:
     exec(fp.read(), version)
 
 if sys.version_info < (3, 5):

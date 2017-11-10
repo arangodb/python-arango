@@ -1,4 +1,4 @@
-from arango.version import VERSION
+from arango.utils import VERSION
 
 
 def test_package_version():
