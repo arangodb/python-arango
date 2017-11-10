@@ -4,6 +4,9 @@ from uuid import UUID
 
 import pytest
 
+from threading import Thread, Event
+import time
+
 from arango import ArangoClient
 from arango.aql import AQL
 from arango.collections.standard import Collection
@@ -226,3 +229,55 @@ def test_batch_clear():
     assert len(col) == 0
     assert job1.status() == 'pending'
     assert job2.status() == 'pending'
+
+
+def thread_grab_lock(batch, signal_event, stop_event):
+    with batch._lock:
+        signal_event.set()
+
+        while not stop_event.is_set():
+            time.sleep(.1)
+
+
+def test_batch_threaded_timeout():
+    batch = db.batch(return_result=True, submit_timeout=1)
+
+    thread_signal = Event()
+    thread_stop = Event()
+
+    thread = Thread(target=thread_grab_lock, args=(batch, thread_signal,
+                                                   thread_stop))
+
+    thread.start()
+
+    while not thread_signal.is_set():
+        time.sleep(.1)
+
+    with pytest.raises(BatchExecuteError):
+        batch.commit()
+
+    thread_stop.set()
+
+    thread.join()
+
+
+def thread_submit_to_batch(batch, col):
+    batch.collection(col).insert({'_key': '1', 'val': 1})
+
+
+def test_batch_threaded_commit():
+    batch = db.batch(return_result=True)
+
+    t1 = Thread(target=thread_submit_to_batch, args=(batch, col_name))
+    t2 = Thread(target=thread_submit_to_batch, args=(batch, col_name))
+
+    t1.start()
+    t2.start()
+
+    t1.join()
+    t2.join()
+
+    res = batch.commit()
+
+    assert len(res) == 2
+    assert len([x for x in res if x.status() == 'error']) == 1

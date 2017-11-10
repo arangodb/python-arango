@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from uuid import uuid4
 
+from arango.lock import Lock
 from arango.collections.standard import Collection
 from arango.connection import Connection
 from arango.utils import HTTP_OK
@@ -28,13 +29,16 @@ class BatchExecution(Connection):
         so far are committed even if an exception is raised before existing
         out of the context (default: ``False``)
     :type commit_on_error: bool
-
-    .. warning::
-        Batch execution is currently an experimental feature and is not
-        thread-safe.
+    :param submit_timeout: the timeout to use for acquiring the lock necessary
+        to submit a batch.  Only relevant in multi-threaded contexts. In single
+        threaded contexts, acquiring this lock will never fail.  A value of
+        <= 0 means never timeout, a positive integer value indicates the number
+        of seconds to wait.
+    :type submit_timeout: int
     """
 
-    def __init__(self, connection, return_result=True, commit_on_error=False):
+    def __init__(self, connection, return_result=True, commit_on_error=False,
+                 submit_timeout=-1):
         super(BatchExecution, self).__init__(
             protocol=connection.protocol,
             host=connection.host,
@@ -51,6 +55,11 @@ class BatchExecution(Connection):
         self._requests = []  # The queue for requests
         self._handlers = []  # The queue for response handlers
         self._batch_jobs = []  # For tracking batch jobs
+
+        # For ensuring additions to all queues in the same order
+        self._lock = Lock()
+
+        self._batch_submit_timeout = submit_timeout
         self._aql = AQL(self)
         self._type = 'batch'
 
@@ -82,17 +91,21 @@ class BatchExecution(Connection):
         :type request: arango.request.Request
         :param handler: the response handler
         :type handler: callable
-        :returns: the batch job or None
-        :rtype: arango.batch.BatchJob
+        :returns: the :class:`arango.batch.BatchJob` or None
+        :rtype: :class:`arango.batch.BatchJob` | None
         """
-        self._requests.append(request)
-        self._handlers.append(handler)
 
-        if not self._return_result:
-            return None
-        batch_job = BatchJob()
-        self._batch_jobs.append(batch_job)
-        return batch_job
+        to_return = None
+
+        with self._lock:
+            self._requests.append(request)
+            self._handlers.append(handler)
+
+            if self._return_result:
+                to_return = BatchJob()
+                self._batch_jobs.append(to_return)
+
+        return to_return
 
     def commit(self):
         """Execute the queued API requests in a single HTTP call.
@@ -102,12 +115,23 @@ class BatchExecution(Connection):
         for later retrieval via its :func:`arango.batch.BatchJob.result`
         method
 
+        :returns: list of :class:`arango.batch.BatchJob` or None
+        :rtype: [arango.batch.BatchJob] | None
+
         :raises arango.exceptions.BatchExecuteError: if the batch request
             cannot be executed
         """
+
+        res = self._lock.acquire(timeout=self._batch_submit_timeout)
+
+        if not res:
+            raise BatchExecuteError("Unable to reaccquire lock within time "
+                                    "period. Some thread must be holding it.")
+
         try:
-            if not self._requests:
+            if len(self._requests) == 0:
                 return
+
             raw_data_list = []
             for content_id, request in enumerate(self._requests, start=1):
                 raw_data_list.append('--XXXsubpartXXX\r\n')
@@ -155,10 +179,13 @@ class BatchExecution(Connection):
                     job.update(status='error', result=err)
                 else:
                     job.update(status='done', result=result)
+
+            return self._batch_jobs
         finally:
             self._requests = []
             self._handlers = []
             self._batch_jobs = []
+            self._lock.release()
 
     def clear(self):
         """Clear the requests queue and discard pointers to batch jobs issued.
@@ -224,6 +251,7 @@ class BatchJob(object):
         self._id = uuid4()
         self._status = 'pending'
         self._result = None
+        self._lock = Lock()
 
     def __repr__(self):
         return '<ArangoDB batch job {}>'.format(self._id)
@@ -247,8 +275,10 @@ class BatchJob(object):
         :param result: the result of the job
         :type result: object
         """
-        self._status = status
-        self._result = result
+
+        with self._lock:
+            self._status = status
+            self._result = result
 
     def status(self):
         """Return the status of the batch job.
@@ -258,7 +288,8 @@ class BatchJob(object):
             ``"error"`` (the job raised an exception)
         :rtype: str | unicode
         """
-        return self._status
+        with self._lock:
+            return self._status
 
     def result(self):
         """Return the result of the job or raise its error.
@@ -267,4 +298,5 @@ class BatchJob(object):
         :rtype: object
         :raises ArangoError: if the batch job failed
         """
-        return self._result
+        with self._lock:
+            return self._result
