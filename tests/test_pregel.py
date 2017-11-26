@@ -65,7 +65,8 @@ def test_get_pregel_job():
     assert isinstance(job['received_count'], int)
     assert isinstance(job['send_count'], int)
     assert isinstance(job['total_runtime'], float)
-    assert job['state'] == 'running'
+    # TODO CHANGED to prevent race condition
+    assert job['state'] in {'running', 'done'}
 
     # Test pregel_job with an invalid job ID
     with pytest.raises(PregelJobGetError):

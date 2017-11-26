@@ -14,38 +14,42 @@ class Request(object):
 
     __slots__ = (
         'method',
-        'endpoint',
+        'url',
         'headers',
         'params',
         'data',
         'command',
+        'auth'
     )
 
     def __init__(self,
                  method,
-                 endpoint,
+                 url,
                  headers=None,
                  params=None,
                  data=None,
-                 command=None):
+                 command=None,
+                 auth=None):
         self.method = method
-        self.endpoint = endpoint
+        self.url = url
         self.headers = headers or {}
         self.params = params or {}
         self.data = data
         self.command = command
+        self.auth = auth
 
     @property
     def kwargs(self):
         return {
-            'endpoint': self.endpoint,
+            'url': self.url,
             'headers': self.headers,
             'params': self.params,
             'data': self.data,
+            'auth': self.auth
         }
 
     def stringify(self):
-        path = self.endpoint
+        path = self.url
         if self.params is not None:
             path += "?" + moves.urllib.parse.urlencode(self.params)
         request_string = "{} {} HTTP/1.1".format(self.method, path)

@@ -4,7 +4,7 @@ import pytest
 from six import string_types
 
 from arango import ArangoClient
-from arango.collections.standard import Collection
+from arango.api.collections import Collection
 from arango.exceptions import (
     CollectionBadStatusError,
     CollectionChecksumError,
@@ -184,3 +184,29 @@ def test_truncate():
     # Test truncate missing collection
     with pytest.raises(CollectionTruncateError):
         bad_col.truncate()
+
+
+def test_get():
+    col.insert_many(
+        [{'_key': '5', 'val': 300, 'text': 'foo', 'coordinates': [5, 5]}])
+
+    # Test get with correct revision
+    good_rev = col.get('5')['_rev']
+    result = col.get('5', rev=good_rev)
+    assert result['_key'] == '5'
+    assert result['val'] == 300
+
+    # Test get with "If-None-Match" and bad revision
+    bad_rev = col.get('5')['_rev'] + '000'
+    result = col.get('5', rev=bad_rev, match_rev=False)
+    assert result['_key'] == '5'
+    assert result['val'] == 300
+
+
+def test_has():
+    col.insert_many(
+        [{'_key': '5', 'val': 300, 'text': 'foo', 'coordinates': [5, 5]}])
+
+    # Test has with "If-None-Match" and bad revision
+    bad_rev = col.get('5')['_rev'] + '000'
+    assert col.has('5', rev=bad_rev, match_rev=False)

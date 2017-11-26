@@ -15,7 +15,7 @@ fi
 PID=$(echo $PPID)
 TMP_DIR="/tmp/arangodb.$PID"
 PID_FILE="/tmp/arangodb.$PID.pid"
-ARANGODB_DIR="/usr/local/opt/arangodb"
+ARANGODB_DIR="s"
 ARANGOD="${ARANGODB_DIR}/sbin/arangod"
 
 echo "Creating temporary database directory ..."

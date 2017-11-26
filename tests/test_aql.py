@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 import pytest
 
 from arango import ArangoClient
-from arango.aql import AQL
+from arango.api.wrappers import AQL
 from arango.exceptions import (
     AsyncExecuteError,
     BatchExecuteError,
@@ -33,8 +33,9 @@ col_name = generate_col_name()
 db.create_collection(col_name)
 username = generate_user_name()
 user = arango_client.create_user(username, 'password')
-func_name = ''
-func_body = ''
+func_prefix = 'myfunctions'
+func_name = 'myfunctions::temperature::celsiustofahrenheit'
+func_body = 'function (celsius) { return celsius * 1.8 + 32; }'
 
 
 def teardown_module(*_):
@@ -139,8 +140,6 @@ def test_query_function_create_and_list():
     global func_name, func_body
 
     assert db.aql.functions() == {}
-    func_name = 'myfunctions::temperature::celsiustofahrenheit'
-    func_body = 'function (celsius) { return celsius * 1.8 + 32; }'
 
     # Test create AQL function
     db.aql.create_function(func_name, func_body)
@@ -151,16 +150,21 @@ def test_query_function_create_and_list():
     assert db.aql.functions() == {func_name: func_body}
 
     # Test create invalid AQL function
-    func_body = 'function (celsius) { invalid syntax }'
+    bad_body = 'function (celsius) { invalid syntax }'
     with pytest.raises(AQLFunctionCreateError):
-        result = db.aql.create_function(func_name, func_body)
-        assert result is True
+        print(db.aql.create_function(func_name, bad_body))
 
 
 @pytest.mark.order6
 def test_query_function_delete_and_list():
     # Test delete AQL function
     result = db.aql.delete_function(func_name)
+    assert result is True
+
+    # Test delete AQL function with namespace prefix
+    # TODO figure this out
+    db.aql.create_function(func_name+"q", func_body)
+    result = db.aql.delete_function(func_prefix, group=True)
     assert result is True
 
     # Test delete missing AQL function

@@ -6,8 +6,9 @@ import pytest
 from six import string_types
 
 from arango import ArangoClient
-from arango.collections.standard import Collection
-from arango.graph import Graph
+from arango.api.collections import Collection
+from arango.api.databases import SystemDatabase
+from arango.api.wrappers.graph import Graph
 from arango.exceptions import (
     CollectionCreateError,
     CollectionDeleteError,
@@ -434,3 +435,8 @@ def test_set_log_levels():
 
         with pytest.raises(ServerLogLevelSetError):
             bad_db.set_log_levels(**new_levels)
+
+
+def test_bad_system_db_connection():
+    with pytest.raises(ValueError):
+        SystemDatabase(db.connection)

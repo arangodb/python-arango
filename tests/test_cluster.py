@@ -3,10 +3,10 @@ from __future__ import absolute_import, unicode_literals
 import pytest
 
 from arango import ArangoClient
-from arango.aql import AQL
-from arango.collections.standard import Collection
-from arango.exceptions import ClusterTestError
-from arango.graph import Graph
+from arango.api.wrappers.aql import AQL
+from arango.api.collections import Collection
+from arango.api.wrappers import Graph
+from arango.exceptions import ArangoError
 
 from tests.utils import (
     generate_db_name,
@@ -52,5 +52,5 @@ def test_cluster_execute():
         timeout=2000,
         sync=True
     )
-    with pytest.raises(ClusterTestError):
+    with pytest.raises(ArangoError):
         cluster.collection(col_name).checksum()
