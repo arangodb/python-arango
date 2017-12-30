@@ -1,0 +1,438 @@
+from __future__ import absolute_import, unicode_literals
+
+from arango_internals.collections import EdgeCollection
+from arango_internals.collections import VertexCollection
+from arango_internals.utils import HTTP_OK
+from arango_internals.exceptions import (
+    EdgeDefinitionCreateError,
+    EdgeDefinitionDeleteError,
+    EdgeDefinitionListError,
+    EdgeDefinitionReplaceError,
+    GraphPropertiesError,
+    GraphTraverseError,
+    OrphanCollectionListError,
+    VertexCollectionCreateError,
+    VertexCollectionDeleteError,
+    VertexCollectionListError
+)
+from arango_internals.request import Request
+from arango_internals.api import APIWrapper
+
+
+class Graph(APIWrapper):
+    """ArangoDB graph.
+
+    A graph can have vertex and edge collections.
+
+    :param connection: ArangoDB connection object
+    :type connection: arango.connection.Connection
+    :param name: the name of the graph
+    :type name: str | unicode
+    """
+
+    def __init__(self, connection, name):
+        super(Graph, self).__init__(connection)
+        self._name = name
+
+    def __repr__(self):
+        return "<ArangoDB graph '{}'>".format(self._name)
+
+    @property
+    def name(self):
+        """Return the name of the graph.
+
+        :returns: the name of the graph
+        :rtype: str
+        """
+        return self._name
+
+    def vertex_collection(self, name):
+        """Return the vertex collection object.
+
+        :param name: the name of the vertex collection
+        :type name: str | unicode
+        :returns: the vertex collection object
+        :rtype: arango.collections.vertex.VertexCollection
+        """
+        return VertexCollection(self._conn, self._name, name)
+
+    def edge_collection(self, name):
+        """Return the edge collection object.
+
+        :param name: the name of the edge collection
+        :type name: str | unicode
+        :returns: the edge collection object
+        :rtype: arango.collections.edge.EdgeCollection
+        """
+        return EdgeCollection(self._conn, self._name, name)
+
+    def properties(self):
+        """Return the graph properties.
+
+        :returns: the graph properties
+        :rtype: dict
+        :raises arango.exceptions.GraphPropertiesError: if the properties
+            of the graph cannot be retrieved
+        """
+        request = Request(
+            method='get',
+            url='/_api/gharial/{}'.format(self._name)
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise GraphPropertiesError(res)
+            record = res.body['graph']
+            return {
+                'id': record['_id'],
+                'name': record['name'],
+                'revision': record['_rev'],
+                'orphan_collections': record['orphanCollections'],
+                'edge_definitions': [
+                    {
+                        'name': edge_definition['collection'],
+                        'to_collections': edge_definition['to'],
+                        'from_collections': edge_definition['from']
+                    }
+                    for edge_definition in record['edgeDefinitions']
+                ],
+                'smart': record.get('isSmart'),
+                'smart_field': record.get('smartGraphAttribute'),
+                'shard_count': record.get('numberOfShards')
+            }
+
+        return self.handle_request(request, handler)
+
+    ################################
+    # Vertex Collection Management #
+    ################################
+
+    def orphan_collections(self):
+        """Return the orphan vertex collections of the graph.
+
+        :returns: the names of the orphan vertex collections
+        :rtype: list
+        :raises arango.exceptions.OrphanCollectionListError: if the list of
+            orphan vertex collections cannot be retrieved
+        """
+        request = Request(
+            method='get',
+            url='/_api/gharial/{}'.format(self._name)
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise OrphanCollectionListError(res)
+            return res.body['graph']['orphanCollections']
+
+        return self.handle_request(request, handler)
+
+    def vertex_collections(self):
+        """Return the vertex collections of the graph.
+
+        :returns: the names of the vertex collections
+        :rtype: list
+        :raises arango.exceptions.VertexCollectionListError: if the list of
+            vertex collections cannot be retrieved
+        """
+        request = Request(
+            method='get',
+            url='/_api/gharial/{}/vertex'.format(self._name)
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise VertexCollectionListError(res)
+            return res.body['collections']
+
+        return self.handle_request(request, handler)
+
+    def create_vertex_collection(self, name):
+        """Create a vertex collection for the graph.
+
+        :param name: the name of the new vertex collection to create
+        :type name: str | unicode
+        :returns: the vertex collection object
+        :rtype: arango.collections.vertex.VertexCollection
+        :raises arango.exceptions.VertexCollectionCreateError: if the vertex
+            collection cannot be created
+        """
+        request = Request(
+            method='post',
+            url='/_api/gharial/{}/vertex'.format(self._name),
+            data={'collection': name}
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise VertexCollectionCreateError(res)
+            return VertexCollection(self._conn, self._name, name)
+
+        return self.handle_request(request, handler)
+
+    def delete_vertex_collection(self, name, purge=False):
+        """Remove the vertex collection from the graph.
+
+        :param name: the name of the vertex collection to remove
+        :type name: str | unicode
+        :param purge: delete the vertex collection completely
+        :type purge: bool
+        :returns: whether the operation was successful
+        :rtype: bool
+        :raises arango.exceptions.VertexCollectionDeleteError: if the vertex
+            collection cannot be removed from the graph
+        """
+        request = Request(
+            method='delete',
+            url='/_api/gharial/{}/vertex/{}'.format(self._name, name),
+            params={'dropCollection': purge}
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise VertexCollectionDeleteError(res)
+            return not res.body['error']
+
+        return self.handle_request(request, handler)
+
+    ##############################
+    # Edge Definition Management #
+    ##############################
+
+    def edge_definitions(self):
+        """Return the edge definitions of the graph.
+
+        :returns: the edge definitions of the graph
+        :rtype: list
+        :raises arango.exceptions.EdgeDefinitionListError: if the list of
+            edge definitions cannot be retrieved
+        """
+        request = Request(
+            method='get',
+            url='/_api/gharial/{}'.format(self._name)
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise EdgeDefinitionListError(res)
+            return [
+                {
+                    'name': edge_definition['collection'],
+                    'to_collections': edge_definition['to'],
+                    'from_collections': edge_definition['from']
+                }
+                for edge_definition in
+                res.body['graph']['edgeDefinitions']
+            ]
+
+        return self.handle_request(request, handler)
+
+    def create_edge_definition(self, name, from_collections, to_collections):
+        """Create a new edge definition for the graph.
+
+        An edge definition consists of an edge collection, one or more "from"
+        vertex collections, one or more "to" vertex collections.
+
+        :param name: the name of the new edge collection
+        :type name: str | unicode
+        :param from_collections: the name(s) of the "from" vertex collections
+        :type from_collections: list
+        :param to_collections: the names of the "to" vertex collections
+        :type to_collections: list
+        :returns: the edge collection object
+        :rtype: arango.collections.edge.EdgeCollection
+        :raises arango.exceptions.EdgeDefinitionCreateError: if the edge
+            definition cannot be created
+        """
+        request = Request(
+            method='post',
+            url='/_api/gharial/{}/edge'.format(self._name),
+            data={
+                'collection': name,
+                'from': from_collections,
+                'to': to_collections
+            }
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise EdgeDefinitionCreateError(res)
+            return EdgeCollection(self._conn, self._name, name)
+
+        return self.handle_request(request, handler)
+
+    def replace_edge_definition(self, name, from_collections, to_collections):
+        """Replace an edge definition in the graph.
+
+        :param name: the name of the edge definition to replace
+        :type name: str | unicode
+        :param from_collections: the names of the "from" vertex collections
+        :type from_collections: list
+        :param to_collections: the names of the "to" vertex collections
+        :type to_collections: list
+        :returns: whether the operation was successful
+        :rtype: bool
+        :raises arango.exceptions.EdgeDefinitionReplaceError: if the edge
+            definition cannot be replaced
+        """
+        request = Request(
+            method='put',
+            url='/_api/gharial/{}/edge/{}'.format(
+                self._name, name
+            ),
+            data={
+                'collection': name,
+                'from': from_collections,
+                'to': to_collections
+            }
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise EdgeDefinitionReplaceError(res)
+            return not res.body['error']
+
+        return self.handle_request(request, handler)
+
+    def delete_edge_definition(self, name, purge=False):
+        """Remove an edge definition from the graph.
+
+        :param name: the name of the edge collection
+        :type name: str | unicode
+        :param purge: delete the edge collection completely
+        :type purge: bool
+        :returns: whether the operation was successful
+        :rtype: bool
+        :raises arango.exceptions.EdgeDefinitionDeleteError: if the edge
+            definition cannot be deleted
+        """
+        request = Request(
+            method='delete',
+            url='/_api/gharial/{}/edge/{}'.format(self._name, name),
+            params={'dropCollection': purge}
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise EdgeDefinitionDeleteError(res)
+            return not res.body['error']
+
+        return self.handle_request(request, handler)
+
+    ####################
+    # Graph Traversals #
+    ####################
+
+    def traverse(self,
+                 start_vertex,
+                 direction='outbound',
+                 item_order='forward',
+                 strategy=None,
+                 order=None,
+                 edge_uniqueness=None,
+                 vertex_uniqueness=None,
+                 max_iter=None,
+                 min_depth=None,
+                 max_depth=None,
+                 init_func=None,
+                 sort_func=None,
+                 filter_func=None,
+                 visitor_func=None,
+                 expander_func=None):
+        """Traverse the graph and return the visited vertices and edges.
+
+        :param start_vertex: the collection and the key of the start vertex in
+            the format ``"collection/key"``
+        :type start_vertex: str | unicode
+        :param direction: ``"outbound"`` (default), ``"inbound"`` or ``"any"``
+        :type direction: str | unicode
+        :param item_order: ``"forward"`` (default) or ``"backward"``
+        :type item_order: str | unicode
+        :param strategy: ``"dfs"`` or ``"bfs"``
+        :type strategy: str | unicode
+        :param order: ``"preorder"``, ``"postorder"``, ``"preorder-expander"``
+            or ``None`` (default)
+        :type order: str | unicode
+        :param vertex_uniqueness: ``"global"``, ``"path"`` or ``None``
+        :type vertex_uniqueness: str | unicode
+        :param edge_uniqueness: ``"global"``, ``"path"`` or ``None``
+        :type edge_uniqueness: str | unicode
+        :param min_depth: the minimum depth of the nodes to visit
+        :type min_depth: int
+        :param max_depth: the maximum depth of the nodes to visit
+        :type max_depth: int
+        :param max_iter: halt the graph traversal after a maximum number of
+            iterations (e.g. to prevent endless loops in cyclic graphs)
+        :type max_iter: int
+        :param init_func: init function in Javascript with signature
+            ``(config, result) -> void``, which is used to initialize values
+        :type init_func: str | unicode
+        :param sort_func: sort function in Javascript with signature
+            ``(left, right) -> integer``, which returns ``-1`` if ``left <
+            right``, ``+1`` if ``left > right``, and ``0`` if ``left == right``
+        :type sort_func: str | unicode
+        :param filter_func: filter function in Javascript with signature
+            ``(config, vertex, path) -> mixed``, where mixed can be one of four
+            possible values: ``"exclude"`` (do not visit the vertex),
+            ``"prune"`` (do not follow the edges of the vertex), ``""`` or
+            ``undefined`` (visit the vertex and its edges), or an Array
+            (any combinations of the ``"mixed"``, ``"prune"``, ``""`` or
+            ``undefined``).
+        :type filter_func: str | unicode
+        :param visitor_func: visitor function in Javascript with signature
+            ``(config, result, vertex, path, connected) -> void``, where the
+            return value is ignored, ``result`` is modified by reference, and
+            ``connected`` is populated only when argument **order** is set to
+            ``"preorder-expander"``
+        :type visitor_func: str | unicode
+        :param expander_func: expander function in Javascript with signature
+            ``(config, vertex, path) -> mixed``, which must return an array of
+            the connections for vertex where each connection is an object with
+            attributes edge and vertex
+        :type expander_func: str | unicode
+        :returns: the visited edges and vertices
+        :rtype: dict
+        :raises arango.exceptions.GraphTraverseError: if the graph traversal
+            cannot be executed
+        """
+        if strategy is not None:
+            if strategy.lower() == 'dfs':
+                strategy = 'depthfirst'
+            elif strategy.lower() == 'bfs':
+                strategy = 'breadthfirst'
+
+        uniqueness = {}
+        if vertex_uniqueness is not None:
+            uniqueness['vertices'] = vertex_uniqueness
+        if edge_uniqueness is not None:
+            uniqueness['edges'] = edge_uniqueness
+
+        data = {
+            'startVertex': start_vertex,
+            'graphName': self._name,
+            'direction': direction,
+            'strategy': strategy,
+            'order': order,
+            'itemOrder': item_order,
+            'uniqueness': uniqueness or None,
+            'maxIterations': max_iter,
+            'minDepth': min_depth,
+            'maxDepth': max_depth,
+            'init': init_func,
+            'filter': filter_func,
+            'visitor': visitor_func,
+            'sort': sort_func,
+            'expander': expander_func
+        }
+        request = Request(
+            method='post',
+            url='/_api/traversal',
+            data={k: v for k, v in data.items() if v is not None}
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise GraphTraverseError(res)
+            return res.body['result']['visited']
+
+        return self.handle_request(request, handler)

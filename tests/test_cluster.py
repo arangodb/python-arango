@@ -5,7 +5,7 @@ import pytest
 from arango import ArangoClient
 from arango.aql import AQL
 from arango.collections.standard import Collection
-from arango.exceptions import ClusterTestError
+from arango.exceptions import ArangoError
 from arango.graph import Graph
 
 from tests.utils import (
@@ -52,5 +52,6 @@ def test_cluster_execute():
         timeout=2000,
         sync=True
     )
-    with pytest.raises(ClusterTestError):
+    # TODO CHANGED: modified for consistent behavior
+    with pytest.raises(ArangoError):
         cluster.collection(col_name).checksum()
