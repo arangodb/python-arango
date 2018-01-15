@@ -1,4 +1,4 @@
-from .base import BaseCollection
-from .standard import Collection
-from .edge import EdgeCollection  # noqa: F401
-from .vertex import VertexCollection
+from arango.collections.base import BaseCollection
+from arango.collections.standard import Collection
+from arango.collections.edge import EdgeCollection  # noqa: F401
+from arango.collections.vertex import VertexCollection

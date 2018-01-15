@@ -1,7 +1,7 @@
-from arango.cursors import BaseCursor
+from arango.cursors import Cursor
 
 
-class ExportCursor(BaseCursor):  # pragma: no cover
+class ExportCursor(Cursor):  # pragma: no cover
     """ArangoDB cursor for export queries only.
 
     .. note::
@@ -9,5 +9,5 @@ class ExportCursor(BaseCursor):  # pragma: no cover
     """
 
     def __init__(self, connection, init_data):
-        super(ExportCursor, self).__init__(connection, init_data,
-                                           cursor_type="export")
+        super(ExportCursor, self).__init__(connection, init_data)
+        super(ExportCursor, self)._set_cursor_type('export')

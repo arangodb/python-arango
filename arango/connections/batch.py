@@ -127,8 +127,8 @@ class BatchExecution(BaseConnection):
         lock_res = self._lock.acquire(timeout=self._batch_submit_timeout)
 
         if not lock_res:
-            raise BatchExecuteError("Unable to reaccquire lock within time "
-                                    "period. Some thread must be holding it.")
+            raise BatchExecuteError('Unable to reaccquire lock within time '
+                                    'period. Some thread must be holding it.')
 
         try:
             if len(self._requests) == 0:
@@ -146,8 +146,8 @@ class BatchExecution(BaseConnection):
             raw_data = ''.join(raw_data_list)
 
             batch_request = Request(
-                method="post",
-                url='/_api/batch',
+                method='post',
+                endpoint='/_api/batch',
                 headers={
                     'Content-Type': (
                         'multipart/form-data; boundary=XXXsubpartXXX'
@@ -172,21 +172,21 @@ class BatchExecution(BaseConnection):
                     _, status_code, status_text = raw_status.split(' ', 2)
 
                     response_dict = {
-                        "method": request.method,
-                        "url": self._url_prefix + request.url,
-                        "headers": request.headers,
-                        "status_code": int(status_code),
-                        "status_text": status_text,
-                        "body": raw_body
+                        'method': request.method,
+                        'url': self._url_prefix + request.url,
+                        'headers': request.headers,
+                        'status_code': int(status_code),
+                        'status_text': status_text,
+                        'body': raw_body
                     }
 
                     response = BaseResponse(response_dict,
                                             self.response_mapper)
 
                     if int(status_code) in HTTP_OK:
-                        job.update("done", response)
+                        job.update('done', response)
                     else:
-                        job.update("error", response)
+                        job.update('error', response)
 
             BaseConnection.handle_request(self, batch_request, handler,
                                           job_class=BaseJob)\

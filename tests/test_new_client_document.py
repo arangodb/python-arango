@@ -1090,7 +1090,7 @@ def test_get_from_db():
     assert result['_key'] == '5'
     assert result['val'] == 300
 
-    # Test get with "If-None-Match" and bad revision
+    # Test get with 'If-None-Match' and bad revision
     bad_rev = db.get_document(col_name + '/5').result()['_rev'] + '000'
     result = db.get_document(col_name + '/5', rev=bad_rev, match_rev=False)\
         .result()
@@ -1102,7 +1102,7 @@ def test_get_from_db():
     assert isinstance(db.get_document(col_name + '/5', rev=bad_rev,
                                       match_rev=True).result(), ArangoError)
     assert isinstance(db.get_document(col_name + '/5',
-                                      rev="bad_rev").result(), ArangoError)
+                                      rev='bad_rev').result(), ArangoError)
     assert isinstance(db.get_document(bad_col_name + '/1').result(),
                       DocumentGetError)
 

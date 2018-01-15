@@ -63,13 +63,13 @@ class Collection(BaseCollection):
 
         if rev is not None:
             if match_rev:
-                headers["If-Match"] = rev
+                headers['If-Match'] = rev
             else:
-                headers["If-None-Match"] = rev
+                headers['If-None-Match'] = rev
 
         request = Request(
             method='get',
-            url='/_api/document/{}/{}'.format(self._name, key),
+            endpoint='/_api/document/{}/{}'.format(self._name, key),
             headers=headers
         )
 
@@ -122,7 +122,7 @@ class Collection(BaseCollection):
 
         request = Request(
             method='post',
-            url='/_api/document/{}'.format(self._name),
+            endpoint='/_api/document/{}'.format(self._name),
             data=document,
             params=params,
             command=command
@@ -177,7 +177,7 @@ class Collection(BaseCollection):
 
         request = Request(
             method='post',
-            url='/_api/document/{}'.format(self._name),
+            endpoint='/_api/document/{}'.format(self._name),
             data=documents,
             params=params,
             command=command
@@ -271,7 +271,7 @@ class Collection(BaseCollection):
 
         request = Request(
             method='patch',
-            url='/_api/document/{}/{}'.format(
+            endpoint='/_api/document/{}/{}'.format(
                 self._name, document['_key']
             ),
             data=document,
@@ -364,7 +364,7 @@ class Collection(BaseCollection):
 
         request = Request(
             method='patch',
-            url='/_api/document/{}'.format(self._name),
+            endpoint='/_api/document/{}'.format(self._name),
             data=documents,
             params=params,
             command=command
@@ -445,7 +445,7 @@ class Collection(BaseCollection):
 
         request = Request(
             method='put',
-            url='/_api/simple/update-by-example',
+            endpoint='/_api/simple/update-by-example',
             data=data,
             command=command
         )
@@ -521,7 +521,7 @@ class Collection(BaseCollection):
 
         request = Request(
             method='put',
-            url='/_api/document/{}/{}'.format(
+            endpoint='/_api/document/{}/{}'.format(
                 self._name, document['_key']
             ),
             params=params,
@@ -604,7 +604,7 @@ class Collection(BaseCollection):
 
         request = Request(
             method='put',
-            url='/_api/document/{}'.format(self._name),
+            endpoint='/_api/document/{}'.format(self._name),
             params=params,
             data=documents,
             command=command
@@ -675,7 +675,7 @@ class Collection(BaseCollection):
 
         request = Request(
             method='put',
-            url='/_api/simple/replace-by-example',
+            endpoint='/_api/simple/replace-by-example',
             data=data,
             command=command
         )
@@ -753,7 +753,7 @@ class Collection(BaseCollection):
 
         request = Request(
             method='delete',
-            url='/_api/document/{}/{}'.format(
+            endpoint='/_api/document/{}/{}'.format(
                 self._name, doc_target['_key']
             ),
             params=params,
@@ -823,7 +823,7 @@ class Collection(BaseCollection):
 
         request = Request(
             method='delete',
-            url='/_api/document/{}'.format(self._name),
+            endpoint='/_api/document/{}'.format(self._name),
             params=params,
             data=documents,
             command=command
@@ -876,7 +876,7 @@ class Collection(BaseCollection):
 
         request = Request(
             method='put',
-            url='/_api/simple/remove-by-example',
+            endpoint='/_api/simple/remove-by-example',
             data=data,
             command='db.{}.removeByExample({}, {})'.format(
                 self._name,
@@ -989,7 +989,7 @@ class Collection(BaseCollection):
 
         request = Request(
             method='post',
-            url='/_api/import',
+            endpoint='/_api/import',
             data=documents,
             params=params
         )

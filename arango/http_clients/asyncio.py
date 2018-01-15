@@ -122,12 +122,12 @@ class AsyncioHTTPClient(BaseHTTPClient):  # pragma: no cover
         res, text = response
 
         outputs = {}
-        outputs["url"] = res.url
-        outputs["method"] = res.method
-        outputs["headers"] = res.headers
-        outputs["status_code"] = res.status
-        outputs["status_text"] = res.reason
-        outputs["body"] = text
+        outputs['url'] = res.url
+        outputs['method'] = res.method
+        outputs['headers'] = res.headers
+        outputs['status_code'] = res.status
+        outputs['status_text'] = res.reason
+        outputs['body'] = text
 
         return outputs
 

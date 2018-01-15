@@ -45,11 +45,11 @@ class DefaultHTTPClient(BaseHTTPClient):
     def response_mapper(response):
         outputs = {}
 
-        outputs["url"] = response.url
-        outputs["method"] = response.request.method
-        outputs["headers"] = response.headers
-        outputs["status_code"] = response.status_code
-        outputs["status_text"] = response.reason
-        outputs["body"] = response.text
+        outputs['url'] = response.url
+        outputs['method'] = response.request.method
+        outputs['headers'] = response.headers
+        outputs['status_code'] = response.status_code
+        outputs['status_text'] = response.reason
+        outputs['body'] = response.text
 
         return outputs

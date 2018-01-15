@@ -42,18 +42,18 @@ class BaseResponse(object):
                  response_mapper):
 
         processed = response_mapper(response)
-        self.method = processed.get("method", None)
-        self.url = processed.get("url", None)
-        self.headers = processed.get("headers", None)
-        self.status_code = processed.get("status_code", None)
-        self.status_text = processed.get("status_text", None)
+        self.method = processed.get('method', None)
+        self.url = processed.get('url', None)
+        self.headers = processed.get('headers', None)
+        self.status_code = processed.get('status_code', None)
+        self.status_text = processed.get('status_text', None)
 
         self.raw_body = None
         self.body = None
         self.error_code = None
         self.error_message = None
 
-        self.update_body(processed.get("body", None))
+        self.update_body(processed.get('body', None))
 
     def update_body(self, body):
         self.raw_body = body

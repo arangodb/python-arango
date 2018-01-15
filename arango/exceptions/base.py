@@ -22,7 +22,7 @@ class ArangoError(Exception):
             elif data.status_text is not None:
                 error_message = data.status_text
             else:  # pragma: no cover
-                error_message = "request failed"
+                error_message = 'request failed'
 
             # Get the ArangoDB error number if provided
             self.error_code = data.error_code

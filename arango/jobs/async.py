@@ -27,7 +27,7 @@ class AsyncJob(BaseJob):
         BaseJob.__init__(self, handler, None,
                          job_id=None,
                          assign_id=False,
-                         job_type="asynchronous")
+                         job_type='asynchronous')
         self._conn = connection
         self._initial_response = response
         self._result = None
@@ -35,12 +35,12 @@ class AsyncJob(BaseJob):
         self._return_result = return_result
 
         if self._initial_response is None:
-            raise ValueError("AsyncJob must be instantiated with a "
-                             "response.")
+            raise ValueError('AsyncJob must be instantiated with a '
+                             'response.')
 
         if self._conn is None:
-            raise ValueError("AsyncJob must be instantiated with a "
-                             "connection.")
+            raise ValueError('AsyncJob must be instantiated with a '
+                             'connection.')
 
         if not self._conn.async_ready:
             self.id
@@ -80,7 +80,7 @@ class AsyncJob(BaseJob):
 
         request = Request(
             method='get',
-            url='/_api/job/{}'.format(self.id)
+            endpoint='/_api/job/{}'.format(self.id)
         )
 
         def handler(res):
@@ -121,7 +121,7 @@ class AsyncJob(BaseJob):
                 isinstance(self._result, BaseException):
             request = Request(
                 method='put',
-                url='/_api/job/{}'.format(self.id)
+                endpoint='/_api/job/{}'.format(self.id)
             )
 
             def handler(res):
@@ -175,12 +175,12 @@ class AsyncJob(BaseJob):
 
         request = Request(
             method='put',
-            url='/_api/job/{}/cancel'.format(self.id)
+            endpoint='/_api/job/{}/cancel'.format(self.id)
         )
 
         def handler(res):
             if res.status_code == 200:
-                self.update("cancelled")
+                self.update('cancelled')
                 return True
             elif res.status_code == 404:
                 if ignore_missing:
@@ -209,7 +209,7 @@ class AsyncJob(BaseJob):
 
         request = Request(
             method='delete',
-            url='/_api/job/{}'.format(self.id)
+            endpoint='/_api/job/{}'.format(self.id)
         )
 
         def handler(res):

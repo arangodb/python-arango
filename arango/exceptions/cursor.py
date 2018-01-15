@@ -2,7 +2,7 @@ from arango.exceptions import ArangoError
 
 
 class CursorError(ArangoError):
-    """Base class for errors in BaseCursor queries"""
+    """Base class for errors in Cursor queries"""
 
 
 class CursorNextError(CursorError):

@@ -35,7 +35,7 @@ class Graph(APIWrapper):
         self._name = name
 
     def __repr__(self):
-        return "<ArangoDB graph '{}'>".format(self._name)
+        return '<ArangoDB graph "{}">'.format(self._name)
 
     @property
     def name(self):
@@ -76,7 +76,7 @@ class Graph(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_api/gharial/{}'.format(self._name)
+            endpoint='/_api/gharial/{}'.format(self._name)
         )
 
         def handler(res):
@@ -117,7 +117,7 @@ class Graph(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_api/gharial/{}'.format(self._name)
+            endpoint='/_api/gharial/{}'.format(self._name)
         )
 
         def handler(res):
@@ -137,7 +137,7 @@ class Graph(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_api/gharial/{}/vertex'.format(self._name)
+            endpoint='/_api/gharial/{}/vertex'.format(self._name)
         )
 
         def handler(res):
@@ -159,7 +159,7 @@ class Graph(APIWrapper):
         """
         request = Request(
             method='post',
-            url='/_api/gharial/{}/vertex'.format(self._name),
+            endpoint='/_api/gharial/{}/vertex'.format(self._name),
             data={'collection': name}
         )
 
@@ -184,7 +184,7 @@ class Graph(APIWrapper):
         """
         request = Request(
             method='delete',
-            url='/_api/gharial/{}/vertex/{}'.format(self._name, name),
+            endpoint='/_api/gharial/{}/vertex/{}'.format(self._name, name),
             params={'dropCollection': purge}
         )
 
@@ -209,7 +209,7 @@ class Graph(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_api/gharial/{}'.format(self._name)
+            endpoint='/_api/gharial/{}'.format(self._name)
         )
 
         def handler(res):
@@ -246,7 +246,7 @@ class Graph(APIWrapper):
         """
         request = Request(
             method='post',
-            url='/_api/gharial/{}/edge'.format(self._name),
+            endpoint='/_api/gharial/{}/edge'.format(self._name),
             data={
                 'collection': name,
                 'from': from_collections,
@@ -277,7 +277,7 @@ class Graph(APIWrapper):
         """
         request = Request(
             method='put',
-            url='/_api/gharial/{}/edge/{}'.format(
+            endpoint='/_api/gharial/{}/edge/{}'.format(
                 self._name, name
             ),
             data={
@@ -308,7 +308,7 @@ class Graph(APIWrapper):
         """
         request = Request(
             method='delete',
-            url='/_api/gharial/{}/edge/{}'.format(self._name, name),
+            endpoint='/_api/gharial/{}/edge/{}'.format(self._name, name),
             params={'dropCollection': purge}
         )
 
@@ -426,7 +426,7 @@ class Graph(APIWrapper):
         }
         request = Request(
             method='post',
-            url='/_api/traversal',
+            endpoint='/_api/traversal',
             data={k: v for k, v in data.items() if v is not None}
         )
 

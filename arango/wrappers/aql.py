@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from arango import APIWrapper
-from arango.cursors import BaseCursor
+from arango.cursors import Cursor
 from arango.exceptions import (
     AQLQueryExplainError,
     AQLQueryValidateError,
@@ -29,7 +29,7 @@ class AQL(APIWrapper):
         self._cache = AQLQueryCache(self._conn)
 
     def __repr__(self):
-        return "<ArangoDB AQL>"
+        return '<ArangoDB AQL>'
 
     @property
     def cache(self):
@@ -65,7 +65,7 @@ class AQL(APIWrapper):
 
         request = Request(
             method='post',
-            url='/_api/explain',
+            endpoint='/_api/explain',
             data={'query': query, 'options': options}
         )
 
@@ -73,10 +73,10 @@ class AQL(APIWrapper):
             if res.status_code not in HTTP_OK:
                 raise AQLQueryExplainError(res)
 
-            if "plan" in res.body:
-                return res.body["plan"]
+            if 'plan' in res.body:
+                return res.body['plan']
             else:
-                return res.body["plans"]
+                return res.body['plans']
 
         return self.handle_request(request, handler)
 
@@ -92,7 +92,7 @@ class AQL(APIWrapper):
         """
         request = Request(
             method='post',
-            url='/_api/query',
+            endpoint='/_api/query',
             data={'query': query}
         )
 
@@ -126,7 +126,7 @@ class AQL(APIWrapper):
         :param optimizer_rules: list of optimizer rules
         :type optimizer_rules: list
         :returns: document cursor
-        :rtype: arango.cursor.BaseCursor
+        :rtype: arango.cursor.Cursor
         :raises arango.exceptions.AQLQueryExecuteError: if the query cannot be
             executed
         :raises arango.exceptions.CursorCloseError: if the cursor cannot be
@@ -152,14 +152,14 @@ class AQL(APIWrapper):
 
         request = Request(
             method='post',
-            url='/_api/cursor',
+            endpoint='/_api/cursor',
             data=data
         )
 
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise AQLQueryExecuteError(res)
-            return BaseCursor(self._conn, res.body)
+            return Cursor(self._conn, res.body)
 
         return self.handle_request(request, handler)
 
@@ -171,7 +171,7 @@ class AQL(APIWrapper):
         :raises arango.exceptions.AQLFunctionListError: if the AQL functions
             cannot be retrieved
         """
-        request = Request(method='get', url='/_api/aqlfunction')
+        request = Request(method='get', endpoint='/_api/aqlfunction')
 
         def handler(res):
             if res.status_code not in HTTP_OK:
@@ -195,7 +195,7 @@ class AQL(APIWrapper):
         """
         request = Request(
             method='post',
-            url='/_api/aqlfunction',
+            endpoint='/_api/aqlfunction',
             data={'name': name, 'code': code}
         )
 
@@ -230,11 +230,11 @@ class AQL(APIWrapper):
         params = {}
 
         if group is not None:
-            params["group"] = group
+            params['group'] = group
 
         request = Request(
             method='delete',
-            url='/_api/aqlfunction/{}'.format(name),
+            endpoint='/_api/aqlfunction/{}'.format(name),
             params=params
         )
 
@@ -264,7 +264,7 @@ class AQLQueryCache(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_api/query-cache/properties'
+            endpoint='/_api/query-cache/properties'
         )
 
         def handler(res):
@@ -294,7 +294,7 @@ class AQLQueryCache(APIWrapper):
 
         request = Request(
             method='put',
-            url='/_api/query-cache/properties',
+            endpoint='/_api/query-cache/properties',
             data=data
         )
 
@@ -313,7 +313,7 @@ class AQLQueryCache(APIWrapper):
         :raises arango.exceptions.AQLCacheClearError: if the cache query
             cannot be cleared
         """
-        request = Request(method='delete', url='/_api/query-cache')
+        request = Request(method='delete', endpoint='/_api/query-cache')
 
         def handler(res):
             if res.status_code not in HTTP_OK:

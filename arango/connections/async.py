@@ -59,8 +59,8 @@ class AsyncExecution(BaseConnection):
         else:
             request.headers['x-arango-async'] = 'true'
 
-        kwargs["job_class"] = AsyncJob
-        kwargs["connection"] = self._parent
-        kwargs["return_result"] = self._return_result
+        kwargs['job_class'] = AsyncJob
+        kwargs['connection'] = self._parent
+        kwargs['return_result'] = self._return_result
 
         return BaseConnection.handle_request(self, request, handler, **kwargs)

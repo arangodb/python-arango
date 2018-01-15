@@ -24,14 +24,14 @@ class Request(object):
 
     def __init__(self,
                  method,
-                 url,
+                 endpoint,
                  headers=None,
                  params=None,
                  data=None,
                  command=None,
                  auth=None):
         self.method = method
-        self.url = url
+        self.url = endpoint
         self.headers = headers or {}
         self.params = params or {}
         self.data = data
@@ -51,13 +51,13 @@ class Request(object):
     def stringify(self):
         path = self.url
         if self.params is not None:
-            path += "?" + moves.urllib.parse.urlencode(self.params)
-        request_string = "{} {} HTTP/1.1".format(self.method, path)
+            path += '?' + moves.urllib.parse.urlencode(self.params)
+        request_string = '{} {} HTTP/1.1'.format(self.method, path)
         if self.headers is not None:
             for key, value in self.headers.items():
-                request_string += "\r\n{key}: {value}".format(
+                request_string += '\r\n{key}: {value}'.format(
                     key=key, value=value
                 )
         if self.data is not None:
-            request_string += "\r\n\r\n{}".format(dumps(self.data))
+            request_string += '\r\n\r\n{}'.format(dumps(self.data))
         return request_string

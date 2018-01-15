@@ -9,7 +9,7 @@ class BaseJob(object):
     A job tracks the status of an API request and its result.
     """
 
-    def __init__(self, handler, response=None, job_id=None, assign_id=False, job_type="base"):
+    def __init__(self, handler, response=None, job_id=None, assign_id=False, job_type='base'):
         if job_id is None and assign_id:
             job_id = uuid4().hex
 
@@ -67,8 +67,8 @@ class BaseJob(object):
         :rtype: object
         """
         if self._response is None:
-            raise JobResultError("Job with type {} does not have a response "
-                                 "assigned to it.".format(self._job_type))
+            raise JobResultError('Job with type {} does not have a response '
+                                 'assigned to it.'.format(self._job_type))
 
         if self._result is None:
             try:

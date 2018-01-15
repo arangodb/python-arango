@@ -72,11 +72,11 @@ class VertexCollection(BaseCollection):
         headers = {}
 
         if rev is not None:
-            headers["If-Match"] = rev
+            headers['If-Match'] = rev
 
         request = Request(
             method='get',
-            url='/_api/gharial/{}/vertex/{}/{}'.format(
+            endpoint='/_api/gharial/{}/vertex/{}/{}'.format(
                 self._graph_name, self._name, key
             ),
             headers=headers
@@ -114,7 +114,7 @@ class VertexCollection(BaseCollection):
 
         request = Request(
             method='post',
-            url='/_api/gharial/{}/vertex/{}'.format(
+            endpoint='/_api/gharial/{}/vertex/{}'.format(
                 self._graph_name, self._name
             ),
             data=document,
@@ -161,7 +161,7 @@ class VertexCollection(BaseCollection):
 
         request = Request(
             method='patch',
-            url='/_api/gharial/{}/vertex/{}/{}'.format(
+            endpoint='/_api/gharial/{}/vertex/{}/{}'.format(
                 self._graph_name, self._name, document['_key']
             ),
             data=document,
@@ -209,7 +209,7 @@ class VertexCollection(BaseCollection):
 
         request = Request(
             method='put',
-            url='/_api/gharial/{}/vertex/{}/{}'.format(
+            endpoint='/_api/gharial/{}/vertex/{}/{}'.format(
                 self._graph_name, self._name, document['_key']
             ),
             params=params,
@@ -259,7 +259,7 @@ class VertexCollection(BaseCollection):
 
         request = Request(
             method='delete',
-            url='/_api/gharial/{}/vertex/{}/{}'.format(
+            endpoint='/_api/gharial/{}/vertex/{}/{}'.format(
                 self._graph_name, self._name, document['_key']
             ),
             params=params,

@@ -70,11 +70,11 @@ class EdgeCollection(BaseCollection):
         headers = {}
 
         if rev is not None:
-            headers["If-Match"] = rev
+            headers['If-Match'] = rev
 
         request = Request(
             method='get',
-            url='/_api/gharial/{}/edge/{}/{}'.format(
+            endpoint='/_api/gharial/{}/edge/{}/{}'.format(
                 self._graph_name, self._name, key
             ),
             headers=headers
@@ -87,7 +87,7 @@ class EdgeCollection(BaseCollection):
                 return None
             elif res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
-            return res.body["edge"]
+            return res.body['edge']
 
         return self.handle_request(request, handler)
 
@@ -113,7 +113,7 @@ class EdgeCollection(BaseCollection):
 
         request = Request(
             method='post',
-            url="/_api/gharial/{}/edge/{}".format(
+            endpoint='/_api/gharial/{}/edge/{}'.format(
                 self._graph_name, self._name
             ),
             data=document,
@@ -123,7 +123,7 @@ class EdgeCollection(BaseCollection):
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise DocumentInsertError(res)
-            return res.body["edge"]
+            return res.body['edge']
 
         return self.handle_request(request, handler)
 
@@ -159,7 +159,7 @@ class EdgeCollection(BaseCollection):
 
         request = Request(
             method='patch',
-            url='/_api/gharial/{}/edge/{}/{}'.format(
+            endpoint='/_api/gharial/{}/edge/{}/{}'.format(
                 self._graph_name, self._name, document['_key']
             ),
             data=document,
@@ -172,7 +172,7 @@ class EdgeCollection(BaseCollection):
                 raise DocumentRevisionError(res)
             elif res.status_code not in HTTP_OK:
                 raise DocumentUpdateError(res)
-            edge = res.body["edge"]
+            edge = res.body['edge']
             edge['_old_rev'] = edge.pop('_oldRev')
             return edge
 
@@ -205,7 +205,7 @@ class EdgeCollection(BaseCollection):
 
         request = Request(
             method='put',
-            url='/_api/gharial/{}/edge/{}/{}'.format(
+            endpoint='/_api/gharial/{}/edge/{}/{}'.format(
                 self._graph_name, self._name, document['_key']
             ),
             data=document,
@@ -218,7 +218,7 @@ class EdgeCollection(BaseCollection):
                 raise DocumentRevisionError(res)
             elif res.status_code not in HTTP_OK:
                 raise DocumentReplaceError(res)
-            edge = res.body["edge"]
+            edge = res.body['edge']
             edge['_old_rev'] = edge.pop('_oldRev')
             return edge
 
@@ -255,7 +255,7 @@ class EdgeCollection(BaseCollection):
 
         request = Request(
             method='delete',
-            url='/_api/gharial/{}/edge/{}/{}'.format(
+            endpoint='/_api/gharial/{}/edge/{}/{}'.format(
                 self._graph_name, self._name, document['_key']
             ),
             params=params,

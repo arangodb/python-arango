@@ -106,13 +106,13 @@ def test_create_collection():
         journal_size=7774208,
         system=False,
         volatile=False,
-        key_generator="autoincrement",
+        key_generator='autoincrement',
         user_keys=False,
         key_increment=9,
         key_offset=100,
         edge=True,
         shard_count=2,
-        shard_fields=["test_attr"],
+        shard_fields=['test_attr'],
         index_bucket_count=10,
         replication_factor=1
     )

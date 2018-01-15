@@ -39,7 +39,7 @@ class ClusterTest(BaseConnection):
         )
 
         self._url_prefix = \
-            "{protocol}://{host}:{port}/_admin/cluster-test/_db/{db}".format(
+            '{protocol}://{host}:{port}/_admin/cluster-test/_db/{db}'.format(
                 protocol=self._protocol,
                 host=self._host,
                 port=self._port,

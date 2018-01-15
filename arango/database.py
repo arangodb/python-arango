@@ -3,11 +3,11 @@ from __future__ import absolute_import, unicode_literals
 from datetime import datetime
 
 from arango import Request
-from arango.connections.executions import (
+from arango.connections import (
     AsyncExecution,
     BatchExecution,
     ClusterTest,
-    TransactionExecution
+    Transaction
 )
 from arango.connections import BaseConnection
 from arango.collections import Collection
@@ -63,7 +63,7 @@ from arango import APIWrapper
 from arango import WriteAheadLog
 
 
-class BaseDatabase(APIWrapper):
+class Database(APIWrapper):
     """ArangoDB database.
 
     :param connection: ArangoDB database connection
@@ -72,7 +72,7 @@ class BaseDatabase(APIWrapper):
     """
 
     def __init__(self, connection):
-        super(BaseDatabase, self).__init__(connection)
+        super(Database, self).__init__(connection)
         self._aql = AQL(self._conn)
         self._wal = WriteAheadLog(self._conn)
 
@@ -224,7 +224,7 @@ class BaseDatabase(APIWrapper):
         if password is None:
             password = self.password
 
-        return BaseDatabase(BaseConnection(
+        return Database(BaseConnection(
             protocol=self.protocol,
             host=self.host,
             port=self.port,
@@ -247,7 +247,7 @@ class BaseDatabase(APIWrapper):
         
         request = Request(
             method='head',
-            url='/_api/version'
+            endpoint='/_api/version'
         )
 
         def handler(res):
@@ -269,7 +269,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='get',
-            url='/_api/version',
+            endpoint='/_api/version',
             params={'details': False}
         )
 
@@ -291,7 +291,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='get',
-            url='/_api/version',
+            endpoint='/_api/version',
             params={'details': True}
         )
 
@@ -313,7 +313,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='get',
-            url='/_admin/database/target-version'
+            endpoint='/_admin/database/target-version'
         )
 
         def handler(res):
@@ -340,8 +340,8 @@ class BaseDatabase(APIWrapper):
             url = '/_api/database'
 
         request = Request(
-            method="get",
-            url=url
+            method='get',
+            endpoint=url
         )
 
         def handler(res):
@@ -366,8 +366,8 @@ class BaseDatabase(APIWrapper):
             url = '/_admin/statistics'
 
         request = Request(
-            method="get",
-            url=url
+            method='get',
+            endpoint=url
         )
 
         def handler(res):
@@ -395,7 +395,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='get',
-            url='/_admin/server/role'
+            endpoint='/_admin/server/role'
         )
 
         def handler(res):
@@ -416,7 +416,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='get',
-            url='/_admin/time'
+            endpoint='/_admin/time'
         )
 
         def handler(res):
@@ -435,8 +435,8 @@ class BaseDatabase(APIWrapper):
             be retrieved from the server
         """
         request = Request(
-            method="get",
-            url="/_admin/echo"
+            method='get',
+            endpoint='/_admin/echo'
         )
 
         def handler(res):
@@ -457,8 +457,8 @@ class BaseDatabase(APIWrapper):
             suspended
         """
         request = Request(
-            method="get",
-            url="/_admin/sleep",
+            method='get',
+            endpoint='/_admin/sleep',
             params={'duration': seconds}
         )
 
@@ -479,8 +479,8 @@ class BaseDatabase(APIWrapper):
         """
 
         request = Request(
-            method="delete",
-            url="/_admin/shutdown"
+            method='delete',
+            endpoint='/_admin/shutdown'
         )
 
         def handler(res):
@@ -501,8 +501,8 @@ class BaseDatabase(APIWrapper):
         """
 
         request = Request(
-            method="post",
-            url="/_admin/test",
+            method='post',
+            endpoint='/_admin/test',
             data={'tests': tests}
         )
 
@@ -525,8 +525,8 @@ class BaseDatabase(APIWrapper):
         """
 
         request = Request(
-            method="post",
-            url="/_admin/execute",
+            method='post',
+            endpoint='/_admin/execute',
             data=program
         )
 
@@ -592,8 +592,8 @@ class BaseDatabase(APIWrapper):
             params['sort'] = sort
 
         request = Request(
-            method="get",
-            url="/_admin/log",
+            method='get',
+            endpoint='/_admin/log',
             params=params
         )
 
@@ -617,8 +617,8 @@ class BaseDatabase(APIWrapper):
         """
 
         request = Request(
-            method="get",
-            url="/_admin/log/level"
+            method='get',
+            endpoint='/_admin/log/level'
         )
 
         def handler(res):
@@ -653,8 +653,8 @@ class BaseDatabase(APIWrapper):
         """
 
         request = Request(
-            method="put",
-            url="/_admin/log/level",
+            method='put',
+            endpoint='/_admin/log/level',
             data=kwargs
         )
 
@@ -675,8 +675,8 @@ class BaseDatabase(APIWrapper):
         """
 
         request = Request(
-            method="post",
-            url="/_admin/routing/reload"
+            method='post',
+            endpoint='/_admin/routing/reload'
         )
 
         def handler(res):
@@ -745,7 +745,7 @@ class BaseDatabase(APIWrapper):
             exiting out of the context
         :type commit_on_error: bool
         """
-        return TransactionExecution(
+        return Transaction(
             connection=self._conn,
             read=read,
             write=write,
@@ -789,7 +789,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='get',
-            url='/_api/database/current'
+            endpoint='/_api/database/current'
         )
 
         def handler(res):
@@ -825,13 +825,13 @@ class BaseDatabase(APIWrapper):
 
         if rev is not None:
             if match_rev:
-                headers["If-Match"] = rev
+                headers['If-Match'] = rev
             else:
-                headers["If-None-Match"] = rev
+                headers['If-None-Match'] = rev
 
         request = Request(
             method='get',
-            url='/_api/document/{}'.format(document_id),
+            endpoint='/_api/document/{}'.format(document_id),
             headers=headers
         )
 
@@ -861,7 +861,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='get',
-            url='/_api/collection'
+            endpoint='/_api/collection'
         )
 
         def handler(res):
@@ -898,7 +898,7 @@ class BaseDatabase(APIWrapper):
                           user_keys=True,
                           key_increment=None,
                           key_offset=None,
-                          key_generator="traditional",
+                          key_generator='traditional',
                           shard_fields=None,
                           shard_count=None,
                           index_bucket_count=None,
@@ -982,9 +982,9 @@ class BaseDatabase(APIWrapper):
         }
 
         if edge:
-            data["type"] = 3
+            data['type'] = 3
         else:
-            data["type"] = 2
+            data['type'] = 2
 
         if journal_size is not None:
             data['journalSize'] = journal_size
@@ -999,7 +999,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='post',
-            url='/_api/collection',
+            endpoint='/_api/collection',
             data=data
         )
 
@@ -1034,7 +1034,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='delete',
-            url='/_api/collection/{}'.format(name),
+            endpoint='/_api/collection/{}'.format(name),
             params=params
         )
 
@@ -1061,7 +1061,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='get',
-            url='/_api/gharial'
+            endpoint='/_api/gharial'
         )
 
         def handler(res):
@@ -1154,7 +1154,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='post',
-            url='/_api/gharial',
+            endpoint='/_api/gharial',
             data=data
         )
 
@@ -1190,7 +1190,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='delete',
-            url='/_api/gharial/{}'.format(name),
+            endpoint='/_api/gharial/{}'.format(name),
             params=params
         )
 
@@ -1217,7 +1217,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='get',
-            url='/_api/tasks'
+            endpoint='/_api/tasks'
         )
 
         def handler(res):
@@ -1240,7 +1240,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='get',
-            url='/_api/tasks/{}'.format(task_id)
+            endpoint='/_api/tasks/{}'.format(task_id)
         )
 
         def handler(res):
@@ -1286,7 +1286,7 @@ class BaseDatabase(APIWrapper):
             'command': command
         }
         if params is not None:
-            data["params"] = params
+            data['params'] = params
         if task_id is not None:
             data['id'] = task_id
         if period is not None:
@@ -1295,11 +1295,11 @@ class BaseDatabase(APIWrapper):
             data['offset'] = offset
 
         if task_id is None:
-            task_id = ""
+            task_id = ''
 
         request = Request(
             method='post',
-            url='/_api/tasks/{}'.format(task_id),
+            endpoint='/_api/tasks/{}'.format(task_id),
             data=data
         )
 
@@ -1327,7 +1327,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='delete',
-            url='/_api/tasks/{}'.format(task_id)
+            endpoint='/_api/tasks/{}'.format(task_id)
         )
 
         def handler(res):
@@ -1351,8 +1351,8 @@ class BaseDatabase(APIWrapper):
         """
 
         request = Request(
-            method="get",
-            url="/_api/user"
+            method='get',
+            endpoint='/_api/user'
         )
 
         def handler(res):
@@ -1377,8 +1377,8 @@ class BaseDatabase(APIWrapper):
         """
 
         request = Request(
-            method="get",
-            url='/_api/user/{}'.format(username)
+            method='get',
+            endpoint='/_api/user/{}'.format(username)
         )
 
         def handler(res):
@@ -1415,8 +1415,8 @@ class BaseDatabase(APIWrapper):
             data['extra'] = extra
 
         request = Request(
-            method="post",
-            url="/_api/user",
+            method='post',
+            endpoint='/_api/user',
             data=data
         )
 
@@ -1456,8 +1456,8 @@ class BaseDatabase(APIWrapper):
             data['extra'] = extra
 
         request = Request(
-            method="patch",
-            url='/_api/user/{user}'.format(user=username),
+            method='patch',
+            endpoint='/_api/user/{user}'.format(user=username),
             data=data
         )
 
@@ -1494,8 +1494,8 @@ class BaseDatabase(APIWrapper):
             data['extra'] = extra
 
         request = Request(
-            method="put",
-            url='/_api/user/{user}'.format(user=username),
+            method='put',
+            endpoint='/_api/user/{user}'.format(user=username),
             data=data
         )
 
@@ -1524,8 +1524,8 @@ class BaseDatabase(APIWrapper):
         """
 
         request = Request(
-            method="delete",
-            url='/_api/user/{user}'.format(user=username)
+            method='delete',
+            endpoint='/_api/user/{user}'.format(user=username)
         )
 
         def handler(res):
@@ -1553,8 +1553,8 @@ class BaseDatabase(APIWrapper):
         """
 
         request = Request(
-            method="get",
-            url='/_api/user/{}/database'.format(username),
+            method='get',
+            endpoint='/_api/user/{}/database'.format(username),
             params={'full': full}
         )
 
@@ -1584,8 +1584,8 @@ class BaseDatabase(APIWrapper):
             database = self.name
 
         request = Request(
-            method="put",
-            url='/_api/user/{}/database/{}'.format(username, database),
+            method='put',
+            endpoint='/_api/user/{}/database/{}'.format(username, database),
             data={'grant': 'rw'}
         )
 
@@ -1614,8 +1614,8 @@ class BaseDatabase(APIWrapper):
             database = self.name
 
         request = Request(
-            method="delete",
-            url='/_api/user/{}/database/{}'.format(username, database)
+            method='delete',
+            endpoint='/_api/user/{}/database/{}'.format(username, database)
         )
 
         def handler(res):
@@ -1644,11 +1644,11 @@ class BaseDatabase(APIWrapper):
         params = {}
 
         if count is not None:
-            params["count"] = count
+            params['count'] = count
 
         request = Request(
-            method="get",
-            url='/_api/job/{}'.format(status),
+            method='get',
+            endpoint='/_api/job/{}'.format(status),
             params=params
         )
 
@@ -1675,15 +1675,15 @@ class BaseDatabase(APIWrapper):
         """
 
         if threshold is None:
-            url = "/_api/job/all"
+            url = '/_api/job/all'
             params = None
         else:
-            url = "/_api/job/expired"
+            url = '/_api/job/expired'
             params = {'stamp': threshold}
 
         request = Request(
-            method="delete",
-            url=url,
+            method='delete',
+            endpoint=url,
             params=params
         )
 
@@ -1762,7 +1762,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='post',
-            url='/_api/control_pregel',
+            endpoint='/_api/control_pregel',
             data=data
         )
 
@@ -1785,7 +1785,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='get',
-            url='/_api/control_pregel/{}'.format(job_id)
+            endpoint='/_api/control_pregel/{}'.format(job_id)
         )
 
         def handler(res):
@@ -1818,7 +1818,7 @@ class BaseDatabase(APIWrapper):
 
         request = Request(
             method='delete',
-            url='/_api/control_pregel/{}'.format(job_id)
+            endpoint='/_api/control_pregel/{}'.format(job_id)
         )
 
         def handler(res):

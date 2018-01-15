@@ -1108,7 +1108,7 @@ def test_get_from_db():
     with pytest.raises(ArangoError):
         db.get_document(col_name + '/5', rev=bad_rev, match_rev=True)
     with pytest.raises(ArangoError):
-        db.get_document(col_name + '/5', rev="bad_rev")
+        db.get_document(col_name + '/5', rev='bad_rev')
 
     # Test get with missing collection
     with pytest.raises(DocumentGetError):

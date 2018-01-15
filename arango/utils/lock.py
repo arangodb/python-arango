@@ -60,8 +60,8 @@ if six.PY2:
                     self._thread_id = None
                     Lock.release(self)
             else:
-                raise RuntimeError("Tried to release a lock which was not "
-                                   "owned by this thread.")
+                raise RuntimeError('Tried to release a lock which was not '
+                                   'owned by this thread.')
 
 else:
     from threading import Lock, RLock

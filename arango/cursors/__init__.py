@@ -1,2 +1,2 @@
-from .base import BaseCursor
-from .export import ExportCursor
+from arango.cursors.base import Cursor
+from arango.cursors.export import ExportCursor

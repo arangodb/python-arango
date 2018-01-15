@@ -25,7 +25,7 @@ class WriteAheadLog(APIWrapper):
         APIWrapper.__init__(self, connection)
 
     def __repr__(self):
-        return "<ArangoDB write-ahead log>"
+        return '<ArangoDB write-ahead log>'
 
     def properties(self):
         """Return the configuration of the write-ahead log.
@@ -37,7 +37,7 @@ class WriteAheadLog(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_admin/wal/properties'
+            endpoint='/_admin/wal/properties'
         )
 
         def handler(res):
@@ -94,7 +94,7 @@ class WriteAheadLog(APIWrapper):
 
         request = Request(
             method='put',
-            url='/_admin/wal/properties',
+            endpoint='/_admin/wal/properties',
             data=data
         )
 
@@ -138,7 +138,7 @@ class WriteAheadLog(APIWrapper):
 
         request = Request(
             method='get',
-            url='/_admin/wal/transactions'
+            endpoint='/_admin/wal/transactions'
         )
 
         def handler(res):
@@ -173,7 +173,7 @@ class WriteAheadLog(APIWrapper):
 
         request = Request(
             method='put',
-            url='/_admin/wal/flush',
+            endpoint='/_admin/wal/flush',
             data=data
         )
 

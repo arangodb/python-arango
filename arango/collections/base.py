@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from arango import Request
 from arango import APIWrapper
-from arango.cursors import BaseCursor, ExportCursor
+from arango.cursors import Cursor, ExportCursor
 from arango.exceptions import (
     CollectionBadStatusError,
     CollectionChecksumError,
@@ -60,21 +60,21 @@ class BaseCollection(APIWrapper):
         """Iterate through the documents in the collection.
 
         :returns: the document cursor
-        :rtype: arango.cursor.BaseCursor
+        :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: if the documents cannot
             be fetched from the collection
         """
 
         request = Request(
-            method="put",
-            url='/_api/simple/all',
+            method='put',
+            endpoint='/_api/simple/all',
             data={'collection': self._name}
         )
 
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
-            return BaseCursor(self._conn, res.body)
+            return Cursor(self._conn, res.body)
 
         job = self.handle_request(request, handler, job_class=BaseJob)
 
@@ -90,8 +90,8 @@ class BaseCollection(APIWrapper):
         """
 
         request = Request(
-            method="get",
-            url='/_api/collection/{}/count'.format(self._name)
+            method='get',
+            endpoint='/_api/collection/{}/count'.format(self._name)
         )
 
         def handler(res):
@@ -115,8 +115,8 @@ class BaseCollection(APIWrapper):
         """
 
         request = Request(
-            method="get",
-            url='/_api/document/{}/{}'.format(self._name, key)
+            method='get',
+            endpoint='/_api/document/{}/{}'.format(self._name, key)
         )
 
         def handler(res):
@@ -142,8 +142,8 @@ class BaseCollection(APIWrapper):
         """
 
         request = Request(
-            method="get",
-            url='/_api/document/{}/{}'.format(self._name, key)
+            method='get',
+            endpoint='/_api/document/{}/{}'.format(self._name, key)
         )
 
         def handler(res):
@@ -208,7 +208,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='put',
-            url='/_api/collection/{}/rename'.format(self._name),
+            endpoint='/_api/collection/{}/rename'.format(self._name),
             data={'name': new_name}
         )
 
@@ -236,7 +236,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_api/collection/{}/figures'.format(self._name)
+            endpoint='/_api/collection/{}/figures'.format(self._name)
         )
 
         def handler(res):
@@ -264,7 +264,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_api/collection/{}/revision'.format(self._name)
+            endpoint='/_api/collection/{}/revision'.format(self._name)
         )
 
         def handler(res):
@@ -284,7 +284,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_api/collection/{}/properties'.format(self._name)
+            endpoint='/_api/collection/{}/properties'.format(self._name)
         )
 
         def handler(res):
@@ -333,7 +333,7 @@ class BaseCollection(APIWrapper):
 
         request = Request(
             method='put',
-            url='/_api/collection/{}/properties'.format(self._name),
+            endpoint='/_api/collection/{}/properties'.format(self._name),
             data=data
         )
 
@@ -371,7 +371,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='put',
-            url='/_api/collection/{}/load'.format(self._name),
+            endpoint='/_api/collection/{}/load'.format(self._name),
             command='db.{}.load()'.format(self._name)
         )
 
@@ -392,7 +392,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='put',
-            url='/_api/collection/{}/unload'.format(self._name),
+            endpoint='/_api/collection/{}/unload'.format(self._name),
             command='db.{}.unload()'.format(self._name)
         )
 
@@ -413,7 +413,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='put',
-            url='/_api/collection/{}/rotate'.format(self._name),
+            endpoint='/_api/collection/{}/rotate'.format(self._name),
             command='db.{}.rotate()'.format(self._name)
         )
 
@@ -440,7 +440,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_api/collection/{}/checksum'.format(self._name),
+            endpoint='/_api/collection/{}/checksum'.format(self._name),
             params={'withRevision': with_rev, 'withData': with_data}
         )
 
@@ -461,7 +461,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='put',
-            url='/_api/collection/{}/truncate'.format(self._name),
+            endpoint='/_api/collection/{}/truncate'.format(self._name),
             command='db.{}.truncate()'.format(self._name)
         )
 
@@ -488,7 +488,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_api/collection/{}/count'.format(self._name)
+            endpoint='/_api/collection/{}/count'.format(self._name)
         )
 
         def handler(res):
@@ -523,13 +523,13 @@ class BaseCollection(APIWrapper):
 
         if rev is not None:
             if match_rev:
-                headers["If-Match"] = rev
+                headers['If-Match'] = rev
             else:
-                headers["If-None-Match"] = rev
+                headers['If-None-Match'] = rev
 
         request = Request(
             method='get',  # TODO async seems to freeze when using 'head'
-            url='/_api/document/{}/{}'.format(self._name, key),
+            endpoint='/_api/document/{}/{}'.format(self._name, key),
             headers=headers
         )
 
@@ -552,7 +552,7 @@ class BaseCollection(APIWrapper):
         :param limit: the max number of documents fetched by the cursor
         :type limit: int
         :returns: the document cursor
-        :rtype: arango.cursor.BaseCursor
+        :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: if the documents in
             the collection cannot be retrieved
         """
@@ -565,14 +565,14 @@ class BaseCollection(APIWrapper):
 
         request = Request(
             method='put',
-            url='/_api/simple/all',
+            endpoint='/_api/simple/all',
             data=data
         )
 
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
-            return BaseCursor(self._conn, res.body)
+            return Cursor(self._conn, res.body)
 
         return self.handle_request(request, handler)
 
@@ -632,7 +632,7 @@ class BaseCollection(APIWrapper):
             }
         request = Request(
             method='post',
-            url='/_api/export',
+            endpoint='/_api/export',
             params={'collection': self._name},
             data=data
         )
@@ -654,7 +654,7 @@ class BaseCollection(APIWrapper):
         :param limit: the max number of documents to return
         :type limit: int
         :returns: the document cursor
-        :rtype: arango.cursor.BaseCursor
+        :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: if the document
             cannot be fetched from the collection
         """
@@ -666,14 +666,14 @@ class BaseCollection(APIWrapper):
 
         request = Request(
             method='put',
-            url='/_api/simple/by-example',
+            endpoint='/_api/simple/by-example',
             data=data
         )
 
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
-            return BaseCursor(self._conn, res.body)
+            return Cursor(self._conn, res.body)
 
         return self.handle_request(request, handler)
 
@@ -689,7 +689,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='put',
-            url='/_api/simple/lookup-by-keys',
+            endpoint='/_api/simple/lookup-by-keys',
             data={'collection': self._name, 'keys': keys}
         )
 
@@ -710,7 +710,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='put',
-            url='/_api/simple/any',
+            endpoint='/_api/simple/any',
             data={'collection': self._name}
         )
 
@@ -736,7 +736,7 @@ class BaseCollection(APIWrapper):
         :param limit: the max number of documents to return
         :type limit: int
         :returns: the document cursor
-        :rtype: arango.cursor.BaseCursor
+        :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: if the documents
             cannot be fetched from the collection
 
@@ -746,7 +746,7 @@ class BaseCollection(APIWrapper):
         """
 
         if limit is None:
-            limit_string = ""
+            limit_string = ''
         else:
             limit_string = ', @limit'
 
@@ -765,14 +765,14 @@ class BaseCollection(APIWrapper):
 
         request = Request(
             method='post',
-            url='/_api/cursor',
+            endpoint='/_api/cursor',
             data={'query': full_query, 'bindVars': bind_vars}
         )
 
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
-            return BaseCursor(self._conn, res.body)
+            return Cursor(self._conn, res.body)
 
         return self.handle_request(request, handler)
 
@@ -798,7 +798,7 @@ class BaseCollection(APIWrapper):
         :param inclusive: include the lower and upper bounds
         :type inclusive: bool
         :returns: the document cursor
-        :rtype: arango.cursor.BaseCursor
+        :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: if the documents
             cannot be fetched from the collection
 
@@ -831,14 +831,14 @@ class BaseCollection(APIWrapper):
 
         request = Request(
             method='post',
-            url='/_api/cursor',
+            endpoint='/_api/cursor',
             data={'query': full_query, 'bindVars': bind_vars}
         )
 
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
-            return BaseCursor(self._conn, res.body)
+            return Cursor(self._conn, res.body)
 
         return self.handle_request(request, handler)
 
@@ -855,7 +855,7 @@ class BaseCollection(APIWrapper):
         :param distance_field: the key containing the distance
         :type distance_field: str  | unicode
         :returns: the document cursor
-        :rtype: arango.cursor.BaseCursor
+        :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: if the documents
             cannot be fetched from the collection
 
@@ -865,9 +865,9 @@ class BaseCollection(APIWrapper):
         """
 
         if distance_field:
-            distance_string = ", @distance"
+            distance_string = ', @distance'
         else:
-            distance_string = ""
+            distance_string = ''
 
         full_query = """
         FOR doc IN WITHIN(@collection, @latitude, @longitude, @radius{})
@@ -885,14 +885,14 @@ class BaseCollection(APIWrapper):
 
         request = Request(
             method='post',
-            url='/_api/cursor',
+            endpoint='/_api/cursor',
             data={'query': full_query, 'bindVars': bind_vars}
         )
 
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
-            return BaseCursor(self._conn, res.body)
+            return Cursor(self._conn, res.body)
 
         return self.handle_request(request, handler)
 
@@ -922,7 +922,7 @@ class BaseCollection(APIWrapper):
         :param geo_field: the field to use for geo index
         :type geo_field: str  | unicode
         :returns: the document cursor
-        :rtype: arango.cursor.BaseCursor
+        :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: if the documents
             cannot be fetched from the collection
         """
@@ -942,14 +942,14 @@ class BaseCollection(APIWrapper):
 
         request = Request(
             method='put',
-            url='/_api/simple/within-rectangle',
+            endpoint='/_api/simple/within-rectangle',
             data=data
         )
 
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
-            return BaseCursor(self._conn, res.body)
+            return Cursor(self._conn, res.body)
 
         return self.handle_request(request, handler)
 
@@ -963,15 +963,15 @@ class BaseCollection(APIWrapper):
         :param limit: the max number of documents to return
         :type limit: int
         :returns: the document cursor
-        :rtype: arango.cursor.BaseCursor
+        :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: if the documents
             cannot be fetched from the collection
         """
 
         if limit:
-            limit_string = ", @limit"
+            limit_string = ', @limit'
         else:
-            limit_string = ""
+            limit_string = ''
 
         full_query = """
         FOR doc IN FULLTEXT(@collection, @field, @query{})
@@ -988,14 +988,14 @@ class BaseCollection(APIWrapper):
 
         request = Request(
             method='post',
-            url='/_api/cursor',
+            endpoint='/_api/cursor',
             data={'query': full_query, 'bindVars': bind_vars}
         )
 
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
-            return BaseCursor(self._conn, res.body)
+            return Cursor(self._conn, res.body)
 
         return self.handle_request(request, handler)
 
@@ -1010,7 +1010,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_api/index',
+            endpoint='/_api/index',
             params={'collection': self._name}
         )
 
@@ -1038,7 +1038,7 @@ class BaseCollection(APIWrapper):
         """Helper method for creating a new index."""
         request = Request(
             method='post',
-            url='/_api/index',
+            endpoint='/_api/index',
             data=data,
             params={'collection': self._name}
         )
@@ -1224,7 +1224,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='delete',
-            url='/_api/index/{}/{}'.format(self._name, index_id)
+            endpoint='/_api/index/{}/{}'.format(self._name, index_id)
         )
 
         def handler(res):
@@ -1251,7 +1251,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='get',
-            url='/_api/user/{}/database/{}/{}'.format(
+            endpoint='/_api/user/{}/database/{}/{}'.format(
                 username, self.database, self.name
             )
         )
@@ -1280,7 +1280,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='put',
-            url='/_api/user/{}/database/{}/{}'.format(
+            endpoint='/_api/user/{}/database/{}/{}'.format(
                 username, self.database, self.name
             ),
             data={'grant': 'rw'}
@@ -1306,7 +1306,7 @@ class BaseCollection(APIWrapper):
         """
         request = Request(
             method='delete',
-            url='/_api/user/{}/database/{}/{}'.format(
+            endpoint='/_api/user/{}/database/{}/{}'.format(
                 username, self.database, self.name
             )
         )

@@ -10,7 +10,7 @@ class BatchJob(BaseJob):
 
     def __init__(self, handler, job_id=None, response=None):
         BaseJob.__init__(self, handler, job_id=job_id, response=response,
-                         job_type="batch")
+                         job_type='batch')
         self._lock = RLock()
 
     def update(self, status, response=None):

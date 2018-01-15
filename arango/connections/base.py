@@ -34,7 +34,7 @@ class BaseConnection(object):
                  protocol='http',
                  host='localhost',
                  port=8529,
-                 database="_system",
+                 database='_system',
                  username='root',
                  password='',
                  http_client=None,

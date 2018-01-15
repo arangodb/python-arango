@@ -153,7 +153,7 @@ def test_async_inserts_with_result():
     assert '401' in err.value.message
 
     # Test get result that does not exist
-    job5._job_id = "BADJOBID"
+    job5._job_id = 'BADJOBID'
     with pytest.raises(AsyncJobResultError):
         job5.result(raise_errors=True)
 

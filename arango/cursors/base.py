@@ -10,7 +10,7 @@ from arango import Request
 from arango.jobs import BaseJob
 
 
-class BaseCursor(APIWrapper):
+class Cursor(APIWrapper):
     """ArangoDB cursor which returns documents from the server in batches.
 
     :param connection: ArangoDB database connection
@@ -25,10 +25,10 @@ class BaseCursor(APIWrapper):
         This class is designed to be instantiated internally only.
     """
 
-    def __init__(self, connection, init_data, cursor_type="cursor"):
-        super(BaseCursor, self).__init__(connection)
+    def __init__(self, connection, init_data):
+        super(Cursor, self).__init__(connection)
         self._data = init_data
-        self._cursor_type = cursor_type
+        self._set_cursor_type('cursor')
 
     def __iter__(self):
         return self
@@ -46,6 +46,14 @@ class BaseCursor(APIWrapper):
         if self.id is None:
             return '<ArangoDB cursor>'
         return '<ArangoDB cursor {}>'.format(self.id)
+
+    def _set_cursor_type(self, cursor_type):
+        """Sets the cursor type of this cursor
+
+        :param cursor_type: the cursor type, either `"cursor"` or `"export"`
+        :type cursor_type: str
+        """
+        self._cursor_type = cursor_type
 
     @property
     def id(self):
@@ -129,8 +137,8 @@ class BaseCursor(APIWrapper):
                 raise StopIteration
 
             request = Request(
-                method="put",
-                url="/_api/{}/{}".format(self._cursor_type, self.id)
+                method='put',
+                endpoint='/_api/{}/{}'.format(self._cursor_type, self.id)
             )
 
             def handler(res):
@@ -161,8 +169,8 @@ class BaseCursor(APIWrapper):
             return False
 
         request = Request(
-            method="delete",
-            url="/_api/{}/{}".format(self._cursor_type, self.id)
+            method='delete',
+            endpoint='/_api/{}/{}'.format(self._cursor_type, self.id)
         )
 
         def handler(res):

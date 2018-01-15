@@ -9,7 +9,7 @@ from arango.utils import HTTP_OK
 from arango.exceptions import TransactionError
 
 
-class TransactionExecution(BaseConnection):
+class Transaction(BaseConnection):
     """ArangoDB transaction object.
 
     API requests made in a transaction are queued in memory and executed as a
@@ -42,7 +42,7 @@ class TransactionExecution(BaseConnection):
                  sync=None,
                  timeout=None,
                  commit_on_error=False):
-        super(TransactionExecution, self).__init__(
+        super(Transaction, self).__init__(
             protocol=connection.protocol,
             host=connection.host,
             port=connection.port,
@@ -142,7 +142,7 @@ class TransactionExecution(BaseConnection):
 
         request = Request(
             method='post',
-            url='/_api/transaction',
+            endpoint='/_api/transaction',
             data=data
         )
 
@@ -162,33 +162,33 @@ class TransactionExecution(BaseConnection):
                 raise TransactionError(res)
             return res.body.get('result')
 
-        action_labels = ["a" + uuid4().hex for _ in self._actions]
+        action_labels = ['a' + uuid4().hex for _ in self._actions]
 
         action_strings = deque()
         action_strings.append('db = require("internal").db;\n')
 
         for i in range(len(self._actions)):
-            action_strings.append("var ")
+            action_strings.append('var ')
             action_strings.append(action_labels[i])
-            action_strings.append(" = ")
+            action_strings.append(' = ')
             action_strings.append(self._actions[i])
-            action_strings.append(";\n")
+            action_strings.append(';\n')
 
-        action_strings.append("return [")
+        action_strings.append('return [')
         for label in action_labels:
             action_strings.append(label)
-            action_strings.append(", ")
+            action_strings.append(', ')
 
         if len(action_labels) > 0:
             action_strings.pop()
 
-        action_strings.append("];\n")
+        action_strings.append('];\n')
 
-        action = "".join(action_strings)
+        action = ''.join(action_strings)
 
         request = Request(
             method='post',
-            url='/_api/transaction',
+            endpoint='/_api/transaction',
             data={
                 'collections': self._collections,
                 'action': 'function () {{ {} }}'.format(action)
