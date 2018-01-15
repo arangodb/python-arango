@@ -1,3 +1,7 @@
-# API Implementation
-__all__ = ["DefaultHTTPClient", "AsyncioHTTPClient"]
-from arango_internals.http_clients import *
+import sys
+
+from .base import BaseHTTPClient  # noqa: F401
+from .default import DefaultHTTPClient  # noqa: F401
+
+if sys.version_info >= (3, 5):
+    from .asyncio import AsyncioHTTPClient  # noqa: F401

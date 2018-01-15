@@ -1,3 +1,4 @@
-# API Implementation
-__all__ = ["Collection"]
-from arango.collections.standard import Collection
+from .base import BaseCollection
+from .standard import Collection
+from .edge import EdgeCollection  # noqa: F401
+from .vertex import VertexCollection

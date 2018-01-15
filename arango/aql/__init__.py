@@ -1,3 +1,2 @@
-# API Implementation
-__all__ = ["AQL"]
-from arango_internals.wrappers import AQL
+# This package was moved and exists to maintain compatibility #
+from arango.wrappers import AQL

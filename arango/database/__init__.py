@@ -1,3 +1,2 @@
-# API Implementation
-__all__ = ["Database"]
-from arango_internals.databases import BaseDatabase as Database
+# This package was moved and exists to maintain compatibility #
+from arango.databases import BaseDatabase as Database
