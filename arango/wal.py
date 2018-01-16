@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+from arango import Request
 from arango.utils import HTTP_OK
 from arango.exceptions import (
     WALFlushError,
@@ -7,9 +8,10 @@ from arango.exceptions import (
     WALConfigureError,
     WALTransactionListError
 )
+from arango import APIWrapper
 
 
-class WriteAheadLog(object):
+class WriteAheadLog(APIWrapper):
     """ArangoDB write-ahead log object.
 
     :param connection: ArangoDB database connection
@@ -20,10 +22,10 @@ class WriteAheadLog(object):
     """
 
     def __init__(self, connection):
-        self._conn = connection
+        APIWrapper.__init__(self, connection)
 
     def __repr__(self):
-        return "<ArangoDB write-ahead log>"
+        return '<ArangoDB write-ahead log>'
 
     def properties(self):
         """Return the configuration of the write-ahead log.
@@ -33,18 +35,27 @@ class WriteAheadLog(object):
         :raises arango.exceptions.WALPropertiesError: if the WAL properties
             cannot be retrieved from the server
         """
-        res = self._conn.get('/_admin/wal/properties')
-        if res.status_code not in HTTP_OK:
-            raise WALPropertiesError(res)
-        return {
-            'oversized_ops': res.body.get('allowOversizeEntries'),
-            'log_size': res.body.get('logfileSize'),
-            'historic_logs': res.body.get('historicLogfiles'),
-            'reserve_logs': res.body.get('reserveLogfiles'),
-            'sync_interval': res.body.get('syncInterval'),
-            'throttle_wait': res.body.get('throttleWait'),
-            'throttle_limit': res.body.get('throttleWhenPending')
-        }
+        request = Request(
+            method='get',
+            endpoint='/_admin/wal/properties'
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise WALPropertiesError(res)
+            return {
+                'oversized_ops': res.body.get('allowOversizeEntries'),
+                'log_size': res.body.get('logfileSize'),
+                'historic_logs': res.body.get('historicLogfiles'),
+                'reserve_logs': res.body.get('reserveLogfiles'),
+                'sync_interval': res.body.get('syncInterval'),
+                'throttle_wait': res.body.get('throttleWait'),
+                'throttle_limit': res.body.get('throttleWhenPending')
+            }
+
+        response = self.handle_request(request, handler)
+
+        return response
 
     def configure(self, oversized_ops=None, log_size=None, historic_logs=None,
                   reserve_logs=None, throttle_wait=None, throttle_limit=None):
@@ -80,18 +91,29 @@ class WriteAheadLog(object):
             data['throttleWait'] = throttle_wait
         if throttle_limit is not None:
             data['throttleWhenPending'] = throttle_limit
-        res = self._conn.put('/_admin/wal/properties', data=data)
-        if res.status_code not in HTTP_OK:
-            raise WALConfigureError(res)
-        return {
-            'oversized_ops': res.body.get('allowOversizeEntries'),
-            'log_size': res.body.get('logfileSize'),
-            'historic_logs': res.body.get('historicLogfiles'),
-            'reserve_logs': res.body.get('reserveLogfiles'),
-            'sync_interval': res.body.get('syncInterval'),
-            'throttle_wait': res.body.get('throttleWait'),
-            'throttle_limit': res.body.get('throttleWhenPending')
-        }
+
+        request = Request(
+            method='put',
+            endpoint='/_admin/wal/properties',
+            data=data
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise WALConfigureError(res)
+            return {
+                'oversized_ops': res.body.get('allowOversizeEntries'),
+                'log_size': res.body.get('logfileSize'),
+                'historic_logs': res.body.get('historicLogfiles'),
+                'reserve_logs': res.body.get('reserveLogfiles'),
+                'sync_interval': res.body.get('syncInterval'),
+                'throttle_wait': res.body.get('throttleWait'),
+                'throttle_limit': res.body.get('throttleWhenPending')
+            }
+
+        response = self.handle_request(request, handler)
+
+        return response
 
     def transactions(self):
         """Return details on currently running transactions.
@@ -113,14 +135,24 @@ class WriteAheadLog(object):
         :raises arango.exceptions.WALTransactionListError: if the details on
             the transactions cannot be retrieved
         """
-        res = self._conn.get('/_admin/wal/transactions')
-        if res.status_code not in HTTP_OK:
-            raise WALTransactionListError(res)
-        return {
-            'last_collected': res.body['minLastCollected'],
-            'last_sealed': res.body['minLastSealed'],
-            'count': res.body['runningTransactions']
-        }
+
+        request = Request(
+            method='get',
+            endpoint='/_admin/wal/transactions'
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise WALTransactionListError(res)
+            return {
+                'last_collected': res.body['minLastCollected'],
+                'last_sealed': res.body['minLastSealed'],
+                'count': res.body['runningTransactions']
+            }
+
+        response = self.handle_request(request, handler)
+
+        return response
 
     def flush(self, sync=True, garbage_collect=True):
         """Flush the write-ahead log to collection journals and data files.
@@ -134,13 +166,22 @@ class WriteAheadLog(object):
         :raises arango.exceptions.WALFlushError: it the WAL cannot
             be flushed
         """
-        res = self._conn.put(
-            '/_admin/wal/flush',
-            data={
-                'waitForSync': sync,
-                'waitForCollector': garbage_collect
-            }
+        data = {
+            'waitForSync': sync,
+            'waitForCollector': garbage_collect
+        }
+
+        request = Request(
+            method='put',
+            endpoint='/_admin/wal/flush',
+            data=data
         )
-        if res.status_code not in HTTP_OK:
-            raise WALFlushError(res)
-        return not res.body.get('error')
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise WALFlushError(res)
+            return not res.body.get('error')
+
+        response = self.handle_request(request, handler)
+
+        return response

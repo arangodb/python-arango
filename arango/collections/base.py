@@ -1,7 +1,8 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.api import APIWrapper
-from arango.cursor import Cursor, ExportCursor
+from arango import Request
+from arango import APIWrapper
+from arango.cursors import Cursor, ExportCursor
 from arango.exceptions import (
     CollectionBadStatusError,
     CollectionChecksumError,
@@ -24,8 +25,8 @@ from arango.exceptions import (
     UserRevokeAccessError,
     UserGrantAccessError
 )
-from arango.request import Request
 from arango.utils import HTTP_OK
+from arango.jobs import BaseJob
 
 
 class BaseCollection(APIWrapper):
@@ -63,13 +64,21 @@ class BaseCollection(APIWrapper):
         :raises arango.exceptions.DocumentGetError: if the documents cannot
             be fetched from the collection
         """
-        res = self._conn.put(
+
+        request = Request(
+            method='put',
             endpoint='/_api/simple/all',
             data={'collection': self._name}
         )
-        if res.status_code not in HTTP_OK:
-            raise DocumentGetError(res)
-        return Cursor(self._conn, res.body)
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise DocumentGetError(res)
+            return Cursor(self._conn, res.body)
+
+        job = self.handle_request(request, handler, job_class=BaseJob)
+
+        return job.result(raise_errors=True)
 
     def __len__(self):
         """Return the number of documents in the collection.
@@ -79,10 +88,20 @@ class BaseCollection(APIWrapper):
         :raises arango.exceptions.DocumentCountError: if the document
             count cannot be retrieved
         """
-        res = self._conn.get('/_api/collection/{}/count'.format(self._name))
-        if res.status_code not in HTTP_OK:
-            raise DocumentCountError(res)
-        return res.body['count']
+
+        request = Request(
+            method='get',
+            endpoint='/_api/collection/{}/count'.format(self._name)
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise DocumentCountError(res)
+            return res.body['count']
+
+        job = self.handle_request(request, handler, job_class=BaseJob)
+
+        return job.result(raise_errors=True)
 
     def __getitem__(self, key):
         """Return a document by its key from the collection.
@@ -94,12 +113,22 @@ class BaseCollection(APIWrapper):
         :raises arango.exceptions.DocumentGetError: if the document cannot
             be fetched from the collection
         """
-        res = self._conn.get('/_api/document/{}/{}'.format(self._name, key))
-        if res.status_code == 404 and res.error_code == 1202:
-            return None
-        elif res.status_code not in HTTP_OK:
-            raise DocumentGetError(res)
-        return res.body
+
+        request = Request(
+            method='get',
+            endpoint='/_api/document/{}/{}'.format(self._name, key)
+        )
+
+        def handler(res):
+            if res.status_code == 404 and res.error_code == 1202:
+                return None
+            elif res.status_code not in HTTP_OK:
+                raise DocumentGetError(res)
+            return res.body
+
+        job = self.handle_request(request, handler, job_class=BaseJob)
+
+        return job.result(raise_errors=True)
 
     def __contains__(self, key):
         """Check if a document exists in the collection by its key.
@@ -111,12 +140,24 @@ class BaseCollection(APIWrapper):
         :raises arango.exceptions.DocumentInError: if the check cannot
             be executed
         """
-        res = self._conn.get('/_api/document/{}/{}'.format(self._name, key))
-        if res.status_code == 404 and res.error_code == 1202:
-            return False
-        elif res.status_code in HTTP_OK:
+
+        request = Request(
+            method='get',
+            endpoint='/_api/document/{}/{}'.format(self._name, key)
+        )
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                if res.status_code == 404 and res.error_code == 1202:
+                    return False
+
+                raise DocumentInError(res)
+
             return True
-        raise DocumentInError(res)
+
+        job = self.handle_request(request, handler, job_class=BaseJob)
+
+        return job.result(raise_errors=True)
 
     def _status(self, code):
         """Return the collection status text.
@@ -331,7 +372,7 @@ class BaseCollection(APIWrapper):
         request = Request(
             method='put',
             endpoint='/_api/collection/{}/load'.format(self._name),
-            command='db.{}.unload()'.format(self._name)
+            command='db.{}.load()'.format(self._name)
         )
 
         def handler(res):
@@ -477,13 +518,19 @@ class BaseCollection(APIWrapper):
         :raises arango.exceptions.DocumentInError: if the check cannot
             be executed
         """
+
+        headers = {}
+
+        if rev is not None:
+            if match_rev:
+                headers['If-Match'] = rev
+            else:
+                headers['If-None-Match'] = rev
+
         request = Request(
             method='get',  # TODO async seems to freeze when using 'head'
             endpoint='/_api/document/{}/{}'.format(self._name, key),
-            headers=(
-                {'If-Match' if match_rev else 'If-None-Match': rev}
-                if rev is not None else {}
-            )
+            headers=headers
         )
 
         def handler(res):
@@ -697,10 +744,16 @@ class BaseCollection(APIWrapper):
             A geo index must be defined in the collection for this method to
             be used
         """
+
+        if limit is None:
+            limit_string = ''
+        else:
+            limit_string = ', @limit'
+
         full_query = """
         FOR doc IN NEAR(@collection, @latitude, @longitude{})
             RETURN doc
-        """.format(', @limit' if limit is not None else '')
+        """.format(limit_string)
 
         bind_vars = {
             'collection': self._name,
@@ -810,10 +863,16 @@ class BaseCollection(APIWrapper):
             A geo index must be defined in the collection for this method to
             be used
         """
+
+        if distance_field:
+            distance_string = ', @distance'
+        else:
+            distance_string = ''
+
         full_query = """
         FOR doc IN WITHIN(@collection, @latitude, @longitude, @radius{})
             RETURN doc
-        """.format(', @distance' if distance_field is not None else '')
+        """.format(distance_string)
 
         bind_vars = {
             'collection': self._name,
@@ -908,10 +967,16 @@ class BaseCollection(APIWrapper):
         :raises arango.exceptions.DocumentGetError: if the documents
             cannot be fetched from the collection
         """
+
+        if limit:
+            limit_string = ', @limit'
+        else:
+            limit_string = ''
+
         full_query = """
         FOR doc IN FULLTEXT(@collection, @field, @query{})
             RETURN doc
-        """.format(', @limit' if limit is not None else '')
+        """.format(limit_string)
 
         bind_vars = {
             'collection': self._name,
@@ -1192,10 +1257,13 @@ class BaseCollection(APIWrapper):
         )
 
         def handler(res):
-            if res.status_code in HTTP_OK:
-                result = res.body['result'].lower()
-                return None if result == 'none' else result
-            raise UserAccessError(res)
+            if res.status_code not in HTTP_OK:
+                raise UserAccessError(res)
+            result = res.body['result'].lower()
+            if result == 'none':
+                return None
+            else:
+                return result
 
         return self.handle_request(request, handler)
 

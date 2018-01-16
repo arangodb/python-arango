@@ -4,10 +4,6 @@ from json import dumps
 
 from six import string_types
 
-# Set of HTTP OK status codes
-HTTP_OK = {200, 201, 202, 203, 204, 205, 206}
-HTTP_AUTH_ERR = {401, 403}
-
 
 def sanitize(data):
     if data is None:
@@ -16,3 +12,18 @@ def sanitize(data):
         return data
     else:
         return dumps(data)
+
+
+def fix_params(params):
+    if params is None:
+        return params
+
+    outparams = {}
+
+    for param, value in params.items():
+        if isinstance(value, bool):
+            value = int(value)
+
+        outparams[param] = value
+
+    return outparams

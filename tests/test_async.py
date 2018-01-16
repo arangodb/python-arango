@@ -30,6 +30,12 @@ col_name = generate_col_name()
 col = db.create_collection(col_name)
 col.add_fulltext_index(fields=['val'])
 
+bad_db = arango_client.db(
+        name=db_name,
+        username='root',
+        password='incorrect'
+    )
+
 
 def teardown_module(*_):
     arango_client.delete_database(db_name, ignore_missing=True)
@@ -40,8 +46,9 @@ def setup_function(*_):
 
 
 def wait_on_job(job):
-    while job.status() == 'pending':
-        pass
+    # TODO CHANGED to allow errored out results to process again, added sleep
+    while job.status() != 'done':
+        sleep(.01)
 
 
 @pytest.mark.order1
@@ -84,7 +91,8 @@ def test_async_inserts_without_result():
 
     # Ensure that no jobs were returned
     for job in [job1, job2, job3]:
-        assert job is None
+        # TODO CHANGED to ensure consistent return type
+        assert job.result() is None
 
     # Ensure that the asynchronously requests went through
     sleep(0.5)
@@ -99,16 +107,21 @@ def test_async_inserts_with_result():
     # Test precondition
     assert len(col) == 0
 
+    # TODO CHANGED Race condition, added more docs
+    num_docs = 50000
+
     # Insert test documents asynchronously with return_result True
     async_col = db.asynchronous(return_result=True).collection(col_name)
-    test_docs = [{'_key': str(i), 'val': str(i * 42)} for i in range(10000)]
+    test_docs = [{'_key': str(i), 'val': str(i * 42)} for i in range(num_docs)]
     job1 = async_col.insert_many(test_docs, sync=True)
     job2 = async_col.insert_many(test_docs, sync=True)
     job3 = async_col.insert_many(test_docs, sync=True)
+    job4 = async_col.insert_many(test_docs, sync=True)
+    job5 = async_col.insert_many(test_docs, sync=True)
 
     # Test get result from a pending job
     with pytest.raises(AsyncJobResultError) as err:
-        job3.result()
+        job3.result(raise_errors=True)
     assert 'Job {} not done'.format(job3.id) in err.value.message
 
     # Test get result from finished but with existing jobs
@@ -116,22 +129,33 @@ def test_async_inserts_with_result():
         assert 'ArangoDB asynchronous job {}'.format(job.id) in repr(job)
         assert isinstance(job.id, string_types)
         wait_on_job(job)
-        assert len(job.result()) == 10000
+        assert len(job.result(raise_errors=True)) == num_docs
 
     # Test get result from missing jobs
-    for job in [job1, job2, job3]:
-        with pytest.raises(AsyncJobResultError) as err:
-            job.result()
-        assert 'Job {} missing'.format(job.id) in err.value.message
+    # TODO CHANGED removed due to enforcement of constant behavior of jobs
+    # for job in [job1, job2, job3]:
+    #     with pytest.raises(AsyncJobResultError) as err:
+    #         job.result()
+    #     assert 'Job {} missing'.format(job.id) in err.value.message
+
+    # TODO CHANGED reordered
+    # Retrieve the results of the jobs
+    assert len(col) == num_docs
 
     # Test get result without authentication
-    setattr(getattr(job1, '_conn'), '_password', 'incorrect')
+    # TODO CHANGED This originally failed with for a different reason- the
+    # result had already been calculated.  A fourth job has been created to
+    # test this.
+
+    job4._conn = bad_db._conn
     with pytest.raises(AsyncJobResultError) as err:
-        job.result()
+        job4.result(raise_errors=True)
     assert '401' in err.value.message
 
-    # Retrieve the results of the jobs
-    assert len(col) == 10000
+    # Test get result that does not exist
+    job5._job_id = 'BADJOBID'
+    with pytest.raises(AsyncJobResultError):
+        job5.result(raise_errors=True)
 
 
 @pytest.mark.order5
@@ -144,10 +168,12 @@ def test_async_query():
         {'_key': '3', 'val': 3},
     ]))
 
+    # TODO CHANGED removed AsyncJobResultError due to enforcement of constant
+    # behavior of async job errors
     # Test asynchronous execution of an invalid AQL query
     job = asynchronous.aql.execute('THIS IS AN INVALID QUERY')
     wait_on_job(job)
-    assert isinstance(job.result(), AQLQueryExecuteError)
+    assert isinstance(job.result(), AsyncJobResultError)
 
     # Test asynchronous execution of a valid AQL query
     job = asynchronous.aql.execute(
@@ -190,7 +216,7 @@ def test_async_get_status():
     assert 'Job {} missing'.format(job.id) in err.value.message
 
     # Test get status without authentication
-    setattr(getattr(job, '_conn'), '_password', 'incorrect')
+    job._conn = bad_db._conn
     with pytest.raises(AsyncJobStatusError) as err:
         job.status()
     assert 'HTTP 401' in err.value.message
@@ -254,7 +280,7 @@ def test_clear_async_job():
         assert job.clear(ignore_missing=True) is False
 
     # Test clear without authentication
-    setattr(getattr(job1, '_conn'), '_password', 'incorrect')
+    job1._conn = bad_db._conn
     with pytest.raises(AsyncJobClearError) as err:
         job1.clear(ignore_missing=False)
     assert 'HTTP 401' in err.value.message

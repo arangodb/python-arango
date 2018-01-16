@@ -79,7 +79,7 @@ def setup_function(*_):
 def test_properties():
     assert graph.name == graph_name
     assert repr(graph) == (
-        "<ArangoDB graph '{}'>".format(graph_name)
+        '<ArangoDB graph "{}">'.format(graph_name)
     )
     properties = graph.properties()
     assert properties['id'] == '_graphs/{}'.format(graph_name)

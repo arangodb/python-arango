@@ -1,7 +1,7 @@
 import json
 
 
-class Response(object):
+class BaseResponse(object):
     """ArangoDB HTTP response.
 
     Overridden methods of :class:`arango.http_clients.base.BaseHTTPClient` must
@@ -30,42 +30,41 @@ class Response(object):
         'headers',
         'status_code',
         'status_text',
-        'raw_body',
         'body',
+        'raw_body',
         'error_code',
-        'error_message'
+        'error_message',
+        'is_json'
     )
 
     def __init__(self,
-                 method=None,
-                 url=None,
-                 headers=None,
-                 http_code=None,
-                 http_text=None,
-                 body=None):
-        self.url = url
-        self.method = method
-        self.headers = headers
-        self.status_code = http_code
-        self.status_text = http_text
+                 response,
+                 response_mapper):
+
+        processed = response_mapper(response)
+        self.method = processed.get('method', None)
+        self.url = processed.get('url', None)
+        self.headers = processed.get('headers', None)
+        self.status_code = processed.get('status_code', None)
+        self.status_text = processed.get('status_text', None)
+
+        self.raw_body = None
+        self.body = None
+        self.error_code = None
+        self.error_message = None
+
+        self.update_body(processed.get('body', None))
+
+    def update_body(self, body):
         self.raw_body = body
+
         try:
-            self.body = json.loads(body)
+            self.body = json.loads(self.raw_body)
         except (ValueError, TypeError):
-            self.body = body
-        if self.body and isinstance(self.body, dict):
+            self.body = self.raw_body
+        if isinstance(self.body, dict):
             self.error_code = self.body.get('errorNum')
             self.error_message = self.body.get('errorMessage')
         else:
             self.error_code = None
             self.error_message = None
-
-    def update_body(self, new_body):
-        return Response(
-            url=self.url,
-            method=self.method,
-            headers=self.headers,
-            http_code=self.status_code,
-            http_text=self.status_text,
-            body=new_body
-        )

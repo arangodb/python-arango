@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.collections.base import BaseCollection
+from arango.collections import BaseCollection
 from arango.exceptions import (
     DocumentGetError,
     DocumentDeleteError,
@@ -9,7 +9,7 @@ from arango.exceptions import (
     DocumentRevisionError,
     DocumentUpdateError,
 )
-from arango.request import Request
+from arango import Request
 from arango.utils import HTTP_OK
 
 
@@ -66,12 +66,18 @@ class EdgeCollection(BaseCollection):
         :raises arango.exceptions.DocumentGetError: if the document cannot
             be fetched from the collection
         """
+
+        headers = {}
+
+        if rev is not None:
+            headers['If-Match'] = rev
+
         request = Request(
             method='get',
             endpoint='/_api/gharial/{}/edge/{}/{}'.format(
                 self._graph_name, self._name, key
             ),
-            headers={'If-Match': rev} if rev else {}
+            headers=headers
         )
 
         def handler(res):
@@ -81,7 +87,7 @@ class EdgeCollection(BaseCollection):
                 return None
             elif res.status_code not in HTTP_OK:
                 raise DocumentGetError(res)
-            return res.body["edge"]
+            return res.body['edge']
 
         return self.handle_request(request, handler)
 
@@ -107,7 +113,7 @@ class EdgeCollection(BaseCollection):
 
         request = Request(
             method='post',
-            endpoint="/_api/gharial/{}/edge/{}".format(
+            endpoint='/_api/gharial/{}/edge/{}'.format(
                 self._graph_name, self._name
             ),
             data=document,
@@ -117,7 +123,7 @@ class EdgeCollection(BaseCollection):
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise DocumentInsertError(res)
-            return res.body["edge"]
+            return res.body['edge']
 
         return self.handle_request(request, handler)
 
@@ -166,7 +172,7 @@ class EdgeCollection(BaseCollection):
                 raise DocumentRevisionError(res)
             elif res.status_code not in HTTP_OK:
                 raise DocumentUpdateError(res)
-            edge = res.body["edge"]
+            edge = res.body['edge']
             edge['_old_rev'] = edge.pop('_oldRev')
             return edge
 
@@ -212,7 +218,7 @@ class EdgeCollection(BaseCollection):
                 raise DocumentRevisionError(res)
             elif res.status_code not in HTTP_OK:
                 raise DocumentReplaceError(res)
-            edge = res.body["edge"]
+            edge = res.body['edge']
             edge['_old_rev'] = edge.pop('_oldRev')
             return edge
 

@@ -5,15 +5,19 @@ from arango.exceptions import (
     CursorNextError,
     CursorCloseError,
 )
+from arango import APIWrapper
+from arango import Request
+from arango.jobs import BaseJob
 
 
-class Cursor(object):
+class Cursor(APIWrapper):
     """ArangoDB cursor which returns documents from the server in batches.
 
     :param connection: ArangoDB database connection
-    :type connection: arango.connection.Connection
+    :type connection: arango.connections.BaseConnection
     :param init_data: the cursor initialization data
     :type init_data: dict
+    :param cursor_type: One of `"cursor"` or `"export"`, which endpoint to use
     :raises CursorNextError: if the next batch cannot be retrieved
     :raises CursorCloseError: if the cursor cannot be closed
 
@@ -22,8 +26,9 @@ class Cursor(object):
     """
 
     def __init__(self, connection, init_data):
-        self._conn = connection
+        super(Cursor, self).__init__(connection)
         self._data = init_data
+        self._set_cursor_type('cursor')
 
     def __iter__(self):
         return self
@@ -41,6 +46,14 @@ class Cursor(object):
         if self.id is None:
             return '<ArangoDB cursor>'
         return '<ArangoDB cursor {}>'.format(self.id)
+
+    def _set_cursor_type(self, cursor_type):
+        """Sets the cursor type of this cursor
+
+        :param cursor_type: the cursor type, either `"cursor"` or `"export"`
+        :type cursor_type: str
+        """
+        self._cursor_type = cursor_type
 
     @property
     def id(self):
@@ -118,13 +131,28 @@ class Cursor(object):
         :rtype: dict
         :raises: StopIteration, CursorNextError
         """
-        if not self.batch() and self.has_more():
-            res = self._conn.put("/_api/cursor/{}".format(self.id))
-            if res.status_code not in HTTP_OK:
-                raise CursorNextError(res)
-            self._data = res.body
-        elif not self.batch() and not self.has_more():
-            raise StopIteration
+
+        if len(self.batch()) == 0:
+            if not self.has_more():
+                raise StopIteration
+
+            request = Request(
+                method='put',
+                endpoint='/_api/{}/{}'.format(self._cursor_type, self.id)
+            )
+
+            def handler(res):
+                if res.status_code not in HTTP_OK:
+                    raise CursorNextError(res)
+                return res.body
+
+            job = self.handle_request(request, handler, job_class=BaseJob,
+                                      use_underlying=True)
+
+            result = job.result(raise_errors=True)
+
+            self._data = result
+
         return self.batch().pop(0)
 
     def close(self, ignore_missing=True):
@@ -136,53 +164,24 @@ class Cursor(object):
         :type ignore_missing: bool
         :raises: CursorCloseError
         """
+
         if not self.id:
             return False
-        res = self._conn.delete("/_api/cursor/{}".format(self.id))
-        if res.status_code not in HTTP_OK:
-            if res.status_code == 404 and ignore_missing:
-                return False
-            raise CursorCloseError(res)
-        return True
 
+        request = Request(
+            method='delete',
+            endpoint='/_api/{}/{}'.format(self._cursor_type, self.id)
+        )
 
-class ExportCursor(Cursor):  # pragma: no cover
-    """ArangoDB cursor for export queries only.
-
-    .. note::
-        This class is designed to be instantiated internally only.
-    """
-
-    def next(self):
-        """Read the next result from the cursor.
-
-        :returns: the next item in the cursor
-        :rtype: dict
-        :raises: StopIteration, CursorNextError
-        """
-        if not self.batch() and self.has_more():
-            res = self._conn.put("/_api/export/{}".format(self.id))
+        def handler(res):
             if res.status_code not in HTTP_OK:
-                raise CursorNextError(res)
-            self._data = res.body
-        elif not self.batch() and not self.has_more():
-            raise StopIteration
-        return self.batch().pop(0)
+                if res.status_code == 404 and ignore_missing:
+                    return False
 
-    def close(self, ignore_missing=True):
-        """Close the cursor and free the resources tied to it.
+                raise CursorCloseError(res)
 
-        :returns: whether the cursor was closed successfully
-        :rtype: bool
-        :param ignore_missing: ignore missing cursors
-        :type ignore_missing: bool
-        :raises: CursorCloseError
-        """
-        if not self.id:
-            return False
-        res = self._conn.delete("/_api/export/{}".format(self.id))
-        if res.status_code not in HTTP_OK:
-            if res.status_code == 404 and ignore_missing:
-                return False
-            raise CursorCloseError(res)
-        return True
+            return True
+
+        return self.handle_request(request, handler, job_class=BaseJob,
+                                   use_underlying=True).result(
+                                                        raise_errors=True)

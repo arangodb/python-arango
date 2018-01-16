@@ -3,7 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from json import dumps
 from six import string_types
 
-from arango.collections.base import BaseCollection
+from arango.collections import BaseCollection
 from arango.exceptions import (
     DocumentDeleteError,
     DocumentGetError,
@@ -12,7 +12,7 @@ from arango.exceptions import (
     DocumentRevisionError,
     DocumentUpdateError
 )
-from arango.request import Request
+from arango import Request
 from arango.utils import HTTP_OK
 
 
@@ -58,13 +58,19 @@ class Collection(BaseCollection):
         :raises arango.exceptions.DocumentGetError: if the document cannot
             be retrieved from the collection
         """
+
+        headers = {}
+
+        if rev is not None:
+            if match_rev:
+                headers['If-Match'] = rev
+            else:
+                headers['If-None-Match'] = rev
+
         request = Request(
             method='get',
             endpoint='/_api/document/{}/{}'.format(self._name, key),
-            headers=(
-                {'If-Match' if match_rev else 'If-None-Match': rev}
-                if rev is not None else {}
-            )
+            headers=headers
         )
 
         def handler(res):
@@ -731,19 +737,24 @@ class Collection(BaseCollection):
         else:
             headers = {}
 
+        if full_doc:
+            doc_target = document
+        else:
+            doc_target = {'_key': document}
+
         if self._conn.type != 'transaction':
             command = None
         else:
             command = 'db.{}.remove({},{})'.format(
                 self._name,
-                dumps(document if full_doc else {'_key': document}),
+                dumps(doc_target),
                 dumps(params)
             )
 
         request = Request(
             method='delete',
             endpoint='/_api/document/{}/{}'.format(
-                self._name, document['_key'] if full_doc else document
+                self._name, doc_target['_key']
             ),
             params=params,
             headers=headers,

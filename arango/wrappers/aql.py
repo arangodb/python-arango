@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.utils import HTTP_OK
-from arango.cursor import Cursor
+from arango import APIWrapper
+from arango.cursors import Cursor
 from arango.exceptions import (
     AQLQueryExplainError,
     AQLQueryValidateError,
@@ -13,9 +13,8 @@ from arango.exceptions import (
     AQLCacheConfigureError,
     AQLCachePropertiesError
 )
-from arango.request import Request
-
-from arango.api import APIWrapper
+from arango import Request
+from arango.utils import HTTP_OK
 
 
 class AQL(APIWrapper):
@@ -30,7 +29,7 @@ class AQL(APIWrapper):
         self._cache = AQLQueryCache(self._conn)
 
     def __repr__(self):
-        return "<ArangoDB AQL>"
+        return '<ArangoDB AQL>'
 
     @property
     def cache(self):
@@ -73,7 +72,11 @@ class AQL(APIWrapper):
         def handler(res):
             if res.status_code not in HTTP_OK:
                 raise AQLQueryExplainError(res)
-            return res.body['plan' if 'plan' in res.body else 'plans']
+
+            if 'plan' in res.body:
+                return res.body['plan']
+            else:
+                return res.body['plans']
 
         return self.handle_request(request, handler)
 
@@ -223,10 +226,16 @@ class AQL(APIWrapper):
         :raises arango.exceptions.AQLFunctionDeleteError: if the AQL function
             cannot be deleted
         """
+
+        params = {}
+
+        if group is not None:
+            params['group'] = group
+
         request = Request(
             method='delete',
             endpoint='/_api/aqlfunction/{}'.format(name),
-            params={'group': group} if group is not None else {}
+            params=params
         )
 
         def handler(res):

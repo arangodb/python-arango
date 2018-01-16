@@ -1,14 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.aql import AQL
-from arango.collections.standard import Collection
-from arango.connection import Connection
-from arango.exceptions import ClusterTestError
-from arango.graph import Graph
-from arango.utils import HTTP_OK
+from arango.connections.base import BaseConnection
 
 
-class ClusterTest(Connection):
+class ClusterTest(BaseConnection):
     """ArangoDB cluster round-trip test for sharding.
 
     :param connection: ArangoDB database connection
@@ -42,17 +37,26 @@ class ClusterTest(Connection):
             database=connection.database,
             enable_logging=connection.logging_enabled
         )
+
+        self._url_prefix = \
+            '{protocol}://{host}:{port}/_admin/cluster-test/_db/{db}'.format(
+                protocol=self._protocol,
+                host=self._host,
+                port=self._port,
+                db=self._database
+            )
+
         self._shard_id = shard_id
         self._trans_id = transaction_id
         self._timeout = timeout
         self._sync = sync
-        self._aql = AQL(self)
         self._type = 'cluster'
+        self._parent = connection
 
     def __repr__(self):
         return '<ArangoDB cluster round-trip test>'
 
-    def handle_request(self, request, handler):
+    def handle_request(self, request, handler, **kwargs):
         """Handle the incoming request and response handler.
 
         :param request: the API request to be placed in the server-side queue
@@ -72,49 +76,4 @@ class ClusterTest(Connection):
         if self._sync is True:
             request.headers['X-Synchronous-Mode'] = 'true'
 
-        request.endpoint = '/_admin/cluster-test' + request.endpoint + '11'
-        res = getattr(self, request.method)(**request.kwargs)
-        if res.status_code not in HTTP_OK:
-            raise ClusterTestError(res)
-        return res.body  # pragma: no cover
-
-    @property
-    def aql(self):
-        """Return the AQL object tailored for asynchronous execution.
-
-        API requests via the returned query object are placed in a server-side
-        in-memory task queue and executed asynchronously in a fire-and-forget
-        style.
-
-        :returns: ArangoDB query object
-        :rtype: arango.query.AQL
-        """
-        return self._aql
-
-    def collection(self, name):
-        """Return a collection object tailored for asynchronous execution.
-
-        API requests via the returned collection object are placed in a
-        server-side in-memory task queue and executed asynchronously in
-        a fire-and-forget style.
-
-        :param name: the name of the collection
-        :type name: str | unicode
-        :returns: the collection object
-        :rtype: arango.collections.Collection
-        """
-        return Collection(self, name)
-
-    def graph(self, name):
-        """Return a graph object tailored for asynchronous execution.
-
-        API requests via the returned graph object are placed in a server-side
-        in-memory task queue and executed asynchronously in a fire-and-forget
-        style.
-
-        :param name: the name of the graph
-        :type name: str | unicode
-        :returns: the graph object
-        :rtype: arango.graph.Graph
-        """
-        return Graph(self, name)
+        return BaseConnection.handle_request(self, request, handler)

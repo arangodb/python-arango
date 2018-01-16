@@ -5,88 +5,83 @@ import asyncio
 import threading
 
 import aiohttp
+import time
 
-from arango.http_clients.base import BaseHTTPClient
-from arango.response import Response
+from arango.http_clients import BaseHTTPClient
+from arango.responses import LazyResponse
 
 
-class FutureResponse(Response):  # pragma: no cover
-    """Response for :class:`arango.http_clients.asyncio.AsyncioHTTPClient`.
+# noinspection PyCompatibility
+def start_event_loop(loop, request_queue, session_args):  # pragma: no cover
+    """Start an event loop with an aiohttp session that pulls
+     from the request_queue
 
-    :param future: The future instance.
-    :type future: concurrent.futures.Future
+    :param loop: An event loop
+    :type loop: asyncio.BaseEventLoop
+    :param request_queue: The queue of tuples containing
+    :class:`arango.request.Request` and :class:`asyncio.Queue`
+    :type request_queue: asyncio.Queue
+    :param kwargs: the arguments to pass to the session instance
+    :type kwargs: dict
     """
-
-    # noinspection PyMissingConstructor
-    def __init__(self, future):
-        self._future = future
-
-    def __getattr__(self, item):
-        if item in self.__slots__:
-            response, text = self._future.result()
-            Response.__init__(
-                self,
-                method=response.method,
-                url=response.url,
-                headers=response.headers,
-                http_code=response.status,
-                http_text=response.reason,
-                body=text
-            )
-            self.__getattr__ = None
-        else:
-            raise AttributeError
-
-
-def start_event_loop(loop):  # pragma: no cover
-    """Set the event loop and start it."""
     asyncio.set_event_loop(loop)
-    loop.run_forever()
+    future = loop.create_task(session_create(request_queue, **session_args))
+    loop.run_until_complete(future)
 
 
 # noinspection PyCompatibility
-async def stop_event_loop():  # pragma: no cover
-    """Stop the event to allow it to exit."""
-    asyncio.get_event_loop().stop()
+async def session_create(request_queue, **kwargs):
+    """Start an aiohttp session and pull from the job queue
 
-
-# noinspection PyCompatibility
-async def make_async_request(method,
-                             url,
-                             params=None,
-                             headers=None,
-                             data=None,
-                             auth=None):  # pragma: no cover
-    """Asynchronously make a request using `aiohttp` library.
-
-    :param method: HTTP method (e.g. ``"HEAD"``)
-    :type method: str | unicode
-    :param url: request method string
-    :type url: str | unicode
-    :param url: request URL
-    :type url: str | unicode
-    :param params: request parameters
-    :type params: dict
-    :param headers: request headers
-    :type headers: dict
-    :param data: request payload
-    :type data: str | unicode | dict
-    :param auth: username and password tuple
-    :type auth: tuple
-    :returns: ArangoDB HTTP response object and body
-    :rtype: aiohttp.ClientResponse
+    :param request_queue: The queue of :class:`arango.request.Request`
+    :type request_queue: asyncio.Queue
+    :param kwargs: the arguments to pass to the session instance
+    :type kwargs: dict
     """
-    async with aiohttp.ClientSession() as session:
-        response = await session.request(
-            method=method,
-            url=url,
-            params=params,
-            headers=headers,
-            data=data,
-            auth=auth
-        )
-        text = await response.text()
-        return response, text
+
+    async with aiohttp.ClientSession(**kwargs) as session:
+        this_thread = threading.current_thread()
+        while True:
+            request, output_queue = await request_queue.get()
+            if request is this_thread:
+                return
+            await output_queue.put(await session_send_request(request,
+                                                              session))
+
+
+# noinspection PyCompatibility
+async def session_send_request(request, session):
+    response = await session.request(
+        method=request.method,
+        **request.kwargs
+    )
+    text = await response.text()
+    return response, text
+
+
+# noinspection PyCompatibility
+async def stop_event_loop(request_queue):  # pragma: no cover
+    """Stop the request loop to allow it to exit."""
+    await request_queue.put((threading.current_thread(), None))
+
+
+# noinspection PyCompatibility
+async def make_async_request(request, request_queue, event_loop):
+    # pragma: no cover
+    """Asynchronously make a request using `aiohttp` library
+
+    :param request: the request to make
+    :type request: arango.request.Request
+    :param request_queue: the request queue to submit to
+    :type request_queue: asyncio.Queue
+    :return: :class:`asyncio.Future` containing a tuple containing the
+    response to the request and its text.
+    :rtype: asyncio.Future
+    """
+
+    return_queue = asyncio.Queue(maxsize=1, loop=event_loop)
+    await request_queue.put((request, return_queue))
+    return await return_queue.get()
 
 
 class AsyncioHTTPClient(BaseHTTPClient):  # pragma: no cover
@@ -95,12 +90,17 @@ class AsyncioHTTPClient(BaseHTTPClient):  # pragma: no cover
     .. _aiohttp: http://aiohttp.readthedocs.io/en/stable/
     """
 
-    def __init__(self):
-        """Initialize the client."""
+    def __init__(self, **kwargs):
+        """Initialize the client.
+
+        :param kwargs: the arguments to pass to the aiohttp session
+        :type kwargs: dict
+        """
         self._event_loop = asyncio.new_event_loop()
+        self._request_queue = asyncio.Queue(loop=self._event_loop)
         self._async_thread = threading.Thread(
             target=start_event_loop,
-            args=(self._event_loop,),
+            args=(self._event_loop, self._request_queue, kwargs),
             daemon=True
         )
         self._async_thread.start()
@@ -108,191 +108,55 @@ class AsyncioHTTPClient(BaseHTTPClient):  # pragma: no cover
 
     def stop_client_loop(self):
         future = asyncio.run_coroutine_threadsafe(
-            stop_event_loop(), self._event_loop
-        )
-        asyncio.wait_for(future, self._timeout)
-        self._async_thread.join()
-
-    def make_request(self,
-                     method,
-                     url,
-                     params=None,
-                     headers=None,
-                     data=None,
-                     auth=None):
-        """Make an asynchronous request and return a future response.
-
-        :param method: HTTP method (e.g. ``"HEAD"``)
-        :type method: str | unicode
-        :param url: request method string
-        :type url: str | unicode
-        :param url: request URL
-        :type url: str | unicode
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param data: request payload
-        :type data: str | unicode | dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.http_clients.asyncio.FutureResponse
-        """
-        if isinstance(auth, tuple):
-            auth = aiohttp.BasicAuth(*auth)
-
-        if isinstance(params, dict):
-            for key, value in params.items():
-                if isinstance(value, bool):
-                    params[key] = int(value)
-
-        future = asyncio.run_coroutine_threadsafe(
-            make_async_request(method, url, params, headers, data, auth),
+            stop_event_loop(self._request_queue),
             self._event_loop
         )
-        return FutureResponse(future)
+        asyncio.wait_for(future, self._timeout)
+        while self._event_loop.is_running():
+            time.sleep(.01)
+        self._event_loop.close()
+        self._async_thread.join()
 
-    def head(self, url, params=None, headers=None, auth=None):
-        """Execute an HTTP **HEAD** method.
+    @staticmethod
+    def response_mapper(response):
+        res, text = response
 
-        :param url: request URL
-        :type url: str | unicode
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.response.FutureResponse
+        outputs = {}
+        outputs['url'] = res.url
+        outputs['method'] = res.method
+        outputs['headers'] = res.headers
+        outputs['status_code'] = res.status
+        outputs['status_text'] = res.reason
+        outputs['body'] = text
+
+        return outputs
+
+    def make_request(self, request, response_mapper=None):
+        """Make an asynchronous request and return a lazy loading response.
+
+        :param request: The request to make
+        :type request: arango.request.Request
+        :param response_mapper: Function that maps responses to a dictionary of
+         parameters to create an :class:`arango.responses.Response`. If
+         none, uses self.response_mapper.
+        :type response_mapper: callable
+        :return: The lazy loading response to this request
+        :rtype: arango.responses.LazyResponse
         """
-        return self.make_request(
-            method="HEAD",
-            url=url,
-            params=params,
-            headers=headers,
-            auth=auth
+
+        if response_mapper is None:
+            response_mapper = self.response_mapper
+
+        if isinstance(request.auth, tuple):
+            request.auth = aiohttp.BasicAuth(*request.auth)
+
+        if isinstance(request.params, dict):
+            for key, value in request.params.items():
+                if isinstance(value, bool):
+                    request.params[key] = int(value)
+
+        future = asyncio.run_coroutine_threadsafe(
+            make_async_request(request, self._request_queue, self._event_loop),
+            self._event_loop
         )
-
-    def get(self, url, params=None, headers=None, auth=None):
-        """Execute an HTTP **GET** method.
-
-        :param url: request URL
-        :type url: str | unicode
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.response.FutureResponse
-        """
-        return self.make_request(
-            method="GET",
-            url=url,
-            params=params,
-            headers=headers,
-            auth=auth
-        )
-
-    def put(self, url, data, params=None, headers=None, auth=None):
-        """Execute an HTTP **PUT** method.
-
-        :param url: request URL
-        :type url: str | unicode
-        :param data: request payload
-        :type data: str | unicode | dict
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.response.FutureResponse
-        """
-        return self.make_request(
-            method="PUT",
-            url=url,
-            data=data,
-            params=params,
-            headers=headers,
-            auth=auth
-        )
-
-    def post(self, url, data, params=None, headers=None, auth=None):
-        """Execute an HTTP **POST** method.
-
-        :param url: request URL
-        :type url: str | unicode
-        :param data: request payload
-        :type data: str | unicode | dict
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.response.FutureResponse
-        """
-        return self.make_request(
-            method="POST",
-            url=url,
-            data=data,
-            params=params,
-            headers=headers,
-            auth=auth
-        )
-
-    def patch(self, url, data, params=None, headers=None, auth=None):
-        """Execute an HTTP **PATCH** method.
-
-        :param url: request URL
-        :type url: str | unicode
-        :param data: request payload
-        :type data: str | unicode | dict
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.response.FutureResponse
-        """
-        return self.make_request(
-            method="PATCH",
-            url=url,
-            data=data,
-            params=params,
-            headers=headers,
-            auth=auth
-        )
-
-    def delete(self, url, data=None, params=None, headers=None, auth=None):
-        """Execute an HTTP **DELETE** method.
-
-        :param url: request URL
-        :type url: str | unicode
-        :param data: request payload
-        :type data: str | unicode | dict
-        :param params: request parameters
-        :type params: dict
-        :param headers: request headers
-        :type headers: dict
-        :param auth: username and password tuple
-        :type auth: tuple
-        :returns: ArangoDB HTTP response object
-        :rtype: arango.response.FutureResponse
-        """
-        return self.make_request(
-            method="DELETE",
-            url=url,
-            data=data,
-            params=params,
-            headers=headers,
-            auth=auth
-        )
+        return LazyResponse(future, response_mapper)

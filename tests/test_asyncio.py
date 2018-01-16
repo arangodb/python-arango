@@ -20,8 +20,9 @@ from tests.utils import (
     generate_user_name
 )
 
-asyncio_client_module = pytest.importorskip("arango.http_clients.asyncio")
-asyncio_client = asyncio_client_module.AsyncioHTTPClient()
+from arango.http_clients import AsyncioHTTPClient
+
+asyncio_client = AsyncioHTTPClient()
 arango_client = ArangoClient(http_client=asyncio_client)
 db_name = generate_db_name()
 

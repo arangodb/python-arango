@@ -22,7 +22,7 @@ db_name = generate_db_name()
 db = arango_client.create_database(db_name)
 bad_db_name = generate_db_name()
 bad_db = arango_client.db(bad_db_name)
-test_cmd = "require('@arangodb').print(params);"
+test_cmd = 'require("@arangodb").print(params);'
 
 
 def teardown_module(*_):

@@ -1,6 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.collections.base import BaseCollection
+from arango.collections import BaseCollection
 from arango.exceptions import (
     DocumentDeleteError,
     DocumentGetError,
@@ -9,7 +9,7 @@ from arango.exceptions import (
     DocumentReplaceError,
     DocumentRevisionError,
 )
-from arango.request import Request
+from arango import Request
 from arango.utils import HTTP_OK
 
 
@@ -68,12 +68,18 @@ class VertexCollection(BaseCollection):
         :raises arango.exceptions.DocumentGetError: if the document cannot
             be fetched from the collection
         """
+
+        headers = {}
+
+        if rev is not None:
+            headers['If-Match'] = rev
+
         request = Request(
             method='get',
             endpoint='/_api/gharial/{}/vertex/{}/{}'.format(
                 self._graph_name, self._name, key
             ),
-            headers={'If-Match': rev} if rev else {}
+            headers=headers
         )
 
         def handler(res):

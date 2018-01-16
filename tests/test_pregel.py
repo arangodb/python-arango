@@ -49,14 +49,14 @@ def test_start_pregel_job():
 def test_get_pregel_job():
     # Create a test Pregel job
     job_id = db.create_pregel_job(
-        "pagerank",
+        'pagerank',
         graph_name,
         store=False,
         max_gss=100,
         thread_count=1,
         async_mode=False,
-        result_field="result",
-        algorithm_params={"threshold": 0.0000001}
+        result_field='result',
+        algorithm_params={'threshold': 0.0000001}
     )
     # Test pregel_job with existing job ID (happy path)
     job = db.pregel_job(job_id)
@@ -65,7 +65,8 @@ def test_get_pregel_job():
     assert isinstance(job['received_count'], int)
     assert isinstance(job['send_count'], int)
     assert isinstance(job['total_runtime'], float)
-    assert job['state'] == 'running'
+    # TODO CHANGED to prevent race condition
+    assert job['state'] in {'running', 'done'}
 
     # Test pregel_job with an invalid job ID
     with pytest.raises(PregelJobGetError):
@@ -76,14 +77,14 @@ def test_get_pregel_job():
 def test_delete_pregel_job():
     # Create a test Pregel job
     job_id = db.create_pregel_job(
-        "pagerank",
+        'pagerank',
         graph_name,
         store=False,
         max_gss=999,
         thread_count=1,
         async_mode=False,
-        result_field="result",
-        algorithm_params={"threshold": 0.0000001}
+        result_field='result',
+        algorithm_params={'threshold': 0.0000001}
     )
 
     # Get the newly created job

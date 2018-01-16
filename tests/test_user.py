@@ -235,11 +235,13 @@ def test_get_user_access():
     arango_client.create_user(username=username, password='password')
 
     # Get user access (should be empty initially)
-    assert arango_client.user_access(username) == []
+    # TODO CHANGED due to change in underlying behavior
+    assert arango_client.user_access(username) == {}
 
     # Grant user access to the database and check again
     arango_client.grant_user_access(username, db_name)
-    assert arango_client.user_access(username) == [db_name]
+    # TODO CHANGED due to change in underlying behavior
+    assert arango_client.user_access(username)[db_name] == 'rw'
 
     # Get access of a missing user
     bad_username = generate_user_name()
@@ -515,15 +517,20 @@ def test_get_user_access_db_level():
     db.create_user(username=username, password='password')
 
     # Get user access (should be none initially)
-    assert db.user_access(username) is None
+    # TODO CHANGED due to change in underlying behavior
+    assert len(db.user_access(username)) == 0
 
     # Grant user access to the database and check again
+    # TODO CHANGED due to change in underlying behavior
     db.grant_user_access(username)
-    assert db.user_access(username) == 'rw'
+    assert db.user_access(username)[db_name] == 'rw'
 
     # Get access of a missing user
+    # TODO CHANGED due to change in underlying behavior
     bad_username = generate_user_name()
-    assert db.user_access(bad_username) is None
+    with pytest.raises(UserAccessError) as err:
+        db.user_access(bad_username)
+    assert err.value.http_code == 404
 
     # Get user access from a bad database (incorrect password)
     with pytest.raises(UserAccessError) as err:

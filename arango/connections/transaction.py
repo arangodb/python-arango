@@ -1,14 +1,15 @@
 from __future__ import absolute_import, unicode_literals
 
 from uuid import uuid4
+from collections import deque
 
-from arango.collections.standard import Collection
-from arango.connection import Connection
+from arango.connections import BaseConnection
+from arango import Request
 from arango.utils import HTTP_OK
 from arango.exceptions import TransactionError
 
 
-class Transaction(Connection):
+class Transaction(BaseConnection):
     """ArangoDB transaction object.
 
     API requests made in a transaction are queued in memory and executed as a
@@ -51,8 +52,8 @@ class Transaction(Connection):
             database=connection.database,
             enable_logging=connection.logging_enabled
         )
-        self._id = uuid4()
-        self._actions = ['db = require("internal").db']
+        self._id = uuid4().hex
+        self._actions = []
         self._collections = {}
         if read:
             self._collections['read'] = read
@@ -62,6 +63,8 @@ class Transaction(Connection):
         self._sync = sync
         self._commit_on_error = commit_on_error
         self._type = 'transaction'
+
+        self._parent = connection
 
     def __repr__(self):
         return '<ArangoDB transaction {}>'.format(self._id)
@@ -82,7 +85,7 @@ class Transaction(Connection):
         """
         return self._id
 
-    def handle_request(self, request, handler):
+    def handle_request(self, request, handler, **kwargs):
         """Handle the incoming request and response handler.
 
         :param request: the API request queued as part of the transaction, and
@@ -114,58 +117,88 @@ class Transaction(Connection):
         :raises arango.exceptions.TransactionError: if the transaction cannot
             be executed
         """
+
+        def handler(res):
+            if res.status_code not in HTTP_OK:
+                raise TransactionError(res)
+            return res.body.get('result')
+
         data = {'collections': self._collections, 'action': command}
-        timeout = self._timeout if timeout is None else timeout
-        sync = self._sync if sync is None else sync
+
+        if timeout is None:
+            timeout = self._timeout
 
         if timeout is not None:
             data['lockTimeout'] = timeout
+
+        if sync is None:
+            sync = self._sync
+
         if sync is not None:
             data['waitForSync'] = sync
+
         if params is not None:
             data['params'] = params
 
-        res = self.post(endpoint='/_api/transaction', data=data)
-        if res.status_code not in HTTP_OK:
-            raise TransactionError(res)
-        return res.body.get('result')
+        request = Request(
+            method='post',
+            endpoint='/_api/transaction',
+            data=data
+        )
+
+        return self.underlying.handle_request(request, handler)
 
     def commit(self):
         """Execute the queued API requests in a single atomic step.
 
         :return: the result of the transaction
-        :rtype: dict
+        :rtype: arango.jobs.Job
         :raises arango.exceptions.TransactionError: if the transaction cannot
             be executed
         """
-        try:
-            action = ';'.join(self._actions)
-            res = self.post(
-                endpoint='/_api/transaction',
-                data={
-                    'collections': self._collections,
-                    'action': 'function () {{ {} }}'.format(action)
-                },
-                params={
-                    'lockTimeout': self._timeout,
-                    'waitForSync': self._sync,
-                }
-            )
+
+        def handler(res):
             if res.status_code not in HTTP_OK:
                 raise TransactionError(res)
             return res.body.get('result')
-        finally:
-            self._actions = ['db = require("internal").db']
 
-    def collection(self, name):
-        """Return the collection object tailored for transactions.
+        action_labels = ['a' + uuid4().hex for _ in self._actions]
 
-        API requests via the returned object are placed in an in-memory queue
-        and committed as a whole in a single HTTP call to the ArangoDB server.
+        action_strings = deque()
+        action_strings.append('db = require("internal").db;\n')
 
-        :param name: the name of the collection
-        :type name: str | unicode
-        :returns: the collection object
-        :rtype: arango.collections.Collection
-        """
-        return Collection(self, name)
+        for i in range(len(self._actions)):
+            action_strings.append('var ')
+            action_strings.append(action_labels[i])
+            action_strings.append(' = ')
+            action_strings.append(self._actions[i])
+            action_strings.append(';\n')
+
+        action_strings.append('return [')
+        for label in action_labels:
+            action_strings.append(label)
+            action_strings.append(', ')
+
+        if len(action_labels) > 0:
+            action_strings.pop()
+
+        action_strings.append('];\n')
+
+        action = ''.join(action_strings)
+
+        request = Request(
+            method='post',
+            endpoint='/_api/transaction',
+            data={
+                'collections': self._collections,
+                'action': 'function () {{ {} }}'.format(action)
+            },
+            params={
+                'lockTimeout': self._timeout,
+                'waitForSync': self._sync,
+            }
+        )
+
+        self._actions = ['db = require("internal").db']
+
+        return self.underlying.handle_request(request, handler)

@@ -1,7 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.collections.edge import EdgeCollection
-from arango.collections.vertex import VertexCollection
+from arango.collections import EdgeCollection
+from arango.collections import VertexCollection
 from arango.utils import HTTP_OK
 from arango.exceptions import (
     EdgeDefinitionCreateError,
@@ -35,7 +35,7 @@ class Graph(APIWrapper):
         self._name = name
 
     def __repr__(self):
-        return "<ArangoDB graph '{}'>".format(self._name)
+        return '<ArangoDB graph "{}">'.format(self._name)
 
     @property
     def name(self):

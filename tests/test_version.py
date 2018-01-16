@@ -1,6 +1,6 @@
-from arango.version import VERSION
+from arango.version import __version__
 
 
 def test_package_version():
-    assert VERSION.count('.', 2)
-    assert all([number.isdigit() for number in VERSION.split('.')])
+    assert __version__.count('.', 2)
+    assert all([number.isdigit() for number in __version__.split('.')])
