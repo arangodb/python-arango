@@ -20,7 +20,7 @@ class BaseHTTPClient(object):  # pragma: no cover
          none, uses self.response_mapper.
         :type response_mapper: callable
         :return: The response to this request
-        :rtype: arango.responses.BaseResponse
+        :rtype: arango.responses.Response
         """
 
         raise NotImplementedError

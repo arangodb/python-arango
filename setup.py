@@ -14,7 +14,7 @@ else:
 setup(
     name='python-arango',
     description='Python Driver for ArangoDB',
-    version=version['__VERSION__'],
+    version=version['__version__'],
     author='Joohwan Oh',
     author_email='joohwan.oh@outlook.com',
     url='https://github.com/joowani/python-arango',

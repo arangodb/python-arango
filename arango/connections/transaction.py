@@ -85,7 +85,7 @@ class Transaction(BaseConnection):
         """
         return self._id
 
-    def handle_request(self, request, handler, **kwargs):
+    def handle_request(self, request, handler, job_class=None):
         """Handle the incoming request and response handler.
 
         :param request: the API request queued as part of the transaction, and
@@ -94,7 +94,14 @@ class Transaction(BaseConnection):
         :type request: arango.request.Request
         :param handler: the response handler
         :type handler: callable
+        :param job_class: required to maintain compatibility with the
+        BaseConnection interface, but should be None for a transaction
         """
+
+        if job_class is not None:
+            raise TransactionError('transaction cannot called with a '
+                                   'job_class other than none')
+
         if request.command is None:
             raise TransactionError('unsupported method')
         self._actions.append(request.command)

@@ -9,7 +9,8 @@ class BaseJob(object):
     A job tracks the status of an API request and its result.
     """
 
-    def __init__(self, handler, response=None, job_id=None, assign_id=False, job_type='base'):
+    def __init__(self, handler, response=None, job_id=None, assign_id=True,
+                 job_type='base'):
         if job_id is None and assign_id:
             job_id = uuid4().hex
 
@@ -40,7 +41,7 @@ class BaseJob(object):
         :param status: the status of the job
         :type status: str
         :param response: the response to the job
-        :type response: arango.responses.base.BaseResponse
+        :type response: arango.responses.base.Response
         """
 
         self._status = status

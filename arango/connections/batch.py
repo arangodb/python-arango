@@ -7,8 +7,8 @@ from arango.jobs import BatchJob, BaseJob
 from arango.utils.lock import Lock
 from arango.connections import BaseConnection
 from arango.utils import HTTP_OK
-from arango.exceptions import BatchExecuteError
-from arango.responses import BaseResponse
+from arango.exceptions import BatchExecuteError, ArangoError
+from arango.responses import Response
 
 
 class BatchExecution(BaseConnection):
@@ -81,7 +81,7 @@ class BatchExecution(BaseConnection):
         """
         return self._id
 
-    def handle_request(self, request, handler, **kwargs):
+    def handle_request(self, request, handler, job_class=None):
         """Handle the incoming request and response handler.
 
         :param request: the API request queued as part of the current batch
@@ -90,11 +90,17 @@ class BatchExecution(BaseConnection):
         :type request: arango.request.Request
         :param handler: the response handler
         :type handler: callable
+        :param job_class: required to maintain compatibility with the
+        BaseConnection interface, but should be None
         :returns: the :class:`arango.batch.BatchJob` or None
         :rtype: :class:`arango.batch.BatchJob` | None
         """
 
         batch_job = None
+
+        if job_class is not None:
+            raise ArangoError('batch cannot called with a job_class other '
+                              'than none')
 
         with self._lock:
             self._requests.append(request)
@@ -180,8 +186,8 @@ class BatchExecution(BaseConnection):
                         'body': raw_body
                     }
 
-                    response = BaseResponse(response_dict,
-                                            self.response_mapper)
+                    response = Response(response_dict,
+                                        self.response_mapper)
 
                     if int(status_code) in HTTP_OK:
                         job.update('done', response)

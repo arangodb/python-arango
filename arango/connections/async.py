@@ -1,5 +1,8 @@
 from __future__ import absolute_import, unicode_literals
 
+from functools import partial
+
+from arango.exceptions import ArangoError
 from arango.jobs import AsyncJob
 from arango.connections import BaseConnection
 
@@ -42,25 +45,35 @@ class AsyncExecution(BaseConnection):
     def __repr__(self):
         return '<ArangoDB asynchronous execution>'
 
-    def handle_request(self, request, handler, **kwargs):
+    def handle_request(self, request, handler, job_class=None):
         """Handle the incoming request and response handler.
 
         :param request: the API request to be placed in the server-side queue
         :type request: arango.request.Request
         :param handler: the response handler
         :type handler: callable
+        :param job_class: required to maintain compatibility with the
+        BaseConnection interface, but should be None
         :returns: the async job or None
         :rtype: arango.async.AsyncJob
         :raises arango.exceptions.AsyncExecuteError: if the async request
             cannot be executed
         """
+
+        if job_class is not None:
+            raise ArangoError('async cannot called with a job_class other '
+                              'than none')
+
         if self._return_result:
             request.headers['x-arango-async'] = 'store'
         else:
             request.headers['x-arango-async'] = 'true'
 
-        kwargs['job_class'] = AsyncJob
-        kwargs['connection'] = self._parent
-        kwargs['return_result'] = self._return_result
+        partially_applied_job = partial(AsyncJob,
+                                        connection=self._parent,
+                                        return_result=self._return_result)
 
-        return BaseConnection.handle_request(self, request, handler, **kwargs)
+        return BaseConnection.handle_request(self,
+                                             request,
+                                             handler,
+                                             partially_applied_job)

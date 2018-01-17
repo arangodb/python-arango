@@ -1,7 +1,7 @@
-from arango.responses import BaseResponse
+from arango.responses import Response
 
 
-class LazyResponse(BaseResponse):  # pragma: no cover
+class LazyResponse(Response):  # pragma: no cover
     """Response which lazily loads all values from some future.
 
     :param future: The future instance which has the function result()"
@@ -19,7 +19,7 @@ class LazyResponse(BaseResponse):  # pragma: no cover
     def __getattr__(self, item):
         if item in self.__slots__:
             future_result = self._future.result()
-            BaseResponse.__init__(
+            Response.__init__(
                 self,
                 future_result,
                 self._response_mapper

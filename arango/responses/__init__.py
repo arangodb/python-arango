@@ -1,2 +1,2 @@
-from arango.responses.base import BaseResponse
+from arango.responses.base import Response
 from arango.responses.lazy import LazyResponse

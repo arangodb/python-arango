@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 from six import string_types as string
 
-from arango.responses import BaseResponse
+from arango.responses import Response
 
 
 class ArangoError(Exception):
@@ -13,7 +13,7 @@ class ArangoError(Exception):
     """
 
     def __init__(self, data, message=None):
-        if isinstance(data, BaseResponse):
+        if isinstance(data, Response):
             # Get the ArangoDB error message if provided
             if message is not None:
                 error_message = message

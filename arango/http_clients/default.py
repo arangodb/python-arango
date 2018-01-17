@@ -2,7 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import requests
 
-from arango.responses import BaseResponse
+from arango.responses import Response
 from arango.http_clients import BaseHTTPClient
 
 
@@ -30,7 +30,7 @@ class DefaultHTTPClient(BaseHTTPClient):
          none, uses self.response_mapper.
         :type response_mapper: callable
         :return: The response to this request
-        :rtype: arango.responses.BaseResponse
+        :rtype: arango.responses.Response
         """
 
         if response_mapper is None:
@@ -39,7 +39,7 @@ class DefaultHTTPClient(BaseHTTPClient):
         method = request.method
 
         res = self._session.request(method, **request.kwargs)
-        return BaseResponse(res, response_mapper)
+        return Response(res, response_mapper)
 
     @staticmethod
     def response_mapper(response):

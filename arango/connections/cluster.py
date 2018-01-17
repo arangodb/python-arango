@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from arango.connections.base import BaseConnection
+from arango.exceptions import ArangoError
 
 
 class ClusterTest(BaseConnection):
@@ -56,18 +57,24 @@ class ClusterTest(BaseConnection):
     def __repr__(self):
         return '<ArangoDB cluster round-trip test>'
 
-    def handle_request(self, request, handler, **kwargs):
+    def handle_request(self, request, handler, job_class=None):
         """Handle the incoming request and response handler.
 
         :param request: the API request to be placed in the server-side queue
         :type request: arango.request.Request
         :param handler: the response handler
         :type handler: callable
+        :param job_class: the class of the :class:arango.jobs.BaseJob to
+        output or None to use the default job for this connection
+        :type job_class: class | None
         :returns: the test results
         :rtype: dict
         :raises arango.exceptions.ClusterTestError: if the cluster round-trip
             test cannot be executed
         """
+        if job_class is not None:
+            raise ArangoError('')
+
         request.headers['X-Shard-ID'] = str(self._shard_id)
         if self._trans_id is not None:
             request.headers['X-Client-Transaction-ID'] = str(self._trans_id)
@@ -76,4 +83,4 @@ class ClusterTest(BaseConnection):
         if self._sync is True:
             request.headers['X-Synchronous-Mode'] = 'true'
 
-        return BaseConnection.handle_request(self, request, handler)
+        return BaseConnection.handle_request(self, request, handler, job_class)

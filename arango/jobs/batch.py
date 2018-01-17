@@ -8,9 +8,8 @@ class BatchJob(BaseJob):
     A batch job tracks the status of a queued API request and its result.
     """
 
-    def __init__(self, handler, job_id=None, response=None):
-        BaseJob.__init__(self, handler, job_id=job_id, response=response,
-                         job_type='batch')
+    def __init__(self, handler, response=None):
+        BaseJob.__init__(self, handler, response=response, job_type='batch')
         self._lock = RLock()
 
     def update(self, status, response=None):
@@ -21,7 +20,7 @@ class BatchJob(BaseJob):
         :param status: the status of the job
         :type status: str
         :param response: the response to the job
-        :type response: arango.responses.base.BaseResponse
+        :type response: arango.responses.base.Response
         """
 
         with self._lock:

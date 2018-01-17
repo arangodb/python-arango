@@ -79,6 +79,10 @@ class BaseConnection(object):
 
     @property
     def underlying(self):
+        """
+        :return: the root connection this is based upon
+        :rtype: arango.connections.BaseConnection
+        """
         if self._parent is None:
             return self
         else:
@@ -173,8 +177,7 @@ class BaseConnection(object):
     def async_ready(self):
         return self._async_ready
 
-    def handle_request(self, request, handler, job_class=None,
-                       **kwargs):
+    def handle_request(self, request, handler, job_class=None):
         """Handle a given request
 
         :param request: The request to make
@@ -184,8 +187,6 @@ class BaseConnection(object):
         :param job_class: the class of the :class:arango.jobs.BaseJob to
         output or None to use the default job for this connection
         :type job_class: class | None
-        :param kwargs: keyword arguments to be passed to the
-        :class:arango.jobs.BaseJob constructor
         :return: the job output
         :rtype: arango.jobs.BaseJob
         """
@@ -215,7 +216,7 @@ class BaseConnection(object):
             request.auth = (self._username, self._password)
 
         response = self._http.make_request(request)
-        return job_class(used_handler, response, **kwargs)
+        return job_class(used_handler, response=response)
 
     @property
     def aql(self):

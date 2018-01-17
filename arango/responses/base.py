@@ -1,7 +1,7 @@
 import json
 
 
-class BaseResponse(object):
+class Response(object):
     """ArangoDB HTTP response.
 
     Overridden methods of :class:`arango.http_clients.base.BaseHTTPClient` must
