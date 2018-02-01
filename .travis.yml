@@ -6,7 +6,7 @@ python:
     - 3.5
     - 3.6
 before_install:
-    - sh scripts/setup_arangodb.sh
+    - bash scripts/setup_arangodb.sh
 install:
     - pip install coverage
     - pip install pytest
