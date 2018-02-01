@@ -566,7 +566,8 @@ class Database(object):
                           shard_fields=None,
                           shard_count=None,
                           index_bucket_count=None,
-                          replication_factor=None):
+                          replication_factor=None,
+                          enforce_replication_factor=True):
         """Create a new collection.
 
         .. note::
@@ -624,6 +625,9 @@ class Database(object):
             Default: ``1``.
 
         :type replication_factor: int
+        :param enforce_replication_factor: denies or allows setting a higher
+            replication factor than currently available in the cluster
+        :type enforce_replication_factor: bool
         :returns: the new collection object
         :rtype: arango.collections.Collection
         :raises arango.exceptions.CollectionCreateError: if the collection
@@ -634,6 +638,8 @@ class Database(object):
             key_options['increment'] = key_increment
         if key_offset is not None:
             key_options['offset'] = key_offset
+
+        url_params = {}
 
         data = {
             'name': name,
@@ -654,8 +660,14 @@ class Database(object):
             data['indexBuckets'] = index_bucket_count
         if replication_factor is not None:
             data['replicationFactor'] = replication_factor
+            url_params['enforceReplicationFactor'] = (
+                '1' if enforce_replication_factor else '0')
 
-        res = self._conn.post('/_api/collection', data=data)
+        res = self._conn.post(
+            '/_api/collection',
+            data=data,
+            params=url_params,
+        )
         if res.status_code not in HTTP_OK:
             raise CollectionCreateError(res)
         return self.collection(name)
