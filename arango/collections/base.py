@@ -224,6 +224,12 @@ class BaseCollection(APIWrapper):
         :raises arango.exceptions.CollectionPropertiesError: If the
             collection properties cannot be retrieved.
         """
+        _cluster_parameters = {
+            'numberOfShards': 'number_of_shards',
+            'shardKeys': 'shard_keys',
+            'replicationFactor': 'replication_factor',
+        }
+
         request = Request(
             method='get',
             endpoint='/_api/collection/{}/properties'.format(self._name)
@@ -235,7 +241,7 @@ class BaseCollection(APIWrapper):
 
             key_options = res.body.get('keyOptions', {})
 
-            return {
+            properties = {
                 'id': res.body.get('id'),
                 'name': res.body.get('name'),
                 'edge': res.body.get('type') == 3,
@@ -250,6 +256,12 @@ class BaseCollection(APIWrapper):
                 'key_increment': key_options.get('increment'),
                 'key_offset': key_options.get('offset')
             }
+
+            for parameter, alt_name in _cluster_parameters.items():
+                if parameter in res.body:
+                    properties[alt_name] = res.body.get(parameter)
+
+            return properties
 
         return request, handler
 

@@ -42,6 +42,9 @@ def test_properties():
     assert isinstance(properties['compact'], bool)
     assert isinstance(properties['volatile'], bool)
     assert isinstance(properties['journal_size'], int)
+    assert isinstance(properties['replication_factor'], int)
+    assert isinstance(properties['number_of_shards'], int)
+    assert isinstance(properties['shard_keys'], list)
     assert properties['keygen'] in ('autoincrement', 'traditional')
     assert isinstance(properties['user_keys'], bool)
     if properties['key_increment'] is not None:
