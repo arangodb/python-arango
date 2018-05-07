@@ -1,143 +1,292 @@
-.. _graph-page:
-
 Graphs
 ------
 
-A **graph** consists of **vertices** and **edges**. Edges are stored as
-documents in :ref:`edge collections <edge-collections>`, whereas vertices
-are stored as documents in :ref:`vertex collections <vertex-collections>`
-(edges can be vertices also). The combination of edge and vertex collections
-used in a graph is specified in :ref:`edge definitions <edge-definitions>`.
-For more information on graphs, vertices and edges visit this
-`page <https://docs.arangodb.com/Manual/Graphs>`__.
+A **graph** consists of vertices and edges. Vertices are stored as documents in
+:ref:`vertex collections <vertex-collections>` and edges stored as documents in
+:ref:`edge collections <edge-collections>`. The collections used in a graph and
+their relations are specified with :ref:`edge definitions <edge-definitions>`.
+For more information, refer to `ArangoDB manual`_.
 
-Here is an example showing how a graph can be created or deleted:
+.. _ArangoDB manual: https://docs.arangodb.com
 
-.. code-block:: python
+**Example:**
+
+.. testcode::
 
     from arango import ArangoClient
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
-    db = client.db('my_database')
 
-    # List existing graphs
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # List existing graphs in the database.
     db.graphs()
 
-    # Create a new graph
-    schedule = db.create_graph('schedule')
+    # Create a new graph named "school" if it does not already exist.
+    # This returns an API wrapper for "school" graph.
+    if db.has_graph('school'):
+        school = db.graph('school')
+    else:
+        school = db.create_graph('school')
 
-    # Retrieve the graph properties
-    schedule.properties()
+    # Retrieve various graph properties.
+    school.name
+    school.db_name
+    school.vertex_collections()
+    school.edge_definitions()
 
-    # Delete an existing graph
-    db.delete_graph('schedule')
-
-.. _vertex-collections:
-
-Vertex Collections
-==================
-
-A **vertex collection** consists of vertex documents. It is uniquely identified
-by its name, which must consist only of alphanumeric characters, hyphen and
-the underscore characters. Vertex collections share their namespace with other
-types of collections.
-
-The documents in a vertex collection are fully accessible from a standard
-collection. Managing documents through a vertex collection, however, adds
-additional safeguards: all modifications are executed in transactions, and
-if a vertex is deleted, all connected edges are also automatically deleted.
-
-Here is an example showing how vertex collections and vertices can be used:
-
-.. code-block:: python
-
-    from arango import ArangoClient
-
-    client = ArangoClient()
-    db = client.db('my_database')
-    schedule = db.graph('schedule')
-
-    # Create a new vertex collection
-    profs = schedule.create_vertex_collection('profs')
-
-    # List orphan vertex collections (without edges)
-    schedule.orphan_collections()
-
-    # List existing vertex collections
-    schedule.vertex_collections()
-
-    # Retrieve an existing vertex collection
-    profs = schedule.vertex_collection('profs')
-
-    # Vertex collections have a similar interface to standard collections
-    profs.insert({'_key': 'donald', 'name': 'Professor Donald'})
-    profs.get('donald')
-    profs.properties()
-
-    # Delete an existing vertex collection
-    schedule.delete_vertex_collection('profs', purge=True)
-
-Refer to :ref:`Graph` and :ref:`VertexCollection` classes for more details.
+    # Delete the graph.
+    db.delete_graph('school')
 
 .. _edge-definitions:
 
 Edge Definitions
 ================
 
-An **edge definition** specifies which vertex and edge collections are used in
-a particular graph.
+An **edge definition** specifies a directed relation in a graph. A graph can
+have arbitrary number of edge definitions. Each edge definition consists of the
+following components:
 
-.. _edge-collections:
+* **From Vertex Collections:** contain "from" vertices referencing "to" vertices.
+* **To Vertex Collections:** contain "to" vertices referenced by "from" vertices.
+* **Edge Collection:** contains edges that link "from" and "to" vertices.
 
-An **edge collection** consists of edge documents. It is uniquely identified
-by its name which must consist only of alphanumeric characters, hyphen and the
-underscore characters. Edge collections share their namespace with other types
-of collections.
+Here is an example body of an edge definition:
 
-The documents in an edge collection are fully accessible from a standard
-collection. Managing documents through an edge collection, however, adds
-additional safeguards: all modifications are executed in transactions and
-edge documents are checked against the edge definitions on insert.
+.. testcode::
 
-Here is an example showing how an edge definition can be created and used:
+    {
+        'edge_collection': 'teach',
+        'from_vertex_collections': ['teachers'],
+        'to_vertex_collections': ['lectures']
+    }
 
-.. code-block:: python
+Here is an example showing how edge definitions are managed:
+
+.. testcode::
 
     from arango import ArangoClient
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
-    db = client.db('my_database')
-    schedule = db.graph('schedule')
 
-    # Create a couple of vertex collections
-    schedule.create_vertex_collection('profs')
-    schedule.create_vertex_collection('courses')
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
 
-    # Create a new edge definition (and a new edge collection)
-    schedule.create_edge_definition(
-        name='teaches',
-        from_collections=['profs'],
-        to_collections=['courses']
+    # Get the API wrapper for graph "school".
+    if db.has_graph('school'):
+        school = db.graph('school')
+    else:
+        school = db.create_graph('school')
+
+    # Create an edge definition named "teach". This creates any missing
+    # collections and returns an API wrapper for "teach" edge collection.
+    if not school.has_edge_definition('teach'):
+        teach = school.create_edge_definition(
+            edge_collection='teach',
+            from_vertex_collections=['teachers'],
+            to_vertex_collections=['teachers']
+        )
+
+    # List edge definitions.
+    school.edge_definitions()
+
+    # Replace the edge definition.
+    school.replace_edge_definition(
+        edge_collection='teach',
+        from_vertex_collections=['teachers'],
+        to_vertex_collections=['lectures']
     )
 
-    # List existing edge definitions
-    schedule.edge_definitions()
+    # Delete the edge definition (and its collections).
+    school.delete_edge_definition('teach', purge=True)
 
-    # Retrieve an existing edge collection
-    teaches = schedule.edge_collection('teaches')
+.. _vertex-collections:
 
-    # Edge collections have a similar interface to standard collections
-    teaches.insert({
-        '_key': 'michelle-CSC101',
-        '_from': 'profs/michelle',
-        '_to': 'courses/CSC101'
+Vertex Collections
+==================
+
+A **vertex collection** contains vertex documents, and shares its namespace
+with all other types of collections. Each graph can have an arbitrary number of
+vertex collections. Vertex collections that are not part of any edge definition
+are called **orphan collections**. You can manage vertex documents via standard
+collection API wrappers, but using vertex collection API wrappers provides
+additional safeguards:
+
+* All modifications are executed in transactions.
+* If a vertex is deleted, all connected edges are also automatically deleted.
+
+**Example:**
+
+.. testcode::
+
+    from arango import ArangoClient
+
+    # Initialize the ArangoDB client.
+    client = ArangoClient()
+
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Get the API wrapper for graph "school".
+    school = db.graph('school')
+
+    # Create a new vertex collection named "teachers" if it does not exist.
+    # This returns an API wrapper for "teachers" vertex collection.
+    if school.has_vertex_collection('teachers'):
+        teachers = school.vertex_collection('teachers')
+    else:
+        teachers = school.create_vertex_collection('teachers')
+
+    # List vertex collections in the graph.
+    school.vertex_collections()
+
+    # Vertex collections have similar interface as standard collections.
+    teachers.properties()
+    teachers.insert({'_key': 'jon', 'name': 'Jon'})
+    teachers.update({'_key': 'jon', 'age': 35})
+    teachers.replace({'_key': 'jon', 'name': 'Jon', 'age': 36})
+    teachers.get('jon')
+    teachers.has('jon')
+    teachers.delete('jon')
+
+You can manage vertices via graph API wrappers also, but you must use document
+IDs instead of keys where applicable.
+
+**Example:**
+
+.. testcode::
+
+    # Initialize the ArangoDB client.
+    client = ArangoClient()
+
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Get the API wrapper for graph "school".
+    school = db.graph('school')
+
+    # The "_id" field is required instead of "_key" field.
+    school.insert_vertex('teachers', {'_key': 'jon', 'name': 'Jon'})
+    school.update_vertex({'_id': 'teachers/jon', 'age': 35})
+    school.replace_vertex({'_id': 'teachers/jon', 'name': 'Jon', 'age':36})
+    school.has_vertex('teachers/jon')
+    school.vertex('teachers/jon')
+    school.delete_vertex('teachers/jon')
+
+See :ref:`Graph` and :ref:`VertexCollection` for API specification.
+
+.. _edge-collections:
+
+Edge Collections
+================
+
+An **edge collection** contains :ref:`edge documents <edge-documents>`, and
+shares its namespace with all other types of collections. You can manage edge
+documents via standard collection API wrappers, but using edge collection API
+wrappers provides additional safeguards:
+
+* All modifications are executed in transactions.
+* Edge documents are checked against the edge definitions on insert.
+
+**Example:**
+
+.. testcode::
+
+    from arango import ArangoClient
+
+    # Initialize the ArangoDB client.
+    client = ArangoClient()
+
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Get the API wrapper for graph "school".
+    school = db.graph('school')
+
+    # Get the API wrapper for edge collection "teach".
+    if school.has_edge_definition('teach'):
+        teach = school.edge_collection('teach')
+    else:
+        teach = school.create_edge_definition(
+            edge_collection='teach',
+            from_vertex_collections=['teachers'],
+            to_vertex_collections=['lectures']
+        )
+
+    # Edge collections have a similar interface as standard collections.
+    teach.insert({
+        '_key': 'jon-CSC101',
+        '_from': 'teachers/jon',
+        '_to': 'lectures/CSC101'
     })
-    print(teaches.get('michelle-CSC101'))
+    teach.replace({
+        '_key': 'jon-CSC101',
+        '_from': 'teachers/jon',
+        '_to': 'lectures/CSC101',
+        'online': False
+    })
+    teach.update({
+        '_key': 'jon-CSC101',
+        'online': True
+    })
+    teach.has('jon-CSC101')
+    teach.get('jon-CSC101')
+    teach.delete('jon-CSC101')
 
-    # Delete an existing edge definition (and the collection)
-    schedule.delete_edge_definition('teaches', purge=True)
+    # Create an edge between two vertices (essentially the same as insert).
+    teach.link('teachers/jon', 'lectures/CSC101', data={'online': False})
 
-Refer to :ref:`Graph` and :ref:`EdgeCollection` classes for more details.
+    # List edges going in/out of a vertex.
+    teach.edges('teachers/jon', direction='in')
+    teach.edges('teachers/jon', direction='out')
+
+You can manage edges via graph API wrappers also, but you must use document
+IDs instead of keys where applicable.
+
+**Example:**
+
+.. testcode::
+
+    from arango import ArangoClient
+
+    # Initialize the ArangoDB client.
+    client = ArangoClient()
+
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Get the API wrapper for graph "school".
+    school = db.graph('school')
+
+    # The "_id" field is required instead of "_key" field.
+    school.insert_edge(
+        collection='teach',
+        edge={
+            '_id': 'teach/jon-CSC101',
+            '_from': 'teachers/jon',
+            '_to': 'lectures/CSC101'
+        }
+    )
+    school.replace_edge({
+        '_id': 'teach/jon-CSC101',
+        '_from': 'teachers/jon',
+        '_to': 'lectures/CSC101',
+        'online': False,
+    })
+    school.update_edge({
+        '_id': 'teach/jon-CSC101',
+        'online': True
+    })
+    school.has_edge('teach/jon-CSC101')
+    school.edge('teach/jon-CSC101')
+    school.delete_edge('teach/jon-CSC101')
+    school.link('teach', 'teachers/jon', 'lectures/CSC101')
+    school.edges('teach', 'teachers/jon', direction='out')
+
+See :ref:`Graph` and :ref:`EdgeCollection` for API specification.
 
 .. _graph-traversals:
 
@@ -145,46 +294,49 @@ Graph Traversals
 ================
 
 **Graph traversals** are executed via the :func:`arango.graph.Graph.traverse`
-method. A traversal can span across multiple vertex collections and walk over
-the documents in a variety of ways.
+method. Each traversal can span across multiple vertex collections, and walk
+over edges and vertices using various algorithms.
 
-Here is an example of a graph traversal:
+**Example:**
 
-.. code-block:: python
+.. testcode::
 
     from arango import ArangoClient
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
-    db = client.db('my_database')
 
-    # Define a new graph
-    schedule = db.create_graph('schedule')
-    profs = schedule.create_vertex_collection('profs')
-    courses = schedule.create_vertex_collection('courses')
-    teaches = schedule.create_edge_definition(
-        name='teaches',
-        from_collections=['profs'],
-        to_collections=['courses']
-    )
-    # Insert vertices into the graph
-    profs.insert({'_key': 'michelle', 'name': 'Professor Michelle'})
-    courses.insert({'_key': 'CSC101', 'name': 'Introduction to CS'})
-    courses.insert({'_key': 'MAT223', 'name': 'Linear Algebra'})
-    courses.insert({'_key': 'STA201', 'name': 'Statistics'})
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
 
-    # Insert edges into the graph
-    teaches.insert({'_from': 'profs/michelle', '_to': 'courses/CSC101'})
-    teaches.insert({'_from': 'profs/michelle', '_to': 'courses/STA201'})
-    teaches.insert({'_from': 'profs/michelle', '_to': 'courses/MAT223'})
+    # Get the API wrapper for graph "school".
+    school = db.graph('school')
 
-    # Traverse the graph in outbound direction, breath-first
-    traversal_results = schedule.traverse(
-        start_vertex='profs/michelle',
+    # Get API wrappers for "from" and "to" vertex collections.
+    teachers = school.vertex_collection('teachers')
+    lectures = school.vertex_collection('lectures')
+
+    # Get the API wrapper for the edge collection.:
+    teach = school.edge_collection('teach')
+
+    # Insert vertices into the graph.
+    teachers.insert({'_key': 'jon', 'name': 'Professor jon'})
+    lectures.insert({'_key': 'CSC101', 'name': 'Introduction to CS'})
+    lectures.insert({'_key': 'MAT223', 'name': 'Linear Algebra'})
+    lectures.insert({'_key': 'STA201', 'name': 'Statistics'})
+
+    # Insert edges into the graph.
+    teach.insert({'_from': 'teachers/jon', '_to': 'lectures/CSC101'})
+    teach.insert({'_from': 'teachers/jon', '_to': 'lectures/STA201'})
+    teach.insert({'_from': 'teachers/jon', '_to': 'lectures/MAT223'})
+
+    # Traverse the graph in outbound direction, breath-first.
+    school.traverse(
+        start_vertex='teachers/jon',
         direction='outbound',
         strategy='bfs',
         edge_uniqueness='global',
         vertex_uniqueness='global',
     )
-    print(traversal_results)
 
-Refer to :ref:`Graph` class for more details.
+See :func:`arango.graph.Graph.traverse` for API specification.

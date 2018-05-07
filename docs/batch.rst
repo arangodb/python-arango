@@ -1,55 +1,91 @@
-.. _batch-page:
-
 Batch Execution
 ---------------
 
-Python-arango provides support for **batch executions**, where incoming
-requests are queued in client-side memory and executed in a single HTTP call.
-After the batch is committed, the results of the queued requests can be
-retrieved via :ref:`BatchJob` objects.
+Python-arango supports **batch execution**. Requests to ArangoDB server are
+placed in client-side in-memory queue, and committed together in a single HTTP
+call. After the commit, results can be retrieved from :ref:`BatchJob` objects.
 
-.. note::
-    The user should be mindful of the client-side memory while using batch
-    executions with a large number of requests.
-
-.. warning::
-    Batch execution is currently an experimental feature and is not
-    thread-safe.
-
-Here is an example showing how batch executions can be used:
+**Example:**
 
 .. code-block:: python
 
-    from arango import ArangoClient, ArangoError
+    from arango import ArangoClient, AQLQueryExecuteError
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
-    db = client.db('my_database')
 
-    # Initialize the BatchExecution object via a context manager
-    with db.batch(return_result=True) as batch:
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
 
-        # BatchExecution has a similar interface as that of Database, but
-        # BatchJob objects are returned instead of results on method calls
-        job1 = batch.aql.execute('FOR d IN students RETURN d')
-        job2 = batch.collection('students').insert({'_key': 'Abby'})
-        job3 = batch.collection('students').insert({'_key': 'John'})
-        job4 = batch.collection('students').insert({'_key': 'John'})
+    # Get the API wrapper for "students" collection.
+    students = db.collection('students')
 
-    # Upon exiting context, the queued requests are committed
-    for job in [job1, job2, job3, job4]:
-        print(job.status())
+    # Begin batch execution via context manager. This returns an instance of
+    # BatchDatabase, a database-level API wrapper tailored specifically for
+    # batch execution. The batch is automatically committed when exiting the
+    # context. The BatchDatabase wrapper cannot be reused after commit.
+    with db.begin_batch_execution(return_result=True) as batch_db:
 
-    # Retrieve the result of a job
-    job1.result()
+        # Child wrappers are also tailored for batch execution.
+        batch_aql = batch_db.aql
+        batch_col = batch_db.collection('students')
 
-    # If a job fails, the exception object is returned (not raised)
-    assert isinstance(job4.result(), ArangoError)
+        # API execution context is always set to "batch".
+        assert batch_db.context == 'batch'
+        assert batch_aql.context == 'batch'
+        assert batch_col.context == 'batch'
 
-    # BatchExecution can also be initialized without a context manager
-    batch = db.batch(return_result=True)
-    students = batch.collection('students')
-    job5 = batch.collection('students').insert({'_key': 'Jake'})
-    job6 = batch.collection('students').insert({'_key': 'Jill'})
-    batch.commit()  # In which case the commit must be called explicitly
+        # BatchJob objects are returned instead of results.
+        job1 = batch_col.insert({'_key': 'Kris'})
+        job2 = batch_col.insert({'_key': 'Rita'})
+        job3 = batch_aql.execute('RETURN 100000')
+        job4 = batch_aql.execute('INVALID QUERY')  # Fails due to syntax error.
 
-Refer to :ref:`BatchExecution` and :ref:`BatchJob` classes for more details.
+    # Upon exiting context, batch is automatically committed.
+    assert 'Kris' in students
+    assert 'Rita' in students
+
+    # Retrieve the status of each batch job.
+    for job in batch_db.queued_jobs():
+        # Status is set to either "pending" (transaction is not committed yet
+        # and result is not available) or "done" (transaction is committed and
+        # result is available).
+        assert job.status() in {'pending', 'done'}
+
+    # Retrieve the results of successful jobs.
+    metadata = job1.result()
+    assert metadata['_id'] == 'students/Kris'
+
+    metadata = job2.result()
+    assert metadata['_id'] == 'students/Rita'
+
+    cursor = job3.result()
+    assert cursor.next() == 100000
+
+    # If a job fails, the exception is propagated up during result retrieval.
+    try:
+        result = job4.result()
+    except AQLQueryExecuteError as err:
+        assert err.http_code == 400
+        assert err.error_code == 1501
+        assert 'syntax error' in err.message
+
+    # Batch execution can be initiated without using a context manager.
+    # If return_result parameter is set to False, no jobs are returned.
+    batch_db = db.begin_batch_execution(return_result=False)
+    batch_db.collection('students').insert({'_key': 'Jake'})
+    batch_db.collection('students').insert({'_key': 'Jill'})
+
+    # The commit must be called explicitly.
+    batch_db.commit()
+    assert 'Jake' in students
+    assert 'Jill' in students
+
+.. note::
+    * Be mindful of client-side memory capacity when issuing a large number of
+      requests in single batch execution.
+    * :ref:`BatchDatabase` and :ref:`BatchJob` instances are stateful objects,
+      and should not be shared across multiple threads.
+    * :ref:`BatchDatabase` instance cannot be reused after commit.
+
+See :ref:`BatchDatabase` and :ref:`BatchJob` for API specification.

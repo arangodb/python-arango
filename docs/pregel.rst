@@ -1,38 +1,42 @@
-.. _pregel-page:
-
 Pregel
 ------
 
-**Python-arango** provides APIs for distributed iterative graph processing
-(Pregel). For more information, please refer to the ArangoDB manual
-`here <https://docs.arangodb.com/Manual/Graphs/Pregel/>`__.
+Python-arango supports **Pregel**, an ArangoDB module for distributed iterative
+graph processing. For more information, refer to `ArangoDB manual`_.
 
-Here is an example showing how Pregel jobs can be started, fetched or cancelled:
+.. _ArangoDB manual: https://docs.arangodb.com
 
-.. code-block:: python
+**Example:**
+
+.. testcode::
 
     from arango import ArangoClient
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
-    db = client.db('my_database')
-    db.create_graph('my_graph')
 
-    # Create and start a new Pregel job
-    job_id = db.create_pregel_job(algorithm='pagerank', graph='my_graph')
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
 
-    # Get the details of a Pregel job by its ID
-    job = db.pregel_job(job_id)
-    print(job['aggregators'])
-    print(job['edge_count'])
-    print(job['gss'])
-    print(job['received_count'])
-    print(job['send_count'])
-    print(job['state'])
-    print(job['total_runtime'])
-    print(job['vertex_count'])
+    # Get the Pregel API wrapper.
+    pregel = db.pregel
 
-    # Delete/cancel a Pregel job by its ID
-    db.delete_pregel_job(job_id)
+    # Start a new Pregel job in "school" graph.
+    job_id = db.pregel.create_job(
+        graph='school',
+        algorithm='pagerank',
+        store=False,
+        max_gss=100,
+        thread_count=1,
+        async_mode=False,
+        result_field='result',
+        algorithm_params={'threshold': 0.000001}
+    )
 
-Refer to class :class:`arango.database.Database` for more details on the methods
-for Pregel jobs.
+    # Retrieve details of a Pregel job by ID.
+    job = pregel.job(job_id)
+
+    # Delete a Pregel job by ID.
+    pregel.delete_job(job_id)
+
+See :ref:`Pregel` for API specification.

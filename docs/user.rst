@@ -1,123 +1,96 @@
-.. _user-page:
+Users and Permissions
+---------------------
 
-User and Access Management
---------------------------
+Python-arango provides operations for managing users and permissions. Most of
+these operations can only be performed by admin users via ``_system`` database.
 
-Python-arango provides operations for managing users and database/collection
-access.
+**Example:**
 
-Example:
-
-.. code-block:: python
+.. testcode::
 
     from arango import ArangoClient
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
 
-    # List all users
-    client.users()
+    # Connect to "_system" database as root user.
+    sys_db = client.db('_system', username='root', password='passwd')
 
-    # Create a new user
-    client.create_user(
+    # List all users.
+    sys_db.users()
+
+    # Create a new user.
+    sys_db.create_user(
         username='johndoe@gmail.com',
         password='first_password',
+        active=True,
         extra={'team': 'backend', 'title': 'engineer'}
     )
-    # Update an existing user
-    client.update_user(
+
+    # Check if a user exists.
+    sys_db.has_user('johndoe@gmail.com')
+
+    # Retrieve details of a user.
+    sys_db.user('johndoe@gmail.com')
+
+    # Update an existing user.
+    sys_db.update_user(
         username='johndoe@gmail.com',
         password='second_password',
-        extra={'team': 'frontend'}
+        active=True,
+        extra={'team': 'frontend', 'title': 'engineer'}
     )
-    # Replace an existing user
-    client.replace_user(
+
+    # Replace an existing user.
+    sys_db.replace_user(
         username='johndoe@gmail.com',
         password='third_password',
+        active=True,
         extra={'team': 'frontend', 'title': 'architect'}
     )
-    # Grant database access to an existing user
-    client.grant_user_access(
+
+    # Retrieve user permissions for all databases and collections.
+    sys_db.permissions('johndoe@gmail.com')
+
+    # Retrieve user permission for "test" database.
+    sys_db.permission(
         username='johndoe@gmail.com',
-        database='my_database'
+        database='test'
     )
-    # Get full database and collection access details of an existing user
-    client.user_access('johndoe@gmail.com', full=True)
 
-    # Revoke database access from an existing user
-    client.revoke_user_access(
+    # Retrieve user permission for "students" collection in "test" database.
+    sys_db.permission(
         username='johndoe@gmail.com',
-        database='my_database'
+        database='test',
+        collection='students'
     )
 
-    # Delete an existing user
-    client.delete_user(username='johndoe@gmail.com')
-
-
-Note that the methods of :class:`arango.client.ArangoClient` above can only
-be called by root user with access to ``_system`` database. Non-root users can
-call the equivalent methods of :class:`arango.database.Database` through a
-database they have access to instead. For example:
-
-.. code-block:: python
-
-    from arango import ArangoClient
-
-    client = ArangoClient()
-    db = client.database(
-        name='database-the-user-has-access-to',
-        username='username',
-        password='password'
-    )
-
-    # List all users
-    db.users()
-
-    # Create a new user
-    db.create_user(
+    # Update user permission for "test" database.
+    sys_db.update_permission(
         username='johndoe@gmail.com',
-        password='first_password',
-        extra={'team': 'backend', 'title': 'engineer'}
+        permission='rw',
+        database='test'
     )
-    # Update an existing user
-    db.update_user(
+
+    # Update user permission for "students" collection in "test" database.
+    sys_db.update_permission(
         username='johndoe@gmail.com',
-        password='second_password',
-        extra={'team': 'frontend'}
+        permission='ro',
+        database='test',
+        collection='students'
     )
-    # Replace an existing user
-    db.replace_user(
+
+    # Reset user permission for "test" database.
+    sys_db.reset_permission(
         username='johndoe@gmail.com',
-        password='third_password',
-        extra={'team': 'frontend', 'title': 'architect'}
+        database='test'
     )
-    # Grant database access to an existing user
-    db.grant_user_access('johndoe@gmail.com')
 
-    # Get database access details of an existing user
-    db.user_access('johndoe@gmail.com')
+    # Reset user permission for "students" collection in "test" database.
+    sys_db.reset_permission(
+        username='johndoe@gmail.com',
+        database='test',
+        collection='students'
+    )
 
-    # Revoke database access from an existing user
-    db.revoke_user_access('johndoe@gmail.com')
-
-    # Delete an existing user
-    client.delete_user(username='johndoe@gmail.com')
-
-Collection-specific user access management is also possible:
-
-.. code-block:: python
-
-    col = db.collection('some-collection')
-
-    # Grant collection access to an existing user
-    col.grant_user_access('johndoe@gmail.com')
-
-    # Get collection access details of an existing user
-    col.user_access('johndoe@gmail.com')
-
-    # Revoke collection access from an existing user
-    col.revoke_user_access('johndoe@gmail.com')
-
-
-Refer to classes :class:`arango.client.ArangoClient`,
-:class:`arango.database.Database`, and :class:`arango.collections.Collection`
-classes for more details.
+See :ref:`StandardDatabase` for API specification.

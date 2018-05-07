@@ -1,62 +1,157 @@
-.. _cursor-page:
-
 Cursors
 -------
 
-Several operations provided by python-arango (e.g. :ref:`aql-page` queries)
-return query :ref:`Cursor` objects to batch the network communication between
-the server and the client. Each request from the cursor fetches the next set
-of documents. Depending on the query, the total number of documents in a result
-set may or may not be known in advance.
+Many operations provided by python-arango (e.g. executing :doc:`aql` queries)
+return result **cursors** to batch the network communication between ArangoDB
+server and python-arango client. Each HTTP request from a cursor fetches the
+next batch of results (usually documents). Depending on the query, the total
+number of items in the result set may or may not be known in advance.
 
-.. note::
-    In order to free the server resources as much as possible, python-arango
-    deletes cursors as soon as their result sets are depleted.
+**Example:**
 
-Here is an example showing how a query cursor can be used:
-
-.. code-block:: python
+.. testcode::
 
     from arango import ArangoClient
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
-    db = client.db('my_database')
 
-    # Set up some test data to query
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Set up some test data to query against.
+    db.collection('students').insert_many([
+        {'_key': 'Abby', 'age': 22},
+        {'_key': 'John', 'age': 18},
+        {'_key': 'Mary', 'age': 21},
+        {'_key': 'Suzy', 'age': 23},
+        {'_key': 'Dave', 'age': 20}
+    ])
+
+    # Execute an AQL query which returns a cursor object.
+    cursor = db.aql.execute(
+        'FOR doc IN students FILTER doc.age > @val RETURN doc',
+        bind_vars={'val': 17},
+        batch_size=2,
+        count=True
+    )
+
+    # Get the cursor ID.
+    cursor.id
+
+    # Get the items in the current batch.
+    cursor.batch()
+
+    # Check if the current batch is empty.
+    cursor.empty()
+
+    # Get the total count of the result set.
+    cursor.count()
+
+    # Flag indicating if there are more to be fetched from server.
+    cursor.has_more()
+
+    # Flag indicating if the results are cached.
+    cursor.cached()
+
+    # Get the cursor statistics.
+    cursor.statistics()
+
+    # Get the performance profile.
+    cursor.profile()
+
+    # Get any warnings produced from the query.
+    cursor.warnings()
+
+    # Return the next item from the cursor. If current batch is depleted, the
+    # next batch if fetched from the server automatically.
+    cursor.next()
+
+    # Return the next item from the cursor. If current batch is depleted, an
+    # exception is thrown. You need to fetch the next batch manually.
+    cursor.pop()
+
+    # Fetch the next batch and add them to the cursor object.
+    cursor.fetch()
+
+    # Delete the cursor from the server.
+    cursor.close()
+
+See :ref:`Cursor` for API specification.
+
+If the fetched result batch is depleted while you are iterating over a cursor
+(or while calling the method :func:`arango.cursor.Cursor.next`), python-arango
+automatically sends an HTTP request to the server to fetch the next batch
+(just-in-time style). To control exactly when the fetches occur, you can use
+methods :func:`arango.cursor.Cursor.fetch` and :func:`arango.cursor.Cursor.pop`
+instead.
+
+**Example:**
+
+.. testcode::
+
+    from arango import ArangoClient
+
+    # Initialize the ArangoDB client.
+    client = ArangoClient()
+
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Set up some test data to query against.
     db.collection('students').insert_many([
         {'_key': 'Abby', 'age': 22},
         {'_key': 'John', 'age': 18},
         {'_key': 'Mary', 'age': 21}
     ])
 
-    # Execute an AQL query which returns a cursor object
-    cursor = db.aql.execute(
-        'FOR s IN students FILTER s.age < @val RETURN s',
-        bind_vars={'val': 19},
-        batch_size=1,
-        count=True
-    )
+    # If you iterate over the cursor or call cursor.next(), batches are
+    # fetched automatically from the server just-in-time style.
+    cursor = db.aql.execute('FOR doc IN students RETURN doc', batch_size=1)
+    result = [doc for doc in cursor]
 
-    # Retrieve the cursor ID
-    cursor.id
+    # Alternatively, you can manually fetch and pop for finer control.
+    cursor = db.aql.execute('FOR doc IN students RETURN doc', batch_size=1)
+    while cursor.has_more(): # Fetch until nothing is left on the server.
+        cursor.fetch()
+    while not cursor.empty(): # Pop until nothing is left on the cursor.
+        cursor.pop()
 
-    # Retrieve the documents in the current batch
-    cursor.batch()
+When running queries in :doc:`transactions <transaction>`, cursors are loaded
+with the entire result set right away. This is regardless of the parameters
+passed in when executing the query (e.g. batch_size). You must be mindful of
+client-side memory capacity when executing queries that can potentially return
+a large result set.
 
-    # Check if there are more documents to be fetched
-    cursor.has_more()
+**Example:**
 
-    # Retrieve the cursor statistics
-    cursor.statistics()
+.. testcode::
 
-    # Retrieve any warnings produced from the cursor
-    cursor.warnings()
+    # Initialize the ArangoDB client.
+    client = ArangoClient()
 
-    # Return the next document in the batch
-    # If the batch is depleted, fetch the next batch
-    cursor.next()
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
 
-    # Delete the cursor from the server
-    cursor.close()
+    # Get the total document count in "students" collection.
+    document_count = db.collection('students').count()
 
-Refer to :ref:`Cursor` class for more details.
+    # Execute an AQL query normally (without using transactions).
+    cursor1 = db.aql.execute('FOR doc IN students RETURN doc', batch_size=1)
+
+    # Execute the same AQL query in a transaction.
+    txn_db = db.begin_transaction()
+    job = txn_db.aql.execute('FOR doc IN students RETURN doc', batch_size=1)
+    txn_db.commit()
+    cursor2 = job.result()
+
+    # The first cursor acts as expected. Its current batch contains only 1 item
+    # and it still needs to fetch the rest of its result set from the server.
+    assert len(cursor1.batch()) == 1
+    assert cursor1.has_more() is True
+
+    # The second cursor is pre-loaded with the entire result set, and does not
+    # require further communication with ArangoDB server. Note that value of
+    # parameter "batch_size" was ignored.
+    assert len(cursor2.batch()) == document_count
+    assert cursor2.has_more() is False

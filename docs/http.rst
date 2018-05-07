@@ -1,159 +1,157 @@
-.. _http-client-page:
+Using Custom HTTP Clients
+-------------------------
 
-Using Your Own HTTP Clients
----------------------------
+Python-arango lets you use your own HTTP clients for sending API requests to
+ArangoDB server. The default implementation uses the Requests_ library.
 
-**Python-arango** allows you to use your own custom HTTP clients. Your client
-must inherit from :class:`arango.http_clients.base.BaseHTTPClient`, and all of
-its abstract methods must be implemented/overridden.
+Your HTTP client must inherit :class:`arango.http.HTTPClient` and implement its
+abstract method :func:`arango.http.HTTPClient.send_request`. The method must
+return valid (fully populated) instances of :class:`arango.response.Response`.
 
-The overridden methods must conform to their original method signatures and
-return instances of :class:`arango.response.Response`.
+For example, let's say you want to use your own HTTP client with:
 
-Let's go through a quick example. Let's say you want to use an HTTP client with
-built-in retries and SSL certificate verification disabled. You may want to
-define your ``MyCustomHTTPClient`` class as follows:
+* Automatic retries
+* Additional HTTP header called ``x-my-header``
+* SSL certificate verification disabled
+* Custom logging
 
-.. code-block:: python
+Your ``CustomHTTPClient`` class might look something like this:
 
-    from __future__ import absolute_import, unicode_literals
+.. testcode::
+
+    import logging
 
     from requests.adapters import HTTPAdapter
-    from requests import Session, exceptions
+    from requests import Session
 
     from arango.response import Response
-    from arango.http_clients.base import BaseHTTPClient
+    from arango.http import HTTPClient
 
 
-    class MyCustomHTTPClient(BaseHTTPClient):
+    class CustomHTTPClient(HTTPClient):
+        """My custom HTTP client with cool features."""
 
-        def __init__(self, retries=5):
+        def __init__(self):
             self._session = Session()
-            self._session.mount('https://', HTTPAdapter(max_retries=retries))
-            self._check_cert = False
 
-        def head(self, url, params=None, headers=None, auth=None):
-            res = self._session.head(
+            # Initialize your logger.
+            self._logger = logging.getLogger('my_logger')
+
+            # Add your request headers.
+            self._session.headers.update({'x-my-header': 'true'})
+
+            # Enable retries.
+            adapter = HTTPAdapter(max_retries=5)
+            self._session.mount('https://', adapter)
+
+        def send_request(self,
+                         method,
+                         url,
+                         params=None,
+                         data=None,
+                         headers=None,
+                         auth=None):
+
+            # Add your own debug statement.
+            self._logger.debug('Sending request to {}'.format(url))
+
+            # Send a request.
+            response = self._session.request(
+                method=method,
                 url=url,
                 params=params,
-                headers=headers,
-                auth=auth,
-                verify=self._check_cert
-            )
-            return Response(
-                url=url,
-                method="head",
-                headers=res.headers,
-                http_code=res.status_code,
-                http_text=res.reason,
-                body=res.text
-            )
-
-        def get(self, url, params=None, headers=None, auth=None):
-            res = self._session.get(
-                url=url,
-                params=params,
-                headers=headers,
-                auth=auth,
-                verify=self._check_cert
-            )
-            return Response(
-                url=url,
-                method="get",
-                headers=res.headers,
-                http_code=res.status_code,
-                http_text=res.reason,
-                body=res.text
-            )
-
-        def put(self, url, data, params=None, headers=None, auth=None):
-            res = self._session.put(
-                url=url,
                 data=data,
-                params=params,
                 headers=headers,
                 auth=auth,
-                verify=self._check_cert
+                verify=False  # Disable SSL verification
             )
+            self._logger.debug('Got {}'.format(response.status_code))
+
+            # Return an instance of arango.response.Response per spec.
             return Response(
-                url=url,
-                method="put",
-                headers=res.headers,
-                http_code=res.status_code,
-                http_text=res.reason,
-                body=res.text
+                method=response.request.method,
+                url=response.url,
+                headers=response.headers,
+                status_code=response.status_code,
+                status_text=response.reason,
+                raw_body=response.text,
             )
 
-        def post(self, url, data, params=None, headers=None, auth=None):
-            res = self._session.post(
+Then you would inject your client as follows:
+
+.. testsetup::
+
+    import logging
+
+    from requests.adapters import HTTPAdapter
+    from requests import Session
+
+    from arango.response import Response
+    from arango.http import HTTPClient
+
+    class CustomHTTPClient(HTTPClient):
+        """Custom HTTP client."""
+
+        def __init__(self):
+            self._session = Session()
+
+            # Initialize logger.
+            self._logger = logging.getLogger('my_logger')
+
+            # Add request headers.
+            self._session.headers.update({'x-my-header': 'true'})
+
+            # Add retries.
+            adapter = HTTPAdapter(max_retries=5)
+            self._session.mount('https://', adapter)
+
+        def send_request(self,
+                         method,
+                         url,
+                         params=None,
+                         data=None,
+                         headers=None,
+                         auth=None):
+            # Add your own debug statement.
+            self._logger.debug('Sending request to {}'.format(url))
+
+            # Send a request without SSL verification.
+            response = self._session.request(
+                method=method,
                 url=url,
+                params=params,
                 data=data,
-                params=params,
                 headers=headers,
                 auth=auth,
-                verify=self._check_cert
+                verify=False  # No SSL verification
             )
+            self._logger.debug('Got {}'.format(response.status_code))
+
+            # You must return an instance of arango.response.Response.
             return Response(
-                url=url,
-                method="post",
-                headers=res.headers,
-                http_code=res.status_code,
-                http_text=res.reason,
-                body=res.text
+                method=response.request.method,
+                url=response.url,
+                headers=response.headers,
+                status_code=response.status_code,
+                status_text=response.reason,
+                raw_body=response.text,
             )
 
-        def patch(self, url, data, params=None, headers=None, auth=None):
-            res = self._session.patch(
-                url=url,
-                data=data,
-                params=params,
-                headers=headers,
-                auth=auth,
-                verify=self._check_cert
-            )
-            return Response(
-                url=url,
-                method="patch",
-                headers=res.headers,
-                http_code=res.status_code,
-                http_text=res.reason,
-                body=res.text
-            )
-
-        def delete(self, url, data=None, params=None, headers=None, auth=None):
-            res = self._session.delete(
-                url=url,
-                data=data,
-                params=params,
-                headers=headers,
-                auth=auth,
-                verify=self._check_cert
-            )
-            return Response(
-                url=url,
-                method="delete",
-                headers=res.headers,
-                http_code=res.status_code,
-                http_text=res.reason,
-                body=res.text
-            )
-
-
-Then you would inject your HTTP client as shown below:
-
-.. code-block:: python
-
-    from my_module import MyCustomHTTPClient
+.. testcode::
 
     from arango import ArangoClient
 
+    # from my_module import CustomHTTPClient
+
     client = ArangoClient(
-        username='root',
-        password='',
-        http_client=MyCustomHTTPClient(retries=10),
-        use_session=True,  # This flag (used in the default client) is now ignored
-        check_cert=True    # This flag (used in the default client) is now ignored
+        protocol='http',
+        host='localhost',
+        port=8529,
+        http_client=CustomHTTPClient()
     )
 
-Refer to the default HTTP client used by **python-arango** itself for another example
-`here <https://github.com/joowani/python-arango/blob/master/arango/http_clients/default.py>`__.
+For more information on how to use a ``requests.Session``, refer to
+`Requests documentation`_.
+
+.. _Requests: https://github.com/requests/requests
+.. _Requests documentation: http://docs.python-requests.org/en/master/user/advanced/#session-objects

@@ -1,109 +1,151 @@
-.. _aql-page:
-
 AQL
 ----
 
-**ArangoDB Query Language (AQL)** is used to retrieve and modify data in
-ArangoDB. AQL is similar to SQL for relational databases, but without the
-support for data definition operations such as creating/deleting
-:ref:`databases <database-page>`, :ref:`collections <collection-page>` and
-:ref:`indexes <index-page>`. For more general information on AQL visit
-`here <https://docs.arangodb.com/AQL>`__.
+**ArangoDB Query Language (AQL)** is used to read and write data. It is similar
+to SQL for relational databases, but without the support for data definition
+operations such as creating or deleting :doc:`databases <database>`,
+:doc:`collections <collection>` or :doc:`indexes <indexes>`. For more
+information, refer to `ArangoDB manual`_.
+
+.. _ArangoDB manual: https://docs.arangodb.com
 
 AQL Queries
 ===========
 
-**AQL queries** can be invoked using the :ref:`AQL` class, which outputs
-instances of the :ref:`Cursor` class. For more information on the syntax of AQL
-visit `here <https://docs.arangodb.com/AQL/Fundamentals/Syntax.html>`__.
+AQL queries are invoked from AQL API wrapper. Executing queries returns
+:doc:`result cursors <cursor>`.
 
-Below is an example of executing a query:
+**Example:**
 
-.. code-block:: python
+.. testcode::
 
-    from arango import ArangoClient
+    from arango import ArangoClient, AQLQueryKillError
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
-    db = client.db('my_database')
 
-    # Set up some test data to query against
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Insert some test documents into "students" collection.
     db.collection('students').insert_many([
         {'_key': 'Abby', 'age': 22},
         {'_key': 'John', 'age': 18},
         {'_key': 'Mary', 'age': 21}
     ])
 
-    # Retrieve the execution plan without running the query
-    db.aql.explain('FOR s IN students RETURN s')
+    # Get the AQL API wrapper.
+    aql = db.aql
 
-    # Validate the query without executing it
-    db.aql.validate('FOR s IN students RETURN s')
+    # Retrieve the execution plan without running the query.
+    aql.explain('FOR doc IN students RETURN doc')
+
+    # Validate the query without executing it.
+    aql.validate('FOR doc IN students RETURN doc')
 
     # Execute the query
     cursor = db.aql.execute(
-      'FOR s IN students FILTER s.age < @value RETURN s',
+      'FOR doc IN students FILTER doc.age < @value RETURN doc',
       bind_vars={'value': 19}
     )
     # Iterate through the result cursor
-    print([student['_key'] for student in cursor])
+    student_keys = [doc['_key'] for doc in cursor]
+
+    # List currently running queries.
+    aql.queries()
+
+    # List any slow queries.
+    aql.slow_queries()
+
+    # Clear slow AQL queries if any.
+    aql.clear_slow_queries()
+
+    # Retrieve AQL query tracking properties.
+    aql.tracking()
+
+    # Configure AQL query tracking properties.
+    aql.set_tracking(
+        max_slow_queries=10,
+        track_bind_vars=True,
+        track_slow_queries=True
+    )
+
+    # Kill a running query (this should fail due to invalid ID).
+    try:
+        aql.kill('some_query_id')
+    except AQLQueryKillError as err:
+        assert err.http_code == 400
+        assert err.error_code == 1591
+        assert 'cannot kill query' in err.message
+
+See :ref:`AQL` for API specification.
 
 
 AQL User Functions
 ==================
 
-**AQL user functions** are custom functions which can be defined by users to
-extend the functionality of AQL. While python-arango provides ways to add,
-delete and retrieve user functions in Python, the functions themselves must be
-defined in Javascript. For more general information on AQL user functions visit
-this `page <https://docs.arangodb.com/AQL/Extending>`__.
+**AQL User Functions** are custom functions you define in Javascript to extend
+AQL functionality. They are somewhat similar to SQL procedures.
 
-Below is an example of creating and deleting an AQL function:
+**Example:**
 
-.. code-block:: python
+.. testcode::
 
     from arango import ArangoClient
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
-    db = client.db('my_database')
 
-    # Create a new AQL user function
-    db.aql.create_function(
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Get the AQL API wrapper.
+    aql = db.aql
+
+    # Create a new AQL user function.
+    aql.create_function(
+        # Grouping by name prefix is supported.
         name='functions::temperature::converter',
         code='function (celsius) { return celsius * 1.8 + 32; }'
     )
-    # List all available AQL user functions
-    db.aql.functions()
+    # List AQL user functions.
+    aql.functions()
 
-    # Delete an existing AQL user function
-    db.aql.delete_function('functions::temperature::converter')
+    # Delete an existing AQL user function.
+    aql.delete_function('functions::temperature::converter')
 
-Refer to :ref:`AQL` class for more details.
+See :ref:`AQL` for API specification.
 
 
 AQL Query Cache
 ===============
 
-**AQL query cache** is used to minimize redundant calculation of the same
-query result. It is useful when read queries are called frequently and write
-queries are not. For more general information on AQL query caches visit this
-`page <https://docs.arangodb.com/AQL/ExecutionAndPerformance/QueryCache.html>`__.
+**AQL Query Cache** is used to minimize redundant calculation of the same query
+results. It is useful when read queries are issued frequently and write queries
+are not.
 
-Here is an example showing how the AQL query cache can be used:
+**Example:**
 
-.. code-block:: python
+.. testcode::
 
     from arango import ArangoClient
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
-    db = client.db('my_database')
 
-    # Configure the AQL query cache properties
-    db.aql.cache.configure(mode='demand', limit=10000)
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
 
-    # Retrieve the AQL query cache properties
-    db.aql.cache.properties()
+    # Get the AQL API wrapper.
+    aql = db.aql
 
-    # Clear the AQL query cache
-    db.aql.cache.clear()
+    # Retrieve AQL query cache properties.
+    aql.cache.properties()
 
-Refer to :ref:`AQLQueryCache` class for more details.
+    # Configure AQL query cache properties
+    aql.cache.configure(mode='demand', limit=10000)
+
+    # Clear results in AQL query cache.
+    aql.cache.clear()
+
+See :ref:`AQLQueryCache` for API specification.

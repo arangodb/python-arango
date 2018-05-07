@@ -1,174 +1,220 @@
 from __future__ import absolute_import, unicode_literals
 
-import pytest
 from six import string_types
 
-from arango import ArangoClient
-from arango.collections import Collection
-from arango.exceptions import *
-
-from .utils import (
-    generate_db_name,
-    generate_col_name
+from arango.collection import StandardCollection
+from arango.exceptions import (
+    CollectionChecksumError,
+    CollectionConfigureError,
+    CollectionLoadError,
+    CollectionPropertiesError,
+    CollectionRenameError,
+    CollectionRevisionError,
+    CollectionRotateJournalError,
+    CollectionStatisticsError,
+    CollectionTruncateError,
+    CollectionUnloadError,
+    CollectionCreateError,
+    CollectionListError,
+    CollectionDeleteError,
 )
-
-arango_client = ArangoClient()
-db_name = generate_db_name()
-db = arango_client.create_database(db_name)
-col_name = generate_col_name()
-col = db.create_collection(col_name)
-bad_col_name = generate_col_name()
-bad_col = db.collection(bad_col_name)
+from tests.helpers import assert_raises, extract, generate_col_name
 
 
-def teardown_module(*_):
-    arango_client.delete_database(db_name, ignore_missing=True)
+def test_collection_attributes(db, col, username):
+    assert col.context in ['default', 'async', 'batch', 'transaction']
+    assert col.username == username
+    assert col.db_name == db.name
+    assert col.name.startswith('test_collection')
+    assert repr(col) == '<StandardCollection {}>'.format(col.name)
 
 
-def setup_function(*_):
-    col.truncate()
-
-
-def test_properties():
-    assert col.name == col_name
-    assert repr(col) == '<ArangoDB collection "{}">'.format(col_name)
+def test_collection_misc_methods(col, bad_col):
+    # Test get properties
     properties = col.properties()
-    assert 'id' in properties
-    assert properties['status'] in Collection.STATUSES.values()
-    assert properties['name'] == col_name
-    assert properties['edge'] is False
+    assert properties['name'] == col.name
     assert properties['system'] is False
-    assert isinstance(properties['sync'], bool)
-    assert isinstance(properties['compact'], bool)
-    assert isinstance(properties['volatile'], bool)
-    assert isinstance(properties['journal_size'], int)
-    assert properties['keygen'] in ('autoincrement', 'traditional')
-    assert isinstance(properties['user_keys'], bool)
-    if properties['key_increment'] is not None:
-        assert isinstance(properties['key_increment'], int)
-    if properties['key_offset'] is not None :
-        assert isinstance(properties['key_offset'], int)
-    with pytest.raises(CollectionBadStatusError):
-        assert getattr(col, '_status')(10)
-    with pytest.raises(CollectionPropertiesError):
+
+    # Test get properties with bad collection
+    with assert_raises(CollectionPropertiesError) as err:
         bad_col.properties()
+    assert err.value.error_code == 1228
 
+    # Test configure properties
+    prev_sync = properties['sync']
+    properties = col.configure(
+        sync=not prev_sync,
+        journal_size=10000000
+    )
+    assert properties['name'] == col.name
+    assert properties['system'] is False
+    assert properties['sync'] is not prev_sync
 
-def test_configure():
-    properties = col.properties()
-    old_sync = properties['sync']
-    old_journal_size = properties['journal_size']
+    # Test configure properties with bad collection
+    with assert_raises(CollectionConfigureError) as err:
+        bad_col.configure(sync=True, journal_size=10000000)
+    assert err.value.error_code == 1228
 
-    # Test preconditions
-    new_sync = not old_sync
-    new_journal_size = old_journal_size + 1
-
-    # Test configure
-    result = col.configure(sync=new_sync, journal_size=new_journal_size)
-    assert result['sync'] == new_sync
-    assert result['journal_size'] == new_journal_size
-
-    # Test persistence
-    new_properties = col.properties()
-    assert new_properties['sync'] == new_sync
-    assert new_properties['journal_size'] == new_journal_size
-
-    # Test missing collection
-    with pytest.raises(CollectionConfigureError):
-        bad_col.configure(sync=new_sync, journal_size=new_journal_size)
-
-
-def test_rename():
-    assert col.name == col_name
-    new_name = generate_col_name()
-    while new_name == bad_col_name:
-        new_name = generate_col_name()
-
-    # Test rename collection
-    result = col.rename(new_name)
-    assert result['name'] == new_name
-    assert col.name == new_name
-    assert repr(col) == '<ArangoDB collection "{}">'.format(new_name)
-
-    # Try again (the operation should be idempotent)
-    result = col.rename(new_name)
-    assert result['name'] == new_name
-    assert col.name == new_name
-    assert repr(col) == '<ArangoDB collection "{}">'.format(new_name)
-
-    with pytest.raises(CollectionRenameError):
-        bad_col.rename(new_name)
-
-
-def test_statistics():
+    # Test get statistics
     stats = col.statistics()
-    assert 'alive' in stats
-    assert 'compactors' in stats
-    assert 'dead' in stats
-    assert 'document_refs' in stats
-    assert 'journals' in stats
-    with pytest.raises(CollectionStatisticsError):
+    assert isinstance(stats, dict)
+    assert 'indexes' in stats
+
+    # Test get statistics with bad collection
+    with assert_raises(CollectionStatisticsError) as err:
         bad_col.statistics()
+    assert err.value.error_code == 1228
 
+    # Test get revision
+    assert isinstance(col.revision(), string_types)
 
-def test_revision():
-    revision = col.revision()
-    assert isinstance(revision, string_types)
-    with pytest.raises(CollectionRevisionError):
+    # Test get revision with bad collection
+    with assert_raises(CollectionRevisionError) as err:
         bad_col.revision()
+    assert err.value.error_code == 1228
 
+    # Test load into memory
+    assert col.load() is True
 
-def test_load():
-    assert col.load() in {'loaded', 'loading'}
-    with pytest.raises(CollectionLoadError):
+    # Test load with bad collection
+    with assert_raises(CollectionLoadError) as err:
         bad_col.load()
+    assert err.value.error_code == 1228
 
+    # Test unload from memory
+    assert col.unload() is True
 
-def test_unload():
-    assert col.unload() in {'unloaded', 'unloading'}
-    with pytest.raises(CollectionUnloadError):
+    # Test unload with bad collection
+    with assert_raises(CollectionUnloadError) as err:
         bad_col.unload()
+    assert err.value.error_code == 1228
 
+    # Test rotate journal
+    try:
+        assert isinstance(col.rotate(), bool)
+    except CollectionRotateJournalError as err:
+        assert err.error_code == 1105
 
-def test_rotate():
-    # No journal should exist with an empty collection
-    with pytest.raises(CollectionRotateJournalError):
-        col.rotate()
+    # Test rotate journal with bad collection
+    with assert_raises(CollectionRotateJournalError) as err:
+        bad_col.rotate()
+    assert err.value.error_code == 1228
 
+    # Test checksum with empty collection
+    assert int(col.checksum(with_rev=True, with_data=False)) == 0
+    assert int(col.checksum(with_rev=True, with_data=True)) == 0
+    assert int(col.checksum(with_rev=False, with_data=False)) == 0
+    assert int(col.checksum(with_rev=False, with_data=True)) == 0
 
-def test_checksum():
-    # Test checksum for an empty collection
-    assert col.checksum(with_rev=True, with_data=False) == 0
-    assert col.checksum(with_rev=True, with_data=True) == 0
-    assert col.checksum(with_rev=False, with_data=False) == 0
-    assert col.checksum(with_rev=False, with_data=True) == 0
+    # Test checksum with non-empty collection
+    col.insert({})
+    assert int(col.checksum(with_rev=True, with_data=False)) > 0
+    assert int(col.checksum(with_rev=True, with_data=True)) > 0
+    assert int(col.checksum(with_rev=False, with_data=False)) > 0
+    assert int(col.checksum(with_rev=False, with_data=True)) > 0
 
-    # Test checksum for a non-empty collection
-    col.insert({'value': 'bar'})
-    assert col.checksum(with_rev=True, with_data=False) > 0
-    assert col.checksum(with_rev=True, with_data=True) > 0
-    assert col.checksum(with_rev=False, with_data=False) > 0
-    assert col.checksum(with_rev=False, with_data=True) > 0
-
-    # Test checksum for missing collection
-    with pytest.raises(CollectionChecksumError):
+    # Test checksum with bad collection
+    with assert_raises(CollectionChecksumError) as err:
         bad_col.checksum()
-
-
-def test_truncate():
-    col.insert_many([{'value': 1}, {'value': 2}, {'value': 3}])
+    assert err.value.error_code == 1228
 
     # Test preconditions
-    assert len(col) == 3
+    assert len(col) == 1
 
     # Test truncate collection
-    result = col.truncate()
-    assert 'id' in result
-    assert 'name' in result
-    assert 'status' in result
-    assert 'is_system' in result
+    assert col.truncate() is True
     assert len(col) == 0
 
-    # Test truncate missing collection
-    with pytest.raises(CollectionTruncateError):
+    # Test checksum with bad collection
+    with assert_raises(CollectionTruncateError) as err:
         bad_col.truncate()
+    assert err.value.error_code == 1228
+
+
+def test_collection_management(db, bad_db):
+    # Test create collection
+    col_name = generate_col_name()
+    assert db.has_collection(col_name) is False
+
+    col = db.create_collection(
+        name=col_name,
+        sync=True,
+        compact=False,
+        journal_size=7774208,
+        system=False,
+        volatile=False,
+        key_generator='autoincrement',
+        user_keys=False,
+        key_increment=9,
+        key_offset=100,
+        edge=True,
+        shard_count=2,
+        shard_fields=['test_attr'],
+        index_bucket_count=10,
+        replication_factor=1
+    )
+    assert db.has_collection(col_name) is True
+
+    properties = col.properties()
+    if col.context != 'transaction':
+        assert 'id' in properties
+    assert properties['name'] == col_name
+    assert properties['sync'] is True
+    assert properties['system'] is False
+    assert properties['key_generator'] == 'autoincrement'
+    assert properties['user_keys'] is False
+    assert properties['key_increment'] == 9
+    assert properties['key_offset'] == 100
+
+    # Test create duplicate collection
+    with assert_raises(CollectionCreateError) as err:
+        db.create_collection(col_name)
+    assert err.value.error_code == 1207
+
+    # Test list collections
+    assert all(
+        entry['name'].startswith('test_collection')
+        or entry['name'].startswith('_')
+        for entry in db.collections()
+    )
+
+    # Test list collections with bad database
+    with assert_raises(CollectionListError) as err:
+        bad_db.collections()
+    assert err.value.error_code == 1228
+
+    # Test get collection object
+    test_col = db.collection(col.name)
+    assert isinstance(test_col, StandardCollection)
+    assert test_col.name == col.name
+
+    test_col = db[col.name]
+    assert isinstance(test_col, StandardCollection)
+    assert test_col.name == col.name
+
+    # Test delete collection
+    assert db.delete_collection(col_name, system=False) is True
+    assert col_name not in extract('name', db.collections())
+
+    # Test drop missing collection
+    with assert_raises(CollectionDeleteError) as err:
+        db.delete_collection(col_name)
+    assert err.value.error_code == 1203
+    assert db.delete_collection(col_name, ignore_missing=True) is False
+
+    # Test rename collection
+    new_name = generate_col_name()
+    col = db.create_collection(new_name)
+    assert col.rename(new_name) is True
+    assert col.name == new_name
+    assert repr(col) == '<StandardCollection {}>'.format(new_name)
+
+    # Try again (the operation should be idempotent)
+    assert col.rename(new_name) is True
+    assert col.name == new_name
+    assert repr(col) == '<StandardCollection {}>'.format(new_name)
+
+    # Test rename with bad collection
+    with assert_raises(CollectionRenameError) as err:
+        bad_db.collection(new_name).rename(new_name)
+    assert err.value.error_code == 1228

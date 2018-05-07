@@ -1,20 +1,21 @@
-language: python
 sudo: false
+language: python
 python:
     - 2.7
     - 3.4
     - 3.5
     - 3.6
+services:
+    - docker
 before_install:
-    - sh scripts/setup_arangodb.sh
+    - docker run --name arango -d -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd arangodb/arangodb:3.3.8
+    - docker cp tests/static/service.zip arango:/tmp/service.zip
 install:
-    - pip install coverage
-    - pip install pytest
-    - pip install pytest-cov
-    - pip install python-coveralls
-    - python setup.py install
+    - pip install flake8 mock pytest pytest-cov python-coveralls sphinx
+    - pip install .
 script:
-    - py.test --cov-report= --cov=arango tests/
+    - python -m flake8
+    - python -m sphinx -b doctest docs build
+    - py.test --complete -s -v --cov=arango
 after_success:
     - coveralls
-    - pkill -9 -f arango

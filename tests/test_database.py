@@ -2,294 +2,96 @@ from __future__ import absolute_import, unicode_literals
 
 from datetime import datetime
 
-import pytest
 from six import string_types
 
-from arango import ArangoClient
-from arango.collections import Collection
-from arango.graph import Graph
-from arango.exceptions import *
-
-from .utils import (
-    generate_db_name,
-    generate_col_name,
-    generate_graph_name,
-    arango_version
+from arango.exceptions import (
+    DatabaseCreateError,
+    DatabaseDeleteError,
+    DatabaseListError,
+    DatabasePropertiesError,
+    ServerDetailsError,
+    ServerEchoError,
+    ServerEndpointsError,
+    ServerLogLevelError,
+    ServerLogLevelSetError,
+    ServerReadLogError,
+    ServerReloadRoutingError,
+    ServerRequiredDBVersionError,
+    ServerRoleError,
+    ServerStatisticsError,
+    ServerTimeError,
+    ServerVersionError,
+    ServerEngineError
 )
-
-arango_client = ArangoClient()
-db_name = generate_db_name()
-db = arango_client.create_database(db_name)
-bad_db_name = generate_db_name()
-bad_db = arango_client.db(bad_db_name)
-col_name_1 = generate_col_name()
-col_name_2 = ''
-db.create_collection(col_name_1)
-graph_name = generate_graph_name()
-db.create_graph(graph_name)
+from tests.helpers import assert_raises, generate_db_name
 
 
-def teardown_module(*_):
-    arango_client.delete_database(db_name, ignore_missing=True)
+def test_database_attributes(db, username):
+    assert db.context in ['default', 'async', 'batch', 'transaction']
+    assert db.username == username
+    assert db.db_name == db.name
+    assert db.name.startswith('test_database')
+    assert repr(db) == '<StandardDatabase {}>'.format(db.name)
 
 
-@pytest.mark.order1
-def test_properties():
-    assert db.name == db_name
-    assert repr(db) == '<ArangoDB database "{}">'.format(db_name)
-
+def test_database_misc_methods(db, bad_db):
+    # Test get properties
     properties = db.properties()
     assert 'id' in properties
     assert 'path' in properties
+    assert properties['name'] == db.name
     assert properties['system'] is False
-    assert properties['name'] == db_name
-    assert 'ArangoDB connection' in repr(db.connection)
 
-    with pytest.raises(DatabasePropertiesError):
+    # Test get properties with bad database
+    with assert_raises(DatabasePropertiesError) as err:
         bad_db.properties()
+    assert err.value.error_code == 1228
 
+    # Test get server version
+    assert isinstance(db.version(), string_types)
 
-@pytest.mark.order2
-def test_list_collections():
-    assert all(
-        col['name'] == col_name_1 or col['name'].startswith('_')
-        for col in db.collections()
-    )
-
-    with pytest.raises(CollectionListError):
-        bad_db.collections()
-
-
-@pytest.mark.order3
-def test_get_collection():
-    for col in [db.collection(col_name_1), db[col_name_1]]:
-        assert isinstance(col, Collection)
-        assert col.name == col_name_1
-
-
-@pytest.mark.order4
-def test_create_collection():
-    global col_name_2
-
-    # Test create duplicate collection
-    with pytest.raises(CollectionCreateError):
-        db.create_collection(col_name_1)
-
-    # Test create collection with parameters
-    col_name_2 = generate_col_name()
-    col = db.create_collection(
-        name=col_name_2,
-        sync=True,
-        compact=False,
-        journal_size=7774208,
-        system=False,
-        volatile=False,
-        key_generator="autoincrement",
-        user_keys=False,
-        key_increment=9,
-        key_offset=100,
-        edge=True,
-        shard_count=2,
-        shard_fields=["test_attr"],
-        index_bucket_count=10,
-        replication_factor=1
-    )
-    properties = col.properties()
-    assert 'id' in properties
-    assert properties['name'] == col_name_2
-    assert properties['sync'] is True
-    assert properties['compact'] is False
-    assert properties['journal_size'] == 7774208
-    assert properties['system'] is False
-    assert properties['volatile'] is False
-    assert properties['edge'] is True
-    assert properties['keygen'] == 'autoincrement'
-    assert properties['user_keys'] is False
-    assert properties['key_increment'] == 9
-    assert properties['key_offset'] == 100
-
-
-@pytest.mark.order5
-def test_create_system_collection():
-    major, minor = arango_version(arango_client)
-    if major == 3 and minor >= 1:
-
-        system_col_name = '_' + col_name_1
-        col = db.create_collection(
-            name=system_col_name,
-            system=True,
-        )
-        properties = col.properties()
-        assert properties['system'] is True
-        assert system_col_name in [c['name'] for c in db.collections()]
-        assert db.collection(system_col_name).properties()['system'] is True
-
-        with pytest.raises(CollectionDeleteError):
-            db.delete_collection(system_col_name)
-        assert system_col_name in [c['name'] for c in db.collections()]
-
-        db.delete_collection(system_col_name, system=True)
-        assert system_col_name not in [c['name'] for c in db.collections()]
-
-
-@pytest.mark.order6
-def test_delete_collection():
-    # Test drop collection
-    result = db.delete_collection(col_name_2)
-    assert result is True
-    assert col_name_2 not in set(c['name'] for c in db.collections())
-
-    # Test drop missing collection
-    with pytest.raises(CollectionDeleteError):
-        db.delete_collection(col_name_2)
-
-    # Test drop missing collection (ignore_missing)
-    result = db.delete_collection(col_name_2, ignore_missing=True)
-    assert result is False
-
-
-@pytest.mark.order7
-def test_list_graphs():
-    graphs = db.graphs()
-    assert len(graphs) == 1
-
-    graph = graphs[0]
-    assert graph['name'] == graph_name
-    assert graph['edge_definitions'] == []
-    assert graph['orphan_collections'] == []
-    assert 'revision' in graph
-
-    with pytest.raises(GraphListError):
-        bad_db.graphs()
-
-
-@pytest.mark.order8
-def test_get_graph():
-    graph = db.graph(graph_name)
-    assert isinstance(graph, Graph)
-    assert graph.name == graph_name
-
-
-@pytest.mark.order9
-def test_create_graph():
-    # Test create duplicate graph
-    with pytest.raises(GraphCreateError):
-        db.create_graph(graph_name)
-
-    new_graph_name = generate_graph_name()
-    db.create_graph(new_graph_name)
-    assert new_graph_name in [g['name'] for g in db.graphs()]
-
-
-@pytest.mark.order10
-def test_delete_graph():
-    # Test delete graph from the last test
-    result = db.delete_graph(graph_name)
-    assert result is True
-    assert graph_name not in db.graphs()
-
-    # Test delete missing graph
-    with pytest.raises(GraphDeleteError):
-        db.delete_graph(graph_name)
-
-    # Test delete missing graph (ignore_missing)
-    result = db.delete_graph(graph_name, ignore_missing=True)
-    assert result is False
-
-    major, minor = arango_version(arango_client)
-
-    if major == 3 and minor >= 1:
-        # Create a graph with vertex and edge collections and delete them all
-        new_graph_name = generate_graph_name()
-        graph = db.create_graph(new_graph_name)
-        vcol_name_1 = generate_col_name()
-        graph.create_vertex_collection(vcol_name_1)
-        vcol_name_2 = generate_col_name()
-        graph.create_vertex_collection(vcol_name_2)
-        ecol_name = generate_col_name()
-        graph.create_edge_definition(
-            name=ecol_name,
-            from_collections=[vcol_name_1],
-            to_collections=[vcol_name_2]
-        )
-        collections = set(col['name'] for col in db.collections())
-        assert vcol_name_1 in collections
-        assert vcol_name_2 in collections
-        assert ecol_name in collections
-
-        db.delete_graph(new_graph_name)
-        collections = set(col['name'] for col in db.collections())
-        assert vcol_name_1 in collections
-        assert vcol_name_2 in collections
-        assert ecol_name in collections
-
-        graph = db.create_graph(new_graph_name)
-        graph.create_edge_definition(
-            name=ecol_name,
-            from_collections=[vcol_name_1],
-            to_collections=[vcol_name_2]
-        )
-        db.delete_graph(new_graph_name, drop_collections=True)
-        collections = set(col['name'] for col in db.collections())
-        assert vcol_name_1 not in collections
-        assert vcol_name_2 not in collections
-        assert ecol_name not in collections
-
-
-@pytest.mark.order11
-def test_verify():
-    assert db.verify() is True
-    with pytest.raises(ServerConnectionError):
-        bad_db.verify()
-
-
-@pytest.mark.order12
-def test_version():
-    version = db.version()
-    assert isinstance(version, string_types)
-
-    with pytest.raises(ServerVersionError):
+    # Test get server version with bad database
+    with assert_raises(ServerVersionError) as err:
         bad_db.version()
+    assert err.value.error_code == 1228
 
-
-@pytest.mark.order13
-def test_details():
+    # Test get server details
     details = db.details()
     assert 'architecture' in details
     assert 'server-version' in details
 
-    with pytest.raises(ServerDetailsError):
+    # Test get server details with bad database
+    with assert_raises(ServerDetailsError) as err:
         bad_db.details()
+    assert err.value.error_code == 1228
 
-
-@pytest.mark.order14
-def test_required_db_version():
+    # Test get server required database version
     version = db.required_db_version()
     assert isinstance(version, string_types)
 
-    with pytest.raises(ServerRequiredDBVersionError):
+    # Test get server target version with bad database
+    with assert_raises(ServerRequiredDBVersionError):
         bad_db.required_db_version()
 
-
-@pytest.mark.order15
-def test_statistics():
+    # Test get server statistics
     statistics = db.statistics(description=False)
     assert isinstance(statistics, dict)
     assert 'time' in statistics
     assert 'system' in statistics
     assert 'server' in statistics
 
+    # Test get server statistics with description
     description = db.statistics(description=True)
     assert isinstance(description, dict)
     assert 'figures' in description
     assert 'groups' in description
 
-    with pytest.raises(ServerStatisticsError):
+    # Test get server statistics with bad database
+    with assert_raises(ServerStatisticsError) as err:
         bad_db.statistics()
+    assert err.value.error_code == 1228
 
-
-@pytest.mark.order16
-def test_role():
+    # Test get server role
     assert db.role() in {
         'SINGLE',
         'COORDINATOR',
@@ -297,62 +99,40 @@ def test_role():
         'SECONDARY',
         'UNDEFINED'
     }
-    with pytest.raises(ServerRoleError):
+
+    # Test get server role with bad database
+    with assert_raises(ServerRoleError) as err:
         bad_db.role()
+    assert err.value.error_code == 1228
 
+    # Test get server time
+    assert isinstance(db.time(), datetime)
 
-@pytest.mark.order17
-def test_time():
-    system_time = db.time()
-    assert isinstance(system_time, datetime)
-
-    with pytest.raises(ServerTimeError):
+    # Test get server time with bad database
+    with assert_raises(ServerTimeError) as err:
         bad_db.time()
+    assert err.value.error_code == 1228
 
-
-@pytest.mark.order18
-def test_echo():
+    # Test echo (get last request)
     last_request = db.echo()
     assert 'protocol' in last_request
     assert 'user' in last_request
     assert 'requestType' in last_request
     assert 'rawRequestBody' in last_request
 
-    with pytest.raises(ServerEchoError):
+    # Test echo with bad database
+    with assert_raises(ServerEchoError) as err:
         bad_db.echo()
+    assert err.value.error_code == 1228
 
-
-@pytest.mark.order19
-def test_sleep():
-    assert db.sleep(0) == 0
-
-    with pytest.raises(ServerSleepError):
-        bad_db.sleep(0)
-
-
-@pytest.mark.order20
-def test_execute():
-    major, minor = arango_version(arango_client)
-
-    # TODO ArangoDB 3.2 seems to be missing this API endpoint
-    if not (major == 3 and minor == 2):
-        assert db.execute('return 1') == '1'
-        assert db.execute('return "test"') == '"test"'
-        with pytest.raises(ServerExecuteError) as err:
-            db.execute('return invalid')
-        assert 'Internal Server Error' in err.value.message
-
-
-@pytest.mark.order21
-def test_log():
-    # Test read_log with default arguments
+    # Test read_log with default parameters
     log = db.read_log(upto='fatal')
     assert 'lid' in log
     assert 'level' in log
     assert 'text' in log
     assert 'total_amount' in log
 
-    # Test read_log with specific arguments
+    # Test read_log with specific parameters
     log = db.read_log(
         level='error',
         start=0,
@@ -366,49 +146,100 @@ def test_log():
     assert 'text' in log
     assert 'total_amount' in log
 
-    # Test read_log with incorrect auth
-    with pytest.raises(ServerReadLogError):
+    # Test read_log with bad database
+    with assert_raises(ServerReadLogError) as err:
         bad_db.read_log()
+    assert err.value.error_code == 1228
 
+    # Test reload routing
+    assert isinstance(db.reload_routing(), bool)
 
-@pytest.mark.order22
-def test_reload_routing():
-    result = db.reload_routing()
-    assert isinstance(result, bool)
-
-    with pytest.raises(ServerReloadRoutingError):
+    # Test reload routing with bad database
+    with assert_raises(ServerReloadRoutingError) as err:
         bad_db.reload_routing()
+    assert err.value.error_code == 1228
+
+    # Test get log levels
+    assert isinstance(db.log_levels(), dict)
+
+    # Test get log levels with bad database
+    with assert_raises(ServerLogLevelError) as err:
+        bad_db.log_levels()
+    assert err.value.error_code == 1228
+
+    # Test set log levels
+    new_levels = {
+        'agency': 'DEBUG',
+        'collector': 'INFO',
+        'threads': 'WARNING'
+    }
+    result = db.set_log_levels(**new_levels)
+    for key, value in new_levels.items():
+        assert result[key] == value
+    for key, value in db.log_levels().items():
+        assert result[key] == value
+
+    # Test set log levels with bad database
+    with assert_raises(ServerLogLevelSetError):
+        bad_db.set_log_levels(**new_levels)
+
+    # Test get server endpoints
+    with assert_raises(ServerEndpointsError) as err:
+        db.endpoints()
+    assert err.value.error_code in [11]
+
+    # Test get server endpoints with bad database
+    with assert_raises(ServerEndpointsError) as err:
+        bad_db.endpoints()
+    assert err.value.error_code == 1228
+
+    # Test get storage engine
+    engine = db.engine()
+    assert engine['name'] in ['mmfiles', 'rocksdb']
+    assert 'supports' in engine
+
+    # Test get storage engine with bad database
+    with assert_raises(ServerEngineError) as err:
+        bad_db.engine()
+    assert err.value.error_code == 1228
 
 
-@pytest.mark.order23
-def test_log_levels():
-    major, minor = arango_version(arango_client)
-    if major == 3 and minor >= 1:
+def test_database_management(db, sys_db, bad_db):
+    # Test list databases
+    result = sys_db.databases()
+    assert '_system' in result
 
-        result = db.log_levels()
-        assert isinstance(result, dict)
+    # Test list databases with bad database
+    with assert_raises(DatabaseListError):
+        bad_db.databases()
 
-        with pytest.raises(ServerLogLevelError):
-            bad_db.log_levels()
+    # Test create database
+    db_name = generate_db_name()
+    assert sys_db.has_database(db_name) is False
+    assert sys_db.create_database(db_name) is True
+    assert sys_db.has_database(db_name) is True
 
+    # Test create duplicate database
+    with assert_raises(DatabaseCreateError) as err:
+        sys_db.create_database(db_name)
+    assert err.value.error_code == 1207
 
-@pytest.mark.order24
-def test_set_log_levels():
-    major, minor = arango_version(arango_client)
-    if major == 3 and minor >= 1:
+    # Test create database without permissions
+    with assert_raises(DatabaseCreateError) as err:
+        db.create_database(db_name)
+    assert err.value.error_code == 1230
 
-        new_levels = {
-            'agency': 'DEBUG',
-            'collector': 'INFO',
-            'threads': 'WARNING'
-        }
-        result = db.set_log_levels(**new_levels)
+    # Test delete database without permissions
+    with assert_raises(DatabaseDeleteError) as err:
+        db.delete_database(db_name)
+    assert err.value.error_code == 1230
 
-        for key, value in new_levels.items():
-            assert result[key] == value
+    # Test delete database
+    assert sys_db.delete_database(db_name) is True
+    assert db_name not in sys_db.databases()
 
-        for key, value in db.log_levels().items():
-            assert result[key] == value
-
-        with pytest.raises(ServerLogLevelSetError):
-            bad_db.set_log_levels(**new_levels)
+    # Test delete missing database
+    with assert_raises(DatabaseDeleteError) as err:
+        sys_db.delete_database(db_name)
+    assert err.value.error_code == 1228
+    assert sys_db.delete_database(db_name, ignore_missing=True) is False
