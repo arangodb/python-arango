@@ -1,11 +1,17 @@
 from setuptools import setup, find_packages
 
-from arango import version
+version = {}
+with open("./arango/version.py") as fp:
+    exec(fp.read(), version)
+
+with open('./README.rst') as fp:
+    description = fp.read()
 
 setup(
     name='python-arango',
     description='Python Driver for ArangoDB',
-    version=version.__version__,
+    long_description=description,
+    version=version['__version__'],
     author='Joohwan Oh',
     author_email='joohwan.oh@outlook.com',
     url='https://github.com/joowani/python-arango',
