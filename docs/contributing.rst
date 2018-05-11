@@ -16,9 +16,9 @@ following **requirements**:
   and camel casing, and PEP8_ compliance (see below).
 * No classes/methods/functions with missing docstrings or commented-out lines.
   You can take a look at the existing code in python-arango for examples.
-* The test coverage_ remains at %100. Sometimes you may find yourself having to
-  write superfluous unit tests to keep this number up. If a piece of code is
-  trivial and has no need for unittests, use this_ to exclude it from coverage.
+* The test coverage_ remains at %100. You may find yourself having to write
+  superfluous unit tests to keep this number up. If a piece of code is trivial
+  and has no need for tests, use this_ to exclude it from coverage.
 * No build failures on TravisCI_. The builds automatically trigger on PR
   submissions.
 * Does not break backward-compatibility (unless there is a really good reason).
@@ -26,9 +26,9 @@ following **requirements**:
 
 .. note::
     The dev branch is occasionally rebased_, and its commit history may be
-    overwritten in the process. So before you begin feature work, git fetch or
+    overwritten in the process. Before you begin feature work, git fetch or
     pull to ensure that your local branch has not diverged. If you see git
-    conflicts and want to start from scratch, run this command:
+    conflicts and want to start from scratch, run these commands:
 
     .. code-block:: bash
 
@@ -48,8 +48,8 @@ To ensure PEP8_ compliance, run flake8_:
     ~$ cd python-arango
     ~$ flake8
 
-You should try to resolve all issues reported. If there is a good reason to
-ignore errors from a specific piece of code, visit here_ to see how to exclude
+You must resolve all issues reported. If there is a good reason to ignore
+errors coming from a specific piece of code, visit here_ to see how to exclude
 the lines.
 
 Testing
@@ -57,7 +57,7 @@ Testing
 
 To test your changes, run the integration test suite that comes with
 **python-arango** on your local machine. The test suite uses pytest_, and is
-designed to run against an actual database instance. Please use the latest
+designed to run against an actual ArangoDB instance. Please use the latest
 version of ArangoDB with the following configuration:
 
 * **Host**: "localhost"
@@ -101,10 +101,11 @@ machine:
     ~$ git clone https://github.com/joowani/python-arango.git
     ~$ cd python-arango/docs
     ~$ sphinx-build . build
-    ~$ # Open the generated file build/index.html in a browser
+
+    # Open the generated file build/index.html in a browser
 
 
-As always, thanks for your contribution!
+As always, thank you for your contribution!
 
 .. _rebased: https://git-scm.com/book/en/v2/Git-Branching-Rebasing
 .. _dev: https://github.com/joowani/python-arango/tree/dev
