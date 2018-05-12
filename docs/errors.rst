@@ -9,8 +9,8 @@ Server Errors
 =============
 
 :class:`arango.exceptions.ArangoServerError` exceptions lightly wrap non-2xx
-HTTP responses coming from ArangoDB. Each exception contains the error message,
-error code and HTTP request response details.
+HTTP responses coming from ArangoDB. Each exception object contains the error
+message, error code and HTTP request response details.
 
 **Example:**
 

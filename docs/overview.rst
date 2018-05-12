@@ -3,7 +3,7 @@ Getting Started
 
 Examples often speak louder than words, so this documentation relies heavily
 on sample code snippets with comments. Here is the first example showing how
-**python-arango** client can be initialized and used:
+a **python-arango** client can be initialized and used:
 
 .. testcode::
 

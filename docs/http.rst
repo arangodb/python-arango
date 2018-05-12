@@ -2,13 +2,13 @@ Using Custom HTTP Clients
 -------------------------
 
 Python-arango lets you use your own HTTP clients for sending API requests to
-ArangoDB server. The default implementation uses the Requests_ library.
+ArangoDB server. The default implementation uses the requests_ library.
 
 Your HTTP client must inherit :class:`arango.http.HTTPClient` and implement its
 abstract method :func:`arango.http.HTTPClient.send_request`. The method must
 return valid (fully populated) instances of :class:`arango.response.Response`.
 
-For example, let's say you want to use your own HTTP client with:
+For example, let's say your HTTP client needs:
 
 * Automatic retries
 * Additional HTTP header called ``x-my-header``
@@ -150,8 +150,8 @@ Then you would inject your client as follows:
         http_client=CustomHTTPClient()
     )
 
-For more information on how to use a ``requests.Session``, refer to
-`Requests documentation`_.
+For more information on how to configure a ``requests.Session`` object, refer
+to `requests documentation`_.
 
-.. _Requests: https://github.com/requests/requests
-.. _Requests documentation: http://docs.python-requests.org/en/master/user/advanced/#session-objects
+.. _requests: https://github.com/requests/requests
+.. _requests documentation: http://docs.python-requests.org/en/master/user/advanced/#session-objects

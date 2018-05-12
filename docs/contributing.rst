@@ -7,7 +7,7 @@ Requirements
 Before submitting a pull request on GitHub_, please make sure you meet the
 following **requirements**:
 
-* The pull request points to dev_ (development) branch.
+* The pull request points to the dev_ (development) branch.
 * All changes are squashed into a single commit (I like to use ``git rebase -i``
   to do this).
 * The commit message is in present tense (good: "Add feature", bad:
@@ -15,7 +15,7 @@ following **requirements**:
 * Correct and consistent style: Sphinx_-compatible docstrings, correct snake
   and camel casing, and PEP8_ compliance (see below).
 * No classes/methods/functions with missing docstrings or commented-out lines.
-  You can take a look at the existing code in python-arango for examples.
+  You can take a look at the source code on GitHub_ for examples.
 * The test coverage_ remains at %100. You may find yourself having to write
   superfluous unit tests to keep this number up. If a piece of code is trivial
   and has no need for tests, use this_ to exclude it from coverage.
@@ -24,11 +24,11 @@ following **requirements**:
 * Does not break backward-compatibility (unless there is a really good reason).
 * Compatibility with all supported Python versions: 2.7, 3.4, 3.5 and 3.6.
 
-.. note::
+.. warning::
     The dev branch is occasionally rebased_, and its commit history may be
     overwritten in the process. Before you begin feature work, git fetch or
     pull to ensure that your local branch has not diverged. If you see git
-    conflicts and want to start from scratch, run these commands:
+    conflicts and just want to start from scratch, run these commands:
 
     .. code-block:: bash
 
@@ -92,7 +92,7 @@ Documentation
 =============
 
 The documentation (including the README) is written in reStructuredText_ and
-uses Sphinx_. To build the HTML version of the documentation on your local
+uses Sphinx_. To build an HTML version of the documentation on your local
 machine:
 
 .. code-block:: bash

@@ -43,17 +43,17 @@ Announcements
 Features
 ========
 
-- Clean Pythonic interface
-- Lightweight
-- High ArangoDB REST API coverage
+- Clean Pythonic interface.
+- Lightweight.
+- High ArangoDB REST API coverage.
 
 Compatibility
 =============
 
-- Python versions 2.7, 3.4, 3.5 and 3.6 are supported
-- Python-arango 4.x supports ArangoDB 3.3+ (recommended)
-- Python-arango 3.x supports ArangoDB 3.0 ~ 3.2 only
-- Python-arango 2.x supports ArangoDB 1.x ~ 2.x only
+- Python versions 2.7, 3.4, 3.5 and 3.6 are supported.
+- Python-arango 4.x supports ArangoDB 3.3+ (recommended).
+- Python-arango 3.x supports ArangoDB 3.0 ~ 3.2 only.
+- Python-arango 2.x supports ArangoDB 1.x ~ 2.x only.
 
 Installation
 ============
