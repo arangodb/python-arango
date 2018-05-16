@@ -808,7 +808,8 @@ class Database(APIWrapper):
                           shard_fields=None,
                           shard_count=None,
                           index_bucket_count=None,
-                          replication_factor=None):
+                          replication_factor=None,
+                          enforce_replication_factor=True):
         """Create a new collection.
 
         :param name: Collection name.
@@ -863,6 +864,10 @@ class Database(APIWrapper):
             every write to the master is copied to all slaves before operation
             is reported successful).
         :type replication_factor: int
+        :param enforce_replication_factor: denies or allows setting a higher
+            replication factor than currently available in the cluster
+        :type enforce_replication_factor: bool
+        :returns: the new collection object
         :return: Standard collection API wrapper.
         :rtype: arango.collection.StandardCollection
         :raise arango.exceptions.CollectionCreateError: If create fails.
@@ -872,6 +877,8 @@ class Database(APIWrapper):
             key_options['increment'] = key_increment
         if key_offset is not None:
             key_options['offset'] = key_offset
+
+        url_params = {}
 
         data = {
             'name': name,
@@ -897,11 +904,14 @@ class Database(APIWrapper):
             data['indexBuckets'] = index_bucket_count
         if replication_factor is not None:
             data['replicationFactor'] = replication_factor
+            url_params['enforceReplicationFactor'] = (
+                '1' if enforce_replication_factor else '0')
 
         request = Request(
             method='post',
             endpoint='/_api/collection',
-            data=data
+            data=data,
+            params=url_params
         )
 
         def response_handler(resp):
