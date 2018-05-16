@@ -1,24 +1,13 @@
-.. _multithreading-page:
+Threading
+---------
 
-Multithreading
---------------
+Instances of the following classes are considered *stateful*, and should not be
+shared across multiple threads without locks in place:
 
+* :ref:`BatchDatabase` (see :doc:`batch`)
+* :ref:`BatchJob` (see :doc:`batch`)
+* :ref:`Cursor` (see :doc:`cursor`)
+* :ref:`TransactionDatabase` (see :doc:`transaction`)
+* :ref:`TransactionJob` (see :doc:`transaction`)
 
-Notes on Eventlet
-=================
-
-**Python-arango** should be compatible with eventlet_ *for the most part*.
-By default, **python-arango** makes API calls to ArangoDB using the requests_
-library which can be monkeypatched:
-
-.. code-block:: python
-
-    import eventlet
-    requests = eventlet.import_patched("requests")
-
-.. _requests: https://github.com/requests/requests
-.. _eventlet: http://eventlet.net
-
-Assuming the requests library is used and monkeypatched properly, all
-python-arango APIs except :ref:`Batch Execution <batch-page>` and
-:ref:`Async Execution <async-page>` should be thread-safe.
+The rest of python-arango is safe to use in multi-threaded environments.

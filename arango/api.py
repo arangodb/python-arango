@@ -1,40 +1,58 @@
 from __future__ import absolute_import, unicode_literals
 
-from functools import wraps
+__all__ = ['APIWrapper']
 
 
 class APIWrapper(object):
-    """ArangoDB API wrapper base class.
+    """Base class for API wrappers.
 
-    This class is meant to be used internally only.
+    :param connection: HTTP connection.
+    :type connection: arango.connection.Connection
+    :param executor: API executor.
+    :type executor: arango.executor.Executor
     """
 
-    def __getattribute__(self, attr):
-        method = object.__getattribute__(self, attr)
-        conn = object.__getattribute__(self, '_conn')
+    def __init__(self, connection, executor):
+        self._conn = connection
+        self._executor = executor
+        self._is_transaction = self.context == 'transaction'
 
-        if not getattr(method, 'api_method', False):
-            return method
+    @property
+    def db_name(self):
+        """Return the name of the current database.
 
-        @wraps(method)
-        def wrapped_method(*args, **kwargs):
-            request, handler = method(*args, **kwargs)
-            return conn.handle_request(request, handler)
-        return wrapped_method
+        :return: Database name.
+        :rtype: str | unicode
+        """
+        return self._conn.db_name
 
+    @property
+    def username(self):
+        """Return the username.
 
-def api_method(method):
-    """Decorator used to mark ArangoDB API methods.
+        :returns: Username.
+        :rtype: str | unicode
+        """
+        return self._conn.username
 
-    Methods decorated by this should return two things:
+    @property
+    def context(self):
+        """Return the API execution context.
 
-    - An instance of :class:`arango.request.Request`
-    - A handler that takes an instance of :class:`arango.response.Response`
+        :return: API execution context. Possible values are "default", "async",
+            "batch" and "transaction".
+        :rtype: str | unicode
+        """
+        return self._executor.context
 
-    :param method: the method to wrap
-    :type method: callable
-    :returns: the wrapped method
-    :rtype: callable
-    """
-    setattr(method, 'api_method', True)
-    return method
+    def _execute(self, request, response_handler):
+        """Execute an API per execution context.
+
+        :param request: HTTP request.
+        :type request: arango.request.Request
+        :param response_handler: HTTP response handler.
+        :type response_handler: callable
+        :return: API execution result.
+        :rtype: str | unicode | bool | int | list | dict
+        """
+        return self._executor.execute(request, response_handler)

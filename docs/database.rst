@@ -1,51 +1,62 @@
-.. _database-page:
-
 Databases
 ---------
 
-A single ArangoDB instance can house multiple databases, which in turn contain
-their own set of worker processes,  :ref:`collections <collection-page>`, and
-:ref:`graphs <graph-page>`. There is always a default database named ``_system``.
-This default database cannot be dropped, can only be accessed with root
-privileges, and provides operations for managing other user-defined databases.
+An ArangoDB server can have an arbitrary number of **databases**. Each database
+has its own set of :doc:`collections <collection>` and :doc:`graphs <graph>`.
+There is a *special* database named ``_system``, which always exists by default
+and cannot be dropped. This database provides administrative operations such as
+managing users, permissions and other databases. Many of these operations can
+only be executed by admin users. See :doc:`user` for more information.
 
-Here is an example showing how databases can be managed with multiple users:
+**Example:**
 
-.. code-block:: python
+.. testcode::
 
     from arango import ArangoClient
 
-    # Initialize the ArangoDB client as root
-    client = ArangoClient(username='root', password='')
+    # Initialize the ArangoDB client.
+    client = ArangoClient(protocol='http', host='localhost', port=8529)
 
-    # Create a database, again as root (the user is inherited from client
-    # initialization if the username and password are not specified)
-    db = client.create_database('my_database', username=None, password=None)
+    # Connect to "_system" database as root user.
+    # This returns an API wrapper for "_system" database.
+    sys_db = client.db('_system', username='root', password='passwd')
 
-    # Retrieve the properties of the new database
-    db.properties()
+    # List all databases.
+    sys_db.databases()
 
-    # Create another database, this time with a predefined set of users
-    db = client.create_database(
-        name='another_database',
-        # Users jane, john and jake will have access to the new database
-        users=[
-            {'username': 'jane', 'password': 'foo', 'active': True},
-            {'username': 'john', 'password': 'bar', 'active': True},
-            {'username': 'jake', 'password': 'baz', 'active': True},
-        ],
-        # API calls through this database object uses jake's credentials
-        username='jake',
-        password='baz'
-    )
+    # Create a new database named "test" if it does not exist.
+    # Only root user has access to it at time of its creation.
+    if not sys_db.has_database('test'):
+        sys_db.create_database('test')
 
-    # To switch to a different user, simply create a new database object with
-    # the credentials of the desired user (which in this case would be jane's)
-    db = client.database('another_database', username='jane', password='foo')
+    # Delete the database.
+    sys_db.delete_database('test')
 
-    # Delete an existing database as root
-    client.delete_database('another_database')
+    # Create a new database named "test" along with a new set of users.
+    # Only "jane", "john", "jake" and root user have access to it.
+    if not sys_db.has_database('test'):
+        sys_db.create_database(
+            name='test',
+            users=[
+                {'username': 'jane', 'password': 'foo', 'active': True},
+                {'username': 'john', 'password': 'bar', 'active': True},
+                {'username': 'jake', 'password': 'baz', 'active': True},
+            ],
+        )
 
-Refer to :ref:`ArangoClient` and :ref:`Database` classes for more details
-on database management, and the :ref:`user-page` page for more details on user
-management and database access control.
+    # Connect to the new "test" database as user "jane".
+    db = client.db('test', username='jane', password='foo')
+
+    # Retrieve various database and server information.
+    db.name
+    db.username
+    db.version()
+    db.details()
+    db.collections()
+    db.graphs()
+    db.engine()
+
+    # Delete the database. Note that the new users will remain.
+    sys_db.delete_database('test')
+
+See :ref:`ArangoClient` and :ref:`StandardDatabase` for API specification.

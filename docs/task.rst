@@ -1,27 +1,26 @@
-.. _task-page:
+Tasks
+-----
 
-Task Management
----------------
+ArangoDB can schedule user-defined Javascript snippets as one-time or periodic
+(re-scheduled after each execution) tasks. Tasks are executed in the context of
+the database they are defined in.
 
-ArangoDB can execute user-defined Javascript snippets as one-shot (runs only
-once without repeats) or periodic (re-scheduled after each execution) tasks.
-The tasks are executed in the context of the database they are defined in.
+**Example:**
 
-.. note::
-    When deleting a database, any tasks that were initialized under its context
-    remain active. It is therefore advisable to delete any running tasks before
-    deleting the database.
-
-Example:
-
-.. code-block:: python
+.. testcode::
 
     from arango import ArangoClient
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
-    db = client.db('my_database')
 
-    # Create a new task
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # List all active tasks
+    db.tasks()
+
+    # Create a new task which simply prints parameters.
     db.create_task(
         name='test_task',
         command='''
@@ -37,13 +36,15 @@ Example:
         task_id='001'
     )
 
-    # List all active tasks
-    db.tasks()
-
-    # Retrieve information on a task by ID
+    # Retrieve details on a task by ID.
     db.task('001')
 
-    # Delete an existing task
-    db.delete_task('001', ignore_missing=False)
+    # Delete an existing task by ID.
+    db.delete_task('001', ignore_missing=True)
 
-Refer to :ref:`Database` class for more details.
+.. note::
+    When deleting a database, any tasks that were initialized under its context
+    remain active. It is therefore advisable to delete any running tasks before
+    deleting the database.
+
+Refer to :ref:`StandardDatabase` class for API specification.

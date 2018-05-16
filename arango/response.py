@@ -1,27 +1,46 @@
+from __future__ import absolute_import, unicode_literals
+
+__all__ = ['Response']
+
 import json
 
 
 class Response(object):
-    """ArangoDB HTTP response.
+    """HTTP response.
 
-    Overridden methods of :class:`arango.http_clients.base.BaseHTTPClient` must
-    return instances of this.
-
-    :param method: The HTTP method name (e.g. ``"post"``).
+    :param method: HTTP method in lowercase (e.g. "post").
     :type method: str | unicode
-    :param url: The request URL
-        (e.g. ``"http://localhost:8529/_db/_system/_api/database"``)
+    :param url: API URL.
     :type url: str | unicode
-    :param headers: A dict-like mapping object containing the HTTP headers.
-        Must allow case-insensitive key access.
-    :type headers: collections.MutableMapping
-    :param http_code: The HTTP status code.
-    :type http_code: int
-    :param http_text: The HTTP status text. This is used only for printing
-        error messages, and has no specification to follow.
-    :type http_text: str | unicode
-    :param body: The HTTP response body.
-    :type body: str | unicode | dict
+    :param headers: Response headers.
+    :type headers: requests.structures.CaseInsensitiveDict | dict
+    :param status_code: Response status code.
+    :type status_code: int
+    :param status_text: Response status text.
+    :type status_text: str | unicode
+    :param raw_body: Raw response body.
+    :type raw_body: str | unicode
+
+    :ivar method: HTTP method in lowercase (e.g. "post").
+    :vartype method: str | unicode
+    :ivar url: API URL.
+    :vartype url: str | unicode
+    :ivar headers: Response headers.
+    :vartype headers: requests.structures.CaseInsensitiveDict | dict
+    :ivar status_code: Response status code.
+    :vartype status_code: int
+    :ivar status_text: Response status text.
+    :vartype status_text: str | unicode
+    :ivar body: JSON-deserialized response body.
+    :vartype body: str | unicode | bool | int | list | dict
+    :ivar raw_body: Raw response body.
+    :vartype raw_body: str | unicode
+    :ivar error_code: Error code from ArangoDB server.
+    :vartype error_code: int
+    :ivar error_message: Error message from ArangoDB server.
+    :vartype error_message: str | unicode
+    :ivar is_success: True if response status code was 2XX.
+    :vartype is_success: bool
     """
 
     __slots__ = (
@@ -30,42 +49,40 @@ class Response(object):
         'headers',
         'status_code',
         'status_text',
-        'raw_body',
         'body',
+        'raw_body',
         'error_code',
-        'error_message'
+        'error_message',
+        'is_success',
     )
 
     def __init__(self,
-                 method=None,
-                 url=None,
-                 headers=None,
-                 http_code=None,
-                 http_text=None,
-                 body=None):
+                 method,
+                 url,
+                 headers,
+                 status_code,
+                 status_text,
+                 raw_body):
+        self.method = method.lower()
         self.url = url
-        self.method = method
         self.headers = headers
-        self.status_code = http_code
-        self.status_text = http_text
-        self.raw_body = body
+        self.status_code = status_code
+        self.status_text = status_text
+        self.raw_body = raw_body
+
+        # De-serialize the response body.
         try:
-            self.body = json.loads(body)
+            self.body = json.loads(raw_body)
         except (ValueError, TypeError):
-            self.body = body
-        if self.body and isinstance(self.body, dict):
+            self.body = raw_body
+
+        # Extract error code and message.
+        if isinstance(self.body, dict):
             self.error_code = self.body.get('errorNum')
             self.error_message = self.body.get('errorMessage')
         else:
             self.error_code = None
             self.error_message = None
 
-    def update_body(self, new_body):
-        return Response(
-            url=self.url,
-            method=self.method,
-            headers=self.headers,
-            http_code=self.status_code,
-            http_text=self.status_text,
-            body=new_body
-        )
+        http_ok = 200 <= status_code < 300
+        self.is_success = http_ok and self.error_code is None

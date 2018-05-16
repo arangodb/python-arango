@@ -1,118 +1,202 @@
-.. _document-page:
-
 Documents
 ---------
 
-**Documents** in python-arango are Python dictionaries. They can be nested to
-an arbitrary depth and contain lists. Each document must have the ``"_key"``
-field, whose value identifies the document uniquely within a collection. There
-is also the ``"_id"`` field, whose value identifies the document uniquely across
-*all* collections within a database.
+In python-arango, a **document** is a Python dictionary with the following
+properties:
 
-ArangoDB supports MVCC (Multiple Version Concurrency Control) and is capable
-of storing each document in multiple revisions. The revision of a document is
-distinguished by the value of the ``"_rev"`` field. For more information on
-documents and their associated terminologies visit this
-`page <https://docs.arangodb.com/HTTP/Document/AddressAndEtag.html>`__.
+* Is JSON serializable.
+* May be nested to an arbitrary depth.
+* May contain lists.
+* Contains the ``_key`` field, which identifies the document uniquely within a
+  specific collection.
+* Contains the ``_id`` field (also called the *handle*), which identifies the
+  document uniquely across all collections within a database. This ID is a
+  combination of the collection name and the document key using the format
+  ``{collection}/{key}`` (see example below).
+* Contains the ``_rev`` field. ArangoDB supports MVCC (Multiple Version
+  Concurrency Control) and is capable of storing each document in multiple
+  revisions. Latest revision of a document is indicated by this field. The
+  field is populated by ArangoDB and is not required as input unless you want
+  to validate a document against its current revision.
 
-Here is an example of a valid document:
+For more information on documents and associated terminologies, refer to
+`ArangoDB manual`_. Here is an example of a valid document in "students"
+collection:
 
-.. code-block:: python
+.. _ArangoDB manual: https://docs.arangodb.com
+
+.. testcode::
 
     {
-        '_id': 'students/john',
-        '_key': 'john',
-        '_rev': '14253647',
-        'first_name': 'John',
-        'last_name': 'Doe',
+        '_id': 'students/bruce',
+        '_key': 'bruce',
+        '_rev': '_Wm3dzEi--_',
+        'first_name': 'Bruce',
+        'last_name': 'Wayne',
         'address': {
+            'street' : '1007 Mountain Dr.',
             'city': 'Gotham',
-            'zip': 'M1NS93',
-            'street' : '300 Beverly St.'
+            'state': 'NJ'
         },
-        'courses': ['CSC101', 'STA101']
+        'is_rich': True,
+        'friends': ['robin', 'gordon']
     }
 
 .. _edge-documents:
 
-**Edge documents** or **edges** are similar to documents but with additional
-required fields ``"_from"`` and ``"_to"``. The values of these fields are the
-values of the ``"_id"`` field of the "from" and "to" vertex documents (see
-:ref:`graphs <graph-page>` for more details). Edge documents are contained in
-:ref:`edge collections <edge-collections>`.
+**Edge documents (edges)** are similar to standard documents but with two
+additional required fields ``_from`` and ``_to``. Values of these fields must
+be the handles of "from" and "to" vertex documents linked by the edge document
+in question (see :doc:`graph` for details). Edge documents are contained in
+:ref:`edge collections <edge-collections>`. Here is an example of a valid edge
+document in "friends" edge collection:
 
-Here is an example of a valid edge document:
-
-.. code-block:: python
+.. testcode::
 
     {
-        '_id': 'knows/001',
+        '_id': 'friends/001',
         '_key': '001',
-        '_rev': '23891346',
+        '_rev': '_Wm3dyle--_',
         '_from': 'students/john',
         '_to': 'students/jane',
-        'friends': True,
-        'family': False
+        'closeness': 9.5
     }
 
+Standard documents are managed via collection API wrapper:
 
-Here is an example showing how documents can be managed:
-
-.. code-block:: python
+.. testcode::
 
     from arango import ArangoClient
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
-    db = client.db('my_database')
+
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Get the API wrapper for "students" collection.
     students = db.collection('students')
 
+    # Create some test documents to play around with.
     lola = {'_key': 'lola', 'GPA': 3.5, 'first': 'Lola', 'last': 'Martin'}
     abby = {'_key': 'abby', 'GPA': 3.2, 'first': 'Abby', 'last': 'Page'}
     john = {'_key': 'john', 'GPA': 3.6, 'first': 'John', 'last': 'Kim'}
     emma = {'_key': 'emma', 'GPA': 4.0, 'first': 'Emma', 'last': 'Park'}
 
-    # Insert a new document
-    result = students.insert(lola)
-    print(result['_id'], result['_key'], result['_rev'])
+    # Insert a new document. This returns the document metadata.
+    metadata = students.insert(lola)
+    assert metadata['_id'] == 'students/lola'
+    assert metadata['_key'] == 'lola'
 
-    # Retrieve document information
-    students.has('lola') and 'john' in students
-    students.count()
-    len(students) > 5
+    # Check if documents exist in the collection in multiple ways.
+    assert students.has('lola') and 'john' not in students
 
-    # Insert multiple documents in bulk
+    # Retrieve the total document count in multiple ways.
+    assert students.count() == len(students) == 1
+
+    # Insert multiple documents in bulk.
     students.import_bulk([abby, john, emma])
 
-    # Retrieve one or more matching documents
+    # Retrieve one or more matching documents.
     for student in students.find({'first': 'John'}):
-        print(student['_key'], student['GPA'])
+        assert student['_key'] == 'john'
+        assert student['GPA'] == 3.6
+        assert student['last'] == 'Kim'
 
-    # Retrieve a single document
+    # Retrieve a document by key.
     students.get('john')
 
-    # Retrieve multiple documents
-    students.get_many(['abby', 'lola'])
+    # Retrieve a document by ID.
+    students.get('students/john')
 
-    # Update a single document
+    # Retrieve a document by body with "_id" field.
+    students.get({'_id': 'students/john'})
+
+    # Retrieve a document by body with "_key" field.
+    students.get({'_key': 'john'})
+
+    # Retrieve multiple documents by ID, key or body.
+    students.get_many(['abby', 'students/lola', {'_key': 'john'}])
+
+    # Update a single document.
     lola['GPA'] = 2.6
     students.update(lola)
 
-    # Update one or more matching documents
+    # Update one or more matching documents.
     students.update_match({'last': 'Park'}, {'GPA': 3.0})
 
-    # Replace documents by filters
-    becky = {'first': 'Becky', 'last': 'Solis', 'GPA': '3.3'}
-    students.replace_match({'first': 'Emma'}, becky)
-
-    # Replace a single document
+    # Replace a single document.
     emma['GPA'] = 3.1
     students.replace(emma)
 
-    # Iterate through all documents and update
+    # Replace one or more matching documents.
+    becky = {'first': 'Becky', 'last': 'Solis', 'GPA': '3.3'}
+    students.replace_match({'first': 'Emma'}, becky)
+
+    # Delete a document by key.
+    students.delete('john')
+
+    # Delete a document by ID.
+    students.delete('students/lola')
+
+    # Delete a document by body with "_id" or "_key" field.
+    students.delete(emma)
+
+    # Delete multiple documents. Missing ones are ignored.
+    students.delete_many([abby, 'john', 'students/lola'])
+
+    # Iterate through all documents and update individually.
     for student in students:
         student['GPA'] = 4.0
         student['happy'] = True
         students.update(student)
 
-Refer to :ref:`Collection` class for more details on the operations shown
-above.
+You can manage documents via database API wrappers also, but only simple
+operations (i.e. get, insert, update, replace, delete) are supported and you
+must provide document IDs instead of keys:
+
+.. testcode::
+
+    from arango import ArangoClient
+
+    # Initialize the ArangoDB client.
+    client = ArangoClient()
+
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Create some test documents to play around with.
+    # The documents must have the "_id" field instead.
+    lola = {'_id': 'students/lola', 'GPA': 3.5}
+    abby = {'_id': 'students/abby', 'GPA': 3.2}
+    john = {'_id': 'students/john', 'GPA': 3.6}
+    emma = {'_id': 'students/emma', 'GPA': 4.0}
+
+    # Insert a new document.
+    metadata = db.insert_document('students', lola)
+    assert metadata['_id'] == 'students/lola'
+    assert metadata['_key'] == 'lola'
+
+    # Check if a document exists.
+    assert db.has_document(lola) is True
+
+    # Get a document (by ID or body with "_id" field).
+    db.document('students/lola')
+    db.document(abby)
+
+    # Update a document.
+    lola['GPA'] = 3.6
+    db.update_document(lola)
+
+    # Replace a document.
+    lola['GPA'] = 3.4
+    db.replace_document(lola)
+
+    # Delete a document (by ID or body with "_id" field).
+    db.delete_document('students/lola')
+
+See :ref:`StandardDatabase` and :ref:`StandardCollection` for API specification.
+
+When managing documents, using collection API wrappers over database API
+wrappers is recommended as more operations are available and less sanity
+checking is performed under the hood.

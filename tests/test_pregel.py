@@ -1,88 +1,60 @@
 from __future__ import absolute_import, unicode_literals
 
+from six import string_types
 
-import pytest
-
-from arango import ArangoClient
 from arango.exceptions import (
     PregelJobCreateError,
     PregelJobGetError,
     PregelJobDeleteError
 )
-
-from .utils import (
-    generate_db_name,
-    generate_col_name,
-    generate_graph_name,
-)
-
-arango_client = ArangoClient()
-db_name = generate_db_name()
-db = arango_client.create_database(db_name)
-graph_name = generate_graph_name()
-graph = db.create_graph(graph_name)
-from_col_name = generate_col_name()
-to_col_name = generate_col_name()
-edge_col_name = generate_col_name()
-graph.create_vertex_collection(from_col_name)
-graph.create_vertex_collection(to_col_name)
-graph.create_edge_definition(
-    edge_col_name, [from_col_name], [to_col_name]
+from tests.helpers import (
+    assert_raises,
+    generate_string
 )
 
 
-def teardown_module(*_):
-    arango_client.delete_database(db_name, ignore_missing=True)
+def test_pregel_attributes(db, username):
+    assert db.pregel.context in ['default', 'async', 'batch', 'transaction']
+    assert db.pregel.username == username
+    assert db.pregel.db_name == db.name
+    assert repr(db.pregel) == '<Pregel in {}>'.format(db.name)
 
 
-@pytest.mark.order1
-def test_start_pregel_job():
-    # Test start_pregel_job with page rank algorithm (happy path)
-    job_id = db.create_pregel_job('pagerank', graph_name)
+def test_pregel_management(db, graph):
+    # Test create pregel job
+    job_id = db.pregel.create_job(
+        graph.name,
+        'pagerank',
+        store=False,
+        max_gss=100,
+        thread_count=1,
+        async_mode=False,
+        result_field='result',
+        algorithm_params={'threshold': 0.000001}
+    )
     assert isinstance(job_id, int)
 
-    # Test start_pregel_job with unsupported algorithm
-    with pytest.raises(PregelJobCreateError):
-        db.create_pregel_job('unsupported_algorithm', graph_name)
+    # Test create pregel job with unsupported algorithm
+    with assert_raises(PregelJobCreateError) as err:
+        db.pregel.create_job(graph.name, 'invalid')
+    assert err.value.error_code == 10
 
-
-@pytest.mark.order2
-def test_get_pregel_job():
-    # Create a test Pregel job
-    job_id = db.create_pregel_job('pagerank', graph_name)
-
-    # Test pregel_job with existing job ID (happy path)
-    job = db.pregel_job(job_id)
+    # Test get existing pregel job
+    job = db.pregel.job(job_id)
+    assert isinstance(job['state'], string_types)
     assert isinstance(job['aggregators'], dict)
     assert isinstance(job['gss'], int)
     assert isinstance(job['received_count'], int)
     assert isinstance(job['send_count'], int)
     assert isinstance(job['total_runtime'], float)
-    assert job['state'] == 'running'
-    assert 'edge_count' in job
-    assert 'vertex_count' in job
 
-    # Test pregel_job with an invalid job ID
-    with pytest.raises(PregelJobGetError):
-        db.pregel_job(-1)
+    # Test delete existing pregel job
+    assert db.pregel.delete_job(job_id) is True
+    with assert_raises(PregelJobGetError) as err:
+        db.pregel.job(job_id)
+    assert err.value.error_code == 10
 
-
-@pytest.mark.order3
-def test_delete_pregel_job():
-    # Create a test Pregel job
-    job_id = db.create_pregel_job('pagerank', graph_name)
-
-    # Get the newly created job
-    job = db.pregel_job(job_id)
-    assert job['state'] == 'running'
-
-    # Test delete_pregel_job with existing job ID (happy path)
-    assert db.delete_pregel_job(job_id) == True
-
-    # The fetch for the same job should now fail
-    with pytest.raises(PregelJobGetError):
-        db.pregel_job(job_id)
-
-    # Test delete_pregel_job with an invalid job ID
-    with pytest.raises(PregelJobDeleteError):
-        db.delete_pregel_job(-1)
+    # Test delete missing pregel job
+    with assert_raises(PregelJobDeleteError) as err:
+        db.pregel.delete_job(generate_string())
+    assert err.value.error_code == 10

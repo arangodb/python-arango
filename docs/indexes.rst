@@ -1,43 +1,49 @@
-.. _index-page:
-
 Indexes
 -------
 
 **Indexes** can be added to collections to speed up document lookups. Every
-collection has a primary hash index on the ``"_key"`` field by default. This
-index cannot be deleted or modified. Every edge collection has additional edge
-index on fields ``"_from"`` and ``"_to"``.
+collection has a primary hash index on ``_key`` field by default. This index
+cannot be deleted or modified. Every edge collection has additional indexes
+on fields ``_from`` and ``_to``. For more information on indexes, refer to
+`ArangoDB manual`_.
 
-Here is an example showing how indexes can be added or removed:
+.. _ArangoDB manual: https://docs.arangodb.com
 
-.. code-block:: python
+**Example:**
+
+.. testcode::
 
     from arango import ArangoClient
 
+    # Initialize the ArangoDB client.
     client = ArangoClient()
-    db = client.db('my_database')
+
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Create a new collection named "cities".
     cities = db.create_collection('cities')
 
-    # List the indexes in the collection
+    # List the indexes in the collection.
     cities.indexes()
 
-    # Add a new hash index on fields 'continent' and 'country'
-    cities.add_hash_index(fields=['continent', 'country'], unique=True)
+    # Add a new hash index on document fields "continent" and "country".
+    index = cities.add_hash_index(fields=['continent', 'country'], unique=True)
 
-    # Add new fulltext indices on fields 'continent' and 'country'
-    cities.add_fulltext_index(fields=['continent'])
-    cities.add_fulltext_index(fields=['country'])
+    # Add new fulltext indexes on fields "continent" and "country".
+    index = cities.add_fulltext_index(fields=['continent'])
+    index = cities.add_fulltext_index(fields=['country'])
 
-    # Add a new skiplist index on field 'population'
-    cities.add_skiplist_index(fields=['population'], sparse=False)
+    # Add a new skiplist index on field 'population'.
+    index = cities.add_skiplist_index(fields=['population'], sparse=False)
 
-    # Add a new geo-spatial index on field 'coordinates'
-    cities.add_geo_index(fields=['coordinates'])
+    # Add a new geo-spatial index on field 'coordinates'.
+    index = cities.add_geo_index(fields=['coordinates'])
 
-    # Add a new persistent index on fields 'currency'
-    cities.add_persistent_index(fields=['currency'], unique=True, sparse=True)
+    # Add a new persistent index on fields 'currency'.
+    index = cities.add_persistent_index(fields=['currency'], sparse=True)
 
-    # Delete an existing index from the collection
-    cities.delete_index('some_index_id')
+    # Delete the last index from the collection.
+    cities.delete_index(index['id'])
 
-Refer to :ref:`Collection` class for more details.
+See :ref:`StandardCollection` for API specification.

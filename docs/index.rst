@@ -1,29 +1,24 @@
-.. python-arango documentation master file, created by
-   sphinx-quickstart on Sun Jul 24 17:17:48 2016.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 .. image:: /static/logo.png
 
 |
 
-Welcome to the documentation for **python-arango**, a Python driver for
-`ArangoDB <https://www.arangodb.com/>`__.
+Welcome to the documentation for **python-arango**, a Python driver for ArangoDB_.
 
 
 Features
 ========
 
-- Clean, Pythonic interface
+- Clean Pythonic interface
 - Lightweight
 - High ArangoDB REST API coverage
 
 Compatibility
 =============
 
-- Python versions 2.7.x, 3.4.x, 3.5.x and 3.6.x are supported
-- Latest version of python-arango (3.x) supports ArangoDB 3.x only
-- Older versions of python-arango support ArangoDB 1.x ~ 2.x only
+- Python versions 2.7, 3.4, 3.5 and 3.6 are supported
+- Python-arango 4.x supports ArangoDB 3.3+ (recommended)
+- Python-arango 3.x supports ArangoDB 3.0 ~ 3.2 only
+- Python-arango 2.x supports ArangoDB 1.x ~ 2.x only
 
 Installation
 ============
@@ -44,6 +39,7 @@ To install the latest version directly from GitHub_:
 
 You may need to use ``sudo`` depending on your environment.
 
+.. _ArangoDB: https://www.arangodb.com
 .. _PyPi: https://pypi.python.org/pypi/python-arango
 .. _GitHub: https://github.com/joowani/python-arango
 
@@ -54,7 +50,7 @@ Contents
 .. toctree::
     :maxdepth: 1
 
-    client
+    overview
     database
     collection
     document
@@ -70,8 +66,10 @@ Contents
     task
     wal
     pregel
+    foxx
     threading
     errors
     logging
     http
-    classes
+    contributing
+    specs
