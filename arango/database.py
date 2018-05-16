@@ -808,7 +808,10 @@ class Database(APIWrapper):
                           shard_fields=None,
                           shard_count=None,
                           index_bucket_count=None,
-                          replication_factor=None):
+                          replication_factor=None,
+                          shard_like=None,
+                          sync_replication=None,
+                          enforce_replication_factor=None):
         """Create a new collection.
 
         :param name: Collection name.
@@ -863,6 +866,19 @@ class Database(APIWrapper):
             every write to the master is copied to all slaves before operation
             is reported successful).
         :type replication_factor: int
+        :param shard_like: Name of prototype collection whose sharding
+            specifics are imitated. Prototype collections cannot be dropped
+            before imitating collections. Applies to enterprise version of
+            ArangoDB only.
+        :type shard_like: str | unicode
+        :param sync_replication: If set to True, server reports success only
+            when collection is created in all replicas. You can set this to
+            False for faster server response, and if full replication is not a
+            concern.
+        :type sync_replication: bool
+        :param enforce_replication_factor: Check if there are enough replicas
+            available at creation time, or halt the operation.
+        :type enforce_replication_factor: bool
         :return: Standard collection API wrapper.
         :rtype: arango.collection.StandardCollection
         :raise arango.exceptions.CollectionCreateError: If create fails.
@@ -879,14 +895,9 @@ class Database(APIWrapper):
             'doCompact': compact,
             'isSystem': system,
             'isVolatile': volatile,
-            'keyOptions': key_options
+            'keyOptions': key_options,
+            'type': 3 if edge else 2
         }
-
-        if edge:
-            data['type'] = 3
-        else:
-            data['type'] = 2
-
         if journal_size is not None:
             data['journalSize'] = journal_size
         if shard_count is not None:
@@ -897,10 +908,19 @@ class Database(APIWrapper):
             data['indexBuckets'] = index_bucket_count
         if replication_factor is not None:
             data['replicationFactor'] = replication_factor
+        if shard_like is not None:
+            data['distributeShardsLike'] = shard_like
+
+        params = {}
+        if sync_replication is not None:
+            params['waitForSyncReplication'] = sync_replication
+        if enforce_replication_factor is not None:
+            params['enforceReplicationFactor'] = enforce_replication_factor
 
         request = Request(
             method='post',
             endpoint='/_api/collection',
+            params=params,
             data=data
         )
 

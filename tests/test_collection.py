@@ -151,7 +151,10 @@ def test_collection_management(db, bad_db):
         shard_count=2,
         shard_fields=['test_attr'],
         index_bucket_count=10,
-        replication_factor=1
+        replication_factor=1,
+        shard_like='',
+        sync_replication=False,
+        enforce_replication_factor=False
     )
     assert db.has_collection(col_name) is True
 

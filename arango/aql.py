@@ -230,14 +230,14 @@ class AQL(APIWrapper):
         :type intermediate_commit_size: int
         :param satellite_sync_wait: Number of seconds in which the server must
             synchronize the satellite collections involved in the query. When
-            the threshold is reached, the query is stopped. This parameter is
-            for enterprise version of ArangoDB only.
+            the threshold is reached, the query is stopped. Applies only to
+            enterprise version of ArangoDB.
         :type satellite_sync_wait: int | float
         :param read_collections: Names of collections read during query
-            execution. This parameter is required for transactions only.
+            execution. Required for :doc:`transactions <transaction>`.
         :type read_collections: [str | unicode]
         :param write_collections: Names of collections written to during query
-            execution. This parameter is required for transactions only.
+            execution. Required for :doc:`transactions <transaction>`.
         :type write_collections: [str | unicode]
         :return: Result cursor.
         :rtype: arango.cursor.Cursor
