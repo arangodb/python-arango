@@ -402,7 +402,8 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     assert fvcol[key]['val'] == vertex['val']
 
     # Test get missing vertex
-    assert fvcol.get(generate_doc_key()) is None
+    if fvcol.context != 'transaction':
+        assert fvcol.get(generate_doc_key()) is None
 
     # Test get existing edge by body with "_key" field
     result = fvcol.get({'_key': key})
@@ -424,7 +425,7 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     old_rev = result['_rev']
     with assert_raises(DocumentRevisionError) as err:
         fvcol.get(key, rev=old_rev + '1', check_rev=True)
-    assert err.value.error_code == 1903
+    assert err.value.error_code in {1903, 1200}
 
     # Test get existing vertex with bad database
     with assert_raises(DocumentGetError) as err:
@@ -462,12 +463,13 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     old_rev = result['_rev']
 
     # Test update vertex with bad revision
-    new_rev = old_rev + '1'
-    with assert_raises(DocumentRevisionError) as err:
-        fvcol.update({'_key': key, '_rev': new_rev, 'bar': 500})
-    assert err.value.error_code == 1903
-    assert fvcol[key]['foo'] == 200
-    assert fvcol[key]['bar'] == 400
+    if fvcol.context != 'transaction':
+        new_rev = old_rev + '1'
+        with assert_raises(DocumentRevisionError) as err:
+            fvcol.update({'_key': key, '_rev': new_rev, 'bar': 500})
+        assert err.value.error_code == 1903
+        assert fvcol[key]['foo'] == 200
+        assert fvcol[key]['bar'] == 400
 
     # Test update vertex in missing vertex collection
     with assert_raises(DocumentUpdateError) as err:
@@ -533,13 +535,14 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     old_rev = result['_rev']
 
     # Test replace vertex with bad revision
-    new_rev = old_rev + '10'
-    vertex = {'_key': key, '_rev': new_rev, 'bar': 600}
-    with assert_raises(DocumentRevisionError) as err:
-        fvcol.replace(vertex)
-    assert err.value.error_code == 1903
-    assert fvcol[key]['bar'] == 500
-    assert 'foo' not in fvcol[key]
+    if fvcol.context != 'transaction':
+        new_rev = old_rev + '10'
+        vertex = {'_key': key, '_rev': new_rev, 'bar': 600}
+        with assert_raises(DocumentRevisionError) as err:
+            fvcol.replace(vertex)
+        assert err.value.error_code == 1903
+        assert fvcol[key]['bar'] == 500
+        assert 'foo' not in fvcol[key]
 
     # Test replace vertex with bad database
     with assert_raises(DocumentReplaceError) as err:
@@ -557,13 +560,14 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     assert fvcol[key]['bar'] == 400
 
     # Test delete vertex with bad revision
-    old_rev = fvcol[key]['_rev']
-    vertex['_rev'] = old_rev + '1'
-    with assert_raises(DocumentRevisionError) as err:
-        fvcol.delete(vertex, check_rev=True)
-    assert err.value.error_code == 1903
-    vertex['_rev'] = old_rev
-    assert vertex in fvcol
+    if fvcol.context != 'transaction':
+        old_rev = fvcol[key]['_rev']
+        vertex['_rev'] = old_rev + '1'
+        with assert_raises(DocumentRevisionError) as err:
+            fvcol.delete(vertex, check_rev=True)
+        assert err.value.error_code == 1903
+        vertex['_rev'] = old_rev
+        assert vertex in fvcol
 
     # Test delete missing vertex
     bad_key = generate_doc_key()
@@ -575,7 +579,8 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
 
     # Test delete existing vertex with sync set to True
     assert fvcol.delete(vertex, sync=True, check_rev=False) is True
-    assert fvcol[vertex] is None
+    if fvcol.context != 'transaction':
+        assert fvcol[vertex] is None
     assert vertex not in fvcol
     assert len(fvcol) == 2
     fvcol.truncate()
@@ -655,7 +660,7 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     # Test insert duplicate edge
     with assert_raises(DocumentInsertError) as err:
         assert ecol.insert(edge)
-    assert err.value.error_code == 1906
+    assert err.value.error_code in {1906, 1210}
     assert len(ecol) == 1
 
     edge = edocs[1]
@@ -694,7 +699,8 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
 
     # Test get missing vertex
     bad_document_key = generate_doc_key()
-    assert ecol.get(bad_document_key) is None
+    if ecol.context != 'transaction':
+        assert ecol.get(bad_document_key) is None
 
     # Test get existing edge by body with "_key" field
     result = ecol.get({'_key': key})
@@ -716,9 +722,9 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     old_rev = result['_rev']
     with assert_raises(DocumentRevisionError) as err:
         ecol.get(key, rev=old_rev + '1')
-    assert err.value.error_code == 1903
+    assert err.value.error_code in {1903, 1200}
 
-    # Test get existing vertex with bad database
+    # Test get existing edge with bad database
     with assert_raises(DocumentGetError) as err:
         bad_ecol.get(key)
     assert err.value.error_code == 1228
@@ -746,12 +752,13 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     assert ecol[key]['bar'] == 400
     old_rev = result['_rev']
 
-    # Test update edge with bad revision
-    new_rev = old_rev + '1'
-    with assert_raises(DocumentRevisionError):
-        ecol.update({'_key': key, '_rev': new_rev, 'bar': 500})
-    assert ecol[key]['foo'] == 200
-    assert ecol[key]['bar'] == 400
+    if ecol.context != 'transaction':
+        # Test update edge with bad revision
+        new_rev = old_rev + '1'
+        with assert_raises(DocumentRevisionError):
+            ecol.update({'_key': key, '_rev': new_rev, 'bar': 500})
+        assert ecol[key]['foo'] == 200
+        assert ecol[key]['bar'] == 400
 
     # Test update edge in missing edge collection
     with assert_raises(DocumentUpdateError) as err:
@@ -826,14 +833,15 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     assert ecol[key]['bar'] == 400
     old_rev = result['_rev']
 
-    # Test replace edge with bad revision
     edge['bar'] = 500
-    edge['_rev'] = old_rev + key
-    with assert_raises(DocumentRevisionError) as err:
-        ecol.replace(edge)
-    assert err.value.error_code == 1903
-    assert ecol[key]['foo'] == 300
-    assert ecol[key]['bar'] == 400
+    if ecol.context != 'transaction':
+        # Test replace edge with bad revision
+        edge['_rev'] = old_rev + key
+        with assert_raises(DocumentRevisionError) as err:
+            ecol.replace(edge)
+        assert err.value.error_code == 1903
+        assert ecol[key]['foo'] == 300
+        assert ecol[key]['bar'] == 400
 
     # Test replace edge with bad database
     with assert_raises(DocumentReplaceError) as err:
@@ -850,23 +858,26 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     assert ecol[key]['bar'] == 500
 
     # Test delete edge with bad revision
-    old_rev = ecol[key]['_rev']
-    edge['_rev'] = old_rev + '1'
-    with assert_raises(DocumentRevisionError) as err:
-        ecol.delete(edge, check_rev=True)
-    assert err.value.error_code == 1903
-    edge['_rev'] = old_rev
-    assert edge in ecol
+    if ecol.context != 'transaction':
+        old_rev = ecol[key]['_rev']
+        edge['_rev'] = old_rev + '1'
+        with assert_raises(DocumentRevisionError) as err:
+            ecol.delete(edge, check_rev=True)
+        assert err.value.error_code == 1903
+        edge['_rev'] = old_rev
+        assert edge in ecol
 
     # Test delete missing edge
     with assert_raises(DocumentDeleteError) as err:
         ecol.delete(bad_document_key, ignore_missing=False)
     assert err.value.error_code == 1202
-    assert not ecol.delete(bad_document_key, ignore_missing=True)
+    if ecol.context != 'transaction':
+        assert not ecol.delete(bad_document_key, ignore_missing=True)
 
     # Test delete existing edge with sync set to True
     assert ecol.delete(edge, sync=True, check_rev=False) is True
-    assert ecol[edge] is None
+    if ecol.context != 'transaction':
+        assert ecol[edge] is None
     assert edge not in ecol
     ecol.truncate()
 

@@ -3,6 +3,8 @@ from __future__ import absolute_import, unicode_literals
 import logging
 from contextlib import contextmanager
 
+from six import string_types
+
 from arango.exceptions import DocumentParseError
 
 
@@ -36,7 +38,7 @@ def get_col_name(doc):
     return doc_id.split('/', 1)[0]
 
 
-def get_id(doc):
+def get_doc_id(doc):
     """Return the document ID from input.
 
     :param doc: Document ID or body with "_id" field.
@@ -49,3 +51,25 @@ def get_id(doc):
         return doc['_id'] if isinstance(doc, dict) else doc
     except KeyError:
         raise DocumentParseError('field "_id" required')
+
+
+def is_none_or_int(obj):
+    """Check if obj is None or an integer.
+
+    :param obj: Object to check.
+    :type obj: object
+    :return: True if object is None or an integer.
+    :rtype: bool
+    """
+    return obj is None or (isinstance(obj, int) and obj >= 0)
+
+
+def is_none_or_str(obj):
+    """Check if obj is None or a string.
+
+    :param obj: Object to check.
+    :type obj: object
+    :return: True if object is None or a string.
+    :rtype: bool
+    """
+    return obj is None or isinstance(obj, string_types)

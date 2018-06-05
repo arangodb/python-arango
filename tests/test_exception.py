@@ -15,7 +15,7 @@ from arango.request import Request
 from arango.response import Response
 
 
-def test_server_error(col, docs, url):
+def test_server_error(client, col, docs):
     document = docs[0]
     with pytest.raises(DocumentInsertError) as err:
         col.insert(document, return_new=False)
@@ -26,7 +26,7 @@ def test_server_error(col, docs, url):
     assert exc.source == 'server'
     assert exc.message == str(exc)
     assert exc.message.startswith('[HTTP 409][ERR 1210] unique constraint')
-    assert exc.url.startswith(url)
+    assert exc.url.startswith(client.base_url)
     assert exc.error_code == 1210
     assert exc.http_method == 'post'
     assert exc.http_code == 409
@@ -50,7 +50,7 @@ def test_server_error(col, docs, url):
     assert resp.status_text == 'Conflict'
     assert json.loads(resp.raw_body) == expected_body
     assert resp.headers == exc.http_headers
-    assert resp.url.startswith(url)
+    assert resp.url.startswith(client.base_url)
 
     req = exc.request
     assert isinstance(req, Request)

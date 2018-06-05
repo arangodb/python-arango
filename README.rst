@@ -38,7 +38,7 @@ Announcements
 =============
 
 - Python-arango version `4.0.0`_ is now out!
-- Please see the releases_ page for details on latest updates.
+- Please see the releases_ page for latest updates.
 
 Features
 ========
@@ -161,7 +161,7 @@ Here is another example with graphs:
         strategy='breadthfirst'
     )
 
-Check out the documentation_ for more details.
+Check out the documentation_ for more information.
 
 Contributing
 ============

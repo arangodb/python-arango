@@ -2,8 +2,6 @@ from __future__ import absolute_import, unicode_literals
 
 import json
 
-import os
-
 from six import string_types
 
 from arango.exceptions import (
@@ -36,16 +34,8 @@ from tests.helpers import (
     generate_service_mount
 )
 
-if os.getenv('TRAVIS', False):
-    # noinspection PyUnresolvedReferences
-    service_file = os.path.join(os.sep, 'tmp', 'service.zip')
-else:
-    cwd = os.getcwd()
-    path = [cwd]
-    if not cwd.endswith('tests'):
-        path.append('tests')
-    path.extend(['static', 'service.zip'])
-    service_file = os.path.join(*path)
+# noinspection PyUnresolvedReferences
+service_file = '/tmp/service.zip'
 
 
 def test_foxx_attributes(db):

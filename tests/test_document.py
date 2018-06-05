@@ -1023,6 +1023,16 @@ def test_document_find(col, bad_col, docs):
         assert doc['_key'] in col
 
     # Test find with offset
+    with assert_raises(AssertionError) as err:
+        col.find({'val': 1}, skip=-1)
+    assert 'skip must be a non-negative int' == str(err.value)
+
+    found = list(col.find({'val': 1}, skip=100))
+    assert len(found) == 0
+
+    found = list(col.find({'val': 1}, skip=0))
+    assert len(found) == 2
+
     found = list(col.find({'val': 1}, skip=1))
     assert len(found) == 1
     for doc in map(dict, found):
@@ -1030,6 +1040,10 @@ def test_document_find(col, bad_col, docs):
         assert doc['_key'] in col
 
     # Test find with limit
+    with assert_raises(AssertionError) as err:
+        col.find({}, limit=-1)
+    assert 'limit must be a non-negative int' == str(err.value)
+
     for limit in [3, 4, 5]:
         found = list(col.find({}, limit=limit))
         assert len(found) == limit
@@ -1058,9 +1072,14 @@ def test_document_find_near(col, bad_col, docs):
     result = col.find_near(latitude=1, longitude=1)
     assert extract('_key', result) == ['1', '2', '3', '4', '5', '6']
 
+    # Test find_near with limit of -1
+    with assert_raises(AssertionError) as err:
+        col.find_near(latitude=1, longitude=1, limit=-1)
+    assert 'limit must be a non-negative int' == str(err.value)
+
     # Test find_near with limit of 0
     result = col.find_near(latitude=1, longitude=1, limit=0)
-    assert extract('_key', result) == ['1', '2', '3', '4', '5', '6']
+    assert extract('_key', result) == []
 
     # Test find_near with limit of 1
     result = col.find_near(latitude=1, longitude=1, limit=1)
@@ -1098,13 +1117,23 @@ def test_document_find_in_range(col, bad_col, docs):
     result = col.find_in_range('val', lower=1, upper=2)
     assert extract('_key', result) == ['1']
 
+    # Test find_in_range with limit of -1
+    with assert_raises(AssertionError) as err:
+        col.find_in_range('val', lower=1, upper=2, limit=-1)
+    assert 'limit must be a non-negative int' == str(err.value)
+
     # Test find_in_range with limit of 0
     result = col.find_in_range('val', lower=1, upper=2, limit=0)
-    assert extract('_key', result) == ['1']
+    assert extract('_key', result) == []
 
     # Test find_in_range with limit of 3
     result = col.find_in_range('val', lower=1, upper=5, limit=3)
     assert extract('_key', result) == ['1', '2', '3']
+
+    # Test find_in_range with skip set to -1
+    with assert_raises(AssertionError) as err:
+        col.find_in_range('val', lower=1, upper=2, skip=-1)
+    assert 'skip must be a non-negative int' == str(err.value)
 
     # Test find_in_range with skip set to 0
     result = col.find_in_range('val', lower=1, upper=5, skip=0)
@@ -1174,6 +1203,18 @@ def test_document_find_in_box(col, bad_col, geo):
     )
     assert clean_doc(result) == [doc1, doc3]
 
+    # Test find_in_box with limit of -1
+    with assert_raises(AssertionError) as err:
+        col.find_in_box(
+            latitude1=0,
+            longitude1=0,
+            latitude2=6,
+            longitude2=3,
+            limit=-1,
+            index=geo['id']
+        )
+    assert 'limit must be a non-negative int' == str(err.value)
+
     # Test find_in_box with limit of 0
     result = col.find_in_box(
         latitude1=0,
@@ -1204,6 +1245,17 @@ def test_document_find_in_box(col, bad_col, geo):
         limit=4
     )
     assert clean_doc(result) == [doc1, doc2, doc3, doc4]
+
+    # Test find_in_box with limit of -1
+    with assert_raises(AssertionError) as err:
+        col.find_in_box(
+            latitude1=0,
+            longitude1=0,
+            latitude2=6,
+            longitude2=3,
+            skip=-1,
+        )
+    assert 'skip must be a non-negative int' == str(err.value)
 
     # Test find_in_box with skip 1
     result = col.find_in_box(
@@ -1244,6 +1296,13 @@ def test_document_find_by_text(col, docs):
     assert clean_doc(result) == docs
 
     # Test find_by_text with limit
+    with assert_raises(AssertionError) as err:
+        col.find_by_text(field='text', query='foo', limit=-1)
+    assert 'limit must be a non-negative int' == str(err.value)
+
+    result = col.find_by_text(field='text', query='foo', limit=0)
+    assert len(list(result)) == 0
+
     result = col.find_by_text(field='text', query='foo', limit=1)
     assert len(list(result)) == 1
 
@@ -1491,6 +1550,11 @@ def test_document_all(col, bad_col, docs):
     result = list(cursor)
     assert clean_doc(result) == docs
 
+    # Test all with skip of -1
+    with assert_raises(AssertionError) as err:
+        col.all(skip=-1)
+    assert 'skip must be a non-negative int' == str(err.value)
+
     # Test all with a skip of 0
     cursor = col.all(skip=0)
     result = list(cursor)
@@ -1509,10 +1573,15 @@ def test_document_all(col, bad_col, docs):
     assert cursor.count() == len(result) == 3
     assert all([clean_doc(d) in docs for d in result])
 
+    # Test all with skip of -1
+    with assert_raises(AssertionError) as err:
+        col.all(limit=-1)
+    assert 'limit must be a non-negative int' == str(err.value)
+
     # Test all with a limit of 0
     cursor = col.all(limit=0)
     result = list(cursor)
-    assert cursor.count() == len(result) == 6
+    assert cursor.count() == len(result) == 0
 
     # Test all with a limit of 1
     cursor = col.all(limit=1)

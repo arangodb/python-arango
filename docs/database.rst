@@ -1,12 +1,12 @@
 Databases
 ---------
 
-An ArangoDB server can have an arbitrary number of **databases**. Each database
+ArangoDB server can have an arbitrary number of **databases**. Each database
 has its own set of :doc:`collections <collection>` and :doc:`graphs <graph>`.
-There is a *special* database named ``_system``, which always exists by default
-and cannot be dropped. This database provides administrative operations such as
-managing users, permissions and other databases. Many of these operations can
-only be executed by admin users. See :doc:`user` for more information.
+There is a special database named ``_system``, which cannot be dropped and
+provides operations for managing users, permissions and other databases. Most
+of the operations can only be executed by admin users. See :doc:`user` for more
+information.
 
 **Example:**
 

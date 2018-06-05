@@ -57,11 +57,11 @@ class TestTransactionExecutor(TransactionExecutor):
         if request.command is None:
             response = self._conn.send_request(request)
             return response_handler(response)
-        else:
-            self._committed = False
-            self._queue.clear()
 
-            job = TransactionJob(response_handler)
-            self._queue[job.id] = (request, job)
-            self.commit()
-            return job.result()
+        self._committed = False
+        self._queue.clear()
+
+        job = TransactionJob(response_handler)
+        self._queue[job.id] = (request, job)
+        self.commit()
+        return job.result()

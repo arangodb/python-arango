@@ -5,30 +5,26 @@ Requirements
 ============
 
 Before submitting a pull request on GitHub_, please make sure you meet the
-following **requirements**:
+following requirements:
 
-* The pull request points to the dev_ (development) branch.
-* All changes are squashed into a single commit (I like to use ``git rebase -i``
-  to do this).
-* The commit message is in present tense (good: "Add feature", bad:
-  "Added feature").
-* Correct and consistent style: Sphinx_-compatible docstrings, correct snake
-  and camel casing, and PEP8_ compliance (see below).
-* No classes/methods/functions with missing docstrings or commented-out lines.
-  You can take a look at the source code on GitHub_ for examples.
-* The test coverage_ remains at %100. You may find yourself having to write
-  superfluous unit tests to keep this number up. If a piece of code is trivial
-  and has no need for tests, use this_ to exclude it from coverage.
-* No build failures on TravisCI_. The builds automatically trigger on PR
-  submissions.
-* Does not break backward-compatibility (unless there is a really good reason).
-* Compatibility with all supported Python versions: 2.7, 3.4, 3.5 and 3.6.
+* The pull request points to dev_ branch.
+* Changes are squashed into a single commit. I like to use git rebase for this.
+* Commit message is in present tense. For example, "Fix bug" is good while
+  "Fixed bug" is not.
+* Sphinx_-compatible docstrings.
+* PEP8_ compliance.
+* No missing docstrings or commented-out lines.
+* Test coverage_ remains at %100. If a piece of code is trivial and does not
+  need unit tests, use this_ to exclude it from coverage.
+* No build failures on `Travis CI`_. Builds automatically trigger on pull
+  request submissions.
+* Documentation is kept up-to-date with the new changes (see below).
 
 .. warning::
-    The dev branch is occasionally rebased_, and its commit history may be
-    overwritten in the process. Before you begin feature work, git fetch or
-    pull to ensure that your local branch has not diverged. If you see git
-    conflicts and just want to start from scratch, run these commands:
+    The dev branch is occasionally rebased, and its commit history may be
+    overwritten in the process. Before you begin your feature work, git fetch
+    or pull to ensure that your local branch has not diverged. If you see git
+    conflicts and want to start with a clean slate, run the following commands:
 
     .. code-block:: bash
 
@@ -48,31 +44,22 @@ To ensure PEP8_ compliance, run flake8_:
     ~$ cd python-arango
     ~$ flake8
 
-You must resolve all issues reported. If there is a good reason to ignore
-errors coming from a specific piece of code, visit here_ to see how to exclude
-the lines.
+If there is a good reason to ignore a warning, see here_ on how to exclude it.
 
 Testing
 =======
 
-To test your changes, run the integration test suite that comes with
-**python-arango** on your local machine. The test suite uses pytest_, and is
-designed to run against an actual ArangoDB instance. Please use the latest
-version of ArangoDB with the following configuration:
+To test your changes, you can run the integration test suite that comes with
+**python-arango**. It uses pytest_ and requires an actual ArangoDB instance.
 
-* **Host**: "localhost"
-* **Port**: 8529
-* **Username**: "root"
-* **Password**: "passwd"
-
-To run the test suite:
+To run the test suite (use your own host, port and root password):
 
 .. code-block:: bash
 
     ~$ pip install pytest
     ~$ git clone https://github.com/joowani/python-arango.git
     ~$ cd python-arango
-    ~$ py.test --complete --verbose
+    ~$ py.test --complete --host=127.0.0.1 --port=8529 --passwd=passwd
 
 To run the test suite with coverage report:
 
@@ -81,39 +68,32 @@ To run the test suite with coverage report:
     ~$ pip install coverage pytest pytest-cov
     ~$ git clone https://github.com/joowani/python-arango.git
     ~$ cd python-arango
-    ~$ py.test --complete --verbose --cov=arango --cov-report=html
+    ~$ py.test --complete --host=127.0.0.1 --port=8529 --passwd=passwd --cov=kq
 
-    # Open the generated file htmlcov/index.html in a browser
-
-The test suite only operates on temporary databases created during the run,
-and is meant to be run in disposable environments (e.g. Travis).
+As the test suite creates real databases and jobs, it should only be run in
+development environments.
 
 Documentation
 =============
 
-The documentation (including the README) is written in reStructuredText_ and
-uses Sphinx_. To build an HTML version of the documentation on your local
-machine:
+The documentation including the README is written in reStructuredText_ and uses
+Sphinx_. To build an HTML version on your local machine:
 
 .. code-block:: bash
 
     ~$ pip install sphinx sphinx_rtd_theme
     ~$ git clone https://github.com/joowani/python-arango.git
     ~$ cd python-arango/docs
-    ~$ sphinx-build . build
-
-    # Open the generated file build/index.html in a browser
-
+    ~$ sphinx-build . build  # Open build/index.html in a browser
 
 As always, thank you for your contribution!
 
-.. _rebased: https://git-scm.com/book/en/v2/Git-Branching-Rebasing
 .. _dev: https://github.com/joowani/python-arango/tree/dev
 .. _GitHub: https://github.com/joowani/python-arango
 .. _PEP8: https://www.python.org/dev/peps/pep-0008/
 .. _coverage: https://coveralls.io/github/joowani/python-arango
 .. _this: http://coverage.readthedocs.io/en/latest/excluding.html
-.. _TravisCI: https://travis-ci.org/joowani/python-arango
+.. _Travis CI: https://travis-ci.org/joowani/python-arango
 .. _Sphinx: https://github.com/sphinx-doc/sphinx
 .. _flake8: http://flake8.pycqa.org
 .. _here: http://flake8.pycqa.org/en/latest/user/violations.html#in-line-ignoring-errors

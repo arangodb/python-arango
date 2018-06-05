@@ -9,18 +9,6 @@ to `ArangoDB manual`_.
 
 **Example:**
 
-.. testsetup::
-
-    import os
-    import sys
-
-    if os.getenv('TRAVIS', False):
-        service_file = os.path.join(os.sep, 'tmp', 'service.zip')
-    else:
-        cwd = os.getcwd()
-        if cwd.endswith('docs'):
-           cwd = cwd[:-4]
-        service_file = os.path.join(cwd, 'tests', 'static', 'service.zip')
 
 .. testcode::
 
@@ -44,7 +32,7 @@ to `ArangoDB manual`_.
     # Create a service.
     foxx.create_service(
         mount=service_mount,
-        source=service_file,  # "/home/example/services.zip"
+        source='/tmp/service.zip',
         config={},
         dependencies={},
         development=True,
@@ -55,7 +43,7 @@ to `ArangoDB manual`_.
     # Update (upgrade) a service.
     service = db.foxx.update_service(
         mount=service_mount,
-        source=service_file,
+        source='/tmp/service.zip',
         config={},
         dependencies={},
         teardown=True,
@@ -66,7 +54,7 @@ to `ArangoDB manual`_.
     # Replace (overwrite) a service.
     service = db.foxx.replace_service(
         mount=service_mount,
-        source=service_file,
+        source='/tmp/service.zip',
         config={},
         dependencies={},
         teardown=True,

@@ -17,7 +17,7 @@ from arango.exceptions import (
     VertexCollectionDeleteError,
 )
 from arango.request import Request
-from arango.utils import get_col_name, get_id
+from arango.utils import get_col_name, get_doc_id
 
 
 class Graph(APIWrapper):
@@ -443,7 +443,7 @@ class Graph(APIWrapper):
             uniqueness['edges'] = edge_uniqueness
 
         data = {
-            'startVertex': get_id(start_vertex),
+            'startVertex': get_doc_id(start_vertex),
             'graphName': self._name,
             'direction': direction,
             'strategy': strategy,

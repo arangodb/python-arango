@@ -1,9 +1,7 @@
 Getting Started
 ---------------
 
-Examples often speak louder than words, so this documentation relies heavily
-on sample code snippets with comments. Here is the first example showing how
-a **python-arango** client can be initialized and used:
+Here is an example showing how **python-arango** client can be used:
 
 .. testcode::
 

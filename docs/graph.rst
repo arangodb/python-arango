@@ -168,13 +168,20 @@ IDs instead of keys where applicable.
     # Get the API wrapper for graph "school".
     school = db.graph('school')
 
-    # The "_id" field is required instead of "_key" field.
-    school.insert_vertex('teachers', {'_key': 'jon', 'name': 'Jon'})
-    school.update_vertex({'_id': 'teachers/jon', 'age': 35})
-    school.replace_vertex({'_id': 'teachers/jon', 'name': 'Jon', 'age':36})
-    school.has_vertex('teachers/jon')
-    school.vertex('teachers/jon')
-    school.delete_vertex('teachers/jon')
+    # Create a new vertex collection named "lectures" if it does not exist.
+    # This returns an API wrapper for "lectures" vertex collection.
+    if school.has_vertex_collection('lectures'):
+        school.vertex_collection('lectures')
+    else:
+        school.create_vertex_collection('lectures')
+
+    # The "_id" field is required instead of "_key" field (except for insert).
+    school.insert_vertex('lectures', {'_key': 'CSC101'})
+    school.update_vertex({'_id': 'lectures/CSC101', 'difficulty': 'easy'})
+    school.replace_vertex({'_id': 'lectures/CSC101', 'difficulty': 'hard'})
+    school.has_vertex('lectures/CSC101')
+    school.vertex('lectures/CSC101')
+    school.delete_vertex('lectures/CSC101')
 
 See :ref:`Graph` and :ref:`VertexCollection` for API specification.
 
@@ -193,7 +200,25 @@ wrappers provides additional safeguards:
 
 **Example:**
 
-.. testcode::
+.. testsetup:: edge_collections
+
+    client = ArangoClient()
+    db = client.db('test', username='root', password='passwd')
+    school = db.graph('school')
+
+    if school.has_vertex_collection('lectures'):
+        school.vertex_collection('lectures')
+    else:
+        school.create_vertex_collection('lectures')
+    school.insert_vertex('lectures', {'_key': 'CSC101'})
+
+    if school.has_vertex_collection('teachers'):
+        school.vertex_collection('teachers')
+    else:
+        school.create_vertex_collection('teachers')
+    school.insert_vertex('teachers', {'_key': 'jon'})
+
+.. testcode:: edge_collections
 
     from arango import ArangoClient
 
@@ -248,7 +273,7 @@ IDs instead of keys where applicable.
 
 **Example:**
 
-.. testcode::
+.. testcode:: edge_collections
 
     from arango import ArangoClient
 
@@ -284,7 +309,7 @@ IDs instead of keys where applicable.
     school.edge('teach/jon-CSC101')
     school.delete_edge('teach/jon-CSC101')
     school.link('teach', 'teachers/jon', 'lectures/CSC101')
-    school.edges('teach', 'teachers/jon', direction='out')
+    school.edges('teach', 'teachers/jon', direction='in')
 
 See :ref:`Graph` and :ref:`EdgeCollection` for API specification.
 
@@ -299,7 +324,23 @@ over edges and vertices using various algorithms.
 
 **Example:**
 
-.. testcode::
+.. testsetup:: traversals
+
+    client = ArangoClient()
+    db = client.db('test', username='root', password='passwd')
+    school = db.graph('school')
+
+    if school.has_vertex_collection('lectures'):
+        school.vertex_collection('lectures')
+    else:
+        school.create_vertex_collection('lectures')
+
+    if school.has_vertex_collection('teachers'):
+        school.vertex_collection('teachers')
+    else:
+        school.create_vertex_collection('teachers')
+
+.. testcode:: traversals
 
     from arango import ArangoClient
 

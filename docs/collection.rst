@@ -2,16 +2,16 @@ Collections
 -----------
 
 A **collection** contains :doc:`documents <document>`. It is uniquely identified
-by its name, which must consist only of hyphen, underscore and alphanumeric
-characters. There are *three* types of collections in python-arango:
+by its name which must consist only of hyphen, underscore and alphanumeric
+characters. There are three types of collections in python-arango:
 
-* Standard Collection: contains regular :doc:`documents <document>`.
-* :ref:`Vertex Collection <vertex-collections>`: contains vertex documents used
-  in graphs.
-* :ref:`Edge Collection <edge-collections>`: contains edge documents used in
-  graphs.
+* **Standard Collection:** contains regular documents.
+* **Vertex Collection:** contains vertex documents for graphs. See
+  :ref:`here <vertex-collections>` for more details.
+* **Edge Collection:** contains edge documents for graphs. See
+  :ref:`here <edge-collections>` for more details.
 
-**Example:**
+Here is an example showing how you can manage standard collections:
 
 .. testcode::
 

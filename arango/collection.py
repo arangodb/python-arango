@@ -1,8 +1,8 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.utils import get_id
-
 __all__ = ['StandardCollection', 'VertexCollection', 'EdgeCollection']
+
+from numbers import Number
 
 from json import dumps
 
@@ -38,6 +38,11 @@ from arango.exceptions import (
 )
 from arango.request import Request
 from arango.response import Response
+from arango.utils import (
+    get_doc_id,
+    is_none_or_int,
+    is_none_or_str,
+)
 
 
 class Collection(APIWrapper):
@@ -640,28 +645,26 @@ class Collection(APIWrapper):
 
         :param skip: Number of documents to skip.
         :type skip: int
-        :param limit: Max number of documents fetched by the cursor. Default
-            value is 100. Values 0 or under are ignored.
+        :param limit: Max number of documents returned.
         :type limit: int
         :return: Document cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
         """
+        assert is_none_or_int(skip), 'skip must be a non-negative int'
+        assert is_none_or_int(limit), 'limit must be a non-negative int'
+
         data = {'collection': self.name}
         if skip is not None:
             data['skip'] = skip
-        if limit is not None and limit != 0:
+        if limit is not None:
             data['limit'] = limit
 
-        if self._is_transaction:
-            command = 'db.{}.all()'.format(self.name)
-            if skip is not None:
-                command += '.skip({})'.format(skip)
-            if limit is not None:
-                command += '.limit({})'.format(limit)
-            command += '.toArray()'
-        else:
-            command = None
+        command = 'db.{}.all(){}{}.toArray()'.format(
+            self.name,
+            '' if skip is None else '.skip({})'.format(skip),
+            '' if limit is None else '.limit({})'.format(limit),
+        ) if self._is_transaction else None
 
         request = Request(
             method='put',
@@ -672,6 +675,9 @@ class Collection(APIWrapper):
         )
 
         def response_handler(resp):
+            # TODO workaround for a bug in ArangoDB
+            if self._is_transaction and limit == 0:
+                return Cursor(self._conn, [])
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
@@ -740,34 +746,36 @@ class Collection(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    def find(self, filters, skip=0, limit=100):
+    def find(self, filters, skip=None, limit=None):
         """Return all documents that match the given filters.
 
         :param filters: Document filters.
         :type filters: dict
         :param skip: Number of documents to skip.
         :type skip: int
-        :param limit: Max number of documents fetched by the cursor. Default
-            value is 100. Values 0 or under are ignored.
+        :param limit: Max number of documents returned.
         :type limit: int
         :return: Document cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        limit = 100 if limit < 1 else limit
+        assert isinstance(filters, dict), 'filters must be a dict'
+        assert is_none_or_int(skip), 'skip must be a non-negative int'
+        assert is_none_or_int(limit), 'limit must be a non-negative int'
 
         data = {
             'collection': self.name,
             'example': filters,
             'skip': skip,
-            'limit': limit
         }
+        if limit is not None:
+            data['limit'] = limit
 
-        command = 'db.{}.byExample({}).skip({}).limit({}).toArray()'.format(
+        command = 'db.{}.byExample({}){}{}.toArray()'.format(
             self.name,
             dumps(filters),
-            dumps(skip),
-            dumps(limit)
+            '' if skip is None else '.skip({})'.format(skip),
+            '' if limit is None else '.limit({})'.format(limit),
         ) if self._is_transaction else None
 
         request = Request(
@@ -785,7 +793,7 @@ class Collection(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    def find_near(self, latitude, longitude, limit=100):
+    def find_near(self, latitude, longitude, limit=None):
         """Return documents near a given coordinate.
 
         Documents returned are sorted according to distance, with the nearest
@@ -797,38 +805,47 @@ class Collection(APIWrapper):
         :type latitude: int | float
         :param longitude: Longitude.
         :type longitude: int | float
-        :param limit: Max number of documents fetched by the cursor. Default
-            value is 100. Values 0 or under are ignored.
+        :param limit: Max number of documents returned.
         :type limit: int
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        limit = 100 if limit < 1 else limit
+        assert isinstance(latitude, Number), 'latitude must be a number'
+        assert isinstance(longitude, Number), 'longitude must be a number'
+        assert is_none_or_int(limit), 'limit must be a non-negative int'
 
         query = """
-        FOR doc IN NEAR(@collection, @latitude, @longitude, @limit)
+        FOR doc IN NEAR(@collection, @latitude, @longitude{})
             RETURN doc
-        """
+        """.format('' if limit is None else ', @limit ')
 
         bind_vars = {
             'collection': self._name,
             'latitude': latitude,
-            'longitude': longitude,
-            'limit': limit
+            'longitude': longitude
         }
+        if limit is not None:
+            bind_vars['limit'] = limit
 
-        command = 'db.{}.near({},{}).limit({}).toArray()'.format(
-            self.name,
-            dumps(latitude),
-            dumps(longitude),
-            dumps(limit)
-        ) if self._is_transaction else None
+        if not self._is_transaction:
+            command = 'db.{}.near({},{}){}.toArray()'.format(
+                self.name,
+                latitude,
+                longitude,
+                '' if limit is None else '.limit({})'.format(limit),
+            )
+        else:
+            command = None
 
         request = Request(
             method='post',
             endpoint='/_api/cursor',
-            data={'query': query, 'bindVars': bind_vars, 'count': True},
+            data={
+                'query': query,
+                'bindVars': bind_vars,
+                'count': True
+            },
             command=command,
             read=self.name
         )
@@ -844,8 +861,8 @@ class Collection(APIWrapper):
                       field,
                       lower,
                       upper,
-                      skip=0,
-                      limit=100):
+                      skip=None,
+                      limit=None):
         """Return documents within a given range in a random order.
 
         A skiplist index must be defined in the collection to use this method.
@@ -858,14 +875,23 @@ class Collection(APIWrapper):
         :type upper: int
         :param skip: Number of documents to skip.
         :type skip: int
-        :param limit: Max number of documents fetched by the cursor. Default
-            value is 100. Values 0 or under are ignored.
+        :param limit: Max number of documents returned.
         :type limit: int
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        limit = 100 if limit < 1 else limit
+        assert is_none_or_int(skip), 'skip must be a non-negative int'
+        assert is_none_or_int(limit), 'limit must be a non-negative int'
+
+        bind_vars = {
+            '@collection': self._name,
+            'field': field,
+            'lower': lower,
+            'upper': upper,
+            'skip': 0 if skip is None else skip,
+            'limit': 2147483647 if limit is None else limit,  # 2 ^ 31 - 1
+        }
 
         query = """
         FOR doc IN @@collection
@@ -874,33 +900,31 @@ class Collection(APIWrapper):
             RETURN doc
         """
 
-        bind_vars = {
-            '@collection': self._name,
-            'field': field,
-            'lower': lower,
-            'upper': upper,
-            'skip': skip,
-            'limit': limit
-        }
-
-        command = 'db.{}.range({},{},{}).skip({}).limit({}).toArray()'.format(
+        command = 'db.{}.range({},{},{}){}{}.toArray()'.format(
             self.name,
             dumps(field),
             dumps(lower),
             dumps(upper),
-            dumps(skip),
-            dumps(limit)
+            '' if skip is None else '.skip({})'.format(skip),
+            '' if limit is None else '.limit({})'.format(limit),
         ) if self._is_transaction else None
 
         request = Request(
             method='post',
             endpoint='/_api/cursor',
-            data={'query': query, 'bindVars': bind_vars, 'count': True},
+            data={
+                'query': query,
+                'bindVars': bind_vars,
+                'count': True
+            },
             command=command,
             read=self.name
         )
 
         def response_handler(resp):
+            # TODO workaround for a bug in ArangoDB
+            if self._is_transaction and limit == 0:
+                return Cursor(self._conn, [])
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
@@ -925,6 +949,11 @@ class Collection(APIWrapper):
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
         """
+        assert isinstance(latitude, Number), 'latitude must be a number'
+        assert isinstance(longitude, Number), 'longitude must be a number'
+        assert isinstance(radius, Number), 'radius must be a number'
+        assert is_none_or_str(distance_field), 'distance_field must be a str'
+
         query = """
         FOR doc IN WITHIN(@@collection, @latitude, @longitude, @radius{})
             RETURN doc
@@ -941,15 +970,19 @@ class Collection(APIWrapper):
 
         command = 'db.{}.within({},{},{}).toArray()'.format(
             self.name,
-            dumps(latitude),
-            dumps(longitude),
-            dumps(radius)
+            latitude,
+            longitude,
+            radius
         ) if self._is_transaction else None
 
         request = Request(
             method='post',
             endpoint='/_api/cursor',
-            data={'query': query, 'bindVars': bind_vars, 'count': True},
+            data={
+                'query': query,
+                'bindVars': bind_vars,
+                'count': True
+            },
             command=command,
             read=self.name
         )
@@ -966,8 +999,8 @@ class Collection(APIWrapper):
                     longitude1,
                     latitude2,
                     longitude2,
-                    skip=0,
-                    limit=100,
+                    skip=None,
+                    limit=None,
                     index=None):
         """Return all documents in an rectangular area.
 
@@ -981,8 +1014,7 @@ class Collection(APIWrapper):
         :type longitude2: int | float
         :param skip: Number of documents to skip.
         :type skip: int
-        :param limit: Max number of documents fetched by the cursor. Default
-            value is 100. Values 0 or under are ignored.
+        :param limit: Max number of documents returned.
         :type limit: int
         :param index: ID of the geo index to use (without the collection
             prefix). This parameter is ignored in transactions.
@@ -991,7 +1023,12 @@ class Collection(APIWrapper):
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        limit = 100 if limit < 1 else limit
+        assert isinstance(latitude1, Number), 'latitude1 must be a number'
+        assert isinstance(longitude1, Number), 'longitude1 must be a number'
+        assert isinstance(latitude2, Number), 'latitude2 must be a number'
+        assert isinstance(longitude2, Number), 'longitude2 must be a number'
+        assert is_none_or_int(skip), 'skip must be a non-negative int'
+        assert is_none_or_int(limit), 'limit must be a non-negative int'
 
         data = {
             'collection': self._name,
@@ -999,21 +1036,22 @@ class Collection(APIWrapper):
             'longitude1': longitude1,
             'latitude2': latitude2,
             'longitude2': longitude2,
-            'skip': skip,
-            'limit': limit
         }
+        if skip is not None:
+            data['skip'] = skip
+        if limit is not None:
+            data['limit'] = limit
         if index is not None:
             data['geo'] = self._name + '/' + index
 
-        command = 'db.{}.{}({},{},{},{}).skip({}).limit({}).toArray()'.format(
+        command = 'db.{}.withinRectangle({},{},{},{}){}{}.toArray()'.format(
             self.name,
-            'withinRectangle',
-            dumps(latitude1),
-            dumps(longitude1),
-            dumps(latitude2),
-            dumps(longitude2),
-            dumps(skip),
-            dumps(limit)
+            latitude1,
+            longitude1,
+            latitude2,
+            longitude2,
+            '' if skip is None else '.skip({})'.format(skip),
+            '' if limit is None else '.limit({})'.format(limit),
         ) if self._is_transaction else None
 
         request = Request(
@@ -1031,39 +1069,39 @@ class Collection(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    def find_by_text(self, field, query, limit=100):
+    def find_by_text(self, field, query, limit=None):
         """Return documents that match the given fulltext query.
 
         :param field: Document field with fulltext index.
         :type field: str | unicode
         :param query: Fulltext query.
         :type query: str | unicode
-        :param limit: Max number of documents fetched by the cursor. Default
-            value is 100. Values 0 or under are ignored.
+        :param limit: Max number of documents returned.
         :type limit: int
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        limit = 100 if limit < 1 else limit
-
-        aql = """
-        FOR doc IN FULLTEXT(@collection, @field, @query, @limit)
-            RETURN doc
-        """
+        assert is_none_or_int(limit), 'limit must be a non-negative int'
 
         bind_vars = {
             'collection': self._name,
             'field': field,
             'query': query,
-            'limit': limit,
         }
+        if limit is not None:
+            bind_vars['limit'] = limit
 
-        command = 'db.{}.fulltext({},{}).limit({}).toArray()'.format(
+        aql = """
+        FOR doc IN FULLTEXT(@collection, @field, @query{})
+            RETURN doc
+        """.format('' if limit is None else ', @limit')
+
+        command = 'db.{}.fulltext({},{}){}.toArray()'.format(
             self.name,
             dumps(field),
             dumps(query),
-            dumps(limit)
+            '' if limit is None else '.limit({})'.format(limit),
         ) if self._is_transaction else None
 
         request = Request(
@@ -1075,6 +1113,9 @@ class Collection(APIWrapper):
         )
 
         def response_handler(resp):
+            # TODO workaround for a bug in ArangoDB
+            if self._is_transaction and limit == 0:
+                return Cursor(self._conn, [])
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
@@ -3004,8 +3045,8 @@ class EdgeCollection(Collection):
         :raise arango.exceptions.DocumentInsertError: If insert fails.
         """
         edge = {
-            '_from': get_id(from_vertex),
-            '_to': get_id(to_vertex)
+            '_from': get_doc_id(from_vertex),
+            '_to': get_doc_id(to_vertex)
         }
         if data is not None:
             edge.update(self._ensure_key_from_id(data))
@@ -3023,7 +3064,7 @@ class EdgeCollection(Collection):
         :rtype: dict
         :raise arango.exceptions.EdgeListError: If retrieval fails.
         """
-        params = {'vertex': get_id(vertex)}
+        params = {'vertex': get_doc_id(vertex)}
         if direction is not None:
             params['direction'] = direction
 
