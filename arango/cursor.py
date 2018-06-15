@@ -283,13 +283,15 @@ class Cursor(object):
         :param ignore_missing: Do not raise exception on missing cursors.
         :type ignore_missing: bool
         :return: True if cursor was closed successfully, False if cursor was
-            not found and **ignore_missing** was set to True.
-        :rtype: bool
+            missing on the server and **ignore_missing** was set to True, None
+            if there are no cursors to close server-side (e.g. result set is
+            smaller than the batch size, or in transactions).
+        :rtype: bool | None
         :raise arango.exceptions.CursorCloseError: If operation fails.
         :raise arango.exceptions.CursorStateError: If cursor ID is not set.
         """
         if self._id is None:
-            raise CursorStateError('cursor ID not set')
+            return None
         request = Request(
             method='delete',
             endpoint='/_api/{}/{}'.format(self._type, self._id)

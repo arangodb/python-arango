@@ -184,12 +184,10 @@ def test_cursor_invalid_id(db, col):
     assert err.value.message == 'cursor ID not set'
 
     with pytest.raises(CursorStateError) as err:
-        cursor.close()
-    assert err.value.message == 'cursor ID not set'
-
-    with pytest.raises(CursorStateError) as err:
         cursor.fetch()
     assert err.value.message == 'cursor ID not set'
+
+    assert cursor.close() is None
 
 
 def test_cursor_premature_close(db, col, docs):

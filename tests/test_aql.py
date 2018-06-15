@@ -15,7 +15,7 @@ from arango.exceptions import (
     AQLQueryTrackingSetError,
     AQLQueryKillError,
     AQLQueryValidateError,
-    CursorStateError)
+)
 from tests.helpers import assert_raises, extract
 
 
@@ -114,9 +114,7 @@ def test_aql_query_management(db, bad_db, col, docs):
         assert cursor.profile() is None
         assert cursor.warnings() is None
         assert extract('_key', cursor) == extract('_key', docs)
-        with assert_raises(CursorStateError) as err:
-            cursor.close()
-        assert err.value.message == 'cursor ID not set'
+        assert cursor.close() is None
     else:
         assert cursor.id is not None
         assert cursor.type == 'cursor'
