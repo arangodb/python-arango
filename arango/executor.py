@@ -347,7 +347,16 @@ class TransactionExecutor(Executor):
             return self.jobs
 
         write_collections = set()
+        if isinstance(self._write, string_types):
+            write_collections.add(self._write)
+        elif self._write is not None:
+            write_collections |= set(self._write)
+
         read_collections = set()
+        if isinstance(self._read, string_types):
+            read_collections.add(self._read)
+        elif self._read is not None:
+            read_collections |= set(self._read)
 
         # Buffer for building the transaction javascript command
         cmd_buffer = [
