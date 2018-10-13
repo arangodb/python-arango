@@ -80,6 +80,54 @@ def test_transaction_execute_with_result(db, col, docs):
     assert job3.result()['_key'] == docs[1]['_key']
 
 
+def test_transaction_execute_aql(db, col, docs):
+    with db.begin_transaction(
+            return_result=True, read=[col.name], write=[col.name]) as txn_db:
+        job1 = txn_db.aql.execute(
+            'INSERT @data IN @@collection',
+            bind_vars={'data': docs[0], '@collection': col.name})
+        job2 = txn_db.aql.execute(
+            'INSERT @data IN @@collection',
+            bind_vars={'data': docs[1], '@collection': col.name})
+        job3 = txn_db.aql.execute(
+            'RETURN DOCUMENT(@@collection, @key)',
+            bind_vars={'key': docs[1]['_key'], '@collection': col.name})
+        jobs = txn_db.queued_jobs()
+        assert jobs == [job1, job2, job3]
+        assert all(job.status() == 'pending' for job in jobs)
+
+    assert txn_db.queued_jobs() == [job1, job2, job3]
+    assert all(job.status() == 'done' for job in txn_db.queued_jobs())
+    assert extract('_key', col.all()) == extract('_key', docs[:2])
+
+    # Test successful results
+    assert extract('_key', job3.result()) == [docs[1]['_key']]
+
+
+def test_transaction_execute_aql_string_form(db, col, docs):
+    with db.begin_transaction(
+            return_result=True, read=col.name, write=col.name) as txn_db:
+        job1 = txn_db.aql.execute(
+            'INSERT @data IN @@collection',
+            bind_vars={'data': docs[0], '@collection': col.name})
+        job2 = txn_db.aql.execute(
+            'INSERT @data IN @@collection',
+            bind_vars={'data': docs[1], '@collection': col.name})
+        job3 = txn_db.aql.execute(
+            'RETURN DOCUMENT(@@collection, @key)',
+            bind_vars={'key': docs[1]['_key'], '@collection': col.name})
+        jobs = txn_db.queued_jobs()
+        assert jobs == [job1, job2, job3]
+        assert all(job.status() == 'pending' for job in jobs)
+
+    assert txn_db.queued_jobs() == [job1, job2, job3]
+    assert all(job.status() == 'done' for job in txn_db.queued_jobs())
+    assert extract('_key', col.all()) == extract('_key', docs[:2])
+
+    # Test successful results
+    assert extract('_key', job3.result()) == [docs[1]['_key']]
+
+
 def test_transaction_execute_error_in_result(db, col, docs):
     txn_db = db.begin_transaction(timeout=100, sync=True)
     txn_col = txn_db.collection(col.name)
