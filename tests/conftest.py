@@ -52,6 +52,11 @@ def pytest_configure(config):
             'password': password,
         }]
     )
+    sys_db.update_permission(
+        username=username,
+        permission='rw',
+        database=tst_db_name
+    )
     tst_db = client.db(tst_db_name, username, password)
     bad_db = client.db(bad_db_name, username, password)
 

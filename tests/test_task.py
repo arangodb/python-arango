@@ -16,7 +16,7 @@ from tests.helpers import (
 )
 
 
-def test_task_management(db, bad_db):
+def test_task_management(sys_db, db, bad_db):
     test_command = 'require("@arangodb").print(params);'
 
     # Test create task with random ID
@@ -67,7 +67,7 @@ def test_task_management(db, bad_db):
     assert err.value.error_code == 1851
 
     # Test list tasks
-    for task in db.tasks():
+    for task in sys_db.tasks():
         assert task['database'] in db.databases()
         assert task['type'] in {'periodic', 'timed'}
         assert isinstance(task['id'], string_types)
@@ -78,7 +78,7 @@ def test_task_management(db, bad_db):
     # Test list tasks with bad database
     with assert_raises(TaskListError) as err:
         bad_db.tasks()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get missing task
     with assert_raises(TaskGetError) as err:

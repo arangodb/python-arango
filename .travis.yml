@@ -8,7 +8,7 @@ python:
 services:
     - docker
 before_install:
-    - docker run --name arango -d -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd arangodb/arangodb:3.3.9
+    - docker run --name arango -d -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd arangodb/arangodb:3.4.0
     - docker cp tests/static/service.zip arango:/tmp/service.zip
 install:
     - pip install flake8 mock pytest pytest-cov python-coveralls sphinx sphinx_rtd_theme

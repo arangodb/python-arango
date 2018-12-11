@@ -54,14 +54,12 @@ def test_client_bad_connection(db, username, password):
     bad_password = generate_string()
 
     # Test connection with bad username password
-    with pytest.raises(ServerConnectionError) as err:
+    with pytest.raises(ServerConnectionError):
         client.db(db.name, bad_username, bad_password, verify=True)
-    assert 'bad username and/or password' in str(err.value)
 
     # Test connection with missing database
-    with pytest.raises(ServerConnectionError) as err:
+    with pytest.raises(ServerConnectionError):
         client.db(bad_db_name, bad_username, bad_password, verify=True)
-    assert 'database not found' in str(err.value)
 
     # Test connection with invalid host URL
     client._url = 'http://127.0.0.1:8500'

@@ -376,10 +376,10 @@ class Collection(APIWrapper):
                 raise CollectionStatisticsError(resp, request)
 
             stats = resp.body.get('figures', resp.body)
-            for field in ['compactors', 'datafiles', 'journals']:
-                if field in stats and 'fileSize' in stats[field]:
-                    stats[field]['file_size'] = stats[field].pop('fileSize')
-            if 'compactionStatus' in stats:
+            for f in ['compactors', 'datafiles', 'journals']:
+                if f in stats and 'fileSize' in stats[f]:  # pragma: no cover
+                    stats[f]['file_size'] = stats[f].pop('fileSize')
+            if 'compactionStatus' in stats:  # pragma: no cover
                 status = stats.pop('compactionStatus')
                 if 'bytesRead' in status:
                     status['bytes_read'] = status.pop('bytesRead')
@@ -388,15 +388,15 @@ class Collection(APIWrapper):
                 if 'filesCombined' in status:
                     status['files_combined'] = status.pop('filesCombined')
                 stats['compaction_status'] = status
-            if 'documentReferences' in stats:
+            if 'documentReferences' in stats:  # pragma: no cover
                 stats['document_refs'] = stats.pop('documentReferences')
-            if 'lastTick' in stats:
+            if 'lastTick' in stats:  # pragma: no cover
                 stats['last_tick'] = stats.pop('lastTick')
-            if 'waitingFor' in stats:
+            if 'waitingFor' in stats:  # pragma: no cover
                 stats['waiting_for'] = stats.pop('waitingFor')
             if 'documentsSize' in stats:  # pragma: no cover
                 stats['documents_size'] = stats.pop('documentsSize')
-            if 'uncollectedLogfileEntries' in stats:
+            if 'uncollectedLogfileEntries' in stats:  # pragma: no cover
                 stats['uncollected_logfile_entries'] = \
                     stats.pop('uncollectedLogfileEntries')
             return stats
@@ -793,7 +793,7 @@ class Collection(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    def find_near(self, latitude, longitude, limit=None):
+    def find_near(self, latitude, longitude, limit=None):  # pragma: no cover
         """Return documents near a given coordinate.
 
         Documents returned are sorted according to distance, with the nearest
@@ -1219,7 +1219,7 @@ class Collection(APIWrapper):
                     index['min_length'] = index.pop('minLength')
                 if 'geoJson' in index:
                     index['geo_json'] = index.pop('geoJson')
-                if 'ignoreNull' in index:
+                if 'ignoreNull' in index:  # pragma: no cover
                     index['ignore_none'] = index.pop('ignoreNull')
                 if 'selectivityEstimate' in index:
                     index['selectivity'] = index.pop('selectivityEstimate')
@@ -1255,7 +1255,7 @@ class Collection(APIWrapper):
                 details['min_length'] = details.pop('minLength')
             if 'geoJson' in details:
                 details['geo_json'] = details.pop('geoJson')
-            if 'ignoreNull' in details:
+            if 'ignoreNull' in details:  # pragma: no cover
                 details['ignore_none'] = details.pop('ignoreNull')
             if 'selectivityEstimate' in details:
                 details['selectivity'] = details.pop('selectivityEstimate')
@@ -1496,7 +1496,13 @@ class StandardCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def insert(self, document, return_new=False, sync=None, silent=False):
+    def insert(self,
+               document,
+               return_new=False,
+               sync=None,
+               silent=False,
+               overwrite=False,
+               return_old=False):
         """Insert a new document.
 
         :param document: Document to insert. If it contains the "_key" or "_id"
@@ -1511,6 +1517,12 @@ class StandardCollection(Collection):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param overwrite: If set to True, operation does not fail on duplicate
+            key and the existing document is replaced.
+        :type overwrite: bool
+        :param return_old: Include body of the old document if replaced.
+            Applies only when value of **overwrite** is set to True.
+        :type return_old: bool
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -1518,7 +1530,12 @@ class StandardCollection(Collection):
         """
         document = self._ensure_key_from_id(document)
 
-        params = {'returnNew': return_new, 'silent': silent}
+        params = {
+            'returnNew': return_new,
+            'silent': silent,
+            'overwrite': overwrite,
+            'returnOld': return_old
+        }
         if sync is not None:
             params['waitForSync'] = sync
 
@@ -1540,7 +1557,11 @@ class StandardCollection(Collection):
         def response_handler(resp):
             if not resp.is_success:
                 raise DocumentInsertError(resp, request)
-            return True if silent else resp.body
+            if silent:
+                return True
+            if '_oldRev' in resp.body:
+                resp.body['_old_rev'] = resp.body.pop('_oldRev')
+            return resp.body
 
         return self._execute(request, response_handler)
 
@@ -1548,7 +1569,9 @@ class StandardCollection(Collection):
                     documents,
                     return_new=False,
                     sync=None,
-                    silent=False):
+                    silent=False,
+                    overwrite=False,
+                    return_old=False):
         """Insert multiple documents.
 
         If inserting a document fails, the exception object is placed in the
@@ -1566,6 +1589,12 @@ class StandardCollection(Collection):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param overwrite: If set to True, operation does not fail on duplicate
+            keys and the existing documents are replaced.
+        :type overwrite: bool
+        :param return_old: Include body of the old documents if replaced.
+            Applies only when value of **overwrite** is set to True.
+        :type return_old: bool
         :return: List of document metadata (e.g. document keys, revisions) and
             any exception, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoError] | bool
@@ -1573,7 +1602,12 @@ class StandardCollection(Collection):
         """
         documents = [self._ensure_key_from_id(doc) for doc in documents]
 
-        params = {'returnNew': return_new, 'silent': silent}
+        params = {
+            'returnNew': return_new,
+            'silent': silent,
+            'overwrite': overwrite,
+            'returnOld': return_old
+        }
         if sync is not None:
             params['waitForSync'] = sync
 
@@ -1601,6 +1635,8 @@ class StandardCollection(Collection):
             results = []
             for result in resp.body:
                 if '_id' in result:
+                    if '_oldRev' in result:
+                        result['_old_rev'] = result.pop('_oldRev')
                     results.append(result)
                 else:
                     sub_resp = Response(
@@ -1783,7 +1819,7 @@ class StandardCollection(Collection):
                     )
                     if result['errorNum'] == 1200:
                         result = DocumentRevisionError(sub_resp, request)
-                    else:
+                    else:  # pragma: no cover
                         result = DocumentUpdateError(sub_resp, request)
                 else:
                     result['_old_rev'] = result.pop('_oldRev')
@@ -2006,7 +2042,7 @@ class StandardCollection(Collection):
                     )
                     if result['errorNum'] == 1200:
                         result = DocumentRevisionError(sub_resp, request)
-                    else:
+                    else:  # pragma: no cover
                         result = DocumentReplaceError(sub_resp, request)
                 else:
                     result['_old_rev'] = result.pop('_oldRev')
@@ -2332,9 +2368,9 @@ class StandardCollection(Collection):
             params['complete'] = halt_on_error
         if details is not None:
             params['details'] = details
-        if from_prefix is not None:
+        if from_prefix is not None:  # pragma: no cover
             params['fromPrefix'] = from_prefix
-        if to_prefix is not None:
+        if to_prefix is not None:  # pragma: no cover
             params['toPrefix'] = to_prefix
         if overwrite is not None:
             params['overwrite'] = overwrite
@@ -2495,7 +2531,9 @@ class VertexCollection(Collection):
                check_rev=True,
                keep_none=True,
                sync=None,
-               silent=False):
+               silent=False,
+               return_old=False,
+               return_new=False):
         """Update a vertex document.
 
         :param vertex: Partial or full vertex document with updated values. It
@@ -2523,7 +2561,9 @@ class VertexCollection(Collection):
         params = {
             'keepNull': keep_none,
             'overwrite': not check_rev,
-            'silent': silent
+            'silent': silent,
+            'returnNew': return_new,
+            'returnOld': return_old
         }
         if sync is not None:
             params['waitForSync'] = sync
@@ -2549,7 +2589,7 @@ class VertexCollection(Collection):
         )
 
         def response_handler(resp):
-            if resp.status_code == 412:
+            if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             elif not resp.is_success:
                 raise DocumentUpdateError(resp, request)
@@ -2611,7 +2651,7 @@ class VertexCollection(Collection):
         )
 
         def response_handler(resp):
-            if resp.status_code == 412:
+            if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             elif not resp.is_success:
                 raise DocumentReplaceError(resp, request)
@@ -2680,7 +2720,7 @@ class VertexCollection(Collection):
         def response_handler(resp):
             if resp.error_code == 1202 and ignore_missing:
                 return False
-            if resp.status_code == 412:
+            if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentDeleteError(resp, request)
@@ -2759,7 +2799,7 @@ class EdgeCollection(Collection):
         def response_handler(resp):
             if resp.error_code == 1202:
                 return None
-            if resp.status_code == 412:
+            if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
@@ -2883,7 +2923,7 @@ class EdgeCollection(Collection):
         )
 
         def response_handler(resp):
-            if resp.status_code == 412:
+            if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentUpdateError(resp, request)
@@ -2946,7 +2986,7 @@ class EdgeCollection(Collection):
         )
 
         def response_handler(resp):
-            if resp.status_code == 412:
+            if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentReplaceError(resp, request)
@@ -3015,7 +3055,7 @@ class EdgeCollection(Collection):
         def response_handler(resp):
             if resp.error_code == 1202 and ignore_missing:
                 return False
-            if resp.status_code == 412:
+            if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentDeleteError(resp, request)

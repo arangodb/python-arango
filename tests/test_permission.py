@@ -41,24 +41,18 @@ def test_permission_management(client, sys_db, bad_db):
     # Test list permissions with bad database
     with assert_raises(PermissionListError) as err:
         bad_db.permissions(username)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get permission with bad database
     with assert_raises(PermissionGetError) as err:
         bad_db.permission(username, db_name)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
-    # The user should have read and write permissions
-    assert sys_db.permission(username, db_name) == 'rw'
-    assert sys_db.permission(username, db_name, col_name_1) == 'rw'
-    assert db.create_collection(col_name_1) is not None
-    assert col_name_1 in extract('name', db.collections())
-
-    # Test update permission (database level) to none and verify access
-    assert sys_db.update_permission(username, 'none', db_name) is True
+    # The user should not have read and write permissions
     assert sys_db.permission(username, db_name) == 'none'
+    assert sys_db.permission(username, db_name, col_name_1) == 'none'
     with assert_raises(CollectionCreateError) as err:
-        db.create_collection(col_name_2)
+        db.create_collection(col_name_1)
     assert err.value.http_code == 401
     with assert_raises(CollectionListError) as err:
         db.collections()
@@ -75,13 +69,13 @@ def test_permission_management(client, sys_db, bad_db):
     with assert_raises(CollectionCreateError) as err:
         db.create_collection(col_name_2)
     assert err.value.http_code == 403
-    assert col_name_1 in extract('name', db.collections())
+    assert col_name_1 not in extract('name', db.collections())
     assert col_name_2 not in extract('name', db.collections())
 
     # Test reset permission (database level) with bad database
     with assert_raises(PermissionResetError) as err:
         bad_db.reset_permission(username, db_name)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
     assert sys_db.permission(username, db_name) == 'ro'
 
     # Test reset permission (database level) and verify access
@@ -97,7 +91,9 @@ def test_permission_management(client, sys_db, bad_db):
     # Test update permission (database level) and verify access
     assert sys_db.update_permission(username, 'rw', db_name) is True
     assert sys_db.permission(username, db_name, col_name_2) == 'rw'
+    assert db.create_collection(col_name_1) is not None
     assert db.create_collection(col_name_2) is not None
+    assert col_name_1 in extract('name', db.collections())
     assert col_name_2 in extract('name', db.collections())
 
     col_1 = db.collection(col_name_1)

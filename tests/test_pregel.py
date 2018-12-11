@@ -37,7 +37,7 @@ def test_pregel_management(db, graph):
     # Test create pregel job with unsupported algorithm
     with assert_raises(PregelJobCreateError) as err:
         db.pregel.create_job(graph.name, 'invalid')
-    assert err.value.error_code == 10
+    assert err.value.error_code in {4, 10}
 
     # Test get existing pregel job
     job = db.pregel.job(job_id)
@@ -52,9 +52,9 @@ def test_pregel_management(db, graph):
     assert db.pregel.delete_job(job_id) is True
     with assert_raises(PregelJobGetError) as err:
         db.pregel.job(job_id)
-    assert err.value.error_code == 10
+    assert err.value.error_code in {4, 10}
 
     # Test delete missing pregel job
     with assert_raises(PregelJobDeleteError) as err:
         db.pregel.delete_job(generate_string())
-    assert err.value.error_code == 10
+    assert err.value.error_code in {4, 10}

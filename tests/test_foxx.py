@@ -59,7 +59,7 @@ def test_foxx_service_management(db, bad_db):
     # Test list services with bad database
     with assert_raises(FoxxServiceListError) as err:
         bad_db.foxx.services()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test create service
     service = db.foxx.create_service(
@@ -299,7 +299,7 @@ def test_foxx_misc_functions(db, bad_db):
     # Test commit service state with bad database
     with assert_raises(FoxxCommitError) as err:
         bad_db.foxx.commit(replace=True)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test list service scripts
     scripts = db.foxx.scripts(service_mount)

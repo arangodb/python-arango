@@ -67,6 +67,7 @@ Contents
     wal
     pregel
     foxx
+    view
     threading
     errors
     logging

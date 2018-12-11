@@ -105,7 +105,7 @@ def test_async_get_job_status(db, bad_db):
     bad_job._conn = bad_db._conn
     with pytest.raises(AsyncJobStatusError) as err:
         bad_job.status()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_async_get_job_result(db, bad_db):
@@ -131,7 +131,7 @@ def test_async_get_job_result(db, bad_db):
     bad_job._conn = bad_db._conn
     with pytest.raises(AsyncJobResultError) as err:
         bad_job.result()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_async_cancel_job(db, bad_db):
@@ -155,7 +155,7 @@ def test_async_cancel_job(db, bad_db):
     job._conn = bad_db._conn
     with pytest.raises(AsyncJobCancelError) as err:
         job.cancel()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_async_clear_job(db, bad_db):
@@ -176,19 +176,19 @@ def test_async_clear_job(db, bad_db):
     job._conn = bad_db._conn
     with pytest.raises(AsyncJobClearError) as err:
         job.clear()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_async_execute_errors(bad_db):
     bad_async_db = bad_db.begin_async_execution(return_result=False)
     with pytest.raises(AsyncExecuteError) as err:
         bad_async_db.aql.execute('RETURN 1')
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     bad_async_db = bad_db.begin_async_execution(return_result=True)
     with pytest.raises(AsyncExecuteError) as err:
         bad_async_db.aql.execute('RETURN 1')
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_async_clear_jobs(db, bad_db, col, docs):
@@ -228,7 +228,7 @@ def test_async_clear_jobs(db, bad_db, col, docs):
     # Test clear job with bad database
     with pytest.raises(AsyncJobClearError) as err:
         bad_db.clear_async_jobs()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_async_list_jobs(db, col, docs):

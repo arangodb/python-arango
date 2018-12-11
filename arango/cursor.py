@@ -71,7 +71,7 @@ class Cursor(object):
     def __iter__(self):
         return self
 
-    def __next__(self):
+    def __next__(self):  # pragma: no cover
         return self.next()
 
     def __enter__(self):

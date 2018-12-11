@@ -126,6 +126,10 @@ class AQLCacheConfigureError(ArangoServerError):
     """Failed to configure query cache properties."""
 
 
+class AQLCacheEntriesError(ArangoServerError):
+    """Failed to retrieve AQL cache entries."""
+
+
 class AQLCacheClearError(ArangoServerError):
     """Failed to clear the query cache."""
 
@@ -545,6 +549,10 @@ class ServerDetailsError(ArangoServerError):
     """Failed to retrieve server details."""
 
 
+class ServerStatusError(ArangoServerError):
+    """Failed to retrieve server status."""
+
+
 class ServerTimeError(ArangoServerError):
     """Failed to retrieve server system time."""
 
@@ -654,6 +662,39 @@ class UserReplaceError(ArangoServerError):
 
 class UserDeleteError(ArangoServerError):
     """Failed to delete user."""
+
+
+###################
+# View Exceptions #
+###################
+
+
+class ViewListError(ArangoServerError):
+    """Failed to retrieve views."""
+
+
+class ViewGetError(ArangoServerError):
+    """Failed to retrieve view details."""
+
+
+class ViewCreateError(ArangoServerError):
+    """Failed to create view."""
+
+
+class ViewUpdateError(ArangoServerError):
+    """Failed to update view."""
+
+
+class ViewReplaceError(ArangoServerError):
+    """Failed to replace view."""
+
+
+class ViewDeleteError(ArangoServerError):
+    """Failed to delete view."""
+
+
+class ViewRenameError(ArangoServerError):
+    """Failed to rename view."""
 
 
 #########################

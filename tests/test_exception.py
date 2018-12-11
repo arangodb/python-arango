@@ -59,7 +59,8 @@ def test_server_error(client, col, docs):
     assert req.read is None
     assert req.write == col.name
     assert req.command is None
-    assert req.params == {'returnNew': 0, 'silent': 0}
+    assert req.params['silent'] == 0
+    assert req.params['returnNew'] == 0
     assert req.data == json.dumps(document)
     assert req.endpoint.startswith('/_api/document/' + col.name)
 

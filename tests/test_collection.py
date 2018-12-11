@@ -38,7 +38,7 @@ def test_collection_misc_methods(col, bad_col):
     # Test get properties with bad collection
     with assert_raises(CollectionPropertiesError) as err:
         bad_col.properties()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test configure properties
     prev_sync = properties['sync']
@@ -53,7 +53,7 @@ def test_collection_misc_methods(col, bad_col):
     # Test configure properties with bad collection
     with assert_raises(CollectionConfigureError) as err:
         bad_col.configure(sync=True, journal_size=10000000)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get statistics
     stats = col.statistics()
@@ -63,7 +63,7 @@ def test_collection_misc_methods(col, bad_col):
     # Test get statistics with bad collection
     with assert_raises(CollectionStatisticsError) as err:
         bad_col.statistics()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get revision
     assert isinstance(col.revision(), string_types)
@@ -71,7 +71,7 @@ def test_collection_misc_methods(col, bad_col):
     # Test get revision with bad collection
     with assert_raises(CollectionRevisionError) as err:
         bad_col.revision()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test load into memory
     assert col.load() is True
@@ -79,7 +79,7 @@ def test_collection_misc_methods(col, bad_col):
     # Test load with bad collection
     with assert_raises(CollectionLoadError) as err:
         bad_col.load()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test unload from memory
     assert col.unload() is True
@@ -87,18 +87,18 @@ def test_collection_misc_methods(col, bad_col):
     # Test unload with bad collection
     with assert_raises(CollectionUnloadError) as err:
         bad_col.unload()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test rotate journal
     try:
         assert isinstance(col.rotate(), bool)
     except CollectionRotateJournalError as err:
-        assert err.error_code == 1105
+        assert err.error_code in {404, 1105}
 
     # Test rotate journal with bad collection
     with assert_raises(CollectionRotateJournalError) as err:
         bad_col.rotate()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test checksum with empty collection
     assert int(col.checksum(with_rev=True, with_data=False)) == 0
@@ -116,7 +116,7 @@ def test_collection_misc_methods(col, bad_col):
     # Test checksum with bad collection
     with assert_raises(CollectionChecksumError) as err:
         bad_col.checksum()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test preconditions
     assert len(col) == 1
@@ -128,7 +128,7 @@ def test_collection_misc_methods(col, bad_col):
     # Test checksum with bad collection
     with assert_raises(CollectionTruncateError) as err:
         bad_col.truncate()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_collection_management(db, bad_db):
@@ -184,7 +184,7 @@ def test_collection_management(db, bad_db):
     # Test list collections with bad database
     with assert_raises(CollectionListError) as err:
         bad_db.collections()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get collection object
     test_col = db.collection(col.name)
@@ -220,4 +220,4 @@ def test_collection_management(db, bad_db):
     # Test rename with bad collection
     with assert_raises(CollectionRenameError) as err:
         bad_db.collection(new_name).rename(new_name)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}

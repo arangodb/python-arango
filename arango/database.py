@@ -51,6 +51,7 @@ from arango.exceptions import (
     ServerRunTestsError,
     ServerShutdownError,
     ServerStatisticsError,
+    ServerStatusError,
     ServerTimeError,
     ServerVersionError,
     TaskCreateError,
@@ -64,6 +65,13 @@ from arango.exceptions import (
     UserListError,
     UserReplaceError,
     UserUpdateError,
+    ViewCreateError,
+    ViewDeleteError,
+    ViewGetError,
+    ViewListError,
+    ViewRenameError,
+    ViewReplaceError,
+    ViewUpdateError
 )
 from arango.foxx import Foxx
 from arango.graph import Graph
@@ -295,6 +303,36 @@ class Database(APIWrapper):
 
         return self._execute(request, response_handler)
 
+    def status(self):
+        """Return ArangoDB server status.
+
+        :return: Server status.
+        :rtype: dict
+        :raise arango.exceptions.ServerStatusError: If retrieval fails.
+        """
+        request = Request(
+            method='get',
+            endpoint='/_admin/status',
+        )
+
+        def response_handler(resp):
+            if not resp.is_success:
+                raise ServerStatusError(resp, request)
+
+            body = resp.body or {}
+            if 'operationMode' in body:
+                body['operation_mode'] = body.pop('operationMode')
+            if 'serverInfo' in body:
+                info = body['serverInfo']
+                if 'writeOpsEnabled' in info:
+                    info['write_ops_enabled'] = info.pop('writeOpsEnabled')
+                if 'readOnly' in info:
+                    info['read_only'] = info.pop('readOnly')
+                body['server_info'] = body.pop('serverInfo')
+            return body
+
+        return self._execute(request, response_handler)
+
     def required_db_version(self):
         """Return required version of target database.
 
@@ -370,7 +408,7 @@ class Database(APIWrapper):
             code = resp.status_code
             if code in {401, 403}:
                 raise ServerConnectionError('bad username and/or password')
-            if not resp.is_success:
+            if not resp.is_success:  # pragma: no cover
                 raise ServerConnectionError(
                     resp.error_message or 'bad server response')
             return code
@@ -385,13 +423,13 @@ class Database(APIWrapper):
         :raise arango.exceptions.ServerStatisticsError: If retrieval fails.
         """
         if description:
-            url = '/_admin/statistics-description'
+            endpoint = '/_admin/statistics-description'
         else:
-            url = '/_admin/statistics'
+            endpoint = '/_admin/statistics'
 
         request = Request(
             method='get',
-            endpoint=url
+            endpoint=endpoint
         )
 
         def response_handler(resp):
@@ -1188,7 +1226,9 @@ class Database(APIWrapper):
                         document,
                         return_new=False,
                         sync=None,
-                        silent=False):
+                        silent=False,
+                        overwrite=False,
+                        return_old=False):
         """Insert a new document.
 
         :param collection: Collection name.
@@ -1205,6 +1245,12 @@ class Database(APIWrapper):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param overwrite: If set to True, operation does not fail on duplicate
+            key and the existing document is replaced.
+        :type overwrite: bool
+        :param return_old: Include body of the old document if replaced.
+            Applies only when value of **overwrite** is set to True.
+        :type return_old: bool
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -1214,7 +1260,9 @@ class Database(APIWrapper):
             document=document,
             return_new=return_new,
             sync=sync,
-            silent=silent
+            silent=silent,
+            overwrite=overwrite,
+            return_old=return_old
         )
 
     def update_document(self,
@@ -1859,6 +1907,172 @@ class Database(APIWrapper):
             if resp.is_success:
                 return True
             raise AsyncJobClearError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    ###################
+    # View Management #
+    ###################
+
+    def views(self):
+        """Return list of views.
+
+        :return: List of views.
+        :rtype: [dict]
+        :raise arango.exceptions.ViewListError: If retrieval fails.
+        """
+        request = Request(method='get', endpoint='/_api/view')
+
+        def response_handler(resp):
+            if resp.is_success:
+                return resp.body['result']
+            raise ViewListError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def view(self, name):
+        """Return view details.
+
+        :return: View details.
+        :rtype: dict
+        :raise arango.exceptions.ViewGetError: If retrieval fails.
+        """
+        request = Request(
+            method='get',
+            endpoint='/_api/view/{}/properties'.format(name)
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                resp.body.pop('error')
+                resp.body.pop('code')
+                return resp.body
+            raise ViewGetError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def create_view(self, name, view_type, properties=None):
+        """Create a view.
+
+        :param name: View name.
+        :type name: str | unicode
+        :param view_type: View type (e.g. "arangosearch").
+        :type view_type: str | unicode
+        :param properties: View properties.
+        :type properties: dict
+        :return: View details.
+        :rtype: dict
+        :raise arango.exceptions.ViewCreateError: If create fails.
+        """
+        data = {'name': name, 'type': view_type}
+
+        if properties is not None:
+            data.update(properties)
+
+        request = Request(
+            method='post',
+            endpoint='/_api/view',
+            data=data
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                return resp.body
+            raise ViewCreateError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def update_view(self, name, properties):
+        """Update a view.
+
+        :param name: View name.
+        :type name: str | unicode
+        :param properties: View properties.
+        :type properties: dict
+        :return: View details.
+        :rtype: dict
+        :raise arango.exceptions.ViewUpdateError: If update fails.
+        """
+        request = Request(
+            method='patch',
+            endpoint='/_api/view/{}/properties'.format(name),
+            data=properties
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                return resp.body
+            raise ViewUpdateError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def replace_view(self, name, properties):
+        """Replace a view.
+
+        :param name: View name.
+        :type name: str | unicode
+        :param properties: View properties.
+        :type properties: dict
+        :return: View details.
+        :rtype: dict
+        :raise arango.exceptions.ViewReplaceError: If replace fails.
+        """
+        request = Request(
+            method='put',
+            endpoint='/_api/view/{}/properties'.format(name),
+            data=properties
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                return resp.body
+            raise ViewReplaceError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def delete_view(self, name, ignore_missing=False):
+        """Delete a view.
+
+        :param name: View name.
+        :type name: str | unicode
+        :return: True if view was deleted successfully, False if view was not
+            found and **ignore_missing** was set to True.
+        :rtype: dict
+        :raise arango.exceptions.ViewDeleteError: If delete fails.
+        """
+        request = Request(
+            method='delete',
+            endpoint='/_api/view/{}'.format(name)
+        )
+
+        def response_handler(resp):
+            if resp.error_code == 1203 and ignore_missing:
+                return False
+            if resp.is_success:
+                return True
+            raise ViewDeleteError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def rename_view(self, name, new_name):
+        """Rename a view.
+
+        :param name: View name.
+        :type name: str | unicode
+        :return: View details.
+        :rtype: dict
+        :raise arango.exceptions.ViewRenameError: If delete fails.
+        """
+        request = Request(
+            method='put',
+            endpoint='/_api/view/{}/rename'.format(name),
+            data={'name': new_name}
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                return True
+            raise ViewRenameError(resp, request)
 
         return self._execute(request, response_handler)
 

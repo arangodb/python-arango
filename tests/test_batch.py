@@ -127,7 +127,7 @@ def test_batch_execute_error(bad_db, col, docs):
     # Test batch execute with bad database
     with pytest.raises(BatchExecuteError) as err:
         batch_db.commit()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
     assert len(col) == 0
     assert job.status() == 'pending'
 

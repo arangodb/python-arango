@@ -18,6 +18,7 @@ from arango.exceptions import (
     AQLFunctionCreateError,
     AQLFunctionDeleteError,
     AQLFunctionListError,
+    AQLCacheEntriesError,
     AQLCacheClearError,
     AQLCacheConfigureError,
     AQLCachePropertiesError
@@ -442,8 +443,8 @@ class AQL(APIWrapper):
     def functions(self):
         """List the AQL functions defined in the database.
 
-        :return: Mapping of AQL function names to their javascript code.
-        :rtype: dict
+        :return: AQL functions.
+        :rtype: [dict]
         :raise arango.exceptions.AQLFunctionListError: If retrieval fails.
         """
         request = Request(
@@ -454,8 +455,17 @@ class AQL(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise AQLFunctionListError(resp, request)
+
             body = resp.body or {}
-            return {func['name']: func['code'] for func in map(dict, body)}
+
+            if 'result' not in body:  # pragma: no cover
+                return []
+
+            for item in body['result']:
+                if 'isDeterministic' in item:
+                    item['is_deterministic'] = item.pop('isDeterministic')
+
+            return body['result']
 
         return self._execute(request, response_handler)
 
@@ -466,8 +476,9 @@ class AQL(APIWrapper):
         :type name: str | unicode
         :param code: Function definition in Javascript.
         :type code: str | unicode
-        :return: True if AQL function was created successfully.
-        :rtype: bool
+        :return: Whether the AQL function was newly created or an existing one
+            was replaced.
+        :rtype: dict
         :raise arango.exceptions.AQLFunctionCreateError: If create fails.
         """
         request = Request(
@@ -479,7 +490,7 @@ class AQL(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise AQLFunctionCreateError(resp, request)
-            return True
+            return {'is_new': resp.body['isNewlyCreated']}
 
         return self._execute(request, response_handler)
 
@@ -495,9 +506,10 @@ class AQL(APIWrapper):
         :type group: bool
         :param ignore_missing: Do not raise an exception on missing function.
         :type ignore_missing: bool
-        :return: True if AQL function was deleted successfully, False if
-            function was not found and **ignore_missing** was set to True.
-        :rtype: bool
+        :return: Number of AQL functions deleted if operation was successful,
+            False if function(s) was not found and **ignore_missing** was set
+            to True.
+        :rtype: dict | bool
         :raise arango.exceptions.AQLFunctionDeleteError: If delete fails.
         """
         request = Request(
@@ -511,7 +523,7 @@ class AQL(APIWrapper):
                 return False
             if not resp.is_success:
                 raise AQLFunctionDeleteError(resp, request)
-            return True
+            return {'deleted': resp.body['deletedCount']}
 
         return self._execute(request, response_handler)
 
@@ -575,6 +587,25 @@ class AQLQueryCache(APIWrapper):
                 'mode': resp.body['mode'],
                 'limit': resp.body['maxResults']
             }
+
+        return self._execute(request, response_handler)
+
+    def entries(self):
+        """Return the query cache entries.
+
+        :return: Query cache entries.
+        :rtype: list
+        :raise AQLCacheEntriesError: If retrieval fails.
+        """
+        request = Request(
+            method='get',
+            endpoint='/_api/query-cache/entries'
+        )
+
+        def response_handler(resp):
+            if not resp.is_success:
+                raise AQLCacheEntriesError(resp, request)
+            return resp.body
 
         return self._execute(request, response_handler)
 

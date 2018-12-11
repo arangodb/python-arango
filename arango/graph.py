@@ -97,7 +97,7 @@ class Graph(APIWrapper):
             }
             if 'isSmart' in body:
                 properties['smart'] = body['isSmart']
-            if 'smartGraphAttribute' in body:
+            if 'smartGraphAttribute' in body:  # pragma: no cover
                 properties['smart_field'] = body['smartGraphAttribute']
             if 'numberOfShards' in body:
                 properties['shard_count'] = body['numberOfShards']
@@ -341,7 +341,7 @@ class Graph(APIWrapper):
         request = Request(
             method='delete',
             endpoint='/_api/gharial/{}/edge/{}'.format(self._name, name),
-            params={'dropCollection': purge}
+            params={'dropCollections': purge}
         )
 
         def response_handler(resp):

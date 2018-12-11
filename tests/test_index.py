@@ -24,7 +24,7 @@ def test_list_indexes(col, bad_col):
 
     with assert_raises(IndexListError) as err:
         bad_col.indexes()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_add_hash_index(col):
@@ -83,12 +83,10 @@ def test_add_geo_index(col):
 
     expected_index = {
         'sparse': True,
-        'type': 'geo1',
+        'type': 'geo',
         'fields': ['attr1'],
         'unique': False,
         'geo_json': False,
-        'ignore_none': True,
-        'constraint': False
     }
     for key, value in expected_index.items():
         assert result[key] == value
@@ -103,11 +101,9 @@ def test_add_geo_index(col):
     )
     expected_index = {
         'sparse': True,
-        'type': 'geo2',
+        'type': 'geo',
         'fields': ['attr1', 'attr2'],
         'unique': False,
-        'ignore_none': True,
-        'constraint': False
     }
     for key, value in expected_index.items():
         assert result[key] == value
@@ -194,7 +190,7 @@ def test_delete_index(col, bad_col):
     for index_id in indexes_to_delete:
         with assert_raises(IndexDeleteError) as err:
             bad_col.delete_index(index_id, ignore_missing=False)
-        assert err.value.error_code == 1228
+        assert err.value.error_code in {11, 1228}
 
 
 def test_load_indexes(col, bad_col):
@@ -204,4 +200,4 @@ def test_load_indexes(col, bad_col):
     # Test load indexes with bad collection
     with assert_raises(IndexLoadError) as err:
         bad_col.load_indexes()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}

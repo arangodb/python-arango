@@ -76,6 +76,15 @@ def generate_username():
     return 'test_user_{}'.format(uuid4().hex)
 
 
+def generate_view_name():
+    """Generate and return a random view name.
+
+    :return: Random view name.
+    :rtype: str | unicode
+    """
+    return 'test_view_{}'.format(uuid4().hex)
+
+
 def generate_string():
     """Generate and return a random unique string.
 
@@ -126,15 +135,16 @@ def extract(key, items):
     return sorted(item[key] for item in items)
 
 
-def assert_raises(exception):
+def assert_raises(*exception):
     """Assert that the given exception is raised.
 
-    :param exception: Expected exception.
+    :param exception: Expected exception(s).
     :type: Exception
     """
-    return pytest.raises((
-        exception,
-        AsyncExecuteError,
-        BatchExecuteError,
-        TransactionExecuteError
-    ))
+    return pytest.raises(
+        exception + (
+            AsyncExecuteError,
+            BatchExecuteError,
+            TransactionExecuteError
+        )
+    )

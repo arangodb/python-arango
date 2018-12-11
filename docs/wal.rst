@@ -8,7 +8,7 @@ WAL operations can only be performed by admin users via ``_system`` database.
 
 **Example:**
 
-.. testcode::
+.. code-block::python
 
     from arango import ArangoClient
 

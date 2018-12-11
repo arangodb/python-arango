@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+import pytest
 from six import string_types
 
 from arango.exceptions import (
@@ -105,6 +106,11 @@ def test_document_insert(col, docs):
         col.insert(doc)
     assert err.value.error_code == 1210
 
+    # Test insert with overwrite and return_old set to True
+    result = col.insert(doc, overwrite=True, return_old=True)
+    assert isinstance(result['old'], dict)
+    assert isinstance(result['_old_rev'], string_types)
+
 
 def test_document_insert_many(col, bad_col, docs):
     # Test insert_many with default options
@@ -181,12 +187,19 @@ def test_document_insert_many(col, bad_col, docs):
     # Test insert_many duplicate documents
     results = col.insert_many(docs, return_new=False)
     for result, doc in zip(results, docs):
-        isinstance(result, DocumentInsertError)
+        assert isinstance(result, DocumentInsertError)
+
+    # Test insert_many with overwrite and return_old set to True
+    results = col.insert_many(docs, overwrite=True, return_old=True)
+    for result, doc in zip(results, docs):
+        assert not isinstance(result, DocumentInsertError)
+        assert isinstance(result['old'], dict)
+        assert isinstance(result['_old_rev'], string_types)
 
     # Test get with bad database
     with assert_raises(DocumentInsertError) as err:
         bad_col.insert_many(docs)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_update(col, docs):
@@ -484,7 +497,7 @@ def test_document_update_many(col, bad_col, docs):
     # Test update_many with bad database
     with assert_raises(DocumentUpdateError) as err:
         bad_col.update_many(docs)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test update_many with silent set to True
     for doc in docs:
@@ -539,7 +552,7 @@ def test_document_update_match(col, bad_col, docs):
     # Test update matching documents with bad database
     with assert_raises(DocumentUpdateError) as err:
         bad_col.update_match({'val': 1}, {'foo': 1})
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_replace(col, docs):
@@ -762,7 +775,7 @@ def test_document_replace_many(col, bad_col, docs):
     # Test replace_many with bad database
     with assert_raises(DocumentReplaceError) as err:
         bad_col.replace_many(docs)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test replace_many with silent set to True
     for doc in docs:
@@ -801,7 +814,7 @@ def test_document_replace_match(col, bad_col, docs):
     # Test replace matching documents with bad database
     with assert_raises(DocumentReplaceError) as err:
         bad_col.replace_match({'val': 1}, {'foo': 1})
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_delete(col, docs):
@@ -959,7 +972,7 @@ def test_document_delete_many(col, bad_col, docs):
     # Test delete_many with bad database
     with assert_raises(DocumentDeleteError) as err:
         bad_col.delete_many(docs)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_delete_match(col, bad_col, docs):
@@ -985,7 +998,7 @@ def test_document_delete_match(col, bad_col, docs):
     # Test delete matching documents with bad database
     with assert_raises(DocumentDeleteError) as err:
         bad_col.delete_match(doc)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_count(col, bad_col, docs):
@@ -1062,9 +1075,10 @@ def test_document_find(col, bad_col, docs):
     # Test find with bad database
     with assert_raises(DocumentGetError) as err:
         bad_col.find({'val': 1})
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
+@pytest.mark.skip(reason='broken in ArangoDB 3.4')
 def test_document_find_near(col, bad_col, docs):
     col.import_bulk(docs)
 
@@ -1107,7 +1121,7 @@ def test_document_find_near(col, bad_col, docs):
     # Test find near with bad collection
     with assert_raises(DocumentGetError) as err:
         bad_col.find_near(latitude=1, longitude=1, limit=1)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_find_in_range(col, bad_col, docs):
@@ -1146,7 +1160,7 @@ def test_document_find_in_range(col, bad_col, docs):
     # Test find_in_range with bad collection
     with assert_raises(DocumentGetError) as err:
         bad_col.find_in_range(field='val', lower=1, upper=2, skip=2)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_find_in_radius(col, bad_col):
@@ -1182,7 +1196,7 @@ def test_document_find_in_radius(col, bad_col):
     # Test find_in_radius with bad collection
     with assert_raises(DocumentGetError) as err:
         bad_col.find_in_radius(3, 3, 10)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_find_in_box(col, bad_col, geo):
@@ -1285,7 +1299,7 @@ def test_document_find_in_box(col, bad_col, geo):
             latitude2=6,
             longitude2=3,
         )
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_find_by_text(col, docs):
@@ -1452,12 +1466,12 @@ def test_document_has(col, bad_col, docs):
     # Test get with bad database
     with assert_raises(DocumentInError) as err:
         bad_col.has(doc_key)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test contains with bad database
     with assert_raises(DocumentInError) as err:
         assert doc_key in bad_col
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_get(col, bad_col, docs):
@@ -1507,12 +1521,12 @@ def test_document_get(col, bad_col, docs):
     # Test get with bad database
     with assert_raises(DocumentGetError) as err:
         bad_col.get(doc['_key'])
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get with bad database
     with assert_raises(DocumentGetError) as err:
         assert bad_col[doc['_key']]
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_get_many(col, bad_col, docs):
@@ -1538,7 +1552,7 @@ def test_document_get_many(col, bad_col, docs):
 
     with assert_raises(DocumentGetError) as err:
         bad_col.get_many(docs)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_all(col, bad_col, docs):
@@ -1604,7 +1618,7 @@ def test_document_all(col, bad_col, docs):
     # Test export with bad database
     with assert_raises(DocumentGetError) as err:
         bad_col.all()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_ids(col, bad_col, docs):
@@ -1621,7 +1635,7 @@ def test_document_ids(col, bad_col, docs):
     # Test ids with bad database
     with assert_raises(DocumentIDsError) as err:
         bad_col.ids()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_keys(col, bad_col, docs):
@@ -1638,7 +1652,7 @@ def test_document_keys(col, bad_col, docs):
     # Test keys with bad database
     with assert_raises(DocumentKeysError) as err:
         bad_col.keys()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 # def test_document_export(col, bad_col, docs):
@@ -1729,7 +1743,7 @@ def test_document_random(col, bad_col, docs):
     # Test random with bad database
     with assert_raises(DocumentGetError) as err:
         bad_col.random()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_document_import_bulk(col, bad_col, docs):
@@ -1851,6 +1865,7 @@ def test_document_import_bulk(col, bad_col, docs):
     assert col[doc['_key']]['bar'] == '3'
 
 
+@pytest.mark.skip(reason='broken in ArangoDB 3.4')
 def test_document_edge(lecol, docs, edocs):
     ecol = lecol  # legacy edge collection
 

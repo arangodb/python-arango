@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import pytest
+
 from arango.exceptions import (
     WALConfigureError,
     WALFlushError,
@@ -10,6 +12,12 @@ from tests.helpers import assert_raises
 
 
 def test_wal_misc_methods(sys_db, bad_db):
+    try:
+        sys_db.wal.properties()
+    except WALPropertiesError as err:
+        if err.http_code == 501:
+            pytest.skip('WAL not implemented')
+
     # Test get properties
     properties = sys_db.wal.properties()
     assert 'oversized_ops' in properties
@@ -22,7 +30,7 @@ def test_wal_misc_methods(sys_db, bad_db):
     # Test get properties with bad database
     with assert_raises(WALPropertiesError) as err:
         bad_db.wal.properties()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test configure properties
     sys_db.wal.configure(
@@ -44,7 +52,7 @@ def test_wal_misc_methods(sys_db, bad_db):
     # Test configure properties with bad database
     with assert_raises(WALConfigureError) as err:
         bad_db.wal.configure(log_size=2000000)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get transactions
     result = sys_db.wal.transactions()
@@ -54,7 +62,7 @@ def test_wal_misc_methods(sys_db, bad_db):
     # Test get transactions with bad database
     with assert_raises(WALTransactionListError) as err:
         bad_db.wal.transactions()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test flush
     result = sys_db.wal.flush(garbage_collect=False, sync=False)
@@ -63,4 +71,4 @@ def test_wal_misc_methods(sys_db, bad_db):
     # Test flush with bad database
     with assert_raises(WALFlushError) as err:
         bad_db.wal.flush(garbage_collect=False, sync=False)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}

@@ -47,10 +47,14 @@ information.
     # Connect to the new "test" database as user "jane".
     db = client.db('test', username='jane', password='foo')
 
+    # Make sure that user "jane" has read and write permissions.
+    sys_db.update_permission(username='jane', permission='rw', database='test')
+
     # Retrieve various database and server information.
     db.name
     db.username
     db.version()
+    db.status()
     db.details()
     db.collections()
     db.graphs()

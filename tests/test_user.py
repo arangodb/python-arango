@@ -55,7 +55,7 @@ def test_user_management(sys_db, bad_db):
     # Test list users with bad database
     with assert_raises(UserListError) as err:
         bad_db.users()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get user
     users = sys_db.users()
@@ -172,6 +172,10 @@ def test_user_create_with_new_database(client, sys_db):
         ]
     )
     assert result is True
+
+    sys_db.update_permission(username1, permission='rw', database=db_name)
+    sys_db.update_permission(username2, permission='rw', database=db_name)
+    sys_db.update_permission(username3, permission='rw', database=db_name)
 
     # Test if the users were created properly
     usernames = extract('username', sys_db.users())

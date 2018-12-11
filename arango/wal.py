@@ -12,7 +12,7 @@ from arango.exceptions import (
 from arango.request import Request
 
 
-class WAL(APIWrapper):
+class WAL(APIWrapper):  # pragma: no cover
     """WAL (Write-Ahead Log) API wrapper.
 
     :param connection: HTTP connection.

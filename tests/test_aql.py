@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from arango.exceptions import (
     AQLCacheClearError,
     AQLCacheConfigureError,
+    AQLCacheEntriesError,
     AQLCachePropertiesError,
     AQLFunctionCreateError,
     AQLFunctionDeleteError,
@@ -14,7 +15,7 @@ from arango.exceptions import (
     AQLQueryTrackingGetError,
     AQLQueryTrackingSetError,
     AQLQueryKillError,
-    AQLQueryValidateError,
+    AQLQueryValidateError
 )
 from tests.helpers import assert_raises, extract
 
@@ -131,7 +132,7 @@ def test_aql_query_management(db, bad_db, col, docs):
     # Test get tracking properties with bad database
     with assert_raises(AQLQueryTrackingGetError) as err:
         bad_db.aql.tracking()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get tracking properties
     tracking = db.aql.tracking()
@@ -145,7 +146,7 @@ def test_aql_query_management(db, bad_db, col, docs):
     # Test set tracking properties with bad database
     with assert_raises(AQLQueryTrackingSetError) as err:
         bad_db.aql.set_tracking(enabled=not tracking['enabled'])
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
     assert db.aql.tracking()['enabled'] == tracking['enabled']
 
     # Test set tracking properties
@@ -192,7 +193,7 @@ def test_aql_query_management(db, bad_db, col, docs):
     # Test list queries with bad database
     with assert_raises(AQLQueryListError) as err:
         bad_db.aql.queries()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test kill queries
     query_id_1, query_id_2 = extract('id', queries)
@@ -221,7 +222,7 @@ def test_aql_query_management(db, bad_db, col, docs):
     # Test list slow queries with bad database
     with assert_raises(AQLQueryListError) as err:
         bad_db.aql.slow_queries()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test clear slow queries
     assert db.aql.clear_slow_queries() is True
@@ -229,7 +230,7 @@ def test_aql_query_management(db, bad_db, col, docs):
     # Test clear slow queries with bad database
     with assert_raises(AQLQueryClearError) as err:
         bad_db.aql.clear_slow_queries()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_aql_function_management(db, bad_db):
@@ -241,10 +242,13 @@ def test_aql_function_management(db, bad_db):
     bad_fn_name = 'functions::temperature::should_not_exist'
     bad_fn_body = 'function (celsius) { invalid syntax }'
 
+    # Test list AQL functions
+    assert db.aql.functions() == []
+
     # Test list AQL functions with bad database
     with assert_raises(AQLFunctionListError) as err:
         bad_db.aql.functions()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test create invalid AQL function
     with assert_raises(AQLFunctionCreateError) as err:
@@ -252,31 +256,52 @@ def test_aql_function_management(db, bad_db):
     assert err.value.error_code == 1581
 
     # Test create AQL function one
-    db.aql.create_function(fn_name_1, fn_body_1)
-    assert db.aql.functions() == {fn_name_1: fn_body_1}
+    assert db.aql.create_function(fn_name_1, fn_body_1) == {'is_new': True}
+    functions = db.aql.functions()
+    assert len(functions) == 1
+    assert functions[0]['name'] == fn_name_1
+    assert functions[0]['code'] == fn_body_1
+    assert 'is_deterministic' in functions[0]
 
     # Test create AQL function one again (idempotency)
-    db.aql.create_function(fn_name_1, fn_body_1)
-    assert db.aql.functions() == {fn_name_1: fn_body_1}
+    assert db.aql.create_function(fn_name_1, fn_body_1) == {'is_new': False}
+    functions = db.aql.functions()
+    assert len(functions) == 1
+    assert functions[0]['name'] == fn_name_1
+    assert functions[0]['code'] == fn_body_1
+    assert 'is_deterministic' in functions[0]
 
     # Test create AQL function two
-    db.aql.create_function(fn_name_2, fn_body_2)
-    assert db.aql.functions() == {fn_name_1: fn_body_1, fn_name_2: fn_body_2}
+    assert db.aql.create_function(fn_name_2, fn_body_2) == {'is_new': True}
+    functions = sorted(db.aql.functions(), key=lambda x: x['name'])
+    assert len(functions) == 2
+    assert functions[0]['name'] == fn_name_1
+    assert functions[0]['code'] == fn_body_1
+    assert functions[1]['name'] == fn_name_2
+    assert functions[1]['code'] == fn_body_2
+    assert 'is_deterministic' in functions[0]
+    assert 'is_deterministic' in functions[1]
 
     # Test delete AQL function one
-    assert db.aql.delete_function(fn_name_1) is True
-    assert db.aql.functions() == {fn_name_2: fn_body_2}
+    assert db.aql.delete_function(fn_name_1) == {'deleted': 1}
+    functions = db.aql.functions()
+    assert len(functions) == 1
+    assert functions[0]['name'] == fn_name_2
+    assert functions[0]['code'] == fn_body_2
 
     # Test delete missing AQL function
     with assert_raises(AQLFunctionDeleteError) as err:
         db.aql.delete_function(fn_name_1)
     assert err.value.error_code == 1582
     assert db.aql.delete_function(fn_name_1, ignore_missing=True) is False
-    assert db.aql.functions() == {fn_name_2: fn_body_2}
+    functions = db.aql.functions()
+    assert len(functions) == 1
+    assert functions[0]['name'] == fn_name_2
+    assert functions[0]['code'] == fn_body_2
 
     # Test delete AQL function group
-    assert db.aql.delete_function(fn_group, group=True) is True
-    assert db.aql.functions() == {}
+    assert db.aql.delete_function(fn_group, group=True) == {'deleted': 1}
+    assert db.aql.functions() == []
 
 
 def test_aql_cache_management(db, bad_db):
@@ -302,6 +327,15 @@ def test_aql_cache_management(db, bad_db):
     with assert_raises(AQLCacheConfigureError):
         bad_db.aql.cache.configure(mode='on')
 
+    # Test get AQL cache entries
+    result = db.aql.cache.entries()
+    assert isinstance(result, list)
+
+    # Test get AQL cache entries with bad database
+    with assert_raises(AQLCacheEntriesError) as err:
+        bad_db.aql.cache.entries()
+    assert err.value.error_code in {11, 1228}
+
     # Test get AQL cache clear
     result = db.aql.cache.clear()
     assert isinstance(result, bool)
@@ -309,4 +343,4 @@ def test_aql_cache_management(db, bad_db):
     # Test get AQL cache clear with bad database
     with assert_raises(AQLCacheClearError) as err:
         bad_db.aql.cache.clear()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}

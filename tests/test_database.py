@@ -18,10 +18,11 @@ from arango.exceptions import (
     ServerReloadRoutingError,
     ServerRequiredDBVersionError,
     ServerRoleError,
+    ServerStatusError,
     ServerStatisticsError,
     ServerTimeError,
     ServerVersionError,
-    ServerEngineError
+    ServerEngineError,
 )
 from tests.helpers import assert_raises, generate_db_name
 
@@ -45,7 +46,7 @@ def test_database_misc_methods(db, bad_db):
     # Test get properties with bad database
     with assert_raises(DatabasePropertiesError) as err:
         bad_db.properties()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get server version
     assert isinstance(db.version(), string_types)
@@ -53,7 +54,7 @@ def test_database_misc_methods(db, bad_db):
     # Test get server version with bad database
     with assert_raises(ServerVersionError) as err:
         bad_db.version()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get server details
     details = db.details()
@@ -63,7 +64,7 @@ def test_database_misc_methods(db, bad_db):
     # Test get server details with bad database
     with assert_raises(ServerDetailsError) as err:
         bad_db.details()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get server required database version
     version = db.required_db_version()
@@ -89,7 +90,7 @@ def test_database_misc_methods(db, bad_db):
     # Test get server statistics with bad database
     with assert_raises(ServerStatisticsError) as err:
         bad_db.statistics()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get server role
     assert db.role() in {
@@ -103,7 +104,21 @@ def test_database_misc_methods(db, bad_db):
     # Test get server role with bad database
     with assert_raises(ServerRoleError) as err:
         bad_db.role()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
+
+    # Test get server status
+    status = db.status()
+    assert 'host' in status
+    assert 'operation_mode' in status
+    assert 'server_info' in status
+    assert 'read_only' in status['server_info']
+    assert 'write_ops_enabled' in status['server_info']
+    assert 'version' in status
+
+    # Test get status with bad database
+    with assert_raises(ServerStatusError) as err:
+        bad_db.status()
+    assert err.value.error_code in {11, 1228}
 
     # Test get server time
     assert isinstance(db.time(), datetime)
@@ -111,7 +126,7 @@ def test_database_misc_methods(db, bad_db):
     # Test get server time with bad database
     with assert_raises(ServerTimeError) as err:
         bad_db.time()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test echo (get last request)
     last_request = db.echo()
@@ -123,7 +138,7 @@ def test_database_misc_methods(db, bad_db):
     # Test echo with bad database
     with assert_raises(ServerEchoError) as err:
         bad_db.echo()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test read_log with default parameters
     log = db.read_log(upto='fatal')
@@ -149,7 +164,7 @@ def test_database_misc_methods(db, bad_db):
     # Test read_log with bad database
     with assert_raises(ServerReadLogError) as err:
         bad_db.read_log()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test reload routing
     assert isinstance(db.reload_routing(), bool)
@@ -157,7 +172,7 @@ def test_database_misc_methods(db, bad_db):
     # Test reload routing with bad database
     with assert_raises(ServerReloadRoutingError) as err:
         bad_db.reload_routing()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get log levels
     assert isinstance(db.log_levels(), dict)
@@ -165,7 +180,7 @@ def test_database_misc_methods(db, bad_db):
     # Test get log levels with bad database
     with assert_raises(ServerLogLevelError) as err:
         bad_db.log_levels()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test set log levels
     new_levels = {
@@ -191,7 +206,7 @@ def test_database_misc_methods(db, bad_db):
     # Test get server endpoints with bad database
     with assert_raises(ServerEndpointsError) as err:
         bad_db.endpoints()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
     # Test get storage engine
     engine = db.engine()
@@ -201,7 +216,7 @@ def test_database_misc_methods(db, bad_db):
     # Test get storage engine with bad database
     with assert_raises(ServerEngineError) as err:
         bad_db.engine()
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
 
 
 def test_database_management(db, sys_db, bad_db):
@@ -241,5 +256,5 @@ def test_database_management(db, sys_db, bad_db):
     # Test delete missing database
     with assert_raises(DatabaseDeleteError) as err:
         sys_db.delete_database(db_name)
-    assert err.value.error_code == 1228
+    assert err.value.error_code in {11, 1228}
     assert sys_db.delete_database(db_name, ignore_missing=True) is False
