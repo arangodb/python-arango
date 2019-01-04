@@ -102,7 +102,9 @@ def test_aql_query_management(db, bad_db, col, docs):
         intermediate_commit_size=1000,
         satellite_sync_wait=False,
         write_collections=[col.name],
-        read_collections=[col.name]
+        read_collections=[col.name],
+        stream=False,
+        skip_inaccessible_cols=True
     )
     if db.context == 'transaction':
         assert cursor.id is None

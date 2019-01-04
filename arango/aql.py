@@ -174,7 +174,9 @@ class AQL(APIWrapper):
                 intermediate_commit_size=None,
                 satellite_sync_wait=None,
                 read_collections=None,
-                write_collections=None):
+                write_collections=None,
+                stream=None,
+                skip_inaccessible_cols=None):
         """Execute the query and return the result cursor.
 
         :param query: Query to execute.
@@ -231,7 +233,7 @@ class AQL(APIWrapper):
         :type intermediate_commit_size: int
         :param satellite_sync_wait: Number of seconds in which the server must
             synchronize the satellite collections involved in the query. When
-            the threshold is reached, the query is stopped. Applies only to
+            the threshold is reached, the query is stopped. Available only for
             enterprise version of ArangoDB.
         :type satellite_sync_wait: int | float
         :param read_collections: Names of collections read during query
@@ -240,6 +242,28 @@ class AQL(APIWrapper):
         :param write_collections: Names of collections written to during query
             execution. Required for :doc:`transactions <transaction>`.
         :type write_collections: [str | unicode]
+        :param stream: If set to True, query is executed in streaming fashion:
+            query result is not stored server-side but calculated on the fly.
+            Note: long-running queries hold collection locks for as long as the
+            cursor exists. If set to False, query is executed right away in its
+            entirety. Results are either returned right away (if the result set
+            is small enough), or stored server-side and accessible via cursors
+            (while respecting the ttl). You should use this parameter only for
+            short-running queries or without exclusive locks (write-locks on
+            MMFiles). Note: parameters **cache**, **count** and **full_count**
+            do not work for streaming queries. Query statistics, warnings and
+            profiling data are made available only after the query is finished.
+            Default value is False.
+        :type stream: bool
+        :param skip_inaccessible_cols: If set to True, collections without user
+            access are skipped, and query executes normally instead of raising
+            an error. This helps certain use cases: a graph may contain several
+            collections, and users with different access levels may execute the
+            same query. This parameter lets you limit the result set by user
+            access. Cannot be used in :doc:`transactions <transaction>` and is
+            available only for enterprise version of ArangoDB. Default value is
+            False.
+        :type skip_inaccessible_cols: bool
         :return: Result cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.AQLQueryExecuteError: If execute fails.
@@ -277,6 +301,11 @@ class AQL(APIWrapper):
             options['intermediateCommitSize'] = intermediate_commit_size
         if satellite_sync_wait is not None:
             options['satelliteSyncWait'] = satellite_sync_wait
+        if stream is not None:
+            options['stream'] = stream
+        if skip_inaccessible_cols is not None:
+            options['skipInaccessibleCollections'] = skip_inaccessible_cols
+
         if options:
             data['options'] = options
         data.update(options)
