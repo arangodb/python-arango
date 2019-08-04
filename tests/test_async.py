@@ -246,7 +246,7 @@ def test_async_list_jobs(db, col, docs):
     assert job3.id in job_ids
 
     # Test list async jobs that are pending
-    job4 = async_db.aql.execute('RETURN SLEEP(0.1)')
+    job4 = async_db.aql.execute('RETURN SLEEP(0.3)')
     assert db.async_jobs(status='pending') == [job4.id]
     wait_on_job(job4)  # Make sure the job is done
 

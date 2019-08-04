@@ -654,7 +654,8 @@ class Foxx(APIWrapper):
                   mount,
                   reporter='default',
                   idiomatic=None,
-                  output_format=None):
+                  output_format=None,
+                  name_filter=None):
         """Run service tests.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
@@ -674,6 +675,9 @@ class Foxx(APIWrapper):
             text TAP report. When using "xunit" reporter, settings this to
             "xml" returns an XML instead of JSONML.
         :type output_format: str | unicode
+        :param name_filter: Only run tests whose full name (test suite and
+            test case) matches the given string.
+        :type name_filter: str | unicode
         :return: Reporter output (e.g. raw JSON string, XML, plain text).
         :rtype: str | unicode
         :raise arango.exceptions.FoxxTestRunError: If test fails.
@@ -681,6 +685,8 @@ class Foxx(APIWrapper):
         params = {'mount': mount, 'reporter': reporter}
         if idiomatic is not None:
             params['idiomatic'] = idiomatic
+        if name_filter is not None:
+            params['filter'] = name_filter
 
         headers = {}
         if output_format == 'x-ldjson':

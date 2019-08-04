@@ -15,7 +15,7 @@ information.
     from arango import ArangoClient
 
     # Initialize the ArangoDB client.
-    client = ArangoClient(protocol='http', host='localhost', port=8529)
+    client = ArangoClient()
 
     # Connect to "_system" database as root user.
     # This returns an API wrapper for "_system" database.

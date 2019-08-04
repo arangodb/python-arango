@@ -34,7 +34,6 @@ from tests.helpers import (
     generate_service_mount
 )
 
-# noinspection PyUnresolvedReferences
 service_file = '/tmp/service.zip'
 
 
@@ -324,11 +323,13 @@ def test_foxx_misc_functions(db, bad_db):
     result_string = db.foxx.run_tests(
         mount=service_mount,
         reporter='suite',
-        idiomatic=True
+        idiomatic=True,
+        name_filter='science'
     )
     result_json = json.loads(result_string)
     assert 'stats' in result_json
     assert 'tests' in result_json
+    assert 'suites' in result_json
 
     result_string = db.foxx.run_tests(
         mount=service_mount,

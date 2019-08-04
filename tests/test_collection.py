@@ -17,6 +17,7 @@ from arango.exceptions import (
     CollectionCreateError,
     CollectionListError,
     CollectionDeleteError,
+    CollectionRecalculateCountError
 )
 from tests.helpers import assert_raises, extract, generate_col_name
 
@@ -29,7 +30,7 @@ def test_collection_attributes(db, col, username):
     assert repr(col) == '<StandardCollection {}>'.format(col.name)
 
 
-def test_collection_misc_methods(col, bad_col):
+def test_collection_misc_methods(col, bad_col, cluster):
     # Test get properties
     properties = col.properties()
     assert properties['name'] == col.name
@@ -100,23 +101,26 @@ def test_collection_misc_methods(col, bad_col):
         bad_col.rotate()
     assert err.value.error_code in {11, 1228}
 
-    # Test checksum with empty collection
-    assert int(col.checksum(with_rev=True, with_data=False)) == 0
-    assert int(col.checksum(with_rev=True, with_data=True)) == 0
-    assert int(col.checksum(with_rev=False, with_data=False)) == 0
-    assert int(col.checksum(with_rev=False, with_data=True)) == 0
+    if cluster:
+        col.insert({})
+    else:
+        # Test checksum with empty collection
+        assert int(col.checksum(with_rev=True, with_data=False)) == 0
+        assert int(col.checksum(with_rev=True, with_data=True)) == 0
+        assert int(col.checksum(with_rev=False, with_data=False)) == 0
+        assert int(col.checksum(with_rev=False, with_data=True)) == 0
 
-    # Test checksum with non-empty collection
-    col.insert({})
-    assert int(col.checksum(with_rev=True, with_data=False)) > 0
-    assert int(col.checksum(with_rev=True, with_data=True)) > 0
-    assert int(col.checksum(with_rev=False, with_data=False)) > 0
-    assert int(col.checksum(with_rev=False, with_data=True)) > 0
+        # Test checksum with non-empty collection
+        col.insert({})
+        assert int(col.checksum(with_rev=True, with_data=False)) > 0
+        assert int(col.checksum(with_rev=True, with_data=True)) > 0
+        assert int(col.checksum(with_rev=False, with_data=False)) > 0
+        assert int(col.checksum(with_rev=False, with_data=True)) > 0
 
-    # Test checksum with bad collection
-    with assert_raises(CollectionChecksumError) as err:
-        bad_col.checksum()
-    assert err.value.error_code in {11, 1228}
+        # Test checksum with bad collection
+        with assert_raises(CollectionChecksumError) as err:
+            bad_col.checksum()
+        assert err.value.error_code in {11, 1228}
 
     # Test preconditions
     assert len(col) == 1
@@ -125,13 +129,21 @@ def test_collection_misc_methods(col, bad_col):
     assert col.truncate() is True
     assert len(col) == 0
 
-    # Test checksum with bad collection
+    # Test truncate with bad collection
     with assert_raises(CollectionTruncateError) as err:
         bad_col.truncate()
     assert err.value.error_code in {11, 1228}
 
+    # Test recalculate count
+    assert col.recalculate_count() is True
 
-def test_collection_management(db, bad_db):
+    # Test recalculate count with bad collection
+    with assert_raises(CollectionRecalculateCountError) as err:
+        bad_col.recalculate_count()
+    assert err.value.error_code in {11, 1228}
+
+
+def test_collection_management(db, bad_db, cluster):
     # Test create collection
     col_name = generate_col_name()
     assert db.has_collection(col_name) is False
@@ -143,7 +155,7 @@ def test_collection_management(db, bad_db):
         journal_size=7774208,
         system=False,
         volatile=False,
-        key_generator='autoincrement',
+        key_generator='traditional',
         user_keys=False,
         key_increment=9,
         key_offset=100,
@@ -154,7 +166,9 @@ def test_collection_management(db, bad_db):
         replication_factor=1,
         shard_like='',
         sync_replication=False,
-        enforce_replication_factor=False
+        enforce_replication_factor=False,
+        sharding_strategy='community-compat',
+        smart_join_attribute='test'
     )
     assert db.has_collection(col_name) is True
 
@@ -164,10 +178,8 @@ def test_collection_management(db, bad_db):
     assert properties['name'] == col_name
     assert properties['sync'] is True
     assert properties['system'] is False
-    assert properties['key_generator'] == 'autoincrement'
+    assert properties['key_generator'] == 'traditional'
     assert properties['user_keys'] is False
-    assert properties['key_increment'] == 9
-    assert properties['key_offset'] == 100
 
     # Test create duplicate collection
     with assert_raises(CollectionCreateError) as err:
@@ -205,19 +217,20 @@ def test_collection_management(db, bad_db):
     assert err.value.error_code == 1203
     assert db.delete_collection(col_name, ignore_missing=True) is False
 
-    # Test rename collection
-    new_name = generate_col_name()
-    col = db.create_collection(new_name)
-    assert col.rename(new_name) is True
-    assert col.name == new_name
-    assert repr(col) == '<StandardCollection {}>'.format(new_name)
+    if not cluster:
+        # Test rename collection
+        new_name = generate_col_name()
+        col = db.create_collection(new_name)
+        assert col.rename(new_name) is True
+        assert col.name == new_name
+        assert repr(col) == '<StandardCollection {}>'.format(new_name)
 
-    # Try again (the operation should be idempotent)
-    assert col.rename(new_name) is True
-    assert col.name == new_name
-    assert repr(col) == '<StandardCollection {}>'.format(new_name)
+        # Try again (the operation should be idempotent)
+        assert col.rename(new_name) is True
+        assert col.name == new_name
+        assert repr(col) == '<StandardCollection {}>'.format(new_name)
 
-    # Test rename with bad collection
-    with assert_raises(CollectionRenameError) as err:
-        bad_db.collection(new_name).rename(new_name)
-    assert err.value.error_code in {11, 1228}
+        # Test rename with bad collection
+        with assert_raises(CollectionRenameError) as err:
+            bad_db.collection(new_name).rename(new_name)
+        assert err.value.error_code in {11, 1228}

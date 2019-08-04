@@ -2,8 +2,6 @@ from __future__ import absolute_import, unicode_literals
 
 __all__ = ['Response']
 
-import json
-
 
 class Response(object):
     """HTTP response.
@@ -31,10 +29,10 @@ class Response(object):
     :vartype status_code: int
     :ivar status_text: Response status text.
     :vartype status_text: str | unicode
-    :ivar body: JSON-deserialized response body.
-    :vartype body: str | unicode | bool | int | list | dict
     :ivar raw_body: Raw response body.
     :vartype raw_body: str | unicode
+    :ivar body: JSON-deserialized response body.
+    :vartype body: str | unicode | bool | int | list | dict
     :ivar error_code: Error code from ArangoDB server.
     :vartype error_code: int
     :ivar error_message: Error message from ArangoDB server.
@@ -70,19 +68,8 @@ class Response(object):
         self.status_text = status_text
         self.raw_body = raw_body
 
-        # De-serialize the response body.
-        try:
-            self.body = json.loads(raw_body)
-        except (ValueError, TypeError):
-            self.body = raw_body
-
-        # Extract error code and message.
-        if isinstance(self.body, dict):
-            self.error_code = self.body.get('errorNum')
-            self.error_message = self.body.get('errorMessage')
-        else:
-            self.error_code = None
-            self.error_message = None
-
-        http_ok = 200 <= status_code < 300
-        self.is_success = http_ok and self.error_code is None
+        # Populated later
+        self.body = None
+        self.error_code = None
+        self.error_message = None
+        self.is_success = None

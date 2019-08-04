@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+import os
 from collections import deque
 from uuid import uuid4
 
@@ -9,7 +10,7 @@ from arango.cursor import Cursor
 from arango.exceptions import (
     AsyncExecuteError,
     BatchExecuteError,
-    TransactionExecuteError
+    TransactionInitError
 )
 
 
@@ -85,6 +86,15 @@ def generate_view_name():
     return 'test_view_{}'.format(uuid4().hex)
 
 
+def generate_analyzer_name():
+    """Generate and return a random analyzer name.
+
+    :return: Random analyzer name.
+    :rtype: str | unicode
+    """
+    return 'test_analyzer_{}'.format(uuid4().hex)
+
+
 def generate_string():
     """Generate and return a random unique string.
 
@@ -122,6 +132,16 @@ def clean_doc(obj):
         }
 
 
+def empty_collection(collection):
+    """Empty all the documents in the collection.
+
+    :param collection: Collection name
+    :type collection: arango.collection.StandardCollection
+    """
+    for doc_id in collection.ids():
+        collection.delete(doc_id)
+
+
 def extract(key, items):
     """Return the sorted values from dicts using the given key.
 
@@ -135,16 +155,17 @@ def extract(key, items):
     return sorted(item[key] for item in items)
 
 
-def assert_raises(*exception):
+def assert_raises(*exc):
     """Assert that the given exception is raised.
 
-    :param exception: Expected exception(s).
-    :type: Exception
+    :param exc: Expected exception(s).
+    :type: exc
     """
+    # noinspection PyTypeChecker
     return pytest.raises(
-        exception + (
-            AsyncExecuteError,
-            BatchExecuteError,
-            TransactionExecuteError
-        )
+        exc + (AsyncExecuteError, BatchExecuteError, TransactionInitError)
     )
+
+
+def file_exists(filename):
+    return os.path.exists(filename)

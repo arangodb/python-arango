@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import json
+
 import mock
 import pytest
 from six import string_types
@@ -162,6 +164,8 @@ def test_batch_bad_state(db, col, docs):
     mock_send_request.return_value = mock_resp
     mock_connection = mock.MagicMock()
     mock_connection.send_request = mock_send_request
+    mock_connection.serialize = json.dumps
+    mock_connection.deserialize = json.loads
     batch_db._executor._conn = mock_connection
 
     # Test commit with invalid batch state

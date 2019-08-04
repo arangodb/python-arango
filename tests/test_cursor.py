@@ -38,10 +38,10 @@ def test_cursor_from_execute_query(db, col, docs):
     assert statistics['modified'] == 0
     assert statistics['filtered'] == 0
     assert statistics['ignored'] == 0
-    assert statistics['scanned_full'] == 6
-    assert statistics['scanned_index'] == 0
     assert statistics['execution_time'] > 0
-    assert statistics['http_requests'] == 0
+    assert 'http_requests' in statistics
+    assert 'scanned_full' in statistics
+    assert 'scanned_index' in statistics
     assert cursor.warnings() == []
 
     profile = cursor.profile()
@@ -119,10 +119,10 @@ def test_cursor_write_query(db, col, docs):
     assert statistics['modified'] == 2
     assert statistics['filtered'] == 0
     assert statistics['ignored'] == 0
-    assert statistics['scanned_full'] == 0
-    assert statistics['scanned_index'] == 2
     assert statistics['execution_time'] > 0
-    assert statistics['http_requests'] == 0
+    assert 'http_requests' in statistics
+    assert 'scanned_full' in statistics
+    assert 'scanned_index' in statistics
     assert cursor.warnings() == []
 
     profile = cursor.profile()

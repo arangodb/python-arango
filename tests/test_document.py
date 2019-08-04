@@ -4,6 +4,8 @@ import pytest
 from six import string_types
 
 from arango.exceptions import (
+    CursorNextError,
+    CursorCloseError,
     DocumentCountError,
     DocumentDeleteError,
     DocumentGetError,
@@ -14,14 +16,15 @@ from arango.exceptions import (
     DocumentUpdateError,
     DocumentKeysError,
     DocumentIDsError,
-    DocumentParseError,
+    DocumentParseError
 )
 from tests.helpers import (
     assert_raises,
     clean_doc,
     extract,
     generate_doc_key,
-    generate_col_name
+    generate_col_name,
+    empty_collection
 )
 
 
@@ -30,7 +33,7 @@ def test_document_insert(col, docs):
     result = col.insert({})
     assert result['_key'] in col
     assert len(col) == 1
-    col.truncate()
+    empty_collection(col)
 
     # Test insert document with ID
     doc_id = col.name + '/' + 'foo'
@@ -38,7 +41,7 @@ def test_document_insert(col, docs):
     assert 'foo' in col
     assert doc_id in col
     assert len(col) == 1
-    col.truncate()
+    empty_collection(col)
 
     with assert_raises(DocumentParseError) as err:
         col.insert({'_id': generate_col_name() + '/' + 'foo'})
@@ -52,7 +55,7 @@ def test_document_insert(col, docs):
         assert isinstance(result['_rev'], string_types)
         assert col[doc['_key']]['val'] == doc['val']
     assert len(col) == len(docs)
-    col.truncate()
+    empty_collection(col)
 
     # Test insert with sync set to True
     doc = docs[0]
@@ -121,7 +124,7 @@ def test_document_insert_many(col, bad_col, docs):
         assert isinstance(result['_rev'], string_types)
         assert col[doc['_key']]['val'] == doc['val']
     assert len(col) == len(docs)
-    col.truncate()
+    empty_collection(col)
 
     # Test insert_many with document IDs
     docs_with_id = [{'_id': col.name + '/' + doc['_key']} for doc in docs]
@@ -131,7 +134,7 @@ def test_document_insert_many(col, bad_col, docs):
         assert result['_key'] == doc['_key']
         assert isinstance(result['_rev'], string_types)
     assert len(col) == len(docs)
-    col.truncate()
+    empty_collection(col)
 
     # Test insert_many with sync set to True
     results = col.insert_many(docs, sync=True)
@@ -141,7 +144,7 @@ def test_document_insert_many(col, bad_col, docs):
         assert isinstance(result['_rev'], string_types)
         assert col[doc['_key']]['_key'] == doc['_key']
         assert col[doc['_key']]['val'] == doc['val']
-    col.truncate()
+    empty_collection(col)
 
     # Test insert_many with sync set to False
     results = col.insert_many(docs, sync=False)
@@ -151,7 +154,7 @@ def test_document_insert_many(col, bad_col, docs):
         assert isinstance(result['_rev'], string_types)
         assert col[doc['_key']]['_key'] == doc['_key']
         assert col[doc['_key']]['val'] == doc['val']
-    col.truncate()
+    empty_collection(col)
 
     # Test insert_many with return_new set to True
     results = col.insert_many(docs, return_new=True)
@@ -165,7 +168,7 @@ def test_document_insert_many(col, bad_col, docs):
         assert result['new']['val'] == doc['val']
         assert col[doc['_key']]['_key'] == doc['_key']
         assert col[doc['_key']]['val'] == doc['val']
-    col.truncate()
+    empty_collection(col)
 
     # Test insert_many with return_new set to False
     results = col.insert_many(docs, return_new=False)
@@ -176,7 +179,7 @@ def test_document_insert_many(col, bad_col, docs):
         assert 'new' not in result
         assert col[doc['_key']]['_key'] == doc['_key']
         assert col[doc['_key']]['val'] == doc['val']
-    col.truncate()
+    empty_collection(col)
 
     # Test insert_many with silent set to True
     assert col.insert_many(docs, silent=True) is True
@@ -959,7 +962,7 @@ def test_document_delete_many(col, bad_col, docs):
     assert len(col) == 6
 
     # Test delete_many (documents) with missing documents
-    col.truncate()
+    empty_collection(col)
     results = col.delete_many([
         {'_key': generate_doc_key()},
         {'_key': generate_doc_key()},
@@ -1065,7 +1068,7 @@ def test_document_find(col, bad_col, docs):
             assert doc['_key'] in col
 
     # Test find in empty collection
-    col.truncate()
+    empty_collection(col)
     assert list(col.find({})) == []
     assert list(col.find({'val': 1})) == []
     assert list(col.find({'val': 2})) == []
@@ -1078,7 +1081,6 @@ def test_document_find(col, bad_col, docs):
     assert err.value.error_code in {11, 1228}
 
 
-@pytest.mark.skip(reason='broken in ArangoDB 3.4')
 def test_document_find_near(col, bad_col, docs):
     col.import_bulk(docs)
 
@@ -1112,7 +1114,7 @@ def test_document_find_near(col, bad_col, docs):
         bad_col.find_near(latitude=1, longitude=1, limit=1)
 
     # Test find_near in an empty collection
-    col.truncate()
+    empty_collection(col)
     result = col.find_near(latitude=1, longitude=1, limit=1)
     assert list(result) == []
     result = col.find_near(latitude=5, longitude=5, limit=4)
@@ -1188,10 +1190,7 @@ def test_document_find_in_radius(col, bad_col):
         distance_field='dist'
     ))
     assert len(result) == 1
-    if col.context == 'transaction':
-        assert clean_doc(result[0]) == {'_key': '1', 'loc': [1, 1]}
-    else:
-        assert clean_doc(result[0]) == {'_key': '1', 'loc': [1, 1], 'dist': 0}
+    assert clean_doc(result[0]) == {'_key': '1', 'loc': [1, 1], 'dist': 0}
 
     # Test find_in_radius with bad collection
     with assert_raises(DocumentGetError) as err:
@@ -1199,7 +1198,10 @@ def test_document_find_in_radius(col, bad_col):
     assert err.value.error_code in {11, 1228}
 
 
-def test_document_find_in_box(col, bad_col, geo):
+def test_document_find_in_box(col, bad_col, geo, cluster):
+    if cluster:
+        pytest.skip('Not tested in a cluster setup')
+
     doc1 = {'_key': '1', 'loc': [1, 1]}
     doc2 = {'_key': '2', 'loc': [1, 5]}
     doc3 = {'_key': '3', 'loc': [5, 1]}
@@ -1545,7 +1547,7 @@ def test_document_get_many(col, bad_col, docs):
     assert clean_doc(result) == docs
 
     # Test get_many in empty collection
-    col.truncate()
+    empty_collection(col)
     assert col.get_many([]) == []
     assert col.get_many(docs[:1]) == []
     assert col.get_many(docs[:3]) == []
@@ -1655,74 +1657,77 @@ def test_document_keys(col, bad_col, docs):
     assert err.value.error_code in {11, 1228}
 
 
-# def test_document_export(col, bad_col, docs):
-#     # Set up test documents
-#     col.insert_many(docs)
-#
-#     # Test export with flush set to True and flush_wait set to 1
-#     cursor = col.export(flush=True, flush_wait=1)
-#     assert clean_doc(cursor) == docs
-#     assert cursor.type == 'export'
-#
-#     # Test export with count
-#     cursor = col.export(flush=False, count=True)
-#     assert cursor.count == len(docs)
-#     assert clean_doc(cursor) == docs
-#
-#     # Test export with batch size
-#     cursor = col.export(flush=False, count=True, batch_size=1)
-#     assert cursor.count == len(docs)
-#     assert clean_doc(cursor) == docs
-#
-#     # Test export with time-to-live
-#     cursor = col.export(flush=False, count=True, ttl=10)
-#     assert cursor.count == len(docs)
-#     assert clean_doc(cursor) == docs
-#
-#     # Test export with filters
-#     cursor = col.export(
-#         count=True,
-#         flush=False,
-#         filter_fields=['text'],
-#         filter_type='exclude'
-#     )
-#     assert cursor.count == len(docs)
-#     assert all(['text' not in d for d in cursor])
-#
-#     # Test export with a limit of 0
-#     cursor = col.export(flush=False, count=True, limit=0)
-#     assert cursor.count == len(docs)
-#     assert clean_doc(cursor) == docs
-#
-#     # Test export with a limit of 1
-#     cursor = col.export(flush=False, count=True, limit=1)
-#     assert cursor.count == 1
-#     assert len(list(cursor)) == 1
-#     all([clean_doc(d) in docs for d in cursor])
-#
-#     # Test export with a limit of 3
-#     cursor = col.export(flush=False, count=True, limit=3)
-#     assert cursor.count == 3
-#     assert len(list(cursor)) == 3
-#     all([clean_doc(d) in docs for d in cursor])
-#
-#     # Test export with bad database
-#     with assert_raises(DocumentGetError):
-#         bad_col.export()
-#
-#     # Test closing export cursor
-#     cursor = col.export(flush=False, count=True, batch_size=1)
-#     assert cursor.close(ignore_missing=False) is True
-#     assert cursor.close(ignore_missing=True) is False
-#
-#     assert clean_doc(cursor.next()) in docs
-#     with assert_raises(CursorNextError):
-#         cursor.next()
-#     with assert_raises(CursorCloseError):
-#         cursor.close(ignore_missing=False)
-#
-#     cursor = col.export(flush=False, count=True)
-#     assert cursor.close(ignore_missing=True) is False
+def test_document_export(col, bad_col, docs, cluster):
+    if cluster:
+        pytest.skip('Not tested in a cluster setup')
+
+    # Set up test documents
+    col.insert_many(docs)
+
+    # Test export with flush set to True and flush_wait set to 1
+    cursor = col.export(flush=True, flush_wait=1)
+    assert clean_doc(cursor) == docs
+    assert cursor.type == 'export'
+
+    # Test export with count
+    cursor = col.export(flush=False, count=True)
+    assert cursor.count() == len(docs)
+    assert clean_doc(cursor) == docs
+
+    # Test export with batch size
+    cursor = col.export(flush=False, count=True, batch_size=1)
+    assert cursor.count() == len(docs)
+    assert clean_doc(cursor) == docs
+
+    # Test export with time-to-live
+    cursor = col.export(flush=False, count=True, ttl=10)
+    assert cursor.count() == len(docs)
+    assert clean_doc(cursor) == docs
+
+    # Test export with filters
+    cursor = col.export(
+        count=True,
+        flush=False,
+        filter_fields=['text'],
+        filter_type='exclude'
+    )
+    assert cursor.count() == len(docs)
+    assert all(['text' not in d for d in cursor])
+
+    # Test export with a limit of 0
+    cursor = col.export(flush=False, count=True, limit=0)
+    assert cursor.count() == 0
+    assert clean_doc(cursor) == []
+
+    # Test export with a limit of 1
+    cursor = col.export(flush=False, count=True, limit=1)
+    assert cursor.count() == 1
+    assert len(list(cursor)) == 1
+    all([clean_doc(d) in docs for d in cursor])
+
+    # Test export with a limit of 3
+    cursor = col.export(flush=False, count=True, limit=3)
+    assert cursor.count() == 3
+    assert len(list(cursor)) == 3
+    all([clean_doc(d) in docs for d in cursor])
+
+    # Test export with bad database
+    with assert_raises(DocumentGetError):
+        bad_col.export()
+
+    # Test closing export cursor
+    cursor = col.export(flush=False, count=True, batch_size=1)
+    assert cursor.close(ignore_missing=False) is True
+    assert cursor.close(ignore_missing=True) is False
+
+    assert clean_doc(cursor.next()) in docs
+    with assert_raises(CursorNextError):
+        cursor.next()
+    with assert_raises(CursorCloseError):
+        cursor.close(ignore_missing=False)
+
+    cursor = col.export(flush=False, count=True)
+    assert cursor.close(ignore_missing=True) is None
 
 
 def test_document_random(col, bad_col, docs):
@@ -1735,7 +1740,7 @@ def test_document_random(col, bad_col, docs):
         assert clean_doc(random_doc) in docs
 
     # Test random in empty collection
-    col.truncate()
+    empty_collection(col)
     for attempt in range(10):
         random_doc = col.random()
         assert random_doc is None
@@ -1761,7 +1766,7 @@ def test_document_import_bulk(col, bad_col, docs):
         assert col[doc_key]['_key'] == doc_key
         assert col[doc_key]['val'] == doc['val']
         assert col[doc_key]['loc'] == doc['loc']
-    col.truncate()
+    empty_collection(col)
 
     # Test import bulk without details and with sync
     result = col.import_bulk(docs, details=False, sync=True)
@@ -1789,7 +1794,7 @@ def test_document_import_bulk(col, bad_col, docs):
     assert result['empty'] == 0
     assert result['updated'] == 0
     assert result['ignored'] == 0
-    col.truncate()
+    empty_collection(col)
 
     # Test import bulk with bad database
     with assert_raises(DocumentInsertError):
@@ -1809,7 +1814,7 @@ def test_document_import_bulk(col, bad_col, docs):
         assert col[doc_key]['_key'] == doc_key
         assert col[doc_key]['val'] == doc['val']
         assert col[doc_key]['loc'] == doc['loc']
-    col.truncate()
+    empty_collection(col)
 
     # Test import bulk on_duplicate actions
     doc = docs[0]
@@ -1851,7 +1856,7 @@ def test_document_import_bulk(col, bad_col, docs):
     assert col[doc['_key']]['foo'] == '2'
     assert col[doc['_key']]['bar'] == '3'
 
-    col.truncate()
+    empty_collection(col)
     col.insert(old_doc)
     result = col.import_bulk([new_doc], on_duplicate='replace',
                              halt_on_error=False)
@@ -1863,164 +1868,6 @@ def test_document_import_bulk(col, bad_col, docs):
     assert result['ignored'] == 0
     assert 'foo' not in col[doc['_key']]
     assert col[doc['_key']]['bar'] == '3'
-
-
-@pytest.mark.skip(reason='broken in ArangoDB 3.4')
-def test_document_edge(lecol, docs, edocs):
-    ecol = lecol  # legacy edge collection
-
-    # Test insert edge without "_from" and "_to" fields
-    with assert_raises(DocumentInsertError):
-        ecol.insert(docs[0])
-
-    # Test insert many edges without "_from" and "_to" fields
-    for result in ecol.insert_many(docs):
-        assert isinstance(result, DocumentInsertError)
-
-    # Test update edge without "_from" and "_to" fields
-    with assert_raises(DocumentUpdateError):
-        ecol.update(docs[0])
-
-    # Test update many edges without "_from" and "_to" fields
-    for result in ecol.update_many(docs):
-        assert isinstance(result, DocumentUpdateError)
-
-    # Test replace edge without "_from" and "_to" fields
-    with assert_raises(DocumentReplaceError):
-        ecol.replace(docs[0])
-
-    # Test replace many edges without "_from" and "_to" fields
-    for result in ecol.replace_many(docs):
-        assert isinstance(result, DocumentReplaceError)
-
-    # Test edge document happy path
-    edoc = edocs[0]
-
-    # Test insert edge
-    result = ecol.insert(edoc, return_new=True, sync=True)
-    assert len(ecol) == 1
-    assert result['_id'] == '{}/{}'.format(ecol.name, edoc['_key'])
-    assert result['_key'] == edoc['_key']
-    assert result['new']['_key'] == edoc['_key'] == ecol[edoc]['_key']
-    assert result['new']['_from'] == edoc['_from'] == ecol[edoc]['_from']
-    assert result['new']['_to'] == edoc['_to'] == ecol[edoc]['_to']
-
-    # Test update edge
-    new_edoc = edoc.copy()
-    new_edoc.update({'_from': 'foo', '_to': 'bar'})
-    result = ecol.update(new_edoc, return_old=True, return_new=True)
-    assert result['_id'] == '{}/{}'.format(ecol.name, edoc['_key'])
-    assert result['_key'] == edoc['_key']
-    assert result['new']['_key'] == new_edoc['_key']
-    assert result['new']['_from'] == new_edoc['_from']
-    assert result['new']['_to'] == new_edoc['_to']
-    assert result['old']['_key'] == edoc['_key']
-    assert result['old']['_from'] == edoc['_from']
-    assert result['old']['_to'] == edoc['_to']
-    assert ecol[edoc]['_key'] == edoc['_key']
-    assert ecol[edoc]['_from'] == new_edoc['_from']
-    assert ecol[edoc]['_to'] == new_edoc['_to']
-    edoc = new_edoc
-
-    # Test replace edge
-    new_edoc = edoc.copy()
-    new_edoc.update({'_from': 'baz', '_to': 'qux'})
-    result = ecol.replace(new_edoc, return_old=True, return_new=True)
-    assert result['_id'] == '{}/{}'.format(ecol.name, edoc['_key'])
-    assert result['_key'] == edoc['_key']
-    assert result['new']['_key'] == new_edoc['_key']
-    assert result['new']['_from'] == new_edoc['_from']
-    assert result['new']['_to'] == new_edoc['_to']
-    assert result['old']['_key'] == edoc['_key']
-    assert result['old']['_from'] == edoc['_from']
-    assert result['old']['_to'] == edoc['_to']
-    assert ecol[edoc]['_key'] == edoc['_key']
-    assert ecol[edoc]['_from'] == new_edoc['_from']
-    assert ecol[edoc]['_to'] == new_edoc['_to']
-    edoc = new_edoc
-
-    # Test delete edge
-    result = ecol.delete(edoc, return_old=True)
-    assert result['_id'] == '{}/{}'.format(ecol.name, edoc['_key'])
-    assert result['_key'] == edoc['_key']
-    assert result['old']['_key'] == edoc['_key']
-    assert result['old']['_from'] == edoc['_from']
-    assert result['old']['_to'] == edoc['_to']
-    assert edoc not in ecol
-
-    # Test insert many edges
-    results = ecol.insert_many(edocs, return_new=True, sync=True)
-    for result, edoc in zip(results, edocs):
-        assert result['_id'] == '{}/{}'.format(ecol.name, edoc['_key'])
-        assert result['_key'] == edoc['_key']
-        assert result['new']['_key'] == edoc['_key']
-        assert result['new']['_from'] == edoc['_from']
-        assert result['new']['_to'] == edoc['_to']
-        assert ecol[edoc]['_key'] == edoc['_key']
-        assert ecol[edoc]['_from'] == edoc['_from']
-        assert ecol[edoc]['_to'] == edoc['_to']
-    assert len(ecol) == 4
-
-    # Test update many edges
-    for edoc in edocs:
-        edoc['foo'] = 1
-    results = ecol.update_many(edocs, return_new=True, sync=True)
-    for result, edoc in zip(results, edocs):
-        assert result['_id'] == '{}/{}'.format(ecol.name, edoc['_key'])
-        assert result['_key'] == edoc['_key']
-        assert result['new']['_key'] == edoc['_key']
-        assert result['new']['_from'] == edoc['_from']
-        assert result['new']['_to'] == edoc['_to']
-        assert result['new']['foo'] == 1
-        assert ecol[edoc]['_key'] == edoc['_key']
-        assert ecol[edoc]['_from'] == edoc['_from']
-        assert ecol[edoc]['_to'] == edoc['_to']
-        assert ecol[edoc]['foo'] == 1
-    assert len(ecol) == 4
-
-    # Test replace many edges
-    for edoc in edocs:
-        edoc['bar'] = edoc.pop('foo')
-    results = ecol.replace_many(edocs, return_new=True, sync=True)
-    for result, edoc in zip(results, edocs):
-        assert result['_id'] == '{}/{}'.format(ecol.name, edoc['_key'])
-        assert result['_key'] == edoc['_key']
-        assert result['new']['_key'] == edoc['_key']
-        assert result['new']['_from'] == edoc['_from']
-        assert result['new']['_to'] == edoc['_to']
-        assert result['new']['bar'] == 1
-        assert 'foo' not in result['new']
-        assert ecol[edoc]['_key'] == edoc['_key']
-        assert ecol[edoc]['_from'] == edoc['_from']
-        assert ecol[edoc]['_to'] == edoc['_to']
-        assert ecol[edoc]['bar'] == 1
-        assert 'foo' not in ecol[edoc]
-    assert len(ecol) == 4
-
-    results = ecol.delete_many(edocs, return_old=True)
-    for result, edoc in zip(results, edocs):
-        assert result['_id'] == '{}/{}'.format(ecol.name, edoc['_key'])
-        assert result['_key'] == edoc['_key']
-        assert result['old']['_key'] == edoc['_key']
-        assert result['old']['_from'] == edoc['_from']
-        assert result['old']['_to'] == edoc['_to']
-        assert edoc not in ecol
-        assert edoc['_key'] not in ecol
-    assert len(ecol) == 0
-
-    # Test import bulk to_prefix and from_prefix
-    for doc in edocs:
-        doc['_from'] = 'foo'
-        doc['_to'] = 'bar'
-    result = ecol.import_bulk(edocs, from_prefix='from', to_prefix='to')
-    assert result['created'] == 4
-    assert result['errors'] == 0
-    assert result['empty'] == 0
-    assert result['updated'] == 0
-    assert result['ignored'] == 0
-    for edoc in ecol:
-        assert edoc['_from'] == 'from/foo'
-        assert edoc['_to'] == 'to/bar'
 
 
 def test_document_management_via_db(db, col):

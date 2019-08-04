@@ -4,8 +4,6 @@ __all__ = ['StandardCollection', 'VertexCollection', 'EdgeCollection']
 
 from numbers import Number
 
-from json import dumps
-
 from arango.api import APIWrapper
 from arango.cursor import Cursor
 from arango.exceptions import (
@@ -13,6 +11,8 @@ from arango.exceptions import (
     CollectionConfigureError,
     CollectionLoadError,
     CollectionPropertiesError,
+    CollectionRecalculateCountError,
+    CollectionResponsibleShardError,
     CollectionRenameError,
     CollectionRevisionError,
     CollectionRotateJournalError,
@@ -95,7 +95,7 @@ class Collection(APIWrapper):
         return None if code is None else self.statuses[code]
 
     def _format_properties(self, body):  # pragma: no cover
-        """Format the collection properties.
+        """Format collection properties.
 
         :param body: Response body.
         :type body: dict
@@ -217,10 +217,6 @@ class Collection(APIWrapper):
 
             if not check_rev or rev is None:
                 return doc_id, doc_id, {}
-            elif self._is_transaction:
-                body = document.copy()
-                body['_rev'] = rev
-                return doc_id, body, {'If-Match': rev}
             else:
                 return doc_id, doc_id, {'If-Match': rev}
         else:
@@ -231,9 +227,6 @@ class Collection(APIWrapper):
 
             if not check_rev or rev is None:
                 return doc_id, doc_id, {}
-            elif self._is_transaction:
-                body = {'_id': doc_id, '_rev': rev}
-                return doc_id, body, {'If-Match': rev}
             else:
                 return doc_id, doc_id, {'If-Match': rev}
 
@@ -278,6 +271,48 @@ class Collection(APIWrapper):
         """
         return self._name
 
+    def recalculate_count(self):
+        """Recalculate the document count.
+
+        :return: True if recalculation was successful.
+        :rtype: bool
+        :raise arango.exceptions.CollectionRecalculateCountError: If operation
+            fails.
+        """
+        request = Request(
+            method='put',
+            endpoint='/_api/collection/{}/recalculateCount'.format(self.name)
+        )
+
+        def response_handler(resp):
+            if not resp.is_success:
+                raise CollectionRecalculateCountError(resp, request)
+            return True
+
+        return self._execute(request, response_handler)
+
+    def responsible_shard(self, document):  # pragma: no cover
+        """Return the ID of the shard responsible for given **document**.
+
+        If the document does not exist, return the shard that would be
+        responsible.
+
+        :return: Shard ID
+        """
+        request = Request(
+            method='put',
+            endpoint='/_api/collection/{}/responsibleShard'.format(self.name),
+            data=document,
+            read=self.name
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                return resp.body['shardId']
+            raise CollectionResponsibleShardError(resp, request)
+
+        return self._execute(request, response_handler)
+
     def rename(self, new_name):
         """Rename the collection.
 
@@ -316,7 +351,6 @@ class Collection(APIWrapper):
         request = Request(
             method='get',
             endpoint='/_api/collection/{}/properties'.format(self.name),
-            command='db.{}.properties()'.format(self.name),
             read=self.name
         )
 
@@ -367,7 +401,6 @@ class Collection(APIWrapper):
         request = Request(
             method='get',
             endpoint='/_api/collection/{}/figures'.format(self.name),
-            command='db.{}.figures()'.format(self.name),
             read=self.name
         )
 
@@ -396,6 +429,12 @@ class Collection(APIWrapper):
                 stats['waiting_for'] = stats.pop('waitingFor')
             if 'documentsSize' in stats:  # pragma: no cover
                 stats['documents_size'] = stats.pop('documentsSize')
+            if 'cacheInUse' in stats:  # pragma: no cover
+                stats['cache_in_use'] = stats.pop('cacheInUse')
+            if 'cacheSize' in stats:  # pragma: no cover
+                stats['cache_size'] = stats.pop('cacheSize')
+            if 'cacheUsage' in stats:  # pragma: no cover
+                stats['cache_usage'] = stats.pop('cacheUsage')
             if 'uncollectedLogfileEntries' in stats:  # pragma: no cover
                 stats['uncollected_logfile_entries'] = \
                     stats.pop('uncollectedLogfileEntries')
@@ -413,15 +452,12 @@ class Collection(APIWrapper):
         request = Request(
             method='get',
             endpoint='/_api/collection/{}/revision'.format(self.name),
-            command='db.{}.revision()'.format(self.name),
             read=self.name
         )
 
         def response_handler(resp):
             if not resp.is_success:
                 raise CollectionRevisionError(resp, request)
-            if self._is_transaction:
-                return str(resp.body)
             return resp.body['revision']
 
         return self._execute(request, response_handler)
@@ -440,9 +476,7 @@ class Collection(APIWrapper):
         request = Request(
             method='get',
             endpoint='/_api/collection/{}/checksum'.format(self.name),
-            params={'withRevision': with_rev, 'withData': with_data},
-            command='db.{}.checksum()'.format(self.name),
-            read=self.name
+            params={'withRevision': with_rev, 'withData': with_data}
         )
 
         def response_handler(resp):
@@ -513,14 +547,12 @@ class Collection(APIWrapper):
         """Delete all documents in the collection.
 
         :return: True if collection was truncated successfully.
-        :rtype: dict
+        :rtype: bool
         :raise arango.exceptions.CollectionTruncateError: If operation fails.
         """
         request = Request(
             method='put',
-            endpoint='/_api/collection/{}/truncate'.format(self.name),
-            command='db.{}.truncate()'.format(self.name),
-            write=self.name
+            endpoint='/_api/collection/{}/truncate'.format(self.name)
         )
 
         def response_handler(resp):
@@ -539,16 +571,12 @@ class Collection(APIWrapper):
         """
         request = Request(
             method='get',
-            endpoint='/_api/collection/{}/count'.format(self.name),
-            command='db.{}.count()'.format(self.name),
-            read=self.name
+            endpoint='/_api/collection/{}/count'.format(self.name)
         )
 
         def response_handler(resp):
             if not resp.is_success:
                 raise DocumentCountError(resp, request)
-            if self._is_transaction:
-                return resp.body
             return resp.body['count']
 
         return self._execute(request, response_handler)
@@ -572,16 +600,10 @@ class Collection(APIWrapper):
         """
         handle, body, headers = self._prep_from_doc(document, rev, check_rev)
 
-        command = 'db.{}.exists({})'.format(
-            self.name,
-            dumps(body)
-        ) if self._is_transaction else None
-
         request = Request(
             method='get',
             endpoint='/_api/document/{}'.format(handle),
             headers=headers,
-            command=command,
             read=self.name
         )
 
@@ -607,7 +629,6 @@ class Collection(APIWrapper):
             method='put',
             endpoint='/_api/simple/all-keys',
             data={'collection': self.name, 'type': 'id'},
-            command='db.{}.toArray().map(d => d._id)'.format(self.name),
             read=self.name
         )
 
@@ -629,7 +650,6 @@ class Collection(APIWrapper):
             method='put',
             endpoint='/_api/simple/all-keys',
             data={'collection': self.name, 'type': 'key'},
-            command='db.{}.toArray().map(d => d._key)'.format(self.name),
             read=self.name
         )
 
@@ -660,24 +680,14 @@ class Collection(APIWrapper):
         if limit is not None:
             data['limit'] = limit
 
-        command = 'db.{}.all(){}{}.toArray()'.format(
-            self.name,
-            '' if skip is None else '.skip({})'.format(skip),
-            '' if limit is None else '.limit({})'.format(limit),
-        ) if self._is_transaction else None
-
         request = Request(
             method='put',
             endpoint='/_api/simple/all',
             data=data,
-            command=command,
             read=self.name
         )
 
         def response_handler(resp):
-            # TODO workaround for a bug in ArangoDB
-            if self._is_transaction and limit == 0:
-                return Cursor(self._conn, [])
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
@@ -692,7 +702,7 @@ class Collection(APIWrapper):
                flush_wait=None,
                ttl=None,
                filter_fields=None,
-               filter_type='include'):  # pragma: no cover
+               filter_type='include'):
         """Export all documents in the collection using a server cursor.
 
         :param flush: If set to True, flush the write-ahead log prior to the
@@ -771,18 +781,10 @@ class Collection(APIWrapper):
         if limit is not None:
             data['limit'] = limit
 
-        command = 'db.{}.byExample({}){}{}.toArray()'.format(
-            self.name,
-            dumps(filters),
-            '' if skip is None else '.skip({})'.format(skip),
-            '' if limit is None else '.limit({})'.format(limit),
-        ) if self._is_transaction else None
-
         request = Request(
             method='put',
             endpoint='/_api/simple/by-example',
             data=data,
-            command=command,
             read=self.name
         )
 
@@ -793,7 +795,7 @@ class Collection(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    def find_near(self, latitude, longitude, limit=None):  # pragma: no cover
+    def find_near(self, latitude, longitude, limit=None):
         """Return documents near a given coordinate.
 
         Documents returned are sorted according to distance, with the nearest
@@ -828,16 +830,6 @@ class Collection(APIWrapper):
         if limit is not None:
             bind_vars['limit'] = limit
 
-        if not self._is_transaction:
-            command = 'db.{}.near({},{}){}.toArray()'.format(
-                self.name,
-                latitude,
-                longitude,
-                '' if limit is None else '.limit({})'.format(limit),
-            )
-        else:
-            command = None
-
         request = Request(
             method='post',
             endpoint='/_api/cursor',
@@ -846,7 +838,6 @@ class Collection(APIWrapper):
                 'bindVars': bind_vars,
                 'count': True
             },
-            command=command,
             read=self.name
         )
 
@@ -900,15 +891,6 @@ class Collection(APIWrapper):
             RETURN doc
         """
 
-        command = 'db.{}.range({},{},{}){}{}.toArray()'.format(
-            self.name,
-            dumps(field),
-            dumps(lower),
-            dumps(upper),
-            '' if skip is None else '.skip({})'.format(skip),
-            '' if limit is None else '.limit({})'.format(limit),
-        ) if self._is_transaction else None
-
         request = Request(
             method='post',
             endpoint='/_api/cursor',
@@ -917,14 +899,10 @@ class Collection(APIWrapper):
                 'bindVars': bind_vars,
                 'count': True
             },
-            command=command,
             read=self.name
         )
 
         def response_handler(resp):
-            # TODO workaround for a bug in ArangoDB
-            if self._is_transaction and limit == 0:
-                return Cursor(self._conn, [])
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
@@ -968,13 +946,6 @@ class Collection(APIWrapper):
         if distance_field is not None:
             bind_vars['distance'] = distance_field
 
-        command = 'db.{}.within({},{},{}).toArray()'.format(
-            self.name,
-            latitude,
-            longitude,
-            radius
-        ) if self._is_transaction else None
-
         request = Request(
             method='post',
             endpoint='/_api/cursor',
@@ -983,7 +954,6 @@ class Collection(APIWrapper):
                 'bindVars': bind_vars,
                 'count': True
             },
-            command=command,
             read=self.name
         )
 
@@ -1044,21 +1014,10 @@ class Collection(APIWrapper):
         if index is not None:
             data['geo'] = self._name + '/' + index
 
-        command = 'db.{}.withinRectangle({},{},{},{}){}{}.toArray()'.format(
-            self.name,
-            latitude1,
-            longitude1,
-            latitude2,
-            longitude2,
-            '' if skip is None else '.skip({})'.format(skip),
-            '' if limit is None else '.limit({})'.format(limit),
-        ) if self._is_transaction else None
-
         request = Request(
             method='put',
             endpoint='/_api/simple/within-rectangle',
             data=data,
-            command=command,
             read=self.name
         )
 
@@ -1097,25 +1056,14 @@ class Collection(APIWrapper):
             RETURN doc
         """.format('' if limit is None else ', @limit')
 
-        command = 'db.{}.fulltext({},{}){}.toArray()'.format(
-            self.name,
-            dumps(field),
-            dumps(query),
-            '' if limit is None else '.limit({})'.format(limit),
-        ) if self._is_transaction else None
-
         request = Request(
             method='post',
             endpoint='/_api/cursor',
             data={'query': aql, 'bindVars': bind_vars, 'count': True},
-            command=command,
             read=self.name
         )
 
         def response_handler(resp):
-            # TODO workaround for a bug in ArangoDB
-            if self._is_transaction and limit == 0:
-                return Cursor(self._conn, [])
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
@@ -1137,26 +1085,17 @@ class Collection(APIWrapper):
             for doc in documents
         ]
 
-        command = 'db.{}.document({})'.format(
-            self.name,
-            dumps(handles)
-        ) if self._is_transaction else None
-
         request = Request(
             method='put',
             endpoint='/_api/simple/lookup-by-keys',
             data={'collection': self.name, 'keys': handles},
-            command=command,
             read=self.name
         )
 
         def response_handler(resp):
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
-            if self._is_transaction:
-                docs = resp.body
-            else:
-                docs = resp.body['documents']
+            docs = resp.body['documents']
             return [doc for doc in docs if '_id' in doc]
 
         return self._execute(request, response_handler)
@@ -1172,15 +1111,12 @@ class Collection(APIWrapper):
             method='put',
             endpoint='/_api/simple/any',
             data={'collection': self.name},
-            command='db.{}.any()'.format(self.name),
             read=self.name
         )
 
         def response_handler(resp):
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
-            if self._is_transaction:
-                return resp.body
             return resp.body['document']
 
         return self._execute(request, response_handler)
@@ -1188,6 +1124,37 @@ class Collection(APIWrapper):
     ####################
     # Index Management #
     ####################
+
+    # noinspection PyMethodMayBeStatic
+    def _format_index_details(self, body):  # pragma: no cover
+        """Format index details.
+
+        :param body: Response body.
+        :type body: dict
+        :return: Formatted body.
+        :rtype: dict
+        """
+        body.pop('error', None)
+        body.pop('code', None)
+
+        if 'id' in body:
+            body['id'] = body['id'].split('/', 1)[1]
+        if 'minLength' in body:
+            body['min_length'] = body.pop('minLength')
+        if 'geoJson' in body:
+            body['geo_json'] = body.pop('geoJson')
+        if 'ignoreNull' in body:
+            body['ignore_none'] = body.pop('ignoreNull')
+        if 'selectivityEstimate' in body:
+            body['selectivity'] = body.pop('selectivityEstimate')
+        if 'isNewlyCreated' in body:
+            body['new'] = body.pop('isNewlyCreated')
+        if 'expireAfter' in body:
+            body['expiry_time'] = body.pop('expireAfter')
+        if 'inBackground' in body:
+            body['in_background'] = body.pop('inBackground')
+
+        return body
 
     def indexes(self):
         """Return the collection indexes.
@@ -1200,31 +1167,13 @@ class Collection(APIWrapper):
             method='get',
             endpoint='/_api/index',
             params={'collection': self.name},
-            command='db.{}.getIndexes()'.format(self.name),
-            read=self.name
         )
 
         def response_handler(resp):
             if not resp.is_success:
                 raise IndexListError(resp, request)
-            if self._is_transaction:
-                result = resp.body
-            else:
-                result = resp.body['indexes']
-
-            indexes = []
-            for index in result:
-                index['id'] = index['id'].split('/', 1)[-1]
-                if 'minLength' in index:
-                    index['min_length'] = index.pop('minLength')
-                if 'geoJson' in index:
-                    index['geo_json'] = index.pop('geoJson')
-                if 'ignoreNull' in index:  # pragma: no cover
-                    index['ignore_none'] = index.pop('ignoreNull')
-                if 'selectivityEstimate' in index:
-                    index['selectivity'] = index.pop('selectivityEstimate')
-                indexes.append(index)
-            return indexes
+            result = resp.body['indexes']
+            return [self._format_index_details(index) for index in result]
 
         return self._execute(request, response_handler)
 
@@ -1247,21 +1196,8 @@ class Collection(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise IndexCreateError(resp, request)
-            details = resp.body
-            details['id'] = details['id'].split('/', 1)[1]
-            details.pop('error', None)
-            details.pop('code', None)
-            if 'minLength' in details:
-                details['min_length'] = details.pop('minLength')
-            if 'geoJson' in details:
-                details['geo_json'] = details.pop('geoJson')
-            if 'ignoreNull' in details:  # pragma: no cover
-                details['ignore_none'] = details.pop('ignoreNull')
-            if 'selectivityEstimate' in details:
-                details['selectivity'] = details.pop('selectivityEstimate')
-            if 'isNewlyCreated' in details:
-                details['new'] = details.pop('isNewlyCreated')
-            return details
+
+            return self._format_index_details(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -1269,7 +1205,9 @@ class Collection(APIWrapper):
                        fields,
                        unique=None,
                        sparse=None,
-                       deduplicate=None):
+                       deduplicate=None,
+                       name=None,
+                       in_background=None):
         """Create a new hash index.
 
         :param fields: Document fields to index.
@@ -1282,24 +1220,36 @@ class Collection(APIWrapper):
         :param deduplicate: If set to True, inserting duplicate index values
             from the same document triggers unique constraint errors.
         :type deduplicate: bool
+        :param name: Optional name for the index.
+        :type name: str | unicode
+        :param in_background: Do not hold the collection lock.
+        :type in_background: bool
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
         data = {'type': 'hash', 'fields': fields}
+
         if unique is not None:
             data['unique'] = unique
         if sparse is not None:
             data['sparse'] = sparse
         if deduplicate is not None:
             data['deduplicate'] = deduplicate
+        if name is not None:
+            data['name'] = name
+        if in_background is not None:
+            data['inBackground'] = in_background
+
         return self._add_index(data)
 
     def add_skiplist_index(self,
                            fields,
                            unique=None,
                            sparse=None,
-                           deduplicate=None):
+                           deduplicate=None,
+                           name=None,
+                           in_background=None):
         """Create a new skiplist index.
 
         :param fields: Document fields to index.
@@ -1312,20 +1262,34 @@ class Collection(APIWrapper):
         :param deduplicate: If set to True, inserting duplicate index values
             from the same document triggers unique constraint errors.
         :type deduplicate: bool
+        :param name: Optional name for the index.
+        :type name: str | unicode
+        :param in_background: Do not hold the collection lock.
+        :type in_background: bool
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
         data = {'type': 'skiplist', 'fields': fields}
+
         if unique is not None:
             data['unique'] = unique
         if sparse is not None:
             data['sparse'] = sparse
         if deduplicate is not None:
             data['deduplicate'] = deduplicate
+        if name is not None:
+            data['name'] = name
+        if in_background is not None:
+            data['inBackground'] = in_background
+
         return self._add_index(data)
 
-    def add_geo_index(self, fields, ordered=None):
+    def add_geo_index(self,
+                      fields,
+                      ordered=None,
+                      name=None,
+                      in_background=None):
         """Create a new geo-spatial index.
 
         :param fields: A single document field or a list of document fields. If
@@ -1335,32 +1299,61 @@ class Collection(APIWrapper):
         :type fields: str | unicode | list
         :param ordered: Whether the order is longitude, then latitude.
         :type ordered: bool
+        :param name: Optional name for the index.
+        :type name: str | unicode
+        :param in_background: Do not hold the collection lock.
+        :type in_background: bool
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
         data = {'type': 'geo', 'fields': fields}
+
         if ordered is not None:
             data['geoJson'] = ordered
+        if name is not None:
+            data['name'] = name
+        if in_background is not None:
+            data['inBackground'] = in_background
+
         return self._add_index(data)
 
-    def add_fulltext_index(self, fields, min_length=None):
+    def add_fulltext_index(self,
+                           fields,
+                           min_length=None,
+                           name=None,
+                           in_background=None):
         """Create a new fulltext index.
 
         :param fields: Document fields to index.
         :type fields: [str | unicode]
         :param min_length: Minimum number of characters to index.
         :type min_length: int
+        :param name: Optional name for the index.
+        :type name: str | unicode
+        :param in_background: Do not hold the collection lock.
+        :type in_background: bool
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
         data = {'type': 'fulltext', 'fields': fields}
+
         if min_length is not None:
             data['minLength'] = min_length
+        if name is not None:
+            data['name'] = name
+        if in_background is not None:
+            data['inBackground'] = in_background
+
         return self._add_index(data)
 
-    def add_persistent_index(self, fields, unique=None, sparse=None):
+    def add_persistent_index(self,
+                             fields,
+                             unique=None,
+                             sparse=None,
+                             name=None,
+                             in_background=None):
         """Create a new persistent index.
 
         Unique persistent indexes on non-sharded keys are not supported in a
@@ -1374,15 +1367,53 @@ class Collection(APIWrapper):
             the indexed fields, or documents that have a value of None in any
             of the indexed fields.
         :type sparse: bool
+        :param name: Optional name for the index.
+        :type name: str | unicode
+        :param in_background: Do not hold the collection lock.
+        :type in_background: bool
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
         data = {'type': 'persistent', 'fields': fields}
+
         if unique is not None:
             data['unique'] = unique
         if sparse is not None:
             data['sparse'] = sparse
+        if name is not None:
+            data['name'] = name
+        if in_background is not None:
+            data['inBackground'] = in_background
+
+        return self._add_index(data)
+
+    def add_ttl_index(self,
+                      fields,
+                      expiry_time,
+                      name=None,
+                      in_background=None):
+        """Create a new TTL (time-to-live) index.
+
+        :param fields: Document field to index.
+        :type fields: [str | unicode]
+        :param expiry_time: Time of expiry in seconds after document creation.
+        :type expiry_time: int
+        :param name: Optional name for the index.
+        :type name: str | unicode
+        :param in_background: Do not hold the collection lock.
+        :type in_background: bool
+        :return: New index details.
+        :rtype: dict
+        :raise arango.exceptions.IndexCreateError: If create fails.
+        """
+        data = {'type': 'ttl', 'fields': fields, 'expireAfter': expiry_time}
+
+        if name is not None:
+            data['name'] = name
+        if in_background is not None:
+            data['inBackground'] = in_background
+
         return self._add_index(data)
 
     def delete_index(self, index_id, ignore_missing=False):
@@ -1472,16 +1503,10 @@ class StandardCollection(Collection):
         """
         handle, body, headers = self._prep_from_doc(document, rev, check_rev)
 
-        command = 'db.{}.exists({}) || undefined'.format(
-            self.name,
-            dumps(body)
-        ) if self._is_transaction else None
-
         request = Request(
             method='get',
             endpoint='/_api/document/{}'.format(handle),
             headers=headers,
-            command=command,
             read=self.name
         )
 
@@ -1539,18 +1564,11 @@ class StandardCollection(Collection):
         if sync is not None:
             params['waitForSync'] = sync
 
-        command = 'db.{}.insert({},{})'.format(
-            self.name,
-            dumps(document),
-            dumps(params)
-        ) if self._is_transaction else None
-
         request = Request(
             method='post',
             endpoint='/_api/document/{}'.format(self.name),
             data=document,
             params=params,
-            command=command,
             write=self.name
         )
 
@@ -1611,19 +1629,11 @@ class StandardCollection(Collection):
         if sync is not None:
             params['waitForSync'] = sync
 
-        command = 'db.{}.insert({},{})'.format(
-            self.name,
-            dumps(documents),
-            dumps(params)
-        ) if self._is_transaction else None
-
         request = Request(
             method='post',
             endpoint='/_api/document/{}'.format(self.name),
             data=documents,
-            params=params,
-            command=command,
-            write=self.name
+            params=params
         )
 
         def response_handler(resp):
@@ -1703,12 +1713,6 @@ class StandardCollection(Collection):
         if sync is not None:
             params['waitForSync'] = sync
 
-        command = 'db.{col}.update({doc},{doc},{opts})'.format(
-            col=self.name,
-            doc=dumps(document),
-            opts=dumps(params)
-        ) if self._is_transaction else None
-
         request = Request(
             method='patch',
             endpoint='/_api/document/{}'.format(
@@ -1716,7 +1720,6 @@ class StandardCollection(Collection):
             ),
             data=document,
             params=params,
-            command=command,
             write=self.name
         )
 
@@ -1785,18 +1788,12 @@ class StandardCollection(Collection):
             params['waitForSync'] = sync
 
         documents = [self._ensure_key_in_body(doc) for doc in documents]
-        command = 'db.{col}.update({docs},{docs},{opts})'.format(
-            col=self.name,
-            docs=dumps(documents),
-            opts=dumps(params)
-        ) if self._is_transaction else None
 
         request = Request(
             method='patch',
             endpoint='/_api/document/{}'.format(self.name),
             data=documents,
             params=params,
-            command=command,
             write=self.name
         )
 
@@ -1870,26 +1867,16 @@ class StandardCollection(Collection):
         if sync is not None:
             data['waitForSync'] = sync
 
-        command = 'db.{}.updateByExample({},{},{})'.format(
-            self.name,
-            dumps(filters),
-            dumps(body),
-            dumps(data)
-        ) if self._is_transaction else None
-
         request = Request(
             method='put',
             endpoint='/_api/simple/update-by-example',
             data=data,
-            command=command,
             write=self.name
         )
 
         def response_handler(resp):
             if not resp.is_success:
                 raise DocumentUpdateError(resp, request)
-            if self._is_transaction:
-                return resp.body
             return resp.body['updated']
 
         return self._execute(request, response_handler)
@@ -1935,12 +1922,6 @@ class StandardCollection(Collection):
         if sync is not None:
             params['waitForSync'] = sync
 
-        command = 'db.{col}.replace({doc},{doc},{opts})'.format(
-            col=self.name,
-            doc=dumps(document),
-            opts=dumps(params)
-        ) if self._is_transaction else None
-
         request = Request(
             method='put',
             endpoint='/_api/document/{}'.format(
@@ -1948,7 +1929,6 @@ class StandardCollection(Collection):
             ),
             params=params,
             data=document,
-            command=command,
             write=self.name
         )
 
@@ -2008,18 +1988,12 @@ class StandardCollection(Collection):
             params['waitForSync'] = sync
 
         documents = [self._ensure_key_in_body(doc) for doc in documents]
-        command = 'db.{col}.replace({docs},{docs},{opts})'.format(
-            col=self.name,
-            docs=dumps(documents),
-            opts=dumps(params)
-        ) if self._is_transaction else None
 
         request = Request(
             method='put',
             endpoint='/_api/document/{}'.format(self.name),
             params=params,
             data=documents,
-            command=command,
             write=self.name
         )
 
@@ -2078,26 +2052,16 @@ class StandardCollection(Collection):
         if sync is not None:
             data['waitForSync'] = sync
 
-        command = 'db.{}.replaceByExample({},{},{})'.format(
-            self.name,
-            dumps(filters),
-            dumps(body),
-            dumps(data)
-        ) if self._is_transaction else None
-
         request = Request(
             method='put',
             endpoint='/_api/simple/replace-by-example',
             data=data,
-            command=command,
             write=self.name
         )
 
         def response_handler(resp):
             if not resp.is_success:
                 raise DocumentReplaceError(resp, request)
-            if self._is_transaction:
-                return resp.body
             return resp.body['replaced']
 
         return self._execute(request, response_handler)
@@ -2151,18 +2115,11 @@ class StandardCollection(Collection):
         if sync is not None:
             params['waitForSync'] = sync
 
-        command = 'db.{}.remove({},{})'.format(
-            self.name,
-            dumps(body),
-            dumps(params)
-        ) if self._is_transaction else None
-
         request = Request(
             method='delete',
             endpoint='/_api/document/{}'.format(handle),
             params=params,
             headers=headers,
-            command=command,
             write=self.name
         )
 
@@ -2219,18 +2176,12 @@ class StandardCollection(Collection):
             self._ensure_key_in_body(doc) if isinstance(doc, dict) else doc
             for doc in documents
         ]
-        command = 'db.{}.remove({},{})'.format(
-            self.name,
-            dumps(documents),
-            dumps(params)
-        ) if self._is_transaction else None
 
         request = Request(
             method='delete',
             endpoint='/_api/document/{}'.format(self.name),
             params=params,
             data=documents,
-            command=command,
             write=self.name
         )
 
@@ -2281,25 +2232,16 @@ class StandardCollection(Collection):
         if limit is not None and limit != 0:
             data['limit'] = limit
 
-        command = 'db.{}.removeByExample({},{})'.format(
-            self.name,
-            dumps(filters),
-            dumps(data)
-        ) if self._is_transaction else None
-
         request = Request(
             method='put',
             endpoint='/_api/simple/remove-by-example',
             data=data,
-            command=command,
             write=self.name
         )
 
         def response_handler(resp):
             if not resp.is_success:
                 raise DocumentDeleteError(resp, request)
-            if self._is_transaction:
-                return resp.body
             return resp.body['deleted']
 
         return self._execute(request, response_handler)
@@ -2383,7 +2325,8 @@ class StandardCollection(Collection):
             method='post',
             endpoint='/_api/import',
             data=documents,
-            params=params
+            params=params,
+            write=self.name
         )
 
         def response_handler(resp):
@@ -2445,19 +2388,12 @@ class VertexCollection(Collection):
         """
         handle, body, headers = self._prep_from_doc(vertex, rev, check_rev)
 
-        command = 'gm._graph("{}").{}.document({})'.format(
-            self.graph,
-            self.name,
-            dumps(body)
-        ) if self._is_transaction else None
-
         request = Request(
             method='get',
             endpoint='/_api/gharial/{}/vertex/{}'.format(
                 self._graph, handle
             ),
             headers=headers,
-            command=command,
             read=self.name
         )
 
@@ -2468,8 +2404,6 @@ class VertexCollection(Collection):
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
-            if self._is_transaction:
-                return resp.body
             return resp.body['vertex']
 
         return self._execute(request, response_handler)
@@ -2497,13 +2431,6 @@ class VertexCollection(Collection):
         if sync is not None:
             params['waitForSync'] = sync
 
-        command = 'gm._graph("{}").{}.save({},{})'.format(
-            self.graph,
-            self.name,
-            dumps(vertex),
-            dumps(params)
-        ) if self._is_transaction else None
-
         request = Request(
             method='post',
             endpoint='/_api/gharial/{}/vertex/{}'.format(
@@ -2511,7 +2438,6 @@ class VertexCollection(Collection):
             ),
             data=vertex,
             params=params,
-            command=command,
             write=self.name
         )
 
@@ -2520,8 +2446,6 @@ class VertexCollection(Collection):
                 raise DocumentInsertError(resp, request)
             if silent is True:
                 return True
-            if self._is_transaction:
-                return resp.body
             return resp.body['vertex']
 
         return self._execute(request, response_handler)
@@ -2550,6 +2474,12 @@ class VertexCollection(Collection):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param return_old: Include body of the old document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_old: bool
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_new: bool
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2568,14 +2498,6 @@ class VertexCollection(Collection):
         if sync is not None:
             params['waitForSync'] = sync
 
-        command = 'gm._graph("{}").{}.update("{}",{},{})'.format(
-            self.graph,
-            self.name,
-            vertex_id,
-            dumps(vertex),
-            dumps(params)
-        ) if self._is_transaction else None
-
         request = Request(
             method='patch',
             endpoint='/_api/gharial/{}/vertex/{}'.format(
@@ -2584,7 +2506,6 @@ class VertexCollection(Collection):
             headers=headers,
             params=params,
             data=vertex,
-            command=command,
             write=self.name
         )
 
@@ -2595,8 +2516,6 @@ class VertexCollection(Collection):
                 raise DocumentUpdateError(resp, request)
             if silent is True:
                 return True
-            if self._is_transaction:
-                result = resp.body
             else:
                 result = resp.body['vertex']
             result['_old_rev'] = result.pop('_oldRev')
@@ -2630,14 +2549,6 @@ class VertexCollection(Collection):
         if sync is not None:
             params['waitForSync'] = sync
 
-        command = 'gm._graph("{}").{}.replace("{}",{},{})'.format(
-            self.graph,
-            self.name,
-            vertex_id,
-            dumps(vertex),
-            dumps(params)
-        ) if self._is_transaction else None
-
         request = Request(
             method='put',
             endpoint='/_api/gharial/{}/vertex/{}'.format(
@@ -2646,7 +2557,6 @@ class VertexCollection(Collection):
             headers=headers,
             params=params,
             data=vertex,
-            command=command,
             write=self.name
         )
 
@@ -2657,8 +2567,6 @@ class VertexCollection(Collection):
                 raise DocumentReplaceError(resp, request)
             if silent is True:
                 return True
-            if self._is_transaction:
-                result = resp.body
             else:
                 result = resp.body['vertex']
             result['_old_rev'] = result.pop('_oldRev')
@@ -2699,12 +2607,6 @@ class VertexCollection(Collection):
         handle, _, headers = self._prep_from_doc(vertex, rev, check_rev)
 
         params = {} if sync is None else {'waitForSync': sync}
-        command = 'gm._graph("{}").{}.remove("{}",{})'.format(
-            self.graph,
-            self.name,
-            handle,
-            dumps(params)
-        ) if self._is_transaction else None
 
         request = Request(
             method='delete',
@@ -2713,7 +2615,6 @@ class VertexCollection(Collection):
             ),
             params=params,
             headers=headers,
-            command=command,
             write=self.name
         )
 
@@ -2780,19 +2681,12 @@ class EdgeCollection(Collection):
         """
         handle, body, headers = self._prep_from_doc(edge, rev, check_rev)
 
-        command = 'gm._graph("{}").{}.document({})'.format(
-            self.graph,
-            self.name,
-            dumps(body)
-        ) if self._is_transaction else None
-
         request = Request(
             method='get',
             endpoint='/_api/gharial/{}/edge/{}'.format(
                 self._graph, handle
             ),
             headers=headers,
-            command=command,
             read=self.name
         )
 
@@ -2803,8 +2697,6 @@ class EdgeCollection(Collection):
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
-            if self._is_transaction:
-                return resp.body
             return resp.body['edge']
 
         return self._execute(request, response_handler)
@@ -2833,15 +2725,6 @@ class EdgeCollection(Collection):
         if sync is not None:
             params['waitForSync'] = sync
 
-        command = 'gm._graph("{}").{}.save("{}","{}",{},{})'.format(
-            self.graph,
-            self.name,
-            edge['_from'],
-            edge['_to'],
-            dumps(edge),
-            dumps(params)
-        ) if self._is_transaction else None
-
         request = Request(
             method='post',
             endpoint='/_api/gharial/{}/edge/{}'.format(
@@ -2849,7 +2732,6 @@ class EdgeCollection(Collection):
             ),
             data=edge,
             params=params,
-            command=command,
             write=self.name
         )
 
@@ -2858,8 +2740,6 @@ class EdgeCollection(Collection):
                 raise DocumentInsertError(resp, request)
             if silent is True:
                 return True
-            if self._is_transaction:
-                return resp.body
             return resp.body['edge']
 
         return self._execute(request, response_handler)
@@ -2902,14 +2782,6 @@ class EdgeCollection(Collection):
         if sync is not None:
             params['waitForSync'] = sync
 
-        command = 'gm._graph("{}").{}.update("{}",{},{})'.format(
-            self.graph,
-            self.name,
-            edge_id,
-            dumps(edge),
-            dumps(params)
-        ) if self._is_transaction else None
-
         request = Request(
             method='patch',
             endpoint='/_api/gharial/{}/edge/{}'.format(
@@ -2918,7 +2790,6 @@ class EdgeCollection(Collection):
             headers=headers,
             params=params,
             data=edge,
-            command=command,
             write=self.name
         )
 
@@ -2929,10 +2800,7 @@ class EdgeCollection(Collection):
                 raise DocumentUpdateError(resp, request)
             if silent is True:
                 return True
-            if self._is_transaction:
-                result = resp.body
-            else:
-                result = resp.body['edge']
+            result = resp.body['edge']
             result['_old_rev'] = result.pop('_oldRev')
             return result
 
@@ -2965,14 +2833,6 @@ class EdgeCollection(Collection):
         if sync is not None:
             params['waitForSync'] = sync
 
-        command = 'gm._graph("{}").{}.replace("{}",{},{})'.format(
-            self.graph,
-            self.name,
-            edge_id,
-            dumps(edge),
-            dumps(params)
-        ) if self._is_transaction else None
-
         request = Request(
             method='put',
             endpoint='/_api/gharial/{}/edge/{}'.format(
@@ -2981,7 +2841,6 @@ class EdgeCollection(Collection):
             headers=headers,
             params=params,
             data=edge,
-            command=command,
             write=self.name
         )
 
@@ -2992,10 +2851,7 @@ class EdgeCollection(Collection):
                 raise DocumentReplaceError(resp, request)
             if silent is True:
                 return True
-            if self._is_transaction:
-                result = resp.body
-            else:
-                result = resp.body['edge']
+            result = resp.body['edge']
             result['_old_rev'] = result.pop('_oldRev')
             return result
 
@@ -3034,12 +2890,6 @@ class EdgeCollection(Collection):
         handle, _, headers = self._prep_from_doc(edge, rev, check_rev)
 
         params = {} if sync is None else {'waitForSync': sync}
-        command = 'gm._graph("{}").{}.remove("{}",{})'.format(
-            self.graph,
-            self.name,
-            handle,
-            dumps(params)
-        ) if self._is_transaction else None
 
         request = Request(
             method='delete',
@@ -3048,7 +2898,6 @@ class EdgeCollection(Collection):
             ),
             params=params,
             headers=headers,
-            command=command,
             write=self.name
         )
 
@@ -3111,7 +2960,8 @@ class EdgeCollection(Collection):
         request = Request(
             method='get',
             endpoint='/_api/edges/{}'.format(self.name),
-            params=params
+            params=params,
+            read=self.name
         )
 
         def response_handler(resp):

@@ -3,9 +3,9 @@ import time
 from arango.executor import (
     AsyncExecutor,
     BatchExecutor,
-    TransactionExecutor
+    TransactionExecutor,
 )
-from arango.job import BatchJob, TransactionJob
+from arango.job import BatchJob
 
 
 class TestAsyncExecutor(AsyncExecutor):
@@ -43,25 +43,24 @@ class TestBatchExecutor(BatchExecutor):
 
 class TestTransactionExecutor(TransactionExecutor):
 
+    # noinspection PyMissingConstructor
     def __init__(self, connection):
-        super(TestTransactionExecutor, self).__init__(
-            connection=connection,
-            timeout=0,
-            sync=True,
-            return_result=True,
-            read=None,
-            write=None
-        )
+        self._conn = connection
 
     def execute(self, request, response_handler):
-        if request.command is None:
-            response = self._conn.send_request(request)
-            return response_handler(response)
+        if request.read is request.write is request.exclusive is None:
+            resp = self._conn.send_request(request)
+            return response_handler(resp)
 
-        self._committed = False
-        self._queue.clear()
-
-        job = TransactionJob(response_handler)
-        self._queue[job.id] = (request, job)
+        super(TestTransactionExecutor, self).__init__(
+            connection=self._conn,
+            sync=True,
+            allow_implicit=False,
+            lock_timeout=0,
+            read=request.read,
+            write=request.write,
+            exclusive=request.exclusive
+        )
+        result = TransactionExecutor.execute(self, request, response_handler)
         self.commit()
-        return job.result()
+        return result

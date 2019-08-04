@@ -15,6 +15,7 @@ from arango.exceptions import (
     EdgeDefinitionCreateError,
     EdgeDefinitionDeleteError,
     EdgeDefinitionReplaceError,
+    EdgeListError,
     GraphListError,
     GraphCreateError,
     GraphDeleteError,
@@ -22,11 +23,12 @@ from arango.exceptions import (
     GraphTraverseError,
     VertexCollectionCreateError,
     VertexCollectionDeleteError,
-    VertexCollectionListError,
-    EdgeListError)
+    VertexCollectionListError
+)
 from tests.helpers import (
     assert_raises,
     clean_doc,
+    empty_collection,
     extract,
     generate_col_name,
     generate_graph_name,
@@ -219,28 +221,6 @@ def test_edge_definition_management(db, graph, bad_graph):
     assert not graph.has_edge_collection(ecol_name)
     assert not db.has_collection(ecol_name)
 
-    ecol = graph.create_edge_definition(ecol_name, [], [])
-    assert graph.has_edge_definition(ecol_name)
-    assert graph.has_edge_collection(ecol_name)
-    assert db.has_collection(ecol_name)
-    assert isinstance(ecol, EdgeCollection)
-
-    ecol = graph.edge_collection(ecol_name)
-    assert ecol.name == ecol_name
-    assert ecol.name in repr(ecol)
-    assert ecol.graph == graph.name
-    assert {
-        'edge_collection': ecol_name,
-        'from_vertex_collections': [],
-        'to_vertex_collections': []
-    } in graph.edge_definitions()
-    assert ecol_name in extract('name', db.collections())
-
-    # Test create duplicate edge definition
-    with assert_raises(EdgeDefinitionCreateError) as err:
-        graph.create_edge_definition(ecol_name, [], [])
-    assert err.value.error_code == 1920
-
     # Test create edge definition with existing vertex collections
     fvcol_name = generate_col_name()
     tvcol_name = generate_col_name()
@@ -251,6 +231,8 @@ def test_edge_definition_management(db, graph, bad_graph):
         to_vertex_collections=[tvcol_name]
     )
     assert ecol.name == ecol_name
+    assert ecol.graph == graph.name
+    assert repr(ecol) == '<EdgeCollection {}>'.format(ecol.name)
     assert {
         'edge_collection': ecol_name,
         'from_vertex_collections': [fvcol_name],
@@ -261,6 +243,15 @@ def test_edge_definition_management(db, graph, bad_graph):
     vertex_collections = graph.vertex_collections()
     assert fvcol_name in vertex_collections
     assert tvcol_name in vertex_collections
+
+    # Test create duplicate edge definition
+    with assert_raises(EdgeDefinitionCreateError) as err:
+        graph.create_edge_definition(
+            edge_collection=ecol_name,
+            from_vertex_collections=[fvcol_name],
+            to_vertex_collections=[tvcol_name]
+        )
+    assert err.value.error_code == 1920
 
     # Test create edge definition with missing vertex collection
     bad_vcol_name = generate_col_name()
@@ -349,7 +340,7 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     result = fvcol.insert({})
     assert result['_key'] in fvcol
     assert len(fvcol) == 1
-    fvcol.truncate()
+    empty_collection(fvcol)
 
     # Test insert vertex with ID
     vertex_id = fvcol.name + '/' + 'foo'
@@ -357,7 +348,7 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     assert 'foo' in fvcol
     assert vertex_id in fvcol
     assert len(fvcol) == 1
-    fvcol.truncate()
+    empty_collection(fvcol)
 
     with assert_raises(DocumentParseError) as err:
         fvcol.insert({'_id': generate_col_name() + '/' + 'foo'})
@@ -591,7 +582,7 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
         assert fvcol[vertex] is None
     assert vertex not in fvcol
     assert len(fvcol) == 2
-    fvcol.truncate()
+    empty_collection(fvcol)
 
 
 def test_vertex_management_via_graph(graph, fvcol):
@@ -634,7 +625,7 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     result = ecol.insert({'_from': edge['_from'], '_to': edge['_to']})
     assert result['_key'] in ecol
     assert len(ecol) == 1
-    ecol.truncate()
+    empty_collection(ecol)
 
     # Test insert vertex with ID
     edge_id = ecol.name + '/' + 'foo'
@@ -646,7 +637,7 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     assert 'foo' in ecol
     assert edge_id in ecol
     assert len(ecol) == 1
-    ecol.truncate()
+    empty_collection(ecol)
 
     with assert_raises(DocumentParseError) as err:
         ecol.insert({
@@ -887,7 +878,7 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     if ecol.context != 'transaction':
         assert ecol[edge] is None
     assert edge not in ecol
-    ecol.truncate()
+    empty_collection(ecol)
 
 
 def test_vertex_edges(db, bad_db):
@@ -960,7 +951,7 @@ def test_edge_management_via_graph(graph, ecol, fvcol, fvdocs, tvcol, tvdocs):
         fvcol.insert(vertex)
     for vertex in tvdocs:
         tvcol.insert(vertex)
-    ecol.truncate()
+    empty_collection(ecol)
 
     # Get a random "from" vertex
     from_vertex = fvcol.random()

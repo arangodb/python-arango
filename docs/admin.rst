@@ -17,9 +17,6 @@ database.
     # Connect to "_system" database as root user.
     sys_db = client.db('_system', username='root', password='passwd')
 
-    # Check the server connection by sending a test GET request.
-    sys_db.ping()
-
     # Retrieve the server version.
     sys_db.version()
 

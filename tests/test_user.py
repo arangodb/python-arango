@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+import pytest
 from six import string_types
 
 from arango.exceptions import (
@@ -120,7 +121,10 @@ def test_user_management(sys_db, bad_db):
     assert sys_db.delete_user(username, ignore_missing=True) is False
 
 
-def test_user_change_password(client, sys_db):
+def test_user_change_password(client, sys_db, cluster):
+    if cluster:
+        pytest.skip('Not tested in a cluster setup')
+
     username = generate_username()
     password1 = generate_string()
     password2 = generate_string()
@@ -152,7 +156,10 @@ def test_user_change_password(client, sys_db):
     assert err.value.http_code == 401
 
 
-def test_user_create_with_new_database(client, sys_db):
+def test_user_create_with_new_database(client, sys_db, cluster):
+    if cluster:
+        pytest.skip('Not tested in a cluster setup')
+
     db_name = generate_db_name()
 
     username1 = generate_username()

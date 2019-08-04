@@ -249,6 +249,14 @@ class CollectionRotateJournalError(ArangoServerError):
     """Failed to rotate collection journal."""
 
 
+class CollectionRecalculateCountError(ArangoServerError):
+    """Failed to recalculate document count."""
+
+
+class CollectionResponsibleShardError(ArangoServerError):
+    """Failed to retrieve responsible shard."""
+
+
 #####################
 # Cursor Exceptions #
 #####################
@@ -623,16 +631,24 @@ class TaskDeleteError(ArangoServerError):
 ##########################
 
 
-class TransactionStateError(ArangoClientError):
-    """The transaction object was in bad state."""
-
-
-class TransactionJobResultError(ArangoClientError):
-    """Failed to retrieve transaction job result."""
-
-
 class TransactionExecuteError(ArangoServerError):
-    """Failed to execute transaction API request"""
+    """Failed to execute raw transaction."""
+
+
+class TransactionInitError(ArangoServerError):
+    """Failed to initialize transaction."""
+
+
+class TransactionStatusError(ArangoServerError):
+    """Failed to retrieve transaction status."""
+
+
+class TransactionCommitError(ArangoServerError):
+    """Failed to commit transaction."""
+
+
+class TransactionAbortError(ArangoServerError):
+    """Failed to abort transaction."""
 
 
 ###################
@@ -695,6 +711,26 @@ class ViewDeleteError(ArangoServerError):
 
 class ViewRenameError(ArangoServerError):
     """Failed to rename view."""
+
+
+#######################
+# Analyzer Exceptions #
+#######################
+
+class AnalyzerListError(ArangoServerError):
+    """Failed to retrieve analyzers."""
+
+
+class AnalyzerGetError(ArangoServerError):
+    """Failed to retrieve analyzer details."""
+
+
+class AnalyzerCreateError(ArangoServerError):
+    """Failed to create analyzer."""
+
+
+class AnalyzerDeleteError(ArangoServerError):
+    """Failed to delete analyzer."""
 
 
 #########################

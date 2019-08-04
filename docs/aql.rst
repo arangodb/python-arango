@@ -74,7 +74,7 @@ AQL queries are invoked from AQL API wrapper. Executing queries returns
     try:
         aql.kill('some_query_id')
     except AQLQueryKillError as err:
-        assert err.http_code == 400
+        assert err.http_code == 404
         assert err.error_code == 1591
         assert 'cannot kill query' in err.message
 
@@ -143,7 +143,7 @@ are not.
     aql.cache.properties()
 
     # Configure AQL query cache properties
-    aql.cache.configure(mode='demand', limit=10000)
+    aql.cache.configure(mode='demand', max_results=10000)
 
     # Clear results in AQL query cache.
     aql.cache.clear()

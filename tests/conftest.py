@@ -10,6 +10,7 @@ from tests.helpers import (
     generate_string,
     generate_username,
     generate_graph_name,
+    empty_collection
 )
 from tests.executors import (
     TestAsyncExecutor,
@@ -25,20 +26,21 @@ def pytest_addoption(parser):
     parser.addoption('--port', action='store', default='8529')
     parser.addoption('--passwd', action='store', default='passwd')
     parser.addoption("--complete", action="store_true")
+    parser.addoption("--cluster", action="store_true")
 
 
 # noinspection PyShadowingNames
 def pytest_configure(config):
-    client = ArangoClient(
-        host=config.getoption('host'),
-        port=config.getoption('port')
+    url = 'http://{}:{}'.format(
+        config.getoption('host'),
+        config.getoption('port')
     )
+    client = ArangoClient(hosts=[url, url, url])
     sys_db = client.db(
         name='_system',
         username='root',
         password=config.getoption('passwd')
     )
-
     # Create a user and non-system database for testing.
     username = generate_username()
     password = generate_string()
@@ -52,11 +54,11 @@ def pytest_configure(config):
             'password': password,
         }]
     )
-    sys_db.update_permission(
-        username=username,
-        permission='rw',
-        database=tst_db_name
-    )
+    # sys_db.update_permission(
+    #     username=username,
+    #     permission='rw',
+    #     database=tst_db_name
+    # )
     tst_db = client.db(tst_db_name, username, password)
     bad_db = client.db(bad_db_name, username, password)
 
@@ -68,8 +70,8 @@ def pytest_configure(config):
     geo_index = tst_col.add_geo_index(['loc'])
 
     # Create a legacy edge collection for testing.
-    lecol_name = generate_col_name()
-    tst_db.create_collection(lecol_name, edge=True)
+    icol_name = generate_col_name()
+    tst_db.create_collection(icol_name, edge=True)
 
     # Create test vertex & edge collections and graph.
     graph_name = generate_graph_name()
@@ -85,6 +87,7 @@ def pytest_configure(config):
         to_vertex_collections=[tvcol_name]
     )
 
+    # noinspection PyProtectedMember
     global_data.update({
         'client': client,
         'username': username,
@@ -94,11 +97,12 @@ def pytest_configure(config):
         'bad_db': bad_db,
         'geo_index': geo_index,
         'col_name': col_name,
-        'lecol_name': lecol_name,
+        'icol_name': icol_name,
         'graph_name': graph_name,
         'ecol_name': ecol_name,
         'fvcol_name': fvcol_name,
         'tvcol_name': tvcol_name,
+        'cluster': False
     })
 
 
@@ -141,6 +145,8 @@ def pytest_generate_tests(metafunc):
     tst_dbs = [tst_db]
     bad_dbs = [bad_db]
 
+    global_data['cluster'] = metafunc.config.getoption('cluster')
+
     if metafunc.config.getoption('complete'):
         tst = metafunc.module.__name__.split('.test_', 1)[-1]
         tst_conn = tst_db._conn
@@ -150,14 +156,20 @@ def pytest_generate_tests(metafunc):
             # Add test transaction databases
             tst_txn_db = StandardDatabase(tst_conn)
             tst_txn_db._executor = TestTransactionExecutor(tst_conn)
-            tst_txn_db._is_transaction = True
             tst_dbs.append(tst_txn_db)
 
             bad_txn_db = StandardDatabase(bad_conn)
             bad_txn_db._executor = TestTransactionExecutor(bad_conn)
             bad_dbs.append(bad_txn_db)
 
-        if tst not in {'async', 'batch', 'transaction', 'client', 'exception'}:
+        if tst not in {
+            'async',
+            'batch',
+            'transaction',
+            'client',
+            'exception',
+            'view'
+        }:
             # Add test async databases
             tst_async_db = StandardDatabase(tst_conn)
             tst_async_db._executor = TestAsyncExecutor(tst_conn)
@@ -207,9 +219,14 @@ def password():
 
 
 @pytest.fixture(autouse=False)
+def conn(db):
+    return getattr(db, '_conn')
+
+
+@pytest.fixture(autouse=False)
 def col(db):
     collection = db.collection(global_data['col_name'])
-    collection.truncate()
+    empty_collection(collection)
     return collection
 
 
@@ -224,9 +241,9 @@ def geo():
 
 
 @pytest.fixture(autouse=False)
-def lecol(db):
-    collection = db.collection(global_data['lecol_name'])
-    collection.truncate()
+def icol(db):
+    collection = db.collection(global_data['icol_name'])
+    empty_collection(collection)
     return collection
 
 
@@ -244,7 +261,7 @@ def bad_graph(bad_db):
 @pytest.fixture(autouse=False)
 def fvcol(graph):
     collection = graph.vertex_collection(global_data['fvcol_name'])
-    collection.truncate()
+    empty_collection(collection)
     return collection
 
 
@@ -252,7 +269,7 @@ def fvcol(graph):
 @pytest.fixture(autouse=False)
 def tvcol(graph):
     collection = graph.vertex_collection(global_data['tvcol_name'])
-    collection.truncate()
+    empty_collection(collection)
     return collection
 
 
@@ -266,7 +283,7 @@ def bad_fvcol(bad_graph):
 @pytest.fixture(autouse=False)
 def ecol(graph):
     collection = graph.edge_collection(global_data['ecol_name'])
-    collection.truncate()
+    empty_collection(collection)
     return collection
 
 
@@ -316,3 +333,8 @@ def edocs():
         {'_key': '3', '_from': '{}/6'.format(fv), '_to': '{}/2'.format(tv)},
         {'_key': '4', '_from': '{}/8'.format(fv), '_to': '{}/7'.format(tv)},
     ]
+
+
+@pytest.fixture(autouse=False)
+def cluster():
+    return global_data['cluster']

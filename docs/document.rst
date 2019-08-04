@@ -56,7 +56,7 @@ document in "friends" edge collection:
     {
         '_id': 'friends/001',
         '_key': '001',
-        '_rev': '_Wm3dyle--_',
+        '_rev': '_Wm3d4le--_',
         '_from': 'students/john',
         '_to': 'students/jane',
         'closeness': 9.5

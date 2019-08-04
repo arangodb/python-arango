@@ -1,5 +1,5 @@
-Write-Ahead Log
----------------
+Write-Ahead Log (WAL)
+---------------------
 
 **Write-Ahead Log (WAL)** is a set of append-only files recording all writes
 on ArangoDB server. It is typically used to perform data recovery after a crash
@@ -8,7 +8,7 @@ WAL operations can only be performed by admin users via ``_system`` database.
 
 **Example:**
 
-.. code-block::python
+.. code-block:: python
 
     from arango import ArangoClient
 

@@ -63,9 +63,6 @@ message, error code and HTTP request response details.
         request.headers       # Request headers
         request.params        # URL parameters
         request.data          # Request payload
-        request.read          # Read collections (used for transactions only)
-        request.write         # Write collections (used for transactions only)
-        request.command       # ArangoSh command (used for transactions only)
 
 See :ref:`Response` and :ref:`Request` for reference.
 

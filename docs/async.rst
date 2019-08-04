@@ -1,12 +1,12 @@
-Async Execution
----------------
+Asynchronous Execution
+----------------------
 
-Python-arango supports **async execution**, where it sends requests to ArangoDB
-server in fire-and-forget style (HTTP 202 returned). The server places incoming
-requests in its queue and processes them in the background. The results can be
-retrieved from the server later via :ref:`AsyncJob` objects.
+In **asynchronous execution**, python-arango sends API requests to ArangoDB in
+fire-and-forget style. The server processes the requests in the background, and
+the results can be retrieved once available via :ref:`AsyncJob` objects.
 
-**Example:**
+**Example
+:**
 
 .. testcode::
 

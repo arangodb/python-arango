@@ -1,8 +1,8 @@
 Logging
 -------
 
-In order to see full HTTP request response details, you can modify logger
-settings for Requests_ library, which python-arango uses under the hood:
+To see full HTTP request and response details, you can modify the logger
+settings for the Requests_ library, which python-arango uses under the hood:
 
 .. _Requests: https://github.com/requests/requests
 
@@ -25,9 +25,5 @@ settings for Requests_ library, which python-arango uses under the hood:
     requests_log.setLevel(logging.DEBUG)
     requests_log.propagate = True
 
-.. note::
-    If python-arango's default HTTP client is overridden with a custom one,
-    the code snippet above may not work as expected.
-
-Alternatively, if you want to use your own loggers, see :doc:`http` for an
-example.
+If python-arango's default HTTP client is overridden, the code snippet above
+may not work as expected. See :doc:`http` for more information.

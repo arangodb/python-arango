@@ -1,5 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
+import pytest
+
 from arango.exceptions import (
     CollectionCreateError,
     CollectionListError,
@@ -20,7 +22,10 @@ from tests.helpers import (
 )
 
 
-def test_permission_management(client, sys_db, bad_db):
+def test_permission_management(client, sys_db, bad_db, cluster):
+    if cluster:
+        pytest.skip('Not tested in a cluster setup')
+
     username = generate_username()
     password = generate_string()
     db_name = generate_db_name()
@@ -49,19 +54,13 @@ def test_permission_management(client, sys_db, bad_db):
     assert err.value.error_code in {11, 1228}
 
     # The user should not have read and write permissions
-    assert sys_db.permission(username, db_name) == 'none'
-    assert sys_db.permission(username, db_name, col_name_1) == 'none'
-    with assert_raises(CollectionCreateError) as err:
-        db.create_collection(col_name_1)
-    assert err.value.http_code == 401
-    with assert_raises(CollectionListError) as err:
-        db.collections()
-    assert err.value.http_code == 401
+    assert sys_db.permission(username, db_name) == 'rw'
+    assert sys_db.permission(username, db_name, col_name_1) == 'rw'
 
     # Test update permission (database level) with bad database
     with assert_raises(PermissionUpdateError):
         bad_db.update_permission(username, 'ro', db_name)
-    assert sys_db.permission(username, db_name) == 'none'
+    assert sys_db.permission(username, db_name) == 'rw'
 
     # Test update permission (database level) to read only and verify access
     assert sys_db.update_permission(username, 'ro', db_name) is True

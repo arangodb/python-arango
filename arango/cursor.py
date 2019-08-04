@@ -20,10 +20,6 @@ class Cursor(object):
     are *stateful* as they store the fetched items in-memory. They must not be
     shared across threads without proper locking mechanism.
 
-    In transactions, the entire result set is loaded into the cursor. Therefore
-    you must be mindful of client-side memory capacity when running queries
-    that can potentially return a large result set.
-
     :param connection: HTTP connection.
     :type connection: arango.connection.Connection
     :param init_data: Cursor initialization data.
@@ -56,17 +52,7 @@ class Cursor(object):
         self._stats = None
         self._profile = None
         self._warnings = None
-
-        if isinstance(init_data, list):
-            # In transactions, cursor initialization data is a list containing
-            # the entire result set.
-            self._has_more = False
-            self._batch.extend(init_data)
-            self._count = len(init_data)
-        else:
-            # In other execution contexts, cursor initialization data is a dict
-            # containing cursor metadata (e.g. ID, parameters).
-            self._update(init_data)
+        self._update(init_data)
 
     def __iter__(self):
         return self
@@ -285,7 +271,7 @@ class Cursor(object):
         :return: True if cursor was closed successfully, False if cursor was
             missing on the server and **ignore_missing** was set to True, None
             if there are no cursors to close server-side (e.g. result set is
-            smaller than the batch size, or in transactions).
+            smaller than the batch size).
         :rtype: bool | None
         :raise arango.exceptions.CursorCloseError: If operation fails.
         :raise arango.exceptions.CursorStateError: If cursor ID is not set.

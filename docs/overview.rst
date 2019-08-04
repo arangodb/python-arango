@@ -8,7 +8,7 @@ Here is an example showing how **python-arango** client can be used:
     from arango import ArangoClient
 
     # Initialize the ArangoDB client.
-    client = ArangoClient(protocol='http', host='localhost', port=8529)
+    client = ArangoClient(hosts='http://localhost:8529')
 
     # Connect to "_system" database as root user.
     # This returns an API wrapper for "_system" database.

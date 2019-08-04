@@ -1,14 +1,13 @@
 Foxx
 ----
 
-Python-arango supports **Foxx**, a microservice framework which lets you define
-custom HTTP endpoints to extend ArangoDB's REST API. For more information, refer
-to `ArangoDB manual`_.
+Python-arango provides support for **Foxx**, a microservice framework which
+lets you define custom HTTP endpoints to extend ArangoDB's REST API. For more
+information, refer to `ArangoDB manual`_.
 
 .. _ArangoDB manual: https://docs.arangodb.com
 
 **Example:**
-
 
 .. testcode::
 

@@ -21,6 +21,10 @@ from arango.executor import (
 )
 from arango.collection import StandardCollection
 from arango.exceptions import (
+    AnalyzerCreateError,
+    AnalyzerDeleteError,
+    AnalyzerGetError,
+    AnalyzerListError,
     AsyncJobClearError,
     AsyncJobListError,
     CollectionCreateError,
@@ -37,7 +41,6 @@ from arango.exceptions import (
     PermissionGetError,
     PermissionResetError,
     PermissionUpdateError,
-    ServerConnectionError,
     ServerEndpointsError,
     ServerEngineError,
     ServerDetailsError,
@@ -381,37 +384,13 @@ class Database(APIWrapper):
         """
         request = Request(
             method='get',
-            endpoint='/_api/engine',
-            command='db._engine()'
+            endpoint='/_api/engine'
         )
 
         def response_handler(resp):
             if not resp.is_success:
                 raise ServerEngineError(resp, request)
             return resp.body
-
-        return self._execute(request, response_handler)
-
-    def ping(self):
-        """Ping the ArangoDB server by sending a test request.
-
-        :return: Response code from server.
-        :rtype: int
-        :raise arango.exceptions.ServerConnectionError: If ping fails.
-        """
-        request = Request(
-            method='get',
-            endpoint='/_api/collection',
-        )
-
-        def response_handler(resp):
-            code = resp.status_code
-            if code in {401, 403}:
-                raise ServerConnectionError('bad username and/or password')
-            if not resp.is_success:  # pragma: no cover
-                raise ServerConnectionError(
-                    resp.error_message or 'bad server response')
-            return code
 
         return self._execute(request, response_handler)
 
@@ -672,7 +651,7 @@ class Database(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise ServerReloadRoutingError(resp, request)
-            return 'error' not in resp.body
+            return True
 
         return self._execute(request, response_handler)
 
@@ -849,7 +828,9 @@ class Database(APIWrapper):
                           replication_factor=None,
                           shard_like=None,
                           sync_replication=None,
-                          enforce_replication_factor=None):
+                          enforce_replication_factor=None,
+                          sharding_strategy=None,
+                          smart_join_attribute=None):
         """Create a new collection.
 
         :param name: Collection name.
@@ -917,6 +898,21 @@ class Database(APIWrapper):
         :param enforce_replication_factor: Check if there are enough replicas
             available at creation time, or halt the operation.
         :type enforce_replication_factor: bool
+        :param sharding_strategy: Sharding strategy. Available for ArangoDB
+            version 3.4 and up only. Possible values are "community-compat",
+            "enterprise-compat", "enterprise-smart-edge-compat", "hash" and
+            "enterprise-hash-smart-edge". Refer to ArangoDB documentation for
+            more details on each value.
+        :type sharding_strategy: str | unicode
+        :param smart_join_attribute: Attribute of the collection which must
+            contain the shard key value of the smart join collection. The shard
+            key for the documents must contain the value of this attribute,
+            followed by a colon ":" and the primary key of the document.
+            Requires parameter **shard_like** to be set to the name of another
+            collection, and parameter **shard_fields** to be set to a single
+            shard key attribute, with another colon ":" at the end. Available
+            only for enterprise version of ArangoDB.
+        :type smart_join_attribute: str | unicode
         :return: Standard collection API wrapper.
         :rtype: arango.collection.StandardCollection
         :raise arango.exceptions.CollectionCreateError: If create fails.
@@ -948,6 +944,10 @@ class Database(APIWrapper):
             data['replicationFactor'] = replication_factor
         if shard_like is not None:
             data['distributeShardsLike'] = shard_like
+        if sharding_strategy is not None:
+            data['shardingStrategy'] = sharding_strategy
+        if smart_join_attribute is not None:
+            data['smartJoinAttribute'] = smart_join_attribute
 
         params = {}
         if sync_replication is not None:
@@ -2035,9 +2035,11 @@ class Database(APIWrapper):
 
         :param name: View name.
         :type name: str | unicode
+        :param ignore_missing: Do not raise an exception on missing view.
+        :type ignore_missing: bool
         :return: True if view was deleted successfully, False if view was not
             found and **ignore_missing** was set to True.
-        :rtype: dict
+        :rtype: bool
         :raise arango.exceptions.ViewDeleteError: If delete fails.
         """
         request = Request(
@@ -2059,6 +2061,8 @@ class Database(APIWrapper):
 
         :param name: View name.
         :type name: str | unicode
+        :param new_name: New view name.
+        :type new_name: str | unicode
         :return: View details.
         :rtype: dict
         :raise arango.exceptions.ViewRenameError: If delete fails.
@@ -2073,6 +2077,204 @@ class Database(APIWrapper):
             if resp.is_success:
                 return True
             raise ViewRenameError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    ################################
+    # ArangoSearch View Management #
+    ################################
+
+    def create_arangosearch_view(self, name, properties=None):
+        """Create an ArangoSearch view.
+
+        :param name: View name.
+        :type name: str | unicode
+        :param properties: View properties.
+        :type properties: dict
+        :return: View details.
+        :rtype: dict
+        :raise arango.exceptions.ViewCreateError: If create fails.
+        """
+        data = {'name': name, 'type': 'arangosearch'}
+
+        if properties is not None:
+            data.update(properties)
+
+        request = Request(
+            method='post',
+            endpoint='/_api/view#ArangoSearch',
+            data=data
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                return resp.body
+            raise ViewCreateError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def update_arangosearch_view(self, name, properties):
+        """Update an ArangoSearch view.
+
+        :param name: View name.
+        :type name: str | unicode
+        :param properties: View properties.
+        :type properties: dict
+        :return: View details.
+        :rtype: dict
+        :raise arango.exceptions.ViewUpdateError: If update fails.
+        """
+        request = Request(
+            method='patch',
+            endpoint='/_api/view/{}/properties#ArangoSearch'.format(name),
+            data=properties
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                return resp.body
+            raise ViewUpdateError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def replace_arangosearch_view(self, name, properties):
+        """Replace an ArangoSearch view.
+
+        :param name: View name.
+        :type name: str | unicode
+        :param properties: View properties.
+        :type properties: dict
+        :return: View details.
+        :rtype: dict
+        :raise arango.exceptions.ViewReplaceError: If replace fails.
+        """
+        request = Request(
+            method='put',
+            endpoint='/_api/view/{}/properties#ArangoSearch'.format(name),
+            data=properties
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                return resp.body
+            raise ViewReplaceError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    #######################
+    # Analyzer Management #
+    #######################
+
+    def analyzers(self):
+        """Return list of analyzers.
+
+        :return: List of analyzers.
+        :rtype: [dict]
+        :raise arango.exceptions.AnalyzerListError: If retrieval fails.
+        """
+        request = Request(
+            method='get',
+            endpoint='/_api/analyzer'
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                resp.body.pop('error')
+                resp.body.pop('code')
+                return resp.body['result']
+            raise AnalyzerListError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def analyzer(self, name):
+        """Return analyzer details.
+
+        :param name: Analyzer name.
+        :type name: str | unicode
+        :return: Analyzer details.
+        :rtype: dict
+        :raise arango.exceptions.AnalyzerGetError: If retrieval fails.
+        """
+        request = Request(
+            method='get',
+            endpoint='/_api/analyzer/{}'.format(name)
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                resp.body.pop('error')
+                resp.body.pop('code')
+                return resp.body
+            raise AnalyzerGetError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def create_analyzer(self,
+                        name,
+                        analyzer_type,
+                        properties=None,
+                        features=None):
+        """Create an analyzer.
+
+        :param name: Analyzer name.
+        :type name: str | unicode
+        :param analyzer_type: Analyzer type.
+        :type analyzer_type: str | unicode
+        :param properties: Analyzer properties.
+        :type properties: dict
+        :param features: Analyzer features.
+        :type features: list
+        :return: Analyzer details.
+        :rtype: dict
+        :raise arango.exceptions.AnalyzerCreateError: If create fails.
+        """
+        data = {'name': name, 'type': analyzer_type}
+
+        if properties is not None:
+            data['properties'] = properties
+
+        if features is not None:
+            data['features'] = features
+
+        request = Request(
+            method='post',
+            endpoint='/_api/analyzer',
+            data=data
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                return resp.body
+            raise AnalyzerCreateError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def delete_analyzer(self, name, force=False, ignore_missing=False):
+        """Delete an analyzer.
+
+        :param name: Analyzer name.
+        :type name: str | unicode
+        :param force: Remove the analyzer configuration even if in use.
+        :type force: bool
+        :param ignore_missing: Do not raise an exception on missing analyzer.
+        :type ignore_missing: bool
+        :return: True if analyzer was deleted successfully, False if analyzer
+            was not found and **ignore_missing** was set to True.
+        :rtype: bool
+        :raise arango.exceptions.AnalyzerDeleteError: If delete fails.
+        """
+        request = Request(
+            method='delete',
+            endpoint='/_api/analyzer/{}'.format(name),
+            params={'force': force}
+        )
+
+        def response_handler(resp):
+            if resp.error_code in {1202, 404} and ignore_missing:
+                return False
+            if resp.is_success:
+                return True
+            raise AnalyzerDeleteError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -2101,7 +2303,7 @@ class StandardDatabase(Database):
             results from server once available. If set to False, API executions
             return None and no results are stored on server.
         :type return_result: bool
-        :return: Database API wrapper built specifically for async execution.
+        :return: Database API wrapper object specifically for async execution.
         :rtype: arango.database.AsyncDatabase
         """
         return AsyncDatabase(self._conn, return_result)
@@ -2114,46 +2316,54 @@ class StandardDatabase(Database):
             commit. If set to False, API executions return None and no results
             are tracked client-side.
         :type return_result: bool
-        :return: Database API wrapper built specifically for batch execution.
+        :return: Database API wrapper object specifically for batch execution.
         :rtype: arango.database.BatchDatabase
         """
         return BatchDatabase(self._conn, return_result)
 
     def begin_transaction(self,
-                          return_result=True,
-                          timeout=None,
-                          sync=None,
                           read=None,
-                          write=None):
-        """Begin transaction.
+                          write=None,
+                          exclusive=None,
+                          sync=None,
+                          allow_implicit=None,
+                          lock_timeout=None,
+                          max_size=None):
+        """Begin a transaction.
 
-        :param return_result: If set to True, API executions return instances
-            of :class:`arango.job.TransactionJob` that are populated with
-            results on commit. If set to False, API executions return None and
-            no results are tracked client-side.
-        :type return_result: bool
-        :param read: Names of collections read during transaction. If not
-            specified, they are added automatically as jobs are queued.
-        :type read: [str | unicode]
-        :param write: Names of collections written to during transaction.
-            If not specified, they are added automatically as jobs are queued.
-        :type write: [str | unicode]
-        :param timeout: Timeout for waiting on collection locks. If set to 0,
-            ArangoDB server waits indefinitely. If not set, system default
-            value is used.
-        :type timeout: int
-        :param sync: Block until the transaction is synchronized to disk.
+        :param read: Name(s) of collections read during transaction. Read-only
+            collections are added lazily but should be declared if possible to
+            avoid deadlocks.
+        :type read: str | unicode | [str | unicode]
+        :param write: Name(s) of collections written to during transaction with
+            shared access.
+        :type write: str | unicode | [str | unicode]
+        :param exclusive: Name(s) of collections written to during transaction
+            with exclusive access.
+        :type exclusive: str | unicode | [str | unicode]
+        :param sync: Block until operation is synchronized to disk.
         :type sync: bool
-        :return: Database API wrapper built specifically for transactions.
+        :param allow_implicit: Allow reading from undeclared collections.
+        :type allow_implicit: bool
+        :param lock_timeout: Timeout for waiting on collection locks. If not
+            given, a default value is used. Setting it to 0 disables the
+            timeout.
+        :type lock_timeout: int
+        :param max_size: Max transaction size in bytes. Applicable to RocksDB
+            storage engine only.
+        :type max_size:
+        :return: Database API wrapper object specifically for transactions.
         :rtype: arango.database.TransactionDatabase
         """
         return TransactionDatabase(
             connection=self._conn,
-            return_result=return_result,
             read=read,
             write=write,
-            timeout=timeout,
-            sync=sync
+            exclusive=exclusive,
+            sync=sync,
+            allow_implicit=allow_implicit,
+            lock_timeout=lock_timeout,
+            max_size=max_size
         )
 
 
@@ -2244,67 +2454,86 @@ class TransactionDatabase(Database):
 
     :param connection: HTTP connection.
     :type connection: arango.connection.Connection
-    :param return_result: If set to True, API executions return instances of
-        :class:`arango.job.TransactionJob` that are populated with results on
-        commit. If set to False, API executions return None and no results are
-        tracked client-side.
-    :type return_result: bool
-    :param read: Names of collections read during transaction.
-    :type read: [str | unicode]
-    :param write: Names of collections written to during transaction.
-    :type write: [str | unicode]
-    :param timeout: Timeout for waiting on collection locks. If set to 0, the
-        ArangoDB server waits indefinitely. If not set, system default value
-        is used.
-    :type timeout: int
+    :param read: Name(s) of collections read during transaction. Read-only
+        collections are added lazily but should be declared if possible to
+        avoid deadlocks.
+    :type read: str | unicode | [str | unicode]
+    :param write: Name(s) of collections written to during transaction with
+        shared access.
+    :type write: str | unicode | [str | unicode]
+    :param exclusive: Name(s) of collections written to during transaction
+        with exclusive access.
+    :type exclusive: str | unicode | [str | unicode]
     :param sync: Block until operation is synchronized to disk.
     :type sync: bool
+    :param allow_implicit: Allow reading from undeclared collections.
+    :type allow_implicit: bool
+    :param lock_timeout: Timeout for waiting on collection locks. If not given,
+        a default value is used. Setting it to 0 disables the timeout.
+    :type lock_timeout: int
+    :param max_size: Max transaction size in bytes. Applicable to RocksDB
+        storage engine only.
+    :type max_size: int
     """
 
-    def __init__(self, connection, return_result, read, write, timeout, sync):
+    def __init__(self,
+                 connection,
+                 read=None,
+                 write=None,
+                 exclusive=None,
+                 sync=None,
+                 allow_implicit=None,
+                 lock_timeout=None,
+                 max_size=None):
         super(TransactionDatabase, self).__init__(
             connection=connection,
             executor=TransactionExecutor(
                 connection=connection,
-                return_result=return_result,
                 read=read,
                 write=write,
-                timeout=timeout,
-                sync=sync
+                exclusive=exclusive,
+                sync=sync,
+                allow_implicit=allow_implicit,
+                lock_timeout=lock_timeout,
+                max_size=max_size
             )
         )
 
     def __repr__(self):
         return '<TransactionDatabase {}>'.format(self.name)
 
-    def __enter__(self):
-        return self
+    @property
+    def transaction_id(self):
+        """Return the transaction ID.
 
-    def __exit__(self, exception, *_):
-        if exception is None:
-            self._executor.commit()
-
-    def queued_jobs(self):
-        """Return the queued transaction jobs.
-
-        :return: Queued transaction jobs, or None if **return_result** was set
-            to False during initialization.
-        :rtype: [arango.job.TransactionJob] | None
+        :return: Transaction ID.
+        :rtype: str | unicode
         """
-        return self._executor.jobs
+        return self._executor.id
 
-    def commit(self):
-        """Execute the queued requests in a single transaction API request.
+    def transaction_status(self):
+        """Return the transaction status.
 
-        If **return_result** parameter was set to True during initialization,
-        :class:`arango.job.TransactionJob` instances are populated with
-        results.
+        :return: Transaction status.
+        :rtype: str | unicode
+        :raise arango.exceptions.TransactionStatusError: If retrieval fails.
+        """
+        return self._executor.status()
 
-        :return: Transaction jobs, or None if **return_result** parameter was
-            set to False during initialization.
-        :rtype: [arango.job.TransactionJob] | None
-        :raise arango.exceptions.TransactionStateError: If the transaction was
-            already committed.
-        :raise arango.exceptions.TransactionExecuteError: If commit fails.
+    def commit_transaction(self):
+        """Commit the transaction.
+
+        :return: True if commit was successful.
+        :rtype: bool
+        :raise arango.exceptions.TransactionCommitError: If commit fails.
         """
         return self._executor.commit()
+
+    def abort_transaction(self):
+        """Abort the transaction.
+
+        :return: True if the abort operation was successful.
+        :rtype: bool
+        :raise arango.exceptions.TransactionAbortError: If abort fails.
+        """
+        return self._executor.abort()

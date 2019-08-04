@@ -1,5 +1,5 @@
-Views
-------
+Views and ArangoSearch
+----------------------
 
 Python-arango supports **view** management. For more information on view
 properties, refer to `ArangoDB manual`_.
@@ -54,5 +54,43 @@ properties, refer to `ArangoDB manual`_.
 
     # Delete a view.
     db.delete_view('bar')
+
+
+Python-arango also supports **ArangoSearch** views.
+
+**Example:**
+
+.. testcode::
+
+    from arango import ArangoClient
+
+    # Initialize the ArangoDB client.
+    client = ArangoClient()
+
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Create an ArangoSearch view.
+    db.create_arangosearch_view(
+        name='arangosearch_view',
+        properties={'cleanupIntervalStep': 0}
+    )
+
+    # Partially update an ArangoSearch view.
+    db.update_arangosearch_view(
+        name='arangosearch_view',
+        properties={'cleanupIntervalStep': 1000}
+    )
+
+    # Replace an ArangoSearch view.
+    db.replace_arangosearch_view(
+        name='arangosearch_view',
+        properties={'cleanupIntervalStep': 2000}
+    )
+
+    # ArangoSearch views can be retrieved or deleted using regular view API
+    db.view('arangosearch_view')
+    db.delete_view('arangosearch_view')
+
 
 Refer to :ref:`StandardDatabase` class for API specification.

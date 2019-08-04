@@ -1,7 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-from json import dumps
-
 __all__ = ['AQL', 'AQLQueryCache']
 
 from arango.api import APIWrapper
@@ -42,7 +40,7 @@ class AQL(APIWrapper):
         return '<AQL in {}>'.format(self._conn.db_name)
 
     # noinspection PyMethodMayBeStatic
-    def _format_tracking(self, body):
+    def _format_tracking_properties(self, body):
         """Format the tracking properties.
 
         :param body: Response body.
@@ -237,10 +235,10 @@ class AQL(APIWrapper):
             enterprise version of ArangoDB.
         :type satellite_sync_wait: int | float
         :param read_collections: Names of collections read during query
-            execution. Required for :doc:`transactions <transaction>`.
+            execution. This parameter is deprecated.
         :type read_collections: [str | unicode]
         :param write_collections: Names of collections written to during query
-            execution. Required for :doc:`transactions <transaction>`.
+            execution. This parameter is deprecated.
         :type write_collections: [str | unicode]
         :param stream: If set to True, query is executed in streaming fashion:
             query result is not stored server-side but calculated on the fly.
@@ -310,17 +308,10 @@ class AQL(APIWrapper):
             data['options'] = options
         data.update(options)
 
-        command = 'db._query({}, {}, {}).toArray()'.format(
-            dumps(query),
-            dumps(bind_vars),
-            dumps(data),
-        ) if self._is_transaction else None
-
         request = Request(
             method='post',
             endpoint='/_api/cursor',
             data=data,
-            command=command,
             read=read_collections,
             write=write_collections
         )
@@ -425,7 +416,7 @@ class AQL(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise AQLQueryTrackingGetError(resp, request)
-            return self._format_tracking(resp.body)
+            return self._format_tracking_properties(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -465,7 +456,7 @@ class AQL(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise AQLQueryTrackingSetError(resp, request)
-            return self._format_tracking(resp.body)
+            return self._format_tracking_properties(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -563,6 +554,28 @@ class AQLQueryCache(APIWrapper):
     def __repr__(self):
         return '<AQLQueryCache in {}>'.format(self._conn.db_name)
 
+    # noinspection PyMethodMayBeStatic
+    def _format_cache_properties(self, body):
+        """Format the query cache properties.
+
+        :param body: Response body.
+        :type body: dict
+        :return: Formatted body.
+        :rtype: dict
+        """
+        body.pop('code', None)
+        body.pop('error', None)
+
+        if 'maxResults' in body:
+            body['max_results'] = body.pop('maxResults')
+        if 'maxResultsSize' in body:
+            body['max_results_size'] = body.pop('maxResultsSize')
+        if 'maxEntrySize' in body:
+            body['max_entry_size'] = body.pop('maxEntrySize')
+        if 'includeSystem' in body:
+            body['include_system'] = body.pop('includeSystem')
+        return body
+
     def properties(self):
         """Return the query cache properties.
 
@@ -578,21 +591,32 @@ class AQLQueryCache(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise AQLCachePropertiesError(resp, request)
-            return {
-                'mode': resp.body['mode'],
-                'limit': resp.body['maxResults']
-            }
+            return self._format_cache_properties(resp.body)
 
         return self._execute(request, response_handler)
 
-    def configure(self, mode=None, limit=None):
+    def configure(self,
+                  mode=None,
+                  max_results=None,
+                  max_results_size=None,
+                  max_entry_size=None,
+                  include_system=None):
         """Configure the query cache properties.
 
         :param mode: Operation mode. Allowed values are "off", "on" and
             "demand".
         :type mode: str | unicode
-        :param limit: Max number of query results to be stored.
-        :type limit: int
+        :param max_results: Max number of query results stored per
+            database-specific cache.
+        :type max_results: int
+        :param max_results_size: Max cumulative size of query results stored
+            per database-specific cache.
+        :type max_results_size: int
+        :param max_entry_size: Max entry size of each query result stored per
+            database-specific cache.
+        :type max_entry_size: int
+        :param include_system: Store results of queries in system collections.
+        :type include_system: bool
         :return: Query cache properties.
         :rtype: dict
         :raise arango.exceptions.AQLCacheConfigureError: If operation fails.
@@ -600,8 +624,14 @@ class AQLQueryCache(APIWrapper):
         data = {}
         if mode is not None:
             data['mode'] = mode
-        if limit is not None:
-            data['maxResults'] = limit
+        if max_results is not None:
+            data['maxResults'] = max_results
+        if max_results_size is not None:
+            data['maxResultsSize'] = max_results_size
+        if max_entry_size is not None:
+            data['maxEntrySize'] = max_entry_size
+        if include_system is not None:
+            data['includeSystem'] = include_system
 
         request = Request(
             method='put',
@@ -612,10 +642,7 @@ class AQLQueryCache(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise AQLCacheConfigureError(resp, request)
-            return {
-                'mode': resp.body['mode'],
-                'limit': resp.body['maxResults']
-            }
+            return self._format_cache_properties(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -642,7 +669,7 @@ class AQLQueryCache(APIWrapper):
         """Clear the query cache.
 
         :return: True if query cache was cleared successfully.
-        :rtype: dict
+        :rtype: bool
         :raise arango.exceptions.AQLCacheClearError: If operation fails.
         """
         request = Request(

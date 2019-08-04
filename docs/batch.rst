@@ -1,9 +1,9 @@
 Batch Execution
 ---------------
 
-Python-arango supports **batch execution**. Requests to ArangoDB server are
-placed in client-side in-memory queue, and committed together in a single HTTP
-call. After the commit, results can be retrieved from :ref:`BatchJob` objects.
+In **batch execution**, requests to ArangoDB server are stored in client-side
+in-memory queue, and committed together in a single HTTP call. After the commit,
+results can be retrieved later from :ref:`BatchJob` objects.
 
 **Example:**
 

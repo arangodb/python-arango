@@ -15,7 +15,21 @@ class HTTPClient(object):  # pragma: no cover
     __metaclass__ = ABCMeta
 
     @abstractmethod
+    def create_session(self, host):
+        """Return a new requests session given the host URL.
+
+        This method must be overridden by the user.
+
+        :param host: ArangoDB host URL.
+        :type host: str | unicode
+        :returns: Requests session object.
+        :rtype: requests.Session
+        """
+        raise NotImplementedError
+
+    @abstractmethod
     def send_request(self,
+                     session,
                      method,
                      url,
                      headers=None,
@@ -26,6 +40,8 @@ class HTTPClient(object):  # pragma: no cover
 
         This method must be overridden by the user.
 
+        :param session: Requests session object.
+        :type session: requests.Session
         :param method: HTTP method in lowercase (e.g. "post").
         :type method: str | unicode
         :param url: Request URL.
@@ -47,10 +63,18 @@ class HTTPClient(object):  # pragma: no cover
 class DefaultHTTPClient(HTTPClient):
     """Default HTTP client implementation."""
 
-    def __init__(self):
-        self._session = requests.Session()
+    def create_session(self, host):
+        """Create and return a new session/connection.
+
+        :param host: ArangoDB host URL.
+        :type host: str | unicode
+        :returns: requests session object
+        :rtype: requests.Session
+        """
+        return requests.Session()
 
     def send_request(self,
+                     session,
                      method,
                      url,
                      params=None,
@@ -59,6 +83,8 @@ class DefaultHTTPClient(HTTPClient):
                      auth=None):
         """Send an HTTP request.
 
+        :param session: Requests session object.
+        :type session: requests.Session
         :param method: HTTP method in lowercase (e.g. "post").
         :type method: str | unicode
         :param url: Request URL.
@@ -74,7 +100,7 @@ class DefaultHTTPClient(HTTPClient):
         :returns: HTTP response.
         :rtype: arango.response.Response
         """
-        raw_resp = self._session.request(
+        response = session.request(
             method=method,
             url=url,
             params=params,
@@ -83,10 +109,10 @@ class DefaultHTTPClient(HTTPClient):
             auth=auth,
         )
         return Response(
-            method=raw_resp.request.method,
-            url=raw_resp.url,
-            headers=raw_resp.headers,
-            status_code=raw_resp.status_code,
-            status_text=raw_resp.reason,
-            raw_body=raw_resp.text,
+            method=response.request.method,
+            url=response.url,
+            headers=response.headers,
+            status_code=response.status_code,
+            status_text=response.reason,
+            raw_body=response.text,
         )

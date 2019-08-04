@@ -22,11 +22,11 @@
     :target: https://coveralls.io/github/joowani/python-arango?branch=master
     :alt: Test Coverage
 
-.. image:: https://img.shields.io/github/issues/joowani/python-arango.svg   
+.. image:: https://img.shields.io/github/issues/joowani/python-arango.svg
     :target: https://github.com/joowani/python-arango/issues
     :alt: Issues Open
 
-.. image:: https://img.shields.io/badge/license-MIT-blue.svg   
+.. image:: https://img.shields.io/badge/license-MIT-blue.svg
     :target: https://raw.githubusercontent.com/joowani/python-arango/master/LICENSE
     :alt: MIT License
 
@@ -37,23 +37,25 @@ Welcome to the GitHub page for **python-arango**, a Python driver for ArangoDB_.
 Announcements
 =============
 
-- Python-arango version `4.0.0`_ is now out!
-- Please see the releases_ page for latest updates.
+- Python-arango version `5.0.0`_ is finally up! This release supports ArangoDB
+  version 3.5+ only. It also breaks backward-compatibility and you must make
+  changes in your application code. Please see the releases_ page for details.
 
 Features
 ========
 
-- Clean Pythonic interface.
-- Lightweight.
-- High ArangoDB REST API coverage.
+- Pythonic interface
+- Lightweight
+- High API coverage
 
 Compatibility
 =============
 
-- Python versions 2.7, 3.4, 3.5 and 3.6 are supported.
-- Python-arango 4.x supports ArangoDB 3.3+ (recommended).
-- Python-arango 3.x supports ArangoDB 3.0 ~ 3.2 only.
-- Python-arango 2.x supports ArangoDB 1.x ~ 2.x only.
+- Python versions 2.7, 3.4, 3.5, 3.6 and 3.7 are supported
+- Python-arango 5.x supports ArangoDB 3.5+
+- Python-arango 4.x supports ArangoDB 3.3 ~ 3.4 only
+- Python-arango 3.x supports ArangoDB 3.0 ~ 3.2 only
+- Python-arango 2.x supports ArangoDB 1.x ~ 2.x only
 
 Installation
 ============
@@ -83,7 +85,7 @@ Here is a simple usage example:
     from arango import ArangoClient
 
     # Initialize the client for ArangoDB.
-    client = ArangoClient(protocol='http', host='localhost', port=8529)
+    client = ArangoClient(hosts='http://localhost:8529')
 
     # Connect to "_system" database as root user.
     sys_db = client.db('_system', username='root', password='passwd')
@@ -117,7 +119,7 @@ Here is another example with graphs:
     from arango import ArangoClient
 
     # Initialize the client for ArangoDB.
-    client = ArangoClient(protocol='http', host='localhost', port=8529)
+    client = ArangoClient(hosts='http://localhost:8529')
 
     # Connect to "test" database as root user.
     db = client.db('test', username='root', password='passwd')
@@ -169,7 +171,7 @@ Contributing
 Please take a look at this page_ before submitting a pull request. Thanks!
 
 .. _ArangoDB: https://www.arangodb.com
-.. _4.0.0: https://github.com/joowani/python-arango/releases/tag/4.0.0
+.. _5.0.0: https://github.com/joowani/python-arango/releases/tag/5.0.0
 .. _releases: https://github.com/joowani/python-arango/releases
 .. _PyPi: https://pypi.python.org/pypi/python-arango
 .. _GitHub: https://github.com/joowani/python-arango

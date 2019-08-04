@@ -161,14 +161,6 @@ TransactionDatabase
     :inherited-members:
     :members:
 
-.. _TransactionJob:
-
-TransactionJob
-==============
-
-.. autoclass:: arango.job.TransactionJob
-    :members:
-
 .. _VertexCollection:
 
 VertexCollection

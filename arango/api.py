@@ -15,7 +15,6 @@ class APIWrapper(object):
     def __init__(self, connection, executor):
         self._conn = connection
         self._executor = executor
-        self._is_transaction = self.context == 'transaction'
 
     @property
     def db_name(self):

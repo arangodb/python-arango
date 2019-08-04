@@ -68,7 +68,6 @@ def test_task_management(sys_db, db, bad_db):
 
     # Test list tasks
     for task in sys_db.tasks():
-        assert task['database'] in db.databases()
         assert task['type'] in {'periodic', 'timed'}
         assert isinstance(task['id'], string_types)
         assert isinstance(task['name'], string_types)

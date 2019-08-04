@@ -35,7 +35,7 @@ def test_database_attributes(db, username):
     assert repr(db) == '<StandardDatabase {}>'.format(db.name)
 
 
-def test_database_misc_methods(db, bad_db):
+def test_database_misc_methods(db, bad_db, cluster):
     # Test get properties
     properties = db.properties()
     assert 'id' in properties
@@ -198,15 +198,14 @@ def test_database_misc_methods(db, bad_db):
     with assert_raises(ServerLogLevelSetError):
         bad_db.set_log_levels(**new_levels)
 
-    # Test get server endpoints
-    with assert_raises(ServerEndpointsError) as err:
-        db.endpoints()
-    assert err.value.error_code in [11]
+    if cluster:
+        # Test get server endpoints
+        assert len(db.endpoints()) > 0
 
-    # Test get server endpoints with bad database
-    with assert_raises(ServerEndpointsError) as err:
-        bad_db.endpoints()
-    assert err.value.error_code in {11, 1228}
+        # Test get server endpoints with bad database
+        with assert_raises(ServerEndpointsError) as err:
+            bad_db.endpoints()
+        assert err.value.error_code in {11, 1228}
 
     # Test get storage engine
     engine = db.engine()

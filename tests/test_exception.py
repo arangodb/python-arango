@@ -26,11 +26,9 @@ def test_server_error(client, col, docs):
     assert exc.source == 'server'
     assert exc.message == str(exc)
     assert exc.message.startswith('[HTTP 409][ERR 1210] unique constraint')
-    assert exc.url.startswith(client.base_url)
     assert exc.error_code == 1210
     assert exc.http_method == 'post'
     assert exc.http_code == 409
-    assert exc.http_headers['Server'] == 'ArangoDB'
     assert isinstance(exc.http_headers, CaseInsensitiveDict)
 
     resp = exc.response
@@ -48,20 +46,17 @@ def test_server_error(client, col, docs):
     assert resp.method == 'post'
     assert resp.status_code == 409
     assert resp.status_text == 'Conflict'
+
     assert json.loads(resp.raw_body) == expected_body
     assert resp.headers == exc.http_headers
-    assert resp.url.startswith(client.base_url)
 
     req = exc.request
     assert isinstance(req, Request)
     assert req.headers['content-type'] == 'application/json'
     assert req.method == 'post'
-    assert req.read is None
-    assert req.write == col.name
-    assert req.command is None
     assert req.params['silent'] == 0
     assert req.params['returnNew'] == 0
-    assert req.data == json.dumps(document)
+    assert req.data == document
     assert req.endpoint.startswith('/_api/document/' + col.name)
 
 

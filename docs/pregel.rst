@@ -1,8 +1,8 @@
 Pregel
 ------
 
-Python-arango supports **Pregel**, an ArangoDB module for distributed iterative
-graph processing. For more information, refer to `ArangoDB manual`_.
+Python-arango provides support for **Pregel**, ArangoDB module for distributed
+iterative graph processing. For more information, refer to `ArangoDB manual`_.
 
 .. _ArangoDB manual: https://docs.arangodb.com
 

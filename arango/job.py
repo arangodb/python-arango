@@ -7,8 +7,7 @@ from arango.exceptions import (
     AsyncJobStatusError,
     AsyncJobResultError,
     AsyncJobClearError,
-    BatchJobResultError,
-    TransactionJobResultError,
+    BatchJobResultError
 )
 from arango.request import Request
 
@@ -237,56 +236,4 @@ class BatchJob(Job):
         """
         if self._status == 'pending':
             raise BatchJobResultError('result not available yet')
-        return self._response_handler(self._response)
-
-
-class TransactionJob(Job):
-    """Transaction API execution job.
-
-    :param response_handler: HTTP response handler.
-    :type response_handler: callable
-    """
-
-    __slots__ = ['_id', '_status', '_response', '_response_handler']
-
-    def __init__(self, response_handler):
-        self._id = uuid4().hex
-        self._status = 'pending'
-        self._response = None
-        self._response_handler = response_handler
-
-    def __repr__(self):
-        return '<TransactionJob {}>'.format(self._id)
-
-    @property
-    def id(self):
-        """Return the transaction job ID.
-
-        :return: Transaction job ID.
-        :rtype: str | unicode
-        """
-        return self._id
-
-    def status(self):
-        """Return the transaction job status.
-
-        :return: Transaction job status. Possible values are "pending" (job is
-            waiting for transaction to be committed, or transaction failed and
-            job is orphaned), or "done" (transaction was committed and job is
-            updated with the result).
-        :rtype: str | unicode
-        """
-        return self._status
-
-    def result(self):
-        """Return the transaction job result.
-
-        :return: Transaction job result.
-        :rtype: str | unicode | bool | int | list | dict
-        :raise arango.exceptions.ArangoError: If the job raised an exception.
-        :raise arango.exceptions.TransactionJobResultError: If job result is
-            not available (i.e. transaction is not committed yet or failed).
-        """
-        if self._status == 'pending':
-            raise TransactionJobResultError('result not available yet')
         return self._response_handler(self._response)

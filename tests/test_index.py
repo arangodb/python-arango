@@ -9,55 +9,61 @@ from arango.exceptions import (
 from tests.helpers import assert_raises, extract
 
 
-def test_list_indexes(col, bad_col):
-    expected_index = {
-        'id': '0',
-        'selectivity': 1,
-        'sparse': False,
-        'type': 'primary',
-        'fields': ['_key'],
-        'unique': True
-    }
-    indexes = col.indexes()
+def test_list_indexes(icol, bad_col):
+    indexes = icol.indexes()
     assert isinstance(indexes, list)
-    assert expected_index in indexes
+    assert len(indexes) > 0
+    assert 'id' in indexes[0]
+    assert 'type' in indexes[0]
+    assert 'fields' in indexes[0]
+    assert 'selectivity' in indexes[0]
+    assert 'sparse' in indexes[0]
+    assert 'unique' in indexes[0]
 
     with assert_raises(IndexListError) as err:
         bad_col.indexes()
     assert err.value.error_code in {11, 1228}
 
 
-def test_add_hash_index(col):
+def test_add_hash_index(icol):
+    icol = icol
+
     fields = ['attr1', 'attr2']
-    result = col.add_hash_index(
+    result = icol.add_hash_index(
         fields=fields,
         unique=True,
         sparse=True,
-        deduplicate=True
+        deduplicate=True,
+        name='hash_index',
+        in_background=False
     )
 
     expected_index = {
-        'selectivity': 1,
         'sparse': True,
         'type': 'hash',
         'fields': ['attr1', 'attr2'],
         'unique': True,
-        'deduplicate': True
+        'deduplicate': True,
+        'name': 'hash_index'
     }
     for key, value in expected_index.items():
         assert result[key] == value
 
-    result.pop('new', None)
-    assert result in col.indexes()
+    assert result['id'] in extract('id', icol.indexes())
+
+    # Clean up the index
+    icol.delete_index(result['id'])
 
 
-def test_add_skiplist_index(col):
+def test_add_skiplist_index(icol):
     fields = ['attr1', 'attr2']
-    result = col.add_skiplist_index(
+    result = icol.add_skiplist_index(
         fields=fields,
         unique=True,
         sparse=True,
-        deduplicate=True
+        deduplicate=True,
+        name='skiplist_index',
+        in_background=False
     )
 
     expected_index = {
@@ -65,20 +71,25 @@ def test_add_skiplist_index(col):
         'type': 'skiplist',
         'fields': ['attr1', 'attr2'],
         'unique': True,
-        'deduplicate': True
+        'deduplicate': True,
+        'name': 'skiplist_index'
     }
     for key, value in expected_index.items():
         assert result[key] == value
 
-    result.pop('new', None)
-    assert result in col.indexes()
+    assert result['id'] in extract('id', icol.indexes())
+
+    # Clean up the index
+    icol.delete_index(result['id'])
 
 
-def test_add_geo_index(col):
+def test_add_geo_index(icol):
     # Test add geo index with one attribute
-    result = col.add_geo_index(
+    result = icol.add_geo_index(
         fields=['attr1'],
-        ordered=False
+        ordered=False,
+        name='geo_index',
+        in_background=True
     )
 
     expected_index = {
@@ -87,15 +98,15 @@ def test_add_geo_index(col):
         'fields': ['attr1'],
         'unique': False,
         'geo_json': False,
+        'name': 'geo_index'
     }
     for key, value in expected_index.items():
         assert result[key] == value
 
-    result.pop('new', None)
-    assert result in col.indexes()
+    assert result['id'] in extract('id', icol.indexes())
 
     # Test add geo index with two attributes
-    result = col.add_geo_index(
+    result = icol.add_geo_index(
         fields=['attr1', 'attr2'],
         ordered=False,
     )
@@ -108,20 +119,24 @@ def test_add_geo_index(col):
     for key, value in expected_index.items():
         assert result[key] == value
 
-    result.pop('new', None)
-    assert result in col.indexes()
+    assert result['id'] in extract('id', icol.indexes())
 
     # Test add geo index with more than two attributes (should fail)
     with assert_raises(IndexCreateError) as err:
-        col.add_geo_index(fields=['attr1', 'attr2', 'attr3'])
+        icol.add_geo_index(fields=['attr1', 'attr2', 'attr3'])
     assert err.value.error_code == 10
 
+    # Clean up the index
+    icol.delete_index(result['id'])
 
-def test_add_fulltext_index(col):
+
+def test_add_fulltext_index(icol):
     # Test add fulltext index with one attributes
-    result = col.add_fulltext_index(
+    result = icol.add_fulltext_index(
         fields=['attr1'],
         min_length=10,
+        name='fulltext_index',
+        in_background=True
     )
     expected_index = {
         'sparse': True,
@@ -129,61 +144,92 @@ def test_add_fulltext_index(col):
         'fields': ['attr1'],
         'min_length': 10,
         'unique': False,
+        'name': 'fulltext_index'
     }
     for key, value in expected_index.items():
         assert result[key] == value
 
-    result.pop('new', None)
-    assert result in col.indexes()
+    assert result['id'] in extract('id', icol.indexes())
 
     # Test add fulltext index with two attributes (should fail)
     with assert_raises(IndexCreateError) as err:
-        col.add_fulltext_index(fields=['attr1', 'attr2'])
+        icol.add_fulltext_index(fields=['attr1', 'attr2'])
     assert err.value.error_code == 10
 
+    # Clean up the index
+    icol.delete_index(result['id'])
 
-def test_add_persistent_index(col):
+
+def test_add_persistent_index(icol):
     # Test add persistent index with two attributes
-    result = col.add_persistent_index(
+    result = icol.add_persistent_index(
         fields=['attr1', 'attr2'],
         unique=True,
         sparse=True,
+        name='persistent_index',
+        in_background=True
     )
     expected_index = {
         'sparse': True,
         'type': 'persistent',
         'fields': ['attr1', 'attr2'],
         'unique': True,
+        'name': 'persistent_index'
     }
     for key, value in expected_index.items():
         assert result[key] == value
 
-    result.pop('new', None)
-    assert result in col.indexes()
+    assert result['id'] in extract('id', icol.indexes())
+
+    # Clean up the index
+    icol.delete_index(result['id'])
 
 
-def test_delete_index(col, bad_col):
-    old_indexes = set(extract('id', col.indexes()))
-    col.add_hash_index(['attr3', 'attr4'], unique=True)
-    col.add_skiplist_index(['attr3', 'attr4'], unique=True)
-    col.add_fulltext_index(fields=['attr3'], min_length=10)
+def test_add_ttl_index(icol):
+    # Test add persistent index with two attributes
+    result = icol.add_ttl_index(
+        fields=['attr1'],
+        expiry_time=1000,
+        name='ttl_index',
+        in_background=True
+    )
+    expected_index = {
+        'type': 'ttl',
+        'fields': ['attr1'],
+        'expiry_time': 1000,
+        'name': 'ttl_index'
+    }
+    for key, value in expected_index.items():
+        assert result[key] == value
 
-    new_indexes = set(extract('id', col.indexes()))
+    assert result['id'] in extract('id', icol.indexes())
+
+    # Clean up the index
+    icol.delete_index(result['id'])
+
+
+def test_delete_index(icol, bad_col):
+    old_indexes = set(extract('id', icol.indexes()))
+    icol.add_hash_index(['attr3', 'attr4'], unique=True)
+    icol.add_skiplist_index(['attr3', 'attr4'], unique=True)
+    icol.add_fulltext_index(fields=['attr3'], min_length=10)
+
+    new_indexes = set(extract('id', icol.indexes()))
     assert new_indexes.issuperset(old_indexes)
 
     indexes_to_delete = new_indexes - old_indexes
     for index_id in indexes_to_delete:
-        assert col.delete_index(index_id) is True
+        assert icol.delete_index(index_id) is True
 
-    new_indexes = set(extract('id', col.indexes()))
+    new_indexes = set(extract('id', icol.indexes()))
     assert new_indexes == old_indexes
 
     # Test delete missing indexes
     for index_id in indexes_to_delete:
-        assert col.delete_index(index_id, ignore_missing=True) is False
+        assert icol.delete_index(index_id, ignore_missing=True) is False
     for index_id in indexes_to_delete:
         with assert_raises(IndexDeleteError) as err:
-            col.delete_index(index_id, ignore_missing=False)
+            icol.delete_index(index_id, ignore_missing=False)
         assert err.value.error_code == 1212
 
     # Test delete indexes with bad collection
@@ -193,9 +239,9 @@ def test_delete_index(col, bad_col):
         assert err.value.error_code in {11, 1228}
 
 
-def test_load_indexes(col, bad_col):
+def test_load_indexes(icol, bad_col):
     # Test load indexes
-    assert col.load_indexes() is True
+    assert icol.load_indexes() is True
 
     # Test load indexes with bad collection
     with assert_raises(IndexLoadError) as err:

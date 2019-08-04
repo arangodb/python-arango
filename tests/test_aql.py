@@ -86,7 +86,7 @@ def test_aql_query_management(db, bad_db, col, docs):
             RETURN NEW
         '''.format(col=col.name),
         count=True,
-        batch_size=1,
+        # batch_size=1,
         ttl=10,
         bind_vars={'val': 42},
         full_count=True,
@@ -106,30 +106,17 @@ def test_aql_query_management(db, bad_db, col, docs):
         stream=False,
         skip_inaccessible_cols=True
     )
-    if db.context == 'transaction':
-        assert cursor.id is None
-        assert cursor.type == 'cursor'
-        assert cursor.batch() is not None
-        assert cursor.has_more() is False
-        assert cursor.count() == len(col)
-        assert cursor.cached() is None
-        assert cursor.statistics() is None
-        assert cursor.profile() is None
-        assert cursor.warnings() is None
-        assert extract('_key', cursor) == extract('_key', docs)
-        assert cursor.close() is None
-    else:
-        assert cursor.id is not None
-        assert cursor.type == 'cursor'
-        assert cursor.batch() is not None
-        assert cursor.has_more() is True
-        assert cursor.count() == len(col)
-        assert cursor.cached() is False
-        assert cursor.statistics() is not None
-        assert cursor.profile() is not None
-        assert cursor.warnings() == []
-        assert extract('_key', cursor) == extract('_key', docs)
-        assert cursor.close(ignore_missing=True) is False
+    assert cursor.id is None
+    assert cursor.type == 'cursor'
+    assert cursor.batch() is not None
+    assert cursor.has_more() is False
+    assert cursor.count() == len(col)
+    assert cursor.cached() is False
+    assert cursor.statistics() is not None
+    assert cursor.profile() is not None
+    assert cursor.warnings() == []
+    assert extract('_key', cursor) == extract('_key', docs)
+    assert cursor.close(ignore_missing=True) is None
 
     # Test get tracking properties with bad database
     with assert_raises(AQLQueryTrackingGetError) as err:
@@ -310,20 +297,35 @@ def test_aql_cache_management(db, bad_db):
     # Test get AQL cache properties
     properties = db.aql.cache.properties()
     assert 'mode' in properties
-    assert 'limit' in properties
+    assert 'max_results' in properties
+    assert 'max_results_size' in properties
+    assert 'max_entry_size' in properties
+    assert 'include_system' in properties
 
     # Test get AQL cache properties with bad database
     with assert_raises(AQLCachePropertiesError):
         bad_db.aql.cache.properties()
 
     # Test get AQL cache configure properties
-    properties = db.aql.cache.configure(mode='on', limit=100)
+    properties = db.aql.cache.configure(
+        mode='on',
+        max_results=100,
+        max_results_size=10000,
+        max_entry_size=10000,
+        include_system=True
+    )
     assert properties['mode'] == 'on'
-    assert properties['limit'] == 100
+    assert properties['max_results'] == 100
+    assert properties['max_results_size'] == 10000
+    assert properties['max_entry_size'] == 10000
+    assert properties['include_system'] is True
 
     properties = db.aql.cache.properties()
     assert properties['mode'] == 'on'
-    assert properties['limit'] == 100
+    assert properties['max_results'] == 100
+    assert properties['max_results_size'] == 10000
+    assert properties['max_entry_size'] == 10000
+    assert properties['include_system'] is True
 
     # Test get AQL cache configure properties with bad database
     with assert_raises(AQLCacheConfigureError):
