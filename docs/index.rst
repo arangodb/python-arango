@@ -74,6 +74,7 @@ Contents
     errors
     logging
     http
+    cluster
     serializer
     contributing
     specs

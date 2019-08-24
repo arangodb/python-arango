@@ -4,16 +4,17 @@ HTTP Clients
 Python-arango lets you define your own HTTP client for sending requests to
 ArangoDB server. The default implementation uses the requests_ library.
 
-Your HTTP client must inherit :class:`arango.http.HTTPClient` and implement its
-two abstract methods:
+Your HTTP client must inherit :class:`arango.http.HTTPClient` and implement the
+following abstract methods:
 
 * :func:`arango.http.HTTPClient.create_session`
 * :func:`arango.http.HTTPClient.send_request`
 
-The **create_session** method must return a session object (called per host)
-which will be stored in python-arango client. The **send_request** method must
-use the session to send a HTTP request, and return a fully populated instance
-of :class:`arango.response.Response`.
+The **create_session** method must return a `requests.Session`_ instance per
+connected host (coordinator). The session objects are stored in the client.
+
+The **send_request** method must use the session to send an HTTP request, and
+return a fully populated instance of :class:`arango.response.Response`.
 
 For example, let's say your HTTP client needs:
 
@@ -100,8 +101,7 @@ Then you would inject your client as follows:
         http_client=CustomHTTPClient()
     )
 
-For more information on how to configure a ``requests.Session`` object, refer
-to `requests documentation`_.
+See `requests.Session`_ for more details on how to create and manage sessions.
 
 .. _requests: https://github.com/requests/requests
-.. _requests documentation: http://docs.python-requests.org/en/master/user/advanced/#session-objects
+.. _requests.Session: http://docs.python-requests.org/en/master/user/advanced/#session-objects

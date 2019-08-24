@@ -1592,8 +1592,13 @@ class StandardCollection(Collection):
                     return_old=False):
         """Insert multiple documents.
 
-        If inserting a document fails, the exception object is placed in the
-        result list instead of document metadata.
+        .. note::
+
+            If inserting a document fails, the exception is not raised but
+            returned as an object in the result list. It is up to you to
+            inspect the list to determine which documents were inserted
+            successfully (returns document metadata) and which were not
+            (returns exception object).
 
         :param documents: List of new documents to insert. If they contain the
             "_key" or "_id" fields, the values are used as the keys of the new
@@ -1746,8 +1751,13 @@ class StandardCollection(Collection):
                     silent=False):
         """Update multiple documents.
 
-        If updating a document fails, the exception object is placed in the
-        result list instead of document metadata.
+        .. note::
+
+            If updating a document fails, the exception is not raised but
+            returned as an object in the result list. It is up to you to
+            inspect the list to determine which documents were updated
+            successfully (returns document metadata) and which were not
+            (returns exception object).
 
         :param documents: Partial or full documents with the updated values.
             They must contain the "_id" or "_key" fields.
@@ -1953,8 +1963,13 @@ class StandardCollection(Collection):
                      silent=False):
         """Replace multiple documents.
 
-        If replacing a document fails, the exception object is placed in the
-        result list instead of document metadata.
+        .. note::
+
+            If replacing a document fails, the exception is not raised but
+            returned as an object in the result list. It is up to you to
+            inspect the list to determine which documents were replaced
+            successfully (returns document metadata) and which were not
+            (returns exception object).
 
         :param documents: New documents to replace the old ones with. They must
             contain the "_id" or "_key" fields. Edge documents must also have
@@ -2142,8 +2157,13 @@ class StandardCollection(Collection):
                     silent=False):
         """Delete multiple documents.
 
-        If deleting a document fails, the exception object is placed in the
-        result list instead of document metadata.
+        .. note::
+
+            If deleting a document fails, the exception is not raised but
+            returned as an object in the result list. It is up to you to
+            inspect the list to determine which documents were deleted
+            successfully (returns document metadata) and which were not
+            (returns exception object).
 
         :param documents: Document IDs, keys or bodies. Document bodies must
             contain the "_id" or "_key" fields.
