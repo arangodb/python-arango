@@ -80,7 +80,6 @@ class ArangoServerError(ArangoError):
         self.http_code = resp.status_code
         self.http_headers = resp.headers
 
-
 ##################
 # AQL Exceptions #
 ##################

@@ -189,8 +189,12 @@ def test_document_insert_many(col, bad_col, docs):
 
     # Test insert_many duplicate documents
     results = col.insert_many(docs, return_new=False)
-    for result, doc in zip(results, docs):
-        assert isinstance(result, DocumentInsertError)
+    for error, doc in zip(results, docs):
+        assert isinstance(error, DocumentInsertError)
+        assert error.error_code in {1210}
+        assert 'unique constraint violated' in error.error_message
+        assert error.http_code == 202
+        assert '[HTTP 202][ERR 1210]' in error.message
 
     # Test insert_many with overwrite and return_old set to True
     results = col.insert_many(docs, overwrite=True, return_old=True)
@@ -455,8 +459,13 @@ def test_document_update_many(col, bad_col, docs):
         doc['val'] = 5
         doc['_rev'] = old_revs[doc['_key']] + '0'
     results = col.update_many(docs, check_rev=True)
-    for result, doc_key in zip(results, doc_keys):
-        assert isinstance(result, DocumentRevisionError)
+    for error, doc_key in zip(results, doc_keys):
+        assert isinstance(error, DocumentRevisionError)
+        assert error.error_code in {1200}
+        assert 'conflict' in error.error_message
+        assert error.http_code == 202
+        assert '[HTTP 202][ERR 1200]' in error.message
+
     for doc in col:
         assert doc['val'] == 4
 
@@ -729,8 +738,12 @@ def test_document_replace_many(col, bad_col, docs):
         doc.pop('baz')
         doc['_rev'] = old_revs[doc['_key']] + '0'
     results = col.replace_many(docs, check_rev=True)
-    for result, doc_key in zip(results, doc_keys):
-        assert isinstance(result, DocumentRevisionError)
+    for error, doc_key in zip(results, doc_keys):
+        assert isinstance(error, DocumentRevisionError)
+        assert error.error_code in {1200}
+        assert 'conflict' in error.error_message
+        assert error.http_code == 202
+        assert '[HTTP 202][ERR 1200]' in error.message
     for doc in col:
         assert 'foo' not in doc
         assert doc['baz'] == 4
@@ -957,8 +970,12 @@ def test_document_delete_many(col, bad_col, docs):
     for doc in docs:
         doc['_rev'] = old_revs[doc['_key']] + '0'
     results = col.delete_many(docs, check_rev=True)
-    for result, doc in zip(results, docs):
-        assert isinstance(result, DocumentRevisionError)
+    for error, doc in zip(results, docs):
+        assert isinstance(error, DocumentRevisionError)
+        assert error.error_code in {1200}
+        assert 'conflict' in error.error_message
+        assert error.http_code == 202
+        assert '[HTTP 202][ERR 1200]' in error.message
     assert len(col) == 6
 
     # Test delete_many (documents) with missing documents
@@ -968,8 +985,12 @@ def test_document_delete_many(col, bad_col, docs):
         {'_key': generate_doc_key()},
         {'_key': generate_doc_key()}
     ])
-    for result, doc in zip(results, docs):
-        assert isinstance(result, DocumentDeleteError)
+    for error, doc in zip(results, docs):
+        assert isinstance(error, DocumentDeleteError)
+        assert error.error_code in {1202}
+        assert 'document not found' in error.error_message
+        assert error.http_code == 202
+        assert '[HTTP 202][ERR 1202]' in error.message
     assert len(col) == 0
 
     # Test delete_many with bad database

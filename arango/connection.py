@@ -3,6 +3,7 @@ from __future__ import absolute_import, unicode_literals
 from six import string_types
 
 from arango.exceptions import ServerConnectionError
+from arango.response import Response
 
 __all__ = ['Connection']
 
@@ -103,6 +104,30 @@ class Connection(object):
 
         http_ok = 200 <= response.status_code < 300
         response.is_success = http_ok and response.error_code is None
+        return response
+
+    def build_error_response(self, parent_response, body):
+        """Build and return a bulk error response.
+
+        :param parent_response: Parent response.
+        :type parent_response: arango.response.Response
+        :param body: Error response body.
+        :type body: dict
+        :return: Child bulk error response.
+        :rtype: arango.response.Response
+        """
+        response = Response(
+            method=parent_response.method,
+            url=parent_response.url,
+            headers=parent_response.headers,
+            status_code=parent_response.status_code,
+            status_text=parent_response.status_text,
+            raw_body=self.serialize(body),
+        )
+        response.body = body
+        response.error_code = body['errorNum']
+        response.error_message = body['errorMessage']
+        response.is_success = False
         return response
 
     def send_request(self, request):

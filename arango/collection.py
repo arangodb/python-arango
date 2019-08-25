@@ -37,7 +37,6 @@ from arango.exceptions import (
     IndexLoadError,
 )
 from arango.request import Request
-from arango.response import Response
 from arango.utils import (
     get_doc_id,
     is_none_or_int,
@@ -1648,20 +1647,13 @@ class StandardCollection(Collection):
                 return True
 
             results = []
-            for result in resp.body:
-                if '_id' in result:
-                    if '_oldRev' in result:
-                        result['_old_rev'] = result.pop('_oldRev')
-                    results.append(result)
+            for body in resp.body:
+                if '_id' in body:
+                    if '_oldRev' in body:
+                        body['_old_rev'] = body.pop('_oldRev')
+                    results.append(body)
                 else:
-                    sub_resp = Response(
-                        method=resp.method,
-                        url=resp.url,
-                        headers=resp.headers,
-                        status_code=resp.status_code,
-                        status_text=resp.status_text,
-                        raw_body=result
-                    )
+                    sub_resp = self._conn.build_error_response(resp, body)
                     results.append(DocumentInsertError(sub_resp, request))
 
             return results
@@ -1814,23 +1806,17 @@ class StandardCollection(Collection):
                 return True
 
             results = []
-            for result in resp.body:
-                if '_id' not in result:
-                    sub_resp = Response(
-                        method='patch',
-                        url=resp.url,
-                        headers=resp.headers,
-                        status_code=resp.status_code,
-                        status_text=resp.status_text,
-                        raw_body=result,
-                    )
-                    if result['errorNum'] == 1200:
-                        result = DocumentRevisionError(sub_resp, request)
-                    else:  # pragma: no cover
-                        result = DocumentUpdateError(sub_resp, request)
+            for body in resp.body:
+                if '_id' in body:
+                    body['_old_rev'] = body.pop('_oldRev')
+                    results.append(body)
                 else:
-                    result['_old_rev'] = result.pop('_oldRev')
-                results.append(result)
+                    sub_resp = self._conn.build_error_response(resp, body)
+                    if sub_resp.error_code == 1200:
+                        error = DocumentRevisionError(sub_resp, request)
+                    else:  # pragma: no cover
+                        error = DocumentUpdateError(sub_resp, request)
+                    results.append(error)
 
             return results
 
@@ -2019,23 +2005,17 @@ class StandardCollection(Collection):
                 return True
 
             results = []
-            for result in resp.body:
-                if '_id' not in result:
-                    sub_resp = Response(
-                        method=resp.method,
-                        url=resp.url,
-                        headers=resp.headers,
-                        status_code=resp.status_code,
-                        status_text=resp.status_text,
-                        raw_body=result
-                    )
-                    if result['errorNum'] == 1200:
-                        result = DocumentRevisionError(sub_resp, request)
-                    else:  # pragma: no cover
-                        result = DocumentReplaceError(sub_resp, request)
+            for body in resp.body:
+                if '_id' in body:
+                    body['_old_rev'] = body.pop('_oldRev')
+                    results.append(body)
                 else:
-                    result['_old_rev'] = result.pop('_oldRev')
-                results.append(result)
+                    sub_resp = self._conn.build_error_response(resp, body)
+                    if sub_resp.error_code == 1200:
+                        error = DocumentRevisionError(sub_resp, request)
+                    else:  # pragma: no cover
+                        error = DocumentReplaceError(sub_resp, request)
+                    results.append(error)
 
             return results
 
@@ -2212,21 +2192,16 @@ class StandardCollection(Collection):
                 return True
 
             results = []
-            for result in resp.body:
-                if '_id' not in result:
-                    sub_resp = Response(
-                        method=resp.method,
-                        url=resp.url,
-                        headers=resp.headers,
-                        status_code=resp.status_code,
-                        status_text=resp.status_text,
-                        raw_body=result
-                    )
-                    if result['errorNum'] == 1200:
-                        result = DocumentRevisionError(sub_resp, request)
+            for body in resp.body:
+                if '_id' in body:
+                    results.append(body)
+                else:
+                    sub_resp = self._conn.build_error_response(resp, body)
+                    if sub_resp.error_code == 1200:
+                        error = DocumentRevisionError(sub_resp, request)
                     else:
-                        result = DocumentDeleteError(sub_resp, request)
-                results.append(result)
+                        error = DocumentDeleteError(sub_resp, request)
+                    results.append(error)
 
             return results
 
