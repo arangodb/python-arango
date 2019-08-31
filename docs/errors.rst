@@ -114,3 +114,13 @@ Below are all exceptions from python-arango.
 
 .. automodule:: arango.exceptions
     :members:
+
+
+Error Codes
+===========
+
+The `errno` module contains a constant mapping to `ArangoDB's error codes
+<https://www.arangodb.com/docs/stable/appendix-error-codes.html>`_.
+
+.. automodule:: arango.errno
+    :members:
