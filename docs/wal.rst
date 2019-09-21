@@ -40,4 +40,13 @@ WAL operations can only be performed by admin users via ``_system`` database.
     # Flush WAL with garbage collection.
     wal.flush(garbage_collect=True)
 
+    # Get the available ranges of tick values.
+    wal.tick_ranges()
+
+    # Get the last available tick value.
+    wal.last_tick()
+
+    # Get recent WAL operations.
+    wal.tail()
+
 See :class:`WriteAheadLog` for API specification.

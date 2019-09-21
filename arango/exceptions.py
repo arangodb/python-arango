@@ -71,6 +71,7 @@ class ArangoServerError(ArangoError):
                 resp.status_code, self.error_code, msg)
         else:
             msg = '[HTTP {}] {}'.format(resp.status_code, msg)
+            self.error_code = resp.status_code
         super(ArangoServerError, self).__init__(msg)
         self.message = msg
         self.url = resp.url
@@ -772,3 +773,107 @@ class WALTransactionListError(ArangoServerError):
 
 class WALFlushError(ArangoServerError):
     """Failed to flush WAL."""
+
+
+class WALTickRangesError(ArangoServerError):
+    """Failed to return WAL tick ranges."""
+
+
+class WALLastTickError(ArangoServerError):
+    """Failed to return WAL tick ranges."""
+
+
+class WALTailError(ArangoServerError):
+    """Failed to return WAL tick ranges."""
+
+
+##########################
+# Replication Exceptions #
+##########################
+
+class ReplicationInventoryError(ArangoServerError):
+    """Failed to retrieve inventory of collection and indexes."""
+
+
+class ReplicationDumpBatchCreateError(ArangoServerError):
+    """Failed to create dump batch."""
+
+
+class ReplicationDumpBatchDeleteError(ArangoServerError):
+    """Failed to delete a dump batch."""
+
+
+class ReplicationDumpBatchExtendError(ArangoServerError):
+    """Failed to extend a dump batch."""
+
+
+class ReplicationDumpError(ArangoServerError):
+    """Failed to retrieve collection content."""
+
+
+class ReplicationSyncError(ArangoServerError):
+    """Failed to synchronize data from remote."""
+
+
+class ReplicationClusterInventoryError(ArangoServerError):
+    """Failed to retrieve overview of collection and indexes in a cluster."""
+
+
+class ReplicationLoggerStateError(ArangoServerError):
+    """Failed to retrieve logger state."""
+
+
+class ReplicationLoggerFirstTickError(ArangoServerError):
+    """Failed to retrieve logger first tick."""
+
+
+class ReplicationApplierConfigError(ArangoServerError):
+    """Failed to retrieve replication applier configuration."""
+
+
+class ReplicationApplierConfigSetError(ArangoServerError):
+    """Failed to update replication applier configuration."""
+
+
+class ReplicationApplierStartError(ArangoServerError):
+    """Failed to start replication applier."""
+
+
+class ReplicationApplierStopError(ArangoServerError):
+    """Failed to stop replication applier."""
+
+
+class ReplicationApplierStateError(ArangoServerError):
+    """Failed to retrieve replication applier state."""
+
+
+class ReplicationMakeSlaveError(ArangoServerError):
+    """Failed to change role to slave."""
+
+
+class ReplicationServerIDError(ArangoServerError):
+    """Failed to retrieve server ID."""
+
+
+######################
+# Cluster Exceptions #
+######################
+
+class ClusterServerIDError(ArangoServerError):
+    """Failed to retrieve server ID."""
+
+
+class ClusterServerRoleError(ArangoServerError):
+    """Failed to retrieve server role."""
+
+
+class ClusterStatisticsError(ArangoServerError):
+    """Failed to retrieve DBServer statistics."""
+
+
+class ClusterHealthError(ArangoServerError):
+    """Failed to retrieve DBServer health."""
+
+
+class ClusterMaintenanceModeError(ArangoServerError):
+    """Failed to enable/disable cluster supervision maintenance mode."""

@@ -74,7 +74,9 @@ Contents
     errors
     logging
     http
+    replication
     cluster
     serializer
+    errno
     contributing
     specs

@@ -36,6 +36,10 @@ from arango.exceptions import (
     IndexListError,
     IndexLoadError,
 )
+from arango.formatter import (
+    format_collection,
+    format_index
+)
 from arango.request import Request
 from arango.utils import (
     get_doc_id,
@@ -92,65 +96,6 @@ class Collection(APIWrapper):
         :rtype: str | unicode
         """
         return None if code is None else self.statuses[code]
-
-    def _format_properties(self, body):  # pragma: no cover
-        """Format collection properties.
-
-        :param body: Response body.
-        :type body: dict
-        :return: Formatted body.
-        :rtype: dict
-        """
-        body.pop('code', None)
-        body.pop('error', None)
-
-        if 'name' not in body:
-            body['name'] = self.name
-        if 'isSystem' in body:
-            body['system'] = body.pop('isSystem')
-        if 'type' in body:
-            body['edge'] = body.pop('type') == 3
-        if 'waitForSync' in body:
-            body['sync'] = body.pop('waitForSync')
-        if 'statusString' in body:
-            body['status'] = body.pop('statusString')
-        elif 'status' in body:
-            body['status'] = self._get_status_text(body['status'])
-        if 'globallyUniqueId' in body:
-            body['global_id'] = body.pop('globallyUniqueId')
-        if 'objectId' in body:
-            body['id'] = body.pop('objectId')
-        if 'cacheEnabled' in body:
-            body['cache'] = body.pop('cacheEnabled')
-        if 'doCompact' in body:
-            body['compact'] = body.pop('doCompact')
-        if 'isVolatile' in body:
-            body['volatile'] = body.pop('isVolatile')
-        if 'shardKeys' in body:
-            body['shard_fields'] = body.pop('shardKeys')
-        if 'replicationFactor' in body:
-            body['replication_factor'] = body.pop('replicationFactor')
-        if 'isSmart' in body:
-            body['smart'] = body.pop('isSmart')
-        if 'indexBuckets' in body:
-            body['index_bucket_count'] = body.pop('indexBuckets')
-        if 'journalSize' in body:
-            body['journal_size'] = body.pop('journalSize')
-        if 'numberOfShards' in body:
-            body['shard_count'] = body.pop('numberOfShards')
-
-        key_options = body.pop('keyOptions', {})
-        if 'type' in key_options:
-            body['key_generator'] = key_options['type']
-        if 'increment' in key_options:
-            body['key_increment'] = key_options['increment']
-        if 'offset' in key_options:
-            body['key_offset'] = key_options['offset']
-        if 'allowUserKeys' in key_options:
-            body['user_keys'] = key_options['allowUserKeys']
-        if 'lastValue' in key_options:
-            body['key_last_value'] = key_options['lastValue']
-        return body
 
     def _validate_id(self, doc_id):
         """Check the collection name in the document ID.
@@ -356,7 +301,7 @@ class Collection(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise CollectionPropertiesError(resp, request)
-            return self._format_properties(resp.body)
+            return format_collection(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -386,7 +331,7 @@ class Collection(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise CollectionConfigureError(resp, request)
-            return self._format_properties(resp.body)
+            return format_collection(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -1124,37 +1069,6 @@ class Collection(APIWrapper):
     # Index Management #
     ####################
 
-    # noinspection PyMethodMayBeStatic
-    def _format_index_details(self, body):  # pragma: no cover
-        """Format index details.
-
-        :param body: Response body.
-        :type body: dict
-        :return: Formatted body.
-        :rtype: dict
-        """
-        body.pop('error', None)
-        body.pop('code', None)
-
-        if 'id' in body:
-            body['id'] = body['id'].split('/', 1)[1]
-        if 'minLength' in body:
-            body['min_length'] = body.pop('minLength')
-        if 'geoJson' in body:
-            body['geo_json'] = body.pop('geoJson')
-        if 'ignoreNull' in body:
-            body['ignore_none'] = body.pop('ignoreNull')
-        if 'selectivityEstimate' in body:
-            body['selectivity'] = body.pop('selectivityEstimate')
-        if 'isNewlyCreated' in body:
-            body['new'] = body.pop('isNewlyCreated')
-        if 'expireAfter' in body:
-            body['expiry_time'] = body.pop('expireAfter')
-        if 'inBackground' in body:
-            body['in_background'] = body.pop('inBackground')
-
-        return body
-
     def indexes(self):
         """Return the collection indexes.
 
@@ -1172,7 +1086,7 @@ class Collection(APIWrapper):
             if not resp.is_success:
                 raise IndexListError(resp, request)
             result = resp.body['indexes']
-            return [self._format_index_details(index) for index in result]
+            return [format_index(index) for index in result]
 
         return self._execute(request, response_handler)
 
@@ -1195,8 +1109,7 @@ class Collection(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise IndexCreateError(resp, request)
-
-            return self._format_index_details(resp.body)
+            return format_index(resp.body)
 
         return self._execute(request, response_handler)
 

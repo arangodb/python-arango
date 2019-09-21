@@ -83,24 +83,28 @@ class Connection(object):
         :return: De-serialized object.
         :rtype: str | unicode | bool | int | list | dict
         """
-        return self._deserializer(string)
+        try:
+            return self._deserializer(string)
+        except (ValueError, TypeError):
+            return string
 
-    def prep_response(self, response):
+    def prep_response(self, response, deserialize=True):
         """Populate the response with details and return it.
 
+        :param deserialize: Deserialize the response body.
+        :type deserialize: bool
         :param response: HTTP response.
         :type response: arango.response.Response
         :return: HTTP response.
         :rtype: arango.response.Response
         """
-        try:
+        if deserialize:
             response.body = self.deserialize(response.raw_body)
-        except (ValueError, TypeError):
-            response.body = response.raw_body
-        else:
             if isinstance(response.body, dict):
                 response.error_code = response.body.get('errorNum')
                 response.error_message = response.body.get('errorMessage')
+        else:
+            response.body = response.raw_body
 
         http_ok = 200 <= response.status_code < 300
         response.is_success = http_ok and response.error_code is None
@@ -153,7 +157,7 @@ class Connection(object):
             headers=request.headers,
             auth=self._auth,
         )
-        return self.prep_response(response)
+        return self.prep_response(response, request.deserialize)
 
     def ping(self):
         for host_index in range(len(self._sessions)):

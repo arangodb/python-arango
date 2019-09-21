@@ -7,7 +7,16 @@ from arango.exceptions import (
     WALFlushError,
     WALPropertiesError,
     WALConfigureError,
-    WALTransactionListError
+    WALTransactionListError,
+    WALLastTickError,
+    WALTickRangesError,
+    WALTailError
+)
+from arango.formatter import (
+    format_replication_header,
+    format_tick_values,
+    format_wal_properties,
+    format_wal_transactions
 )
 from arango.request import Request
 
@@ -24,31 +33,6 @@ class WAL(APIWrapper):  # pragma: no cover
     def __init__(self, connection, executor):
         super(WAL, self).__init__(connection, executor)
 
-    # noinspection PyMethodMayBeStatic
-    def _format_properties(self, body):
-        """Format WAL properties.
-
-        :param body: Response body.
-        :type body: dict
-        :return: Formatted body.
-        :rtype: dict
-        """
-        if 'allowOversizeEntries' in body:
-            body['oversized_ops'] = body.pop('allowOversizeEntries')
-        if 'logfileSize' in body:
-            body['log_size'] = body.pop('logfileSize')
-        if 'historicLogfiles' in body:
-            body['historic_logs'] = body.pop('historicLogfiles')
-        if 'reserveLogfiles' in body:
-            body['reserve_logs'] = body.pop('reserveLogfiles')
-        if 'syncInterval' in body:
-            body['sync_interval'] = body.pop('syncInterval')
-        if 'throttleWait' in body:
-            body['throttle_wait'] = body.pop('throttleWait')
-        if 'throttleWhenPending' in body:
-            body['throttle_limit'] = body.pop('throttleWhenPending')
-        return body
-
     def properties(self):
         """Return WAL properties.
 
@@ -62,9 +46,9 @@ class WAL(APIWrapper):  # pragma: no cover
         )
 
         def response_handler(resp):
-            if not resp.is_success:
-                raise WALPropertiesError(resp, request)
-            return self._format_properties(resp.body)
+            if resp.is_success:
+                return format_wal_properties(resp.body)
+            raise WALPropertiesError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -118,9 +102,9 @@ class WAL(APIWrapper):  # pragma: no cover
         )
 
         def response_handler(resp):
-            if not resp.is_success:
-                raise WALConfigureError(resp, request)
-            return self._format_properties(resp.body)
+            if resp.is_success:
+                return format_wal_properties(resp.body)
+            raise WALConfigureError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -151,15 +135,9 @@ class WAL(APIWrapper):  # pragma: no cover
         )
 
         def response_handler(resp):
-            if not resp.is_success:
-                raise WALTransactionListError(resp, request)
-            if 'minLastCollected' in resp.body:
-                resp.body['last_collected'] = resp.body.pop('minLastCollected')
-            if 'minLastSealed' in resp.body:
-                resp.body['last_sealed'] = resp.body.pop('minLastSealed')
-            if 'runningTransactions' in resp.body:
-                resp.body['count'] = resp.body.pop('runningTransactions')
-            return resp.body
+            if resp.is_success:
+                return format_wal_transactions(resp.body)
+            raise WALTransactionListError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -184,8 +162,137 @@ class WAL(APIWrapper):  # pragma: no cover
         )
 
         def response_handler(resp):
-            if not resp.is_success:
-                raise WALFlushError(resp, request)
-            return True
+            if resp.is_success:
+                return True
+            raise WALFlushError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def tick_ranges(self):
+        """Return the available ranges of tick values for all WAL files.
+
+        :return: Ranges of tick values.
+        :rtype: dict
+        :raise arango.exceptions.WALTickRangesError: If retrieval fails.
+        """
+        request = Request(method='get', endpoint='/_api/wal/range')
+
+        def response_handler(resp):
+            if resp.is_success:
+                return format_tick_values(resp.body)
+            raise WALTickRangesError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def last_tick(self):
+        """Return the last available tick value (last successful operation).
+
+        :return: Last tick value in the WAL.
+        :rtype: dict
+        :raise arango.exceptions.WALLastTickError: If retrieval fails.
+        """
+        request = Request(method='get', endpoint='/_api/wal/lastTick')
+
+        def response_handler(resp):
+            if resp.is_success:
+                return format_tick_values(resp.body)
+            raise WALLastTickError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def tail(self,
+             lower=None,
+             upper=None,
+             last_scanned=None,
+             all_databases=None,
+             chunk_size=None,
+             syncer_id=None,
+             server_id=None,
+             client_info=None,
+             barrier_id=None,
+             deserialize=False):
+        """Fetch recent WAL operations.
+
+        :param lower: Exclusive lower bound tick value. On successive calls to
+            this method you should set this to the value of "last_included"
+            from previous call (unless the value was 0).
+        :type lower: str | unicode
+        :param upper: Inclusive upper bound tick value for results.
+        :type upper: str | unicode
+        :param last_scanned: On successive calls to this method you should
+            set this to the value of "last_scanned" from previous call (or 0
+            on first try). This allows the rocksdb engine to break up large
+            transactions over multiple responses.
+        :type last_scanned: str | unicode
+        :param all_databases: Whether operations for all databases should be
+            included. When set to False only the operations for the current
+            database are included. The value True is only valid on "_system"
+            database. The default is False.
+        :type all_databases: bool
+        :param chunk_size: Approximate maximum size of the returned result.
+        :type chunk_size: int
+        :param syncer_id: ID of the client used to tail results. The server
+            will use this to keep operations until the client has fetched them.
+            Must be a positive integer. Note this or **server_id** is required
+            to have a chance at fetching reading all operations with the
+            rocksdb storage engine.
+        :type syncer_id: int
+        :param server_id: ID of the client machine. If unset, the server will
+            use this to keep operations until the client has fetched them. Must
+            be a positive integer. Note this or **syncer_id** is required to
+            have a chance at fetching reading all operations with the rocksdb
+            storage engine.
+        :type server_id: int
+        :param client_info: Short description of the client, used for
+            informative purposes only.
+        :type client_info: str | unicode
+        :param barrier_id: ID of barrier used to keep WAL entries around. Only
+            required for the MMFiles storage engine.
+        :type barrier_id: int
+        :param deserialize: Deserialize the response content. Default is False.
+        :type deserialize: bool
+        :return: If **deserialize** is set to False, content is returned raw as
+            a string. If **deserialize** is set to True, it is deserialized and
+            returned as a list of dictionaries.
+        :rtype: str | [dict]
+        :raise arango.exceptions.WALTailError: If tail operation fails.
+        """
+        params = {}
+        if lower is not None:
+            params['from'] = lower
+        if lower is not None:
+            params['to'] = upper
+        if lower is not None:
+            params['lastScanned'] = last_scanned
+        if lower is not None:
+            params['global'] = all_databases
+        if lower is not None:
+            params['chunkSize'] = chunk_size
+        if lower is not None:
+            params['syncerId'] = syncer_id
+        if lower is not None:
+            params['serverId'] = server_id
+        if lower is not None:
+            params['clientInfo'] = client_info
+        if lower is not None:
+            params['barrierId'] = barrier_id
+
+        request = Request(
+            method='get',
+            endpoint='/_api/wal/tail',
+            params=params,
+            deserialize=False
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                result = format_replication_header(resp.headers)
+                result['content'] = [
+                    self._conn.deserialize(line) for
+                    line in resp.body.split('\n') if line
+                ] if deserialize else resp.body
+                return result
+
+            raise WALTailError(resp, request)
 
         return self._execute(request, response_handler)

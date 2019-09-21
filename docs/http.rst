@@ -51,7 +51,7 @@ Your ``CustomHTTPClient`` class might look something like this:
 
             # Enable retries.
             adapter = HTTPAdapter(max_retries=5)
-            self._session.mount('https://', adapter)
+            session.mount('https://', adapter)
 
             return session
 

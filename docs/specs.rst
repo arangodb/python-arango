@@ -62,6 +62,14 @@ BatchJob
 .. autoclass:: arango.job.BatchJob
     :members:
 
+.. _Cluster:
+
+Cluster
+=======
+
+.. autoclass:: arango.cluster.Cluster
+    :members:
+
 .. _Cursor:
 
 Cursor
@@ -150,6 +158,14 @@ Response
 ========
 
 .. autoclass:: arango.response.Response
+    :members:
+
+.. _Replication:
+
+Replication
+===========
+
+.. autoclass:: arango.replication.Replication
     :members:
 
 .. _TransactionDatabase:

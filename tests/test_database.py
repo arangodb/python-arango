@@ -32,6 +32,7 @@ def test_database_attributes(db, username):
     assert db.username == username
     assert db.db_name == db.name
     assert db.name.startswith('test_database')
+    assert db.conn is not None
     assert repr(db) == '<StandardDatabase {}>'.format(db.name)
 
 

@@ -17,6 +17,15 @@ class APIWrapper(object):
         self._executor = executor
 
     @property
+    def conn(self):
+        """Return HTTP connection object.
+
+        :return: HTTP connection.
+        :rtype: arango.connection.Connection
+        """
+        return self._conn
+
+    @property
     def db_name(self):
         """Return the name of the current database.
 

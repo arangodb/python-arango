@@ -173,13 +173,10 @@ def test_collection_management(db, bad_db, cluster):
     assert db.has_collection(col_name) is True
 
     properties = col.properties()
-    if col.context != 'transaction':
-        assert 'id' in properties
+    assert 'key_options' in properties
     assert properties['name'] == col_name
     assert properties['sync'] is True
     assert properties['system'] is False
-    assert properties['key_generator'] == 'traditional'
-    assert properties['user_keys'] is False
 
     # Test create duplicate collection
     with assert_raises(CollectionCreateError) as err:

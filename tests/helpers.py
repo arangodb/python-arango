@@ -1,6 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-import os
 from collections import deque
 from uuid import uuid4
 
@@ -165,7 +164,3 @@ def assert_raises(*exc):
     return pytest.raises(
         exc + (AsyncExecuteError, BatchExecuteError, TransactionInitError)
     )
-
-
-def file_exists(filename):
-    return os.path.exists(filename)

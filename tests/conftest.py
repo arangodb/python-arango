@@ -4,6 +4,8 @@ import pytest
 
 from arango import ArangoClient
 from arango.database import StandardDatabase
+from arango import formatter
+
 from tests.helpers import (
     generate_db_name,
     generate_col_name,
@@ -27,6 +29,7 @@ def pytest_addoption(parser):
     parser.addoption('--passwd', action='store', default='passwd')
     parser.addoption("--complete", action="store_true")
     parser.addoption("--cluster", action="store_true")
+    parser.addoption("--replication", action="store_true")
 
 
 # noinspection PyShadowingNames
@@ -89,6 +92,7 @@ def pytest_configure(config):
 
     # noinspection PyProtectedMember
     global_data.update({
+        'url': url,
         'client': client,
         'username': username,
         'password': password,
@@ -102,7 +106,9 @@ def pytest_configure(config):
         'ecol_name': ecol_name,
         'fvcol_name': fvcol_name,
         'tvcol_name': tvcol_name,
-        'cluster': False
+        'cluster': config.getoption('cluster'),
+        'complete': config.getoption('complete'),
+        'replication': config.getoption('replication')
     })
 
 
@@ -145,36 +151,33 @@ def pytest_generate_tests(metafunc):
     tst_dbs = [tst_db]
     bad_dbs = [bad_db]
 
-    global_data['cluster'] = metafunc.config.getoption('cluster')
-
-    if metafunc.config.getoption('complete'):
-        tst = metafunc.module.__name__.split('.test_', 1)[-1]
+    if global_data['complete']:
+        test = metafunc.module.__name__.split('.test_', 1)[-1]
         tst_conn = tst_db._conn
         bad_conn = bad_db._conn
 
-        if tst in {'collection', 'document', 'graph', 'aql', 'index'}:
+        if test in {'collection', 'document', 'graph', 'aql', 'index'}:
             # Add test transaction databases
             tst_txn_db = StandardDatabase(tst_conn)
             tst_txn_db._executor = TestTransactionExecutor(tst_conn)
             tst_dbs.append(tst_txn_db)
-
             bad_txn_db = StandardDatabase(bad_conn)
             bad_txn_db._executor = TestTransactionExecutor(bad_conn)
             bad_dbs.append(bad_txn_db)
 
-        if tst not in {
+        if test not in {
             'async',
             'batch',
             'transaction',
             'client',
             'exception',
-            'view'
+            'view',
+            'replication'
         }:
             # Add test async databases
             tst_async_db = StandardDatabase(tst_conn)
             tst_async_db._executor = TestAsyncExecutor(tst_conn)
             tst_dbs.append(tst_async_db)
-
             bad_async_db = StandardDatabase(bad_conn)
             bad_async_db._executor = TestAsyncExecutor(bad_conn)
             bad_dbs.append(bad_async_db)
@@ -183,7 +186,6 @@ def pytest_generate_tests(metafunc):
             tst_batch_db = StandardDatabase(tst_conn)
             tst_batch_db._executor = TestBatchExecutor(tst_conn)
             tst_dbs.append(tst_batch_db)
-
             bad_batch_bdb = StandardDatabase(bad_conn)
             bad_batch_bdb._executor = TestBatchExecutor(bad_conn)
             bad_dbs.append(bad_batch_bdb)
@@ -196,6 +198,27 @@ def pytest_generate_tests(metafunc):
 
     elif 'bad_db' in metafunc.fixturenames:
         metafunc.parametrize('bad_db', bad_dbs)
+
+
+@pytest.fixture(autouse=True)
+def mock_formatters(monkeypatch):
+
+    def mock_verify_format(body, result):
+        body.pop('error', None)
+        body.pop('code', None)
+        result.pop('edge', None)
+        if len(body) != len(result):
+            raise ValueError(
+                '\nIN: {}\nOUT: {}'.format(sorted(body), sorted(result))
+            )
+        return result
+
+    monkeypatch.setattr(formatter, 'verify_format', mock_verify_format)
+
+
+@pytest.fixture(autouse=False)
+def url():
+    return global_data['url']
 
 
 @pytest.fixture(autouse=False)
@@ -338,3 +361,8 @@ def edocs():
 @pytest.fixture(autouse=False)
 def cluster():
     return global_data['cluster']
+
+
+@pytest.fixture(autouse=False)
+def replication():
+    return global_data['replication']

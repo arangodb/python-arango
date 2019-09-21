@@ -1,7 +1,5 @@
 from __future__ import absolute_import, unicode_literals
 
-from arango.utils import get_col_name
-
 __all__ = [
     'StandardDatabase',
     'AsyncDatabase',
@@ -19,6 +17,7 @@ from arango.executor import (
     BatchExecutor,
     TransactionExecutor,
 )
+from arango.cluster import Cluster
 from arango.collection import StandardCollection
 from arango.exceptions import (
     AnalyzerCreateError,
@@ -76,11 +75,14 @@ from arango.exceptions import (
     ViewReplaceError,
     ViewUpdateError
 )
+from arango.formatter import format_view
 from arango.foxx import Foxx
 from arango.graph import Graph
 from arango.pregel import Pregel
+from arango.replication import Replication
 from arango.request import Request
 from arango.wal import WAL
+from arango.utils import get_col_name
 
 
 class Database(APIWrapper):
@@ -160,6 +162,24 @@ class Database(APIWrapper):
         :rtype: arango.pregel.Pregel
         """
         return Pregel(self._conn, self._executor)
+
+    @property
+    def replication(self):
+        """Return Replication API wrapper.
+
+        :return: Replication API wrapper.
+        :rtype: arango.replication.Replication
+        """
+        return Replication(self._conn, self._executor)
+
+    @property
+    def cluster(self):  # pragma: no cover
+        """Return Cluster API wrapper.
+
+        :return: Cluster API wrapper.
+        :rtype: arango.cluster.Cluster
+        """
+        return Cluster(self._conn, self._executor)
 
     def properties(self):
         """Return database properties.
@@ -300,9 +320,9 @@ class Database(APIWrapper):
         )
 
         def response_handler(resp):
-            if not resp.is_success:
-                raise ServerDetailsError(resp, request)
-            return resp.body['details']
+            if resp.is_success:
+                return resp.body['details']
+            raise ServerDetailsError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -388,9 +408,9 @@ class Database(APIWrapper):
         )
 
         def response_handler(resp):
-            if not resp.is_success:
-                raise ServerEngineError(resp, request)
-            return resp.body
+            if resp.is_success:
+                return resp.body
+            raise ServerEngineError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -412,20 +432,20 @@ class Database(APIWrapper):
         )
 
         def response_handler(resp):
-            if not resp.is_success:
-                raise ServerStatisticsError(resp, request)
-            resp.body.pop('code')
-            resp.body.pop('error')
-            return resp.body
+            if resp.is_success:
+                resp.body.pop('code')
+                resp.body.pop('error')
+                return resp.body
+            raise ServerStatisticsError(resp, request)
 
         return self._execute(request, response_handler)
 
     def role(self):
-        """Return server role in cluster.
+        """Return server role.
 
         :return: Server role. Possible values are "SINGLE" (server which is not
             in a cluster), "COORDINATOR" (cluster coordinator), "PRIMARY",
-            "SECONDARY" or "UNDEFINED".
+            "SECONDARY", "AGENT" (Agency node in a cluster) or "UNDEFINED".
         :rtype: str | unicode
         :raise arango.exceptions.ServerRoleError: If retrieval fails.
         """
@@ -1742,7 +1762,7 @@ class Database(APIWrapper):
         :type username: str | unicode
         :return: User permissions for all databases and collections.
         :rtype: dict
-        :raise: arango.exceptions.PermissionListError: If retrieval fails.
+        :raise arango.exceptions.PermissionListError: If retrieval fails.
         """
         request = Request(
             method='get',
@@ -1768,7 +1788,7 @@ class Database(APIWrapper):
         :type collection: str | unicode
         :return: Permission for given database or collection.
         :rtype: str | unicode
-        :raise: arango.exceptions.PermissionGetError: If retrieval fails.
+        :raise arango.exceptions.PermissionGetError: If retrieval fails.
         """
         endpoint = '/_api/user/{}/database/{}'.format(username, database)
         if collection is not None:
@@ -1915,7 +1935,7 @@ class Database(APIWrapper):
     ###################
 
     def views(self):
-        """Return list of views.
+        """Return list of views and their summaries.
 
         :return: List of views.
         :rtype: [dict]
@@ -1925,7 +1945,7 @@ class Database(APIWrapper):
 
         def response_handler(resp):
             if resp.is_success:
-                return resp.body['result']
+                return [format_view(view) for view in resp.body['result']]
             raise ViewListError(resp, request)
 
         return self._execute(request, response_handler)
@@ -1944,9 +1964,7 @@ class Database(APIWrapper):
 
         def response_handler(resp):
             if resp.is_success:
-                resp.body.pop('error')
-                resp.body.pop('code')
-                return resp.body
+                return format_view(resp.body)
             raise ViewGetError(resp, request)
 
         return self._execute(request, response_handler)
@@ -1958,7 +1976,8 @@ class Database(APIWrapper):
         :type name: str | unicode
         :param view_type: View type (e.g. "arangosearch").
         :type view_type: str | unicode
-        :param properties: View properties.
+        :param properties: View properties. For more information see
+            https://www.arangodb.com/docs/stable/http/views-arangosearch.html
         :type properties: dict
         :return: View details.
         :rtype: dict
@@ -1977,7 +1996,7 @@ class Database(APIWrapper):
 
         def response_handler(resp):
             if resp.is_success:
-                return resp.body
+                return format_view(resp.body)
             raise ViewCreateError(resp, request)
 
         return self._execute(request, response_handler)
@@ -1987,7 +2006,8 @@ class Database(APIWrapper):
 
         :param name: View name.
         :type name: str | unicode
-        :param properties: View properties.
+        :param properties: View properties. For more information see
+            https://www.arangodb.com/docs/stable/http/views-arangosearch.html
         :type properties: dict
         :return: View details.
         :rtype: dict
@@ -2001,7 +2021,7 @@ class Database(APIWrapper):
 
         def response_handler(resp):
             if resp.is_success:
-                return resp.body
+                return format_view(resp.body)
             raise ViewUpdateError(resp, request)
 
         return self._execute(request, response_handler)
@@ -2011,7 +2031,8 @@ class Database(APIWrapper):
 
         :param name: View name.
         :type name: str | unicode
-        :param properties: View properties.
+        :param properties: View properties. For more information see
+            https://www.arangodb.com/docs/stable/http/views-arangosearch.html
         :type properties: dict
         :return: View details.
         :rtype: dict
@@ -2025,7 +2046,7 @@ class Database(APIWrapper):
 
         def response_handler(resp):
             if resp.is_success:
-                return resp.body
+                return format_view(resp.body)
             raise ViewReplaceError(resp, request)
 
         return self._execute(request, response_handler)
@@ -2089,7 +2110,8 @@ class Database(APIWrapper):
 
         :param name: View name.
         :type name: str | unicode
-        :param properties: View properties.
+        :param properties: View properties. For more information see
+            https://www.arangodb.com/docs/stable/http/views-arangosearch.html
         :type properties: dict
         :return: View details.
         :rtype: dict
@@ -2108,7 +2130,7 @@ class Database(APIWrapper):
 
         def response_handler(resp):
             if resp.is_success:
-                return resp.body
+                return format_view(resp.body)
             raise ViewCreateError(resp, request)
 
         return self._execute(request, response_handler)
@@ -2118,7 +2140,8 @@ class Database(APIWrapper):
 
         :param name: View name.
         :type name: str | unicode
-        :param properties: View properties.
+        :param properties: View properties. For more information see
+            https://www.arangodb.com/docs/stable/http/views-arangosearch.html
         :type properties: dict
         :return: View details.
         :rtype: dict
@@ -2132,7 +2155,7 @@ class Database(APIWrapper):
 
         def response_handler(resp):
             if resp.is_success:
-                return resp.body
+                return format_view(resp.body)
             raise ViewUpdateError(resp, request)
 
         return self._execute(request, response_handler)
@@ -2142,7 +2165,8 @@ class Database(APIWrapper):
 
         :param name: View name.
         :type name: str | unicode
-        :param properties: View properties.
+        :param properties: View properties. For more information see
+            https://www.arangodb.com/docs/stable/http/views-arangosearch.html
         :type properties: dict
         :return: View details.
         :rtype: dict
@@ -2156,7 +2180,7 @@ class Database(APIWrapper):
 
         def response_handler(resp):
             if resp.is_success:
-                return resp.body
+                return format_view(resp.body)
             raise ViewReplaceError(resp, request)
 
         return self._execute(request, response_handler)

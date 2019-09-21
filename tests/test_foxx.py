@@ -2,6 +2,7 @@ from __future__ import absolute_import, unicode_literals
 
 import json
 
+import pytest
 from six import string_types
 
 from arango.exceptions import (
@@ -42,7 +43,10 @@ def test_foxx_attributes(db):
     assert repr(db.foxx) == '<Foxx in {}>'.format(db.name)
 
 
-def test_foxx_service_management(db, bad_db):
+def test_foxx_service_management(db, bad_db, cluster):
+    if cluster:
+        pytest.skip('Not tested in a cluster setup')
+
     service_mount = generate_service_mount()
     missing_mount = generate_service_mount()
 
@@ -147,7 +151,10 @@ def test_foxx_service_management(db, bad_db):
     assert err.value.error_code == 3009
 
 
-def test_foxx_config_management(db):
+def test_foxx_config_management(db, cluster):
+    if cluster:
+        pytest.skip('Not tested in a cluster setup')
+
     service_mount = generate_service_mount()
     missing_mount = generate_service_mount()
 
@@ -183,7 +190,10 @@ def test_foxx_config_management(db):
     assert err.value.error_code == 3009
 
 
-def test_foxx_dependency_management(db):
+def test_foxx_dependency_management(db, cluster):
+    if cluster:
+        pytest.skip('Not tested in a cluster setup')
+
     service_mount = generate_service_mount()
     missing_mount = generate_service_mount()
 
@@ -219,7 +229,10 @@ def test_foxx_dependency_management(db):
     assert err.value.error_code == 3009
 
 
-def test_foxx_development_toggle(db):
+def test_foxx_development_toggle(db, cluster):
+    if cluster:
+        pytest.skip('Not tested in a cluster setup')
+
     service_mount = generate_service_mount()
     missing_mount = generate_service_mount()
 
@@ -253,7 +266,10 @@ def test_foxx_development_toggle(db):
     assert err.value.error_code == 3009
 
 
-def test_foxx_misc_functions(db, bad_db):
+def test_foxx_misc_functions(db, bad_db, cluster):
+    if cluster:
+        pytest.skip('Not tested in a cluster setup')
+
     service_mount = generate_service_mount()
     missing_mount = generate_service_mount()
 

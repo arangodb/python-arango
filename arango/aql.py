@@ -21,6 +21,11 @@ from arango.exceptions import (
     AQLCacheConfigureError,
     AQLCachePropertiesError
 )
+from arango.formatter import (
+    format_aql_cache,
+    format_aql_query,
+    format_aql_tracking
+)
 from arango.request import Request
 
 
@@ -38,45 +43,6 @@ class AQL(APIWrapper):
 
     def __repr__(self):
         return '<AQL in {}>'.format(self._conn.db_name)
-
-    # noinspection PyMethodMayBeStatic
-    def _format_tracking_properties(self, body):
-        """Format the tracking properties.
-
-        :param body: Response body.
-        :type body: dict
-        :return: Formatted body.
-        :rtype: dict
-        """
-        body.pop('code', None)
-        body.pop('error', None)
-        if 'maxQueryStringLength' in body:
-            body['max_query_string_length'] = body.pop('maxQueryStringLength')
-        if 'maxSlowQueries' in body:
-            body['max_slow_queries'] = body.pop('maxSlowQueries')
-        if 'slowQueryThreshold' in body:
-            body['slow_query_threshold'] = body.pop('slowQueryThreshold')
-        if 'trackBindVars' in body:
-            body['track_bind_vars'] = body.pop('trackBindVars')
-        if 'trackSlowQueries' in body:
-            body['track_slow_queries'] = body.pop('trackSlowQueries')
-        return body
-
-    # noinspection PyMethodMayBeStatic
-    def _format_queries(self, body):
-        """Format the list of queries.
-
-        :param body: Response body.
-        :type body: dict
-        :return: Formatted body.
-        :rtype: dict
-        """
-        for query in body:
-            if 'bindVars' in query:
-                query['bind_vars'] = query.pop('bindVars')
-            if 'runTime' in query:
-                query['runtime'] = query.pop('runTime')
-        return body
 
     @property
     def cache(self):
@@ -359,7 +325,7 @@ class AQL(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise AQLQueryListError(resp, request)
-            return self._format_queries(resp.body)
+            return [format_aql_query(q) for q in resp.body]
 
         return self._execute(request, response_handler)
 
@@ -378,7 +344,7 @@ class AQL(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise AQLQueryListError(resp, request)
-            return self._format_queries(resp.body)
+            return [format_aql_query(q) for q in resp.body]
 
         return self._execute(request, response_handler)
 
@@ -416,7 +382,7 @@ class AQL(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise AQLQueryTrackingGetError(resp, request)
-            return self._format_tracking_properties(resp.body)
+            return format_aql_tracking(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -456,7 +422,7 @@ class AQL(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise AQLQueryTrackingSetError(resp, request)
-            return self._format_tracking_properties(resp.body)
+            return format_aql_tracking(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -554,28 +520,6 @@ class AQLQueryCache(APIWrapper):
     def __repr__(self):
         return '<AQLQueryCache in {}>'.format(self._conn.db_name)
 
-    # noinspection PyMethodMayBeStatic
-    def _format_cache_properties(self, body):
-        """Format the query cache properties.
-
-        :param body: Response body.
-        :type body: dict
-        :return: Formatted body.
-        :rtype: dict
-        """
-        body.pop('code', None)
-        body.pop('error', None)
-
-        if 'maxResults' in body:
-            body['max_results'] = body.pop('maxResults')
-        if 'maxResultsSize' in body:
-            body['max_results_size'] = body.pop('maxResultsSize')
-        if 'maxEntrySize' in body:
-            body['max_entry_size'] = body.pop('maxEntrySize')
-        if 'includeSystem' in body:
-            body['include_system'] = body.pop('includeSystem')
-        return body
-
     def properties(self):
         """Return the query cache properties.
 
@@ -591,7 +535,7 @@ class AQLQueryCache(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise AQLCachePropertiesError(resp, request)
-            return self._format_cache_properties(resp.body)
+            return format_aql_cache(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -642,7 +586,7 @@ class AQLQueryCache(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise AQLCacheConfigureError(resp, request)
-            return self._format_cache_properties(resp.body)
+            return format_aql_cache(resp.body)
 
         return self._execute(request, response_handler)
 

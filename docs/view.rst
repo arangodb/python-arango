@@ -93,4 +93,7 @@ Python-arango also supports **ArangoSearch** views.
     db.delete_view('arangosearch_view')
 
 
+For more information on the content of view **properties**, see
+https://www.arangodb.com/docs/stable/http/views-arangosearch.html
+
 Refer to :ref:`StandardDatabase` class for API specification.

@@ -24,6 +24,8 @@ class Request(object):
     :param exclusive: Name(s) of collections written to during transaction
         with exclusive access.
     :type exclusive: str | unicode | [str | unicode]
+    :param deserialize: Whether the response body can be deserialized.
+    :type deserialize: bool
 
     :ivar method: HTTP method in lowercase (e.g. "post").
     :vartype method: str | unicode
@@ -43,6 +45,8 @@ class Request(object):
     :ivar exclusive: Name(s) of collections written to during transaction
         with exclusive access.
     :vartype exclusive: str | unicode | [str | unicode] | None
+    :ivar deserialize: Whether the response body can be deserialized.
+    :vartype deserialize: str | unicode | [str | unicode] | None
     """
 
     __slots__ = (
@@ -53,7 +57,8 @@ class Request(object):
         'data',
         'read',
         'write',
-        'exclusive'
+        'exclusive',
+        'deserialize'
     )
 
     def __init__(self,
@@ -64,7 +69,8 @@ class Request(object):
                  data=None,
                  read=None,
                  write=None,
-                 exclusive=None):
+                 exclusive=None,
+                 deserialize=True):
         self.method = method
         self.endpoint = endpoint
         self.headers = headers or {}
@@ -84,3 +90,4 @@ class Request(object):
         self.read = read
         self.write = write
         self.exclusive = exclusive
+        self.deserialize = deserialize
