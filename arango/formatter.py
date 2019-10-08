@@ -12,10 +12,12 @@ def format_index(body):  # pragma: no cover
     """
     result = {
         'id': body['id'].split('/', 1)[-1],
-        'name': body['name'],
-        'type': body['type'],
         'fields': body['fields']
     }
+    if 'type' in body:
+        result['type'] = body['type']
+    if 'name' in body:
+        result['name'] = body['name']
     if 'deduplicate' in body:
         result['deduplicate'] = body['deduplicate']
     if 'sparse' in body:
