@@ -38,8 +38,7 @@ class Cursor(object):
         '_profile',
         '_warnings',
         '_has_more',
-        '_batch',
-        '_count'
+        '_batch'
     ]
 
     def __init__(self, connection, init_data, cursor_type='cursor'):
