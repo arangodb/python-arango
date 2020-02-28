@@ -137,3 +137,16 @@ def test_transaction_abort(db, col, docs):
     with pytest.raises(TransactionAbortError) as err:
         txn_db.abort_transaction()
     assert err.value.error_code in {10, 1655}
+
+
+# def test_transaction_graph(db, graph, fvcol, fvdocs):
+#     txn_db = db.begin_transaction(write=fvcol.name)
+#     vcol = txn_db.graph(graph.name).vertex_collection(fvcol.name)
+#
+#     vcol.insert(fvdocs[0])
+#     assert len(vcol) == 1
+#
+#     vcol.delete(fvdocs[0])
+#     assert len(vcol) == 0
+#
+#     txn_db.commit()

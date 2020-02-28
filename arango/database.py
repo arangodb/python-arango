@@ -46,6 +46,7 @@ from arango.exceptions import (
     ServerEchoError,
     ServerLogLevelError,
     ServerLogLevelSetError,
+    ServerMetricsError,
     ServerReadLogError,
     ServerReloadRoutingError,
     ServerRequiredDBVersionError,
@@ -75,7 +76,10 @@ from arango.exceptions import (
     ViewReplaceError,
     ViewUpdateError
 )
-from arango.formatter import format_view
+from arango.formatter import (
+    format_database,
+    format_view
+)
 from arango.foxx import Foxx
 from arango.graph import Graph
 from arango.pregel import Pregel
@@ -196,9 +200,7 @@ class Database(APIWrapper):
         def response_handler(resp):
             if not resp.is_success:
                 raise DatabasePropertiesError(resp, request)
-            result = resp.body['result']
-            result['system'] = result.pop('isSystem')
-            return result
+            return format_database(resp.body['result'])
 
         return self._execute(request, response_handler)
 
@@ -675,6 +677,24 @@ class Database(APIWrapper):
 
         return self._execute(request, response_handler)
 
+    def metrics(self):
+        """Return server metrics in Prometheus format.
+
+        :return: Server metrics in Prometheus format.
+        :rtype: str
+        """
+        request = Request(
+            method='get',
+            endpoint='/_admin/metrics'
+        )
+
+        def response_handler(resp):
+            if not resp.is_success:
+                raise ServerMetricsError(resp, request)
+            return resp.body
+
+        return self._execute(request, response_handler)
+
     #######################
     # Database Management #
     #######################
@@ -708,7 +728,12 @@ class Database(APIWrapper):
         """
         return name in self.databases()
 
-    def create_database(self, name, users=None):
+    def create_database(self,
+                        name,
+                        users=None,
+                        replication_factor=None,
+                        write_concern=None,
+                        sharding=None):
         """Create a new database.
 
         :param name: Database name.
@@ -718,6 +743,23 @@ class Database(APIWrapper):
             and "extra" (see below for example). If not set, only the admin and
             current user are granted access.
         :type users: [dict]
+        :param replication_factor: Default replication factor for collections
+            created in this database. Special values include "satellite" which
+            replicates the collection to every DBServer, and 1 which disables
+            replication. Used for clusters only.
+        :type replication_factor: str | int
+        :param write_concern: Default write concern for collections created in
+            this database. Determines how many copies of each shard are
+            required to be in sync on different DBServers. If there are less
+            than these many copies in the cluster a shard will refuse to write.
+            Writes to shards with enough up-to-date copies will succeed at the
+            same time, however. Value of this parameter can not be larger than
+            the value of **replication_factor**. Used for clusters only.
+        :type write_concern: int
+        :param sharding: Sharding method used for new collections in this
+            database. Allowed values are: "", "flexible" and "single". The
+            first two are equivalent. Used for clusters only.
+        :type sharding: str
         :return: True if database was created successfully.
         :rtype: bool
         :raise arango.exceptions.DatabaseCreateError: If create fails.
@@ -734,6 +776,17 @@ class Database(APIWrapper):
             }
         """
         data = {'name': name}
+
+        options = {}
+        if replication_factor is not None:
+            options['replicationFactor'] = replication_factor
+        if write_concern is not None:
+            options['writeConcern'] = write_concern
+        if sharding is not None:
+            options['sharding'] = sharding
+        if options:
+            data['options'] = options
+
         if users is not None:
             data['users'] = [{
                 'username': user['username'],
@@ -850,7 +903,8 @@ class Database(APIWrapper):
                           sync_replication=None,
                           enforce_replication_factor=None,
                           sharding_strategy=None,
-                          smart_join_attribute=None):
+                          smart_join_attribute=None,
+                          write_concern=None):
         """Create a new collection.
 
         :param name: Collection name.
@@ -919,7 +973,7 @@ class Database(APIWrapper):
             available at creation time, or halt the operation.
         :type enforce_replication_factor: bool
         :param sharding_strategy: Sharding strategy. Available for ArangoDB
-            version 3.4 and up only. Possible values are "community-compat",
+            version  and up only. Possible values are "community-compat",
             "enterprise-compat", "enterprise-smart-edge-compat", "hash" and
             "enterprise-hash-smart-edge". Refer to ArangoDB documentation for
             more details on each value.
@@ -933,6 +987,14 @@ class Database(APIWrapper):
             shard key attribute, with another colon ":" at the end. Available
             only for enterprise version of ArangoDB.
         :type smart_join_attribute: str | unicode
+        :param write_concern: Write concern for the collection. Determines how
+            many copies of each shard are required to be in sync on different
+            DBServers. If there are less than these many copies in the cluster
+            a shard will refuse to write. Writes to shards with enough
+            up-to-date copies will succeed at the same time. The value of this
+            parameter cannot be larger than that of **replication_factor**.
+            Default value is 1. Used for clusters only.
+        :type write_concern: int
         :return: Standard collection API wrapper.
         :rtype: arango.collection.StandardCollection
         :raise arango.exceptions.CollectionCreateError: If create fails.
@@ -968,6 +1030,8 @@ class Database(APIWrapper):
             data['shardingStrategy'] = sharding_strategy
         if smart_join_attribute is not None:
             data['smartJoinAttribute'] = smart_join_attribute
+        if write_concern is not None:
+            data['writeConcern'] = write_concern
 
         params = {}
         if sync_replication is not None:

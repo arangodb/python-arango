@@ -38,7 +38,9 @@ from arango.exceptions import (
 )
 from arango.formatter import (
     format_collection,
-    format_index
+    format_edge,
+    format_index,
+    format_vertex,
 )
 from arango.request import Request
 from arango.utils import (
@@ -1458,7 +1460,8 @@ class StandardCollection(Collection):
             key and the existing document is replaced.
         :type overwrite: bool
         :param return_old: Include body of the old document if replaced.
-            Applies only when value of **overwrite** is set to True.
+            Applies only when value of **overwrite** is set to True. Ignored
+            if parameter **silent** is set to True.
         :type return_old: bool
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
@@ -1596,9 +1599,11 @@ class StandardCollection(Collection):
         :param keep_none: If set to True, fields with value None are retained
             in the document. Otherwise, they are removed completely.
         :type keep_none: bool
-        :param return_new: Include body of the new document in the result.
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
-        :param return_old: Include body of the old document in the result.
+        :param return_old: Include body of the old document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool
@@ -1676,9 +1681,11 @@ class StandardCollection(Collection):
         :param keep_none: If set to True, fields with value None are retained
             in the document. Otherwise, they are removed completely.
         :type keep_none: bool
-        :param return_new: Include bodies of the new documents in the result.
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
-        :param return_old: Include bodies of the old documents in the result.
+        :param return_old: Include body of the old document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool
@@ -1806,9 +1813,11 @@ class StandardCollection(Collection):
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
-        :param return_new: Include body of the new document in the result.
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
-        :param return_old: Include body of the old document in the result.
+        :param return_old: Include body of the old document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool
@@ -1877,9 +1886,11 @@ class StandardCollection(Collection):
         :param check_rev: If set to True, revisions of **documents** (if given)
             are compared against the revisions of target documents.
         :type check_rev: bool
-        :param return_new: Include bodies of the new documents in the result.
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
-        :param return_old: Include bodies of the old documents in the result.
+        :param return_old: Include body of the old document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool
@@ -1997,7 +2008,8 @@ class StandardCollection(Collection):
             This parameter has no effect in transactions where an exception is
             always raised on failures.
         :type ignore_missing: bool
-        :param return_old: Include body of the old document in the result.
+        :param return_old: Include body of the old document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool
@@ -2316,7 +2328,7 @@ class VertexCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def insert(self, vertex, sync=None, silent=False):
+    def insert(self, vertex, sync=None, silent=False, return_new=False):
         """Insert a new vertex document.
 
         :param vertex: New vertex document to insert. If it has "_key" or "_id"
@@ -2328,14 +2340,20 @@ class VertexCollection(Collection):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
-        :return: Document metadata (e.g. document key, revision) or True if
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_new: bool
+        :return: Document metadata (e.g. document key, revision), or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
         :raise arango.exceptions.DocumentInsertError: If insert fails.
         """
         vertex = self._ensure_key_from_id(vertex)
 
-        params = {'silent': silent}
+        params = {
+            'silent': silent,
+            'returnNew': return_new
+        }
         if sync is not None:
             params['waitForSync'] = sync
 
@@ -2352,9 +2370,9 @@ class VertexCollection(Collection):
         def response_handler(resp):
             if not resp.is_success:
                 raise DocumentInsertError(resp, request)
-            if silent is True:
+            if silent:
                 return True
-            return resp.body['vertex']
+            return format_vertex(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -2424,14 +2442,17 @@ class VertexCollection(Collection):
                 raise DocumentUpdateError(resp, request)
             if silent is True:
                 return True
-            else:
-                result = resp.body['vertex']
-            result['_old_rev'] = result.pop('_oldRev')
-            return result
+            return format_vertex(resp.body)
 
         return self._execute(request, response_handler)
 
-    def replace(self, vertex, check_rev=True, sync=None, silent=False):
+    def replace(self,
+                vertex,
+                check_rev=True,
+                sync=None,
+                silent=False,
+                return_old=False,
+                return_new=False):
         """Replace a vertex document.
 
         :param vertex: New vertex document to replace the old one with. It must
@@ -2445,6 +2466,12 @@ class VertexCollection(Collection):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param return_old: Include body of the old document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_old: bool
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_new: bool
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2453,7 +2480,11 @@ class VertexCollection(Collection):
         """
         vertex_id, headers = self._prep_from_body(vertex, check_rev)
 
-        params = {'silent': silent}
+        params = {
+            'silent': silent,
+            'returnNew': return_new,
+            'returnOld': return_old
+        }
         if sync is not None:
             params['waitForSync'] = sync
 
@@ -2475,10 +2506,7 @@ class VertexCollection(Collection):
                 raise DocumentReplaceError(resp, request)
             if silent is True:
                 return True
-            else:
-                result = resp.body['vertex']
-            result['_old_rev'] = result.pop('_oldRev')
-            return result
+            return format_vertex(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -2487,7 +2515,8 @@ class VertexCollection(Collection):
                rev=None,
                check_rev=True,
                ignore_missing=False,
-               sync=None):
+               sync=None,
+               return_old=False):
         """Delete a vertex document.
 
         :param vertex: Vertex document ID, key or body. Document body must
@@ -2505,16 +2534,21 @@ class VertexCollection(Collection):
         :type ignore_missing: bool
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool
+        :param return_old: Return body of the old document in the result.
+        :type return_old: bool
         :return: True if vertex was deleted successfully, False if vertex was
             not found and **ignore_missing** was set to True (does not apply in
-            transactions).
-        :rtype: bool
+            transactions). Old document is returned if **return_old** is set to
+            True.
+        :rtype: bool | dict
         :raise arango.exceptions.DocumentDeleteError: If delete fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
         handle, _, headers = self._prep_from_doc(vertex, rev, check_rev)
 
-        params = {} if sync is None else {'waitForSync': sync}
+        params = {'returnOld': return_old}
+        if sync is not None:
+            params['waitForSync'] = sync
 
         request = Request(
             method='delete',
@@ -2533,6 +2567,8 @@ class VertexCollection(Collection):
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentDeleteError(resp, request)
+            if 'old' in resp.body:
+                return {'old': resp.body['old']}
             return True
 
         return self._execute(request, response_handler)
@@ -2609,7 +2645,7 @@ class EdgeCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def insert(self, edge, sync=None, silent=False):
+    def insert(self, edge, sync=None, silent=False, return_new=False):
         """Insert a new edge document.
 
         :param edge: New edge document to insert. It must contain "_from" and
@@ -2622,6 +2658,9 @@ class EdgeCollection(Collection):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_new: bool
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2629,7 +2668,10 @@ class EdgeCollection(Collection):
         """
         edge = self._ensure_key_from_id(edge)
 
-        params = {'silent': silent}
+        params = {
+            'silent': silent,
+            'returnNew': return_new
+        }
         if sync is not None:
             params['waitForSync'] = sync
 
@@ -2646,9 +2688,9 @@ class EdgeCollection(Collection):
         def response_handler(resp):
             if not resp.is_success:
                 raise DocumentInsertError(resp, request)
-            if silent is True:
+            if silent:
                 return True
-            return resp.body['edge']
+            return format_edge(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -2657,7 +2699,9 @@ class EdgeCollection(Collection):
                check_rev=True,
                keep_none=True,
                sync=None,
-               silent=False):
+               silent=False,
+               return_old=False,
+               return_new=False):
         """Update an edge document.
 
         :param edge: Partial or full edge document with updated values. It must
@@ -2674,6 +2718,12 @@ class EdgeCollection(Collection):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param return_old: Include body of the old document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_old: bool
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_new: bool
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2685,7 +2735,9 @@ class EdgeCollection(Collection):
         params = {
             'keepNull': keep_none,
             'overwrite': not check_rev,
-            'silent': silent
+            'silent': silent,
+            'returnNew': return_new,
+            'returnOld': return_old
         }
         if sync is not None:
             params['waitForSync'] = sync
@@ -2708,13 +2760,17 @@ class EdgeCollection(Collection):
                 raise DocumentUpdateError(resp, request)
             if silent is True:
                 return True
-            result = resp.body['edge']
-            result['_old_rev'] = result.pop('_oldRev')
-            return result
+            return format_edge(resp.body)
 
         return self._execute(request, response_handler)
 
-    def replace(self, edge, check_rev=True, sync=None, silent=False):
+    def replace(self,
+                edge,
+                check_rev=True,
+                sync=None,
+                silent=False,
+                return_old=False,
+                return_new=False):
         """Replace an edge document.
 
         :param edge: New edge document to replace the old one with. It must
@@ -2729,6 +2785,12 @@ class EdgeCollection(Collection):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param return_old: Include body of the old document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_old: bool
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_new: bool
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2737,7 +2799,11 @@ class EdgeCollection(Collection):
         """
         edge_id, headers = self._prep_from_body(edge, check_rev)
 
-        params = {'silent': silent}
+        params = {
+            'silent': silent,
+            'returnNew': return_new,
+            'returnOld': return_old
+        }
         if sync is not None:
             params['waitForSync'] = sync
 
@@ -2759,9 +2825,7 @@ class EdgeCollection(Collection):
                 raise DocumentReplaceError(resp, request)
             if silent is True:
                 return True
-            result = resp.body['edge']
-            result['_old_rev'] = result.pop('_oldRev')
-            return result
+            return format_edge(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -2770,7 +2834,8 @@ class EdgeCollection(Collection):
                rev=None,
                check_rev=True,
                ignore_missing=False,
-               sync=None):
+               sync=None,
+               return_old=False):
         """Delete an edge document.
 
         :param edge: Edge document ID, key or body. Document body must contain
@@ -2788,6 +2853,8 @@ class EdgeCollection(Collection):
         :type ignore_missing: bool
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool
+        :param return_old: Return body of the old document in the result.
+        :type return_old: bool
         :return: True if edge was deleted successfully, False if edge was not
             found and **ignore_missing** was set to True (does not  apply in
             transactions).
@@ -2797,7 +2864,9 @@ class EdgeCollection(Collection):
         """
         handle, _, headers = self._prep_from_doc(edge, rev, check_rev)
 
-        params = {} if sync is None else {'waitForSync': sync}
+        params = {'returnOld': return_old}
+        if sync is not None:
+            params['waitForSync'] = sync
 
         request = Request(
             method='delete',
@@ -2816,11 +2885,19 @@ class EdgeCollection(Collection):
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentDeleteError(resp, request)
+            if 'old' in resp.body:
+                return {'old': resp.body['old']}
             return True
 
         return self._execute(request, response_handler)
 
-    def link(self, from_vertex, to_vertex, data=None, sync=None, silent=False):
+    def link(self,
+             from_vertex,
+             to_vertex,
+             data=None,
+             sync=None,
+             silent=False,
+             return_new=False):
         """Insert a new edge document linking the given vertices.
 
         :param from_vertex: "From" vertex document ID or body with "_id" field.
@@ -2836,6 +2913,9 @@ class EdgeCollection(Collection):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_new: bool
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2847,7 +2927,12 @@ class EdgeCollection(Collection):
         }
         if data is not None:
             edge.update(self._ensure_key_from_id(data))
-        return self.insert(edge, sync=sync, silent=silent)
+        return self.insert(
+            edge,
+            sync=sync,
+            silent=silent,
+            return_new=return_new
+        )
 
     def edges(self, vertex, direction=None):
         """Return the edge documents coming in and/or out of the vertex.

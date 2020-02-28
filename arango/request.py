@@ -15,7 +15,8 @@ class Request(object):
     :param params: URL parameters.
     :type params: dict
     :param data: Request payload.
-    :type data: str | unicode | bool | int | list | dict
+    :type data: str | unicode | bool | int | list | dict |
+        requests_toolbelt.MultipartEncoder
     :param read: Names of collections read during transaction.
     :type read: str | unicode | [str | unicode]
     :param write: Name(s) of collections written to during transaction with
@@ -26,7 +27,6 @@ class Request(object):
     :type exclusive: str | unicode | [str | unicode]
     :param deserialize: Whether the response body can be deserialized.
     :type deserialize: bool
-
     :ivar method: HTTP method in lowercase (e.g. "post").
     :vartype method: str | unicode
     :ivar endpoint: API endpoint.
@@ -46,7 +46,7 @@ class Request(object):
         with exclusive access.
     :vartype exclusive: str | unicode | [str | unicode] | None
     :ivar deserialize: Whether the response body can be deserialized.
-    :vartype deserialize: str | unicode | [str | unicode] | None
+    :vartype deserialize: bool
     """
 
     __slots__ = (
@@ -58,7 +58,8 @@ class Request(object):
         'read',
         'write',
         'exclusive',
-        'deserialize'
+        'deserialize',
+        'files'
     )
 
     def __init__(self,
@@ -73,11 +74,13 @@ class Request(object):
                  deserialize=True):
         self.method = method
         self.endpoint = endpoint
-        self.headers = headers or {}
-
-        # Insert default headers.
-        self.headers['content-type'] = 'application/json'
-        self.headers['charset'] = 'utf-8'
+        self.headers = {
+            'content-type': 'application/json',
+            'charset': 'utf-8'
+        }
+        if headers is not None:
+            for field in headers:
+                self.headers[field.lower()] = headers[field]
 
         # Sanitize URL params.
         if params is not None:

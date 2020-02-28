@@ -140,7 +140,8 @@ class AQL(APIWrapper):
                 read_collections=None,
                 write_collections=None,
                 stream=None,
-                skip_inaccessible_cols=None):
+                skip_inaccessible_cols=None,
+                max_runtime=None):
         """Execute the query and return the result cursor.
 
         :param query: Query to execute.
@@ -228,6 +229,10 @@ class AQL(APIWrapper):
             available only for enterprise version of ArangoDB. Default value is
             False.
         :type skip_inaccessible_cols: bool
+        :param max_runtime: Query must be executed within this given timeout or
+            it is killed. The value is specified in seconds. Default value
+            is 0.0 (no timeout).
+        :type max_runtime: int | float
         :return: Result cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.AQLQueryExecuteError: If execute fails.
@@ -269,6 +274,8 @@ class AQL(APIWrapper):
             options['stream'] = stream
         if skip_inaccessible_cols is not None:
             options['skipInaccessibleCollections'] = skip_inaccessible_cols
+        if max_runtime is not None:
+            options['maxRuntime'] = max_runtime
 
         if options:
             data['options'] = options

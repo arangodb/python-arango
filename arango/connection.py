@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from six import string_types
+from requests_toolbelt import MultipartEncoder
 
 from arango.exceptions import ServerConnectionError
 from arango.response import Response
@@ -142,7 +143,9 @@ class Connection(object):
         :return: HTTP response.
         :rtype: arango.response.Response
         """
-        if request.data is None or isinstance(request.data, string_types):
+        if request.data is None:
+            normalized_data = request.data
+        elif isinstance(request.data, (string_types, MultipartEncoder)):
             normalized_data = request.data
         else:
             normalized_data = self.serialize(request.data)
@@ -155,7 +158,7 @@ class Connection(object):
             params=request.params,
             data=normalized_data,
             headers=request.headers,
-            auth=self._auth,
+            auth=self._auth
         )
         return self.prep_response(response, request.deserialize)
 

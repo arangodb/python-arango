@@ -104,7 +104,8 @@ def test_aql_query_management(db, bad_db, col, docs):
         write_collections=[col.name],
         read_collections=[col.name],
         stream=False,
-        skip_inaccessible_cols=True
+        skip_inaccessible_cols=True,
+        max_runtime=0.0
     )
     assert cursor.id is None
     assert cursor.type == 'cursor'

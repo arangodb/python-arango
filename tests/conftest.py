@@ -156,7 +156,8 @@ def pytest_generate_tests(metafunc):
         tst_conn = tst_db._conn
         bad_conn = bad_db._conn
 
-        if test in {'collection', 'document', 'graph', 'aql', 'index'}:
+        # TODO Add graph tests back
+        if test in {'collection', 'document', 'aql', 'index'}:
             # Add test transaction databases
             tst_txn_db = StandardDatabase(tst_conn)
             tst_txn_db._executor = TestTransactionExecutor(tst_conn)
@@ -182,6 +183,16 @@ def pytest_generate_tests(metafunc):
             bad_async_db._executor = TestAsyncExecutor(bad_conn)
             bad_dbs.append(bad_async_db)
 
+        if test not in {
+            'async',
+            'batch',
+            'transaction',
+            'client',
+            'exception',
+            'view',
+            'replication',
+            'foxx'
+        }:
             # Add test batch databases
             tst_batch_db = StandardDatabase(tst_conn)
             tst_batch_db._executor = TestBatchExecutor(tst_conn)

@@ -1,6 +1,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import json
+import os
 
 import pytest
 from six import string_types
@@ -43,7 +44,7 @@ def test_foxx_attributes(db):
     assert repr(db.foxx) == '<Foxx in {}>'.format(db.name)
 
 
-def test_foxx_service_management(db, bad_db, cluster):
+def test_foxx_service_management_json(db, bad_db, cluster):
     if cluster:
         pytest.skip('Not tested in a cluster setup')
 
@@ -149,6 +150,81 @@ def test_foxx_service_management(db, bad_db, cluster):
     with assert_raises(FoxxServiceDeleteError) as err:
         db.foxx.delete_service(missing_mount, teardown=False)
     assert err.value.error_code == 3009
+
+
+def test_foxx_service_management_file(db, cluster):
+    if cluster:
+        pytest.skip('Not tested in a cluster setup')
+
+    path = os.path.join(os.path.dirname(__file__), 'static', 'service.zip')
+    bad_path = os.path.join(os.path.dirname(__file__), 'static', 'service')
+    service_mount = generate_service_mount()
+
+    # Test create service by file with wrong extension
+    with assert_raises(ValueError):
+        db.foxx.create_service_with_file(service_mount, bad_path)
+
+    # Test create service by file
+    service = db.foxx.create_service_with_file(
+        mount=service_mount,
+        filename=path,
+        development=True,
+        setup=True,
+        legacy=True
+    )
+    assert service['mount'] == service_mount
+    assert service['name'] == 'test'
+    assert service['development'] is True
+    assert service['legacy'] is True
+    assert service['manifest']['configuration'] == {}
+    assert service['manifest']['dependencies'] == {}
+
+    # Test create duplicate service
+    with assert_raises(FoxxServiceCreateError) as err:
+        db.foxx.create_service_with_file(service_mount, path)
+    assert err.value.error_code == 3011
+
+    # Update config and dependencies
+    assert db.foxx.update_config(service_mount, {}) == {'values': {}}
+    assert db.foxx.update_dependencies(service_mount, {}) == {'values': {}}
+
+    # # Test update service by file
+    # service = db.foxx.update_service_by_file(
+    #     mount=service_mount,
+    #     filename=path,
+    #     teardown=False,
+    #     setup=False,
+    #     legacy=False
+    # )
+    # assert service['mount'] == service_mount
+    # assert service['name'] == 'test'
+    # assert service['legacy'] is False
+    #
+    # # Test update missing service
+    # with assert_raises(FoxxServiceUpdateError) as err:
+    #     db.foxx.update_service_by_file(missing_mount, path)
+    # assert err.value.error_code == 3009
+
+    # # Test replace service by file
+    # service = db.foxx.replace_service_by_file(
+    #     mount=service_mount,
+    #     filename=path,
+    #     teardown=True,
+    #     setup=True,
+    #     legacy=True,
+    #     force=False
+    # )
+    # assert service['mount'] == service_mount
+    # assert service['name'] == 'test'
+    # assert service['legacy'] is True
+    #
+    # # Test replace missing service
+    # with assert_raises(FoxxServiceReplaceError) as err:
+    #     db.foxx.replace_service_by_file(missing_mount, path)
+    # assert err.value.error_code == 3009
+
+    assert db.foxx.delete_service(service_mount, teardown=False) is True
+    assert service_mount not in extract('mount', db.foxx.services())
 
 
 def test_foxx_config_management(db, cluster):

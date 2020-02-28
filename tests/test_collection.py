@@ -168,7 +168,8 @@ def test_collection_management(db, bad_db, cluster):
         sync_replication=False,
         enforce_replication_factor=False,
         sharding_strategy='community-compat',
-        smart_join_attribute='test'
+        smart_join_attribute='test',
+        write_concern=1
     )
     assert db.has_collection(col_name) is True
 

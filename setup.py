@@ -17,7 +17,7 @@ setup(
     url='https://github.com/joowani/python-arango',
     packages=find_packages(exclude=['tests']),
     include_package_data=True,
-    install_requires=['requests', 'six'],
+    install_requires=['requests', 'six', 'requests_toolbelt'],
     tests_require=[
         'pytest-cov',
         'python-coveralls',

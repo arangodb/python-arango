@@ -57,4 +57,7 @@ database.
     # Reload the routing collection.
     sys_db.reload_routing()
 
+    # Retrieve server metrics.
+    sys_db.metrics()
+
 See :ref:`StandardDatabase` for API specification.

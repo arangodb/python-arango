@@ -601,6 +601,10 @@ class ServerStatisticsError(ArangoServerError):
     """Failed to retrieve server statistics."""
 
 
+class ServerMetricsError(ArangoServerError):
+    """Failed to retrieve server metrics."""
+
+
 class ServerRoleError(ArangoServerError):
     """Failed to retrieve server role in a cluster."""
 

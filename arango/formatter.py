@@ -72,6 +72,38 @@ def format_key_options(body):  # pragma: no cover
     return verify_format(body, result)
 
 
+def format_database(body):  # pragma: no cover
+    """Format databases info.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    result = {}
+
+    if 'id' in body:
+        result['id'] = body['id']
+    if 'name' in body:
+        result['name'] = body['name']
+    if 'path' in body:
+        result['path'] = body['path']
+    if 'system' in body:
+        result['system'] = body['system']
+    if 'isSystem' in body:
+        result['system'] = body['isSystem']
+
+    # Cluster only
+    if 'sharding' in body:
+        result['sharding'] = body['sharding']
+    if 'replicationFactor' in body:
+        result['replication_factor'] = body['replicationFactor']
+    if 'writeConcern' in body:
+        result['write_concern'] = body['writeConcern']
+
+    return verify_format(body, result)
+
+
 def format_collection(body):  # pragma: no cover
     """Format collection data.
 
@@ -110,6 +142,8 @@ def format_collection(body):  # pragma: no cover
         result['replication_factor'] = body['replicationFactor']
     if 'minReplicationFactor' in body:
         result['min_replication_factor'] = body['minReplicationFactor']
+    if 'writeConcern' in body:
+        result['write_concern'] = body['writeConcern']
 
     # MMFiles only
     if 'doCompact' in body:
@@ -579,6 +613,9 @@ def format_replication_database(body):  # pragma: no cover
         ],
         'views': [format_view(view) for view in body['views']]
     }
+    if 'properties' in body:
+        result['properties'] = format_database(body['properties'])
+
     return verify_format(body, result)
 
 
@@ -608,6 +645,8 @@ def format_replication_inventory(body):  # pragma: no cover
         ]
     if 'views' in body:
         result['views'] = [format_view(view) for view in body['views']]
+    if 'properties' in body:
+        result['properties'] = format_database(body['properties'])
 
     return verify_format(body, result)
 
@@ -755,3 +794,49 @@ def format_view(body):  # pragma: no cover
         result['links'] = [format_view_link(link) for link in body['links']]
 
     return verify_format(body, result)
+
+
+def format_vertex(body):  # pragma: no cover
+    """Format vertex data.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    vertex = body['vertex']
+    if '_oldRev' in vertex:
+        vertex['_old_rev'] = vertex.pop('_oldRev')
+
+    if 'new' in body or 'old' in body:
+        result = {'vertex': vertex}
+        if 'new' in body:
+            result['new'] = body['new']
+        if 'old' in body:
+            result['old'] = body['old']
+        return result
+    else:
+        return vertex
+
+
+def format_edge(body):  # pragma: no cover
+    """Format edge data.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    edge = body['edge']
+    if '_oldRev' in edge:
+        edge['_old_rev'] = edge.pop('_oldRev')
+
+    if 'new' in body or 'old' in body:
+        result = {'edge': edge}
+        if 'new' in body:
+            result['new'] = body['new']
+        if 'old' in body:
+            result['old'] = body['old']
+        return result
+    else:
+        return edge

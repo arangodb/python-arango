@@ -14,6 +14,7 @@ from arango.exceptions import (
     ServerEndpointsError,
     ServerLogLevelError,
     ServerLogLevelSetError,
+    ServerMetricsError,
     ServerReadLogError,
     ServerReloadRoutingError,
     ServerRequiredDBVersionError,
@@ -74,6 +75,15 @@ def test_database_misc_methods(db, bad_db, cluster):
     # Test get server target version with bad database
     with assert_raises(ServerRequiredDBVersionError):
         bad_db.required_db_version()
+
+    # Test get server metrics
+    metrics = db.metrics()
+    assert isinstance(metrics, string_types)
+
+    # Test get server statistics with bad database
+    with assert_raises(ServerMetricsError) as err:
+        bad_db.metrics()
+    assert err.value.error_code in {11, 1228}
 
     # Test get server statistics
     statistics = db.statistics(description=False)
@@ -231,7 +241,12 @@ def test_database_management(db, sys_db, bad_db):
     # Test create database
     db_name = generate_db_name()
     assert sys_db.has_database(db_name) is False
-    assert sys_db.create_database(db_name) is True
+    assert sys_db.create_database(
+        name=db_name,
+        replication_factor=1,
+        write_concern=1,
+        sharding="single"
+    ) is True
     assert sys_db.has_database(db_name) is True
 
     # Test create duplicate database

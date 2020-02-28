@@ -106,7 +106,7 @@ class DefaultHTTPClient(HTTPClient):
             params=params,
             data=data,
             headers=headers,
-            auth=auth,
+            auth=auth
         )
         return Response(
             method=response.request.method,

@@ -105,7 +105,8 @@ def test_cursor_write_query(db, col, docs):
         batch_size=1,
         ttl=1000,
         optimizer_rules=['+all'],
-        profile=True
+        profile=True,
+        max_runtime=0.0
     )
     cursor_id = cursor.id
     assert 'Cursor' in repr(cursor)

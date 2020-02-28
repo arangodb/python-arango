@@ -138,7 +138,7 @@ def empty_collection(collection):
     :type collection: arango.collection.StandardCollection
     """
     for doc_id in collection.ids():
-        collection.delete(doc_id)
+        collection.delete(doc_id, sync=True)
 
 
 def extract(key, items):

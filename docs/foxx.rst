@@ -28,7 +28,7 @@ information, refer to `ArangoDB manual`_.
     # List services.
     foxx.services()
 
-    # Create a service.
+    # Create a service using source on server.
     foxx.create_service(
         mount=service_mount,
         source='/tmp/service.zip',
@@ -90,5 +90,35 @@ information, refer to `ArangoDB manual`_.
 
     # Delete a service.
     foxx.delete_service(service_mount)
+
+You can also create a Foxx service by providing a file directly.
+
+.. code-block:: python
+
+    from arango import ArangoClient
+
+    # Initialize the ArangoDB client.
+    client = ArangoClient()
+
+    # Connect to "_system" database as root user.
+    db = client.db('_system', username='root', password='passwd')
+
+    # Get the Foxx API wrapper.
+    foxx = db.foxx
+
+    # Define the test mount point.
+    service_mount = '/test_mount'
+
+    # Create a service by providing a file directly.
+    foxx.create_service_with_file(
+        mount=service_mount,
+        source='/home/service.zip',
+        development=True,
+        setup=True,
+        legacy=True
+    )
+    foxx.enable_development(service_mount)
+    foxx.update_config(service_mount, config={})
+    foxx.update_dependencies(service_mount, dependencies={})
 
 See :ref:`Foxx` for API specification.

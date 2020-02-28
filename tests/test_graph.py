@@ -350,6 +350,13 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     assert len(fvcol) == 1
     empty_collection(fvcol)
 
+    # Test insert vertex with return_new set to True
+    result = fvcol.insert({'_id': vertex_id}, return_new=True)
+    assert 'new' in result
+    assert 'vertex' in result
+    assert len(fvcol) == 1
+    empty_collection(fvcol)
+
     with assert_raises(DocumentParseError) as err:
         fvcol.insert({'_id': generate_col_name() + '/' + 'foo'})
     assert 'bad collection name' in err.value.message
@@ -428,6 +435,16 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     assert fvcol[key]['foo'] == 100
     old_rev = fvcol[key]['_rev']
 
+    # Test update vertex with return_new and return_old set to True
+    result = fvcol.update(
+        {'_key': key, 'foo': 100},
+        return_old=True,
+        return_new=True
+    )
+    assert 'old' in result
+    assert 'new' in result
+    assert 'vertex' in result
+
     # Test update vertex with silent set to True
     assert 'bar' not in fvcol[vertex]
     assert fvcol.update({'_key': key, 'bar': 200}, silent=True) is True
@@ -451,14 +468,14 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     assert fvcol[key]['bar'] == 400
     old_rev = result['_rev']
 
-    # # Test update vertex with bad revision
-    # if fvcol.context != 'transaction':
-    #     new_rev = old_rev + '1'
-    #     with assert_raises(DocumentRevisionError) as err:
-    #         fvcol.update({'_key': key, '_rev': new_rev, 'bar': 500})
-    #     assert err.value.error_code == 1903
-    #     assert fvcol[key]['foo'] == 200
-    #     assert fvcol[key]['bar'] == 400
+    # Test update vertex with bad revision
+    if fvcol.context != 'transaction':
+        new_rev = old_rev + '1'
+        with assert_raises(DocumentRevisionError) as err:
+            fvcol.update({'_key': key, '_rev': new_rev, 'bar': 500})
+        assert err.value.error_code in {1200, 1903}
+        assert fvcol[key]['foo'] == 200
+        assert fvcol[key]['bar'] == 400
 
     # Test update vertex in missing vertex collection
     with assert_raises(DocumentUpdateError) as err:
@@ -489,16 +506,6 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     assert result['_old_rev'] == old_rev
     assert 'foo' not in fvcol[key]
     assert fvcol[key]['bar'] is None
-    old_rev = result['_rev']
-
-    # # Test update vertex with return_new and return_old set to True
-    # result = fvcol.update({'_key': key}, return_new=True, return_old=True)
-    # assert result['_key'] == key
-    # assert result['_old_rev'] == old_rev
-    # assert 'old' in result
-    # assert 'new' in result
-    # assert 'foo' not in fvcol[key]
-    # assert fvcol[key]['bar'] is None
 
     # Test replace vertex with a single field change
     result = fvcol.replace({'_key': key, 'baz': 100})
@@ -507,6 +514,16 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     assert 'bar' not in fvcol[key]
     assert fvcol[key]['baz'] == 100
     old_rev = result['_rev']
+
+    # Test replace vertex with return_new and return_old set to True
+    result = fvcol.replace(
+        {'_key': key, 'baz': 100},
+        return_old=True,
+        return_new=True
+    )
+    assert 'old' in result
+    assert 'new' in result
+    assert 'vertex' in result
 
     # Test replace vertex with silent set to True
     assert fvcol.replace({'_key': key, 'bar': 200}, silent=True) is True
@@ -582,6 +599,12 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
         assert fvcol[vertex] is None
     assert vertex not in fvcol
     assert len(fvcol) == 2
+
+    # Test delete existing vertex with return_old set to True
+    vertex = fvdocs[1]
+    result = fvcol.delete(vertex, return_old=True)
+    assert 'old' in result
+    assert len(fvcol) == 1
     empty_collection(fvcol)
 
 
@@ -622,8 +645,16 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     key = edge['_key']
 
     # Test insert edge with no key
-    result = ecol.insert({'_from': edge['_from'], '_to': edge['_to']})
+    no_key_edge = {'_from': edge['_from'], '_to': edge['_to']}
+    result = ecol.insert(no_key_edge)
     assert result['_key'] in ecol
+    assert len(ecol) == 1
+    empty_collection(ecol)
+
+    # Test insert edge with return_new set to True
+    result = ecol.insert(no_key_edge, return_new=True)
+    assert 'new' in result
+    assert result['edge']['_key'] in ecol
     assert len(ecol) == 1
     empty_collection(ecol)
 
@@ -733,6 +764,16 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     result = ecol.update({'_key': key, 'foo': 100})
     assert result['_key'] == key
     assert ecol[key]['foo'] == 100
+
+    # Test update edge with return_old and return_new set to True
+    result = ecol.update(
+        {'_key': key, 'foo': 100},
+        return_old=True,
+        return_new=True
+    )
+    assert 'old' in result
+    assert 'new' in result
+    assert 'edge' in result
     old_rev = ecol[key]['_rev']
 
     # Test update edge with multiple field changes
@@ -801,6 +842,12 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     result = ecol.replace(edge)
     assert result['_key'] == key
     assert ecol[key]['foo'] == 100
+
+    # Test replace edge with return_old and return_new set to True
+    result = ecol.replace(edge, return_old=True, return_new=True)
+    assert 'old' in result
+    assert 'new' in result
+    assert 'edge' in result
     old_rev = ecol[key]['_rev']
 
     # Test replace edge with silent set to True
@@ -877,6 +924,12 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     assert ecol.delete(edge, sync=True, check_rev=False) is True
     if ecol.context != 'transaction':
         assert ecol[edge] is None
+    assert edge not in ecol
+
+    # Test delete existing edge with return_old set to True
+    ecol.insert(edge)
+    result = ecol.delete(edge, return_old=True, check_rev=False)
+    assert 'old' in result
     assert edge not in ecol
     empty_collection(ecol)
 

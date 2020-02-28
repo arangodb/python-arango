@@ -3,7 +3,6 @@ language: python
 matrix:
   include:
     - python: 2.7
-    - python: 3.4
     - python: 3.5
     - python: 3.6
     - python: 3.7
@@ -12,7 +11,7 @@ matrix:
 services:
     - docker
 before_install:
-    - docker run --name arango -d -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd arangodb/arangodb:3.5.0
+    - docker run --name arango -d -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd arangodb/arangodb:3.6.1
     - docker cp tests/static/service.zip arango:/tmp/service.zip
 install:
     - pip install flake8 mock

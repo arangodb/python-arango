@@ -112,5 +112,4 @@ information, refer to `ArangoDB manual`_.
         restrict_collections=['students']
     )
 
-
 See :ref:`Replication` for API specification.
