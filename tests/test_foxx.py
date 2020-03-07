@@ -112,7 +112,8 @@ def test_foxx_service_management_json(db, bad_db, cluster):
         dependencies={},
         teardown=True,
         setup=True,
-        legacy=False
+        legacy=False,
+        force=False
     )
     assert service['mount'] == service_mount
     assert service['name'] == 'test'
@@ -158,7 +159,9 @@ def test_foxx_service_management_file(db, cluster):
 
     path = os.path.join(os.path.dirname(__file__), 'static', 'service.zip')
     bad_path = os.path.join(os.path.dirname(__file__), 'static', 'service')
+
     service_mount = generate_service_mount()
+    missing_mount = generate_service_mount()
 
     # Test create service by file with wrong extension
     with assert_raises(ValueError):
@@ -188,40 +191,41 @@ def test_foxx_service_management_file(db, cluster):
     assert db.foxx.update_config(service_mount, {}) == {'values': {}}
     assert db.foxx.update_dependencies(service_mount, {}) == {'values': {}}
 
-    # # Test update service by file
-    # service = db.foxx.update_service_by_file(
-    #     mount=service_mount,
-    #     filename=path,
-    #     teardown=False,
-    #     setup=False,
-    #     legacy=False
-    # )
-    # assert service['mount'] == service_mount
-    # assert service['name'] == 'test'
-    # assert service['legacy'] is False
-    #
-    # # Test update missing service
-    # with assert_raises(FoxxServiceUpdateError) as err:
-    #     db.foxx.update_service_by_file(missing_mount, path)
-    # assert err.value.error_code == 3009
+    # Test update service by file
+    service = db.foxx.update_service_with_file(
+        mount=service_mount,
+        filename=path,
+        teardown=False,
+        setup=False,
+        legacy=False,
+        force=False
+    )
+    assert service['mount'] == service_mount
+    assert service['name'] == 'test'
+    assert service['legacy'] is False
 
-    # # Test replace service by file
-    # service = db.foxx.replace_service_by_file(
-    #     mount=service_mount,
-    #     filename=path,
-    #     teardown=True,
-    #     setup=True,
-    #     legacy=True,
-    #     force=False
-    # )
-    # assert service['mount'] == service_mount
-    # assert service['name'] == 'test'
-    # assert service['legacy'] is True
-    #
-    # # Test replace missing service
-    # with assert_raises(FoxxServiceReplaceError) as err:
-    #     db.foxx.replace_service_by_file(missing_mount, path)
-    # assert err.value.error_code == 3009
+    # Test update missing service
+    with assert_raises(FoxxServiceUpdateError) as err:
+        db.foxx.update_service_with_file(missing_mount, path)
+    assert err.value.error_code == 3009
+
+    # Test replace service by file
+    service = db.foxx.replace_service_with_file(
+        mount=service_mount,
+        filename=path,
+        teardown=True,
+        setup=True,
+        legacy=True,
+        force=False
+    )
+    assert service['mount'] == service_mount
+    assert service['name'] == 'test'
+    assert service['legacy'] is True
+
+    # Test replace missing service
+    with assert_raises(FoxxServiceReplaceError) as err:
+        db.foxx.replace_service_with_file(missing_mount, path)
+    assert err.value.error_code == 3009
 
     assert db.foxx.delete_service(service_mount, teardown=False) is True
     assert service_mount not in extract('mount', db.foxx.services())
@@ -412,43 +416,43 @@ def test_foxx_misc_functions(db, bad_db, cluster):
     assert err.value.error_code == 3016
 
     # Test run tests on service
-    result_string = db.foxx.run_tests(
+    result_str = db.foxx.run_tests(
         mount=service_mount,
         reporter='suite',
         idiomatic=True,
         name_filter='science'
     )
-    result_json = json.loads(result_string)
+    result_json = json.loads(result_str)
     assert 'stats' in result_json
     assert 'tests' in result_json
     assert 'suites' in result_json
 
-    result_string = db.foxx.run_tests(
+    result_str = db.foxx.run_tests(
         mount=service_mount,
         reporter='stream',
         output_format='x-ldjson'
     )
-    for result_part in result_string.split('\r\n'):
+    for result_part in result_str.split('\r\n'):
         if len(result_part) == 0:
             continue
         assert result_part.startswith('[')
         assert result_part.endswith(']')
 
-    result_string = db.foxx.run_tests(
+    result_str = db.foxx.run_tests(
         mount=service_mount,
         reporter='stream',
         output_format='text'
     )
-    assert result_string.startswith('[[')
-    assert result_string.endswith(']]')
+    assert result_str.startswith('[')
+    assert result_str.endswith(']') or result_str.endswith('\r\n')
 
-    result_string = db.foxx.run_tests(
+    result_str = db.foxx.run_tests(
         mount=service_mount,
         reporter='xunit',
         output_format='xml'
     )
-    assert result_string.strip().startswith('<')
-    assert result_string.strip().endswith('>')
+    assert result_str.strip().startswith('<')
+    assert result_str.strip().endswith('>')
 
     # Test run tests on missing service
     with assert_raises(FoxxTestRunError) as err:

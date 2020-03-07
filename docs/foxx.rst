@@ -91,7 +91,7 @@ information, refer to `ArangoDB manual`_.
     # Delete a service.
     foxx.delete_service(service_mount)
 
-You can also create a Foxx service by providing a file directly.
+You can also manage Foxx services by using zip or Javascript files directly:
 
 .. code-block:: python
 
@@ -112,13 +112,33 @@ You can also create a Foxx service by providing a file directly.
     # Create a service by providing a file directly.
     foxx.create_service_with_file(
         mount=service_mount,
-        source='/home/service.zip',
+        filename='/home/user/service.zip',
         development=True,
         setup=True,
         legacy=True
     )
-    foxx.enable_development(service_mount)
-    foxx.update_config(service_mount, config={})
-    foxx.update_dependencies(service_mount, dependencies={})
+
+    # Update (upgrade) a service by providing a file directly.
+    foxx.update_service_with_file(
+        mount=service_mount,
+        filename='/home/user/service.zip',
+        teardown=False,
+        setup=True,
+        legacy=True,
+        force=False
+    )
+
+    # Replace a service by providing a file directly.
+    foxx.replace_service_with_file(
+        mount=service_mount,
+        filename='/home/user/service.zip',
+        teardown=False,
+        setup=True,
+        legacy=True,
+        force=False
+    )
+
+    # Delete a service.
+    foxx.delete_service(service_mount)
 
 See :ref:`Foxx` for API specification.

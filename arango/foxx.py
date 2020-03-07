@@ -230,7 +230,8 @@ class Foxx(APIWrapper):
                        dependencies=None,
                        teardown=None,
                        setup=None,
-                       legacy=None):
+                       legacy=None,
+                       force=None):
         """Update (upgrade) a service.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
@@ -247,8 +248,10 @@ class Foxx(APIWrapper):
         :type teardown: bool
         :param setup: Run service setup script.
         :type setup: bool
-        :param legacy: Install the service in 2.8 legacy compatibility mode.
+        :param legacy: Update the service in 2.8 legacy compatibility mode.
         :type legacy: bool
+        :param force: Force update if no service is found.
+        :type force: bool
         :return: Updated service metadata.
         :rtype: dict
         :raise arango.exceptions.FoxxServiceUpdateError: If update fails.
@@ -260,6 +263,8 @@ class Foxx(APIWrapper):
             params['setup'] = setup
         if legacy is not None:
             params['legacy'] = legacy
+        if force is not None:
+            params['force'] = force
 
         data = {}
         if source is not None:
@@ -283,52 +288,56 @@ class Foxx(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    # TODO Remove once method is confirmed to be not supported
-    # def update_service_by_file(self,
-    #                            mount,
-    #                            filename=None,
-    #                            teardown=None,
-    #                            setup=None,
-    #                            legacy=None):
-    #     """Update (upgrade) a service using a javascript file or zip bundle.
-    #
-    #     :param mount: Service mount path (e.g "/_admin/aardvark").
-    #     :type mount: str | unicode
-    #     :param filename: Full path to the javascript file or zip bundle.
-    #     :type filename: str | unicode
-    #     :param teardown: Run service teardown script.
-    #     :type teardown: bool
-    #     :param setup: Run service setup script.
-    #     :type setup: bool
-    #     :param legacy: Install the service in 2.8 legacy compatibility mode.
-    #     :type legacy: bool
-    #     :return: Updated service metadata.
-    #     :rtype: dict
-    #     :raise arango.exceptions.FoxxServiceUpdateError: If update fails.
-    #     """
-    #     params = {'mount': mount}
-    #     if teardown is not None:
-    #         params['teardown'] = teardown
-    #     if setup is not None:
-    #         params['setup'] = setup
-    #     if legacy is not None:
-    #         params['legacy'] = legacy
-    #
-    #     data = self._encode_file(filename)
-    #     request = Request(
-    #         method='patch',
-    #         endpoint='/_api/foxx',
-    #         params=params,
-    #         data=data,
-    #         headers={'content-type': data.content_type}
-    #     )
-    #
-    #     def response_handler(resp):
-    #         if not resp.is_success:
-    #             raise FoxxServiceUpdateError(resp, request)
-    #         return resp.body
-    #
-    #     return self._execute(request, response_handler)
+    def update_service_with_file(self,
+                                 mount,
+                                 filename=None,
+                                 teardown=None,
+                                 setup=None,
+                                 legacy=None,
+                                 force=None):
+        """Update (upgrade) a service using a javascript file or zip bundle.
+
+        :param mount: Service mount path (e.g "/_admin/aardvark").
+        :type mount: str | unicode
+        :param filename: Full path to the javascript file or zip bundle.
+        :type filename: str | unicode
+        :param teardown: Run service teardown script.
+        :type teardown: bool
+        :param setup: Run service setup script.
+        :type setup: bool
+        :param legacy: Update the service in 2.8 legacy compatibility mode.
+        :type legacy: bool
+        :param force: Force update if no service is found.
+        :type force: bool
+        :return: Updated service metadata.
+        :rtype: dict
+        :raise arango.exceptions.FoxxServiceUpdateError: If update fails.
+        """
+        params = {'mount': mount}
+        if teardown is not None:
+            params['teardown'] = teardown
+        if setup is not None:
+            params['setup'] = setup
+        if legacy is not None:
+            params['legacy'] = legacy
+        if force is not None:
+            params['force'] = force
+
+        data = self._encode_file(filename)
+        request = Request(
+            method='patch',
+            endpoint='/_api/foxx/service',
+            params=params,
+            data=data,
+            headers={'content-type': data.content_type}
+        )
+
+        def response_handler(resp):
+            if not resp.is_success:
+                raise FoxxServiceUpdateError(resp, request)
+            return resp.body
+
+        return self._execute(request, response_handler)
 
     def replace_service(self,
                         mount,
@@ -355,7 +364,7 @@ class Foxx(APIWrapper):
         :type teardown: bool
         :param setup: Run service setup script.
         :type setup: bool
-        :param legacy: Install the service in 2.8 legacy compatibility mode.
+        :param legacy: Replace the service in 2.8 legacy compatibility mode.
         :type legacy: bool
         :param force: Force install if no service is found.
         :type force: bool
@@ -395,57 +404,56 @@ class Foxx(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    # TODO Remove once method is confirmed to be not supported
-    # def replace_service_by_file(self,
-    #                             mount,
-    #                             filename=None,
-    #                             teardown=None,
-    #                             setup=None,
-    #                             legacy=None,
-    #                             force=None):
-    #     """Replace a service using a javascript file or zip bundle.
-    #
-    #     :param mount: Service mount path (e.g "/_admin/aardvark").
-    #     :type mount: str | unicode
-    #     :param filename: Full path to the javascript file or zip bundle.
-    #     :type filename: str | unicode
-    #     :param teardown: Run service teardown script.
-    #     :type teardown: bool
-    #     :param setup: Run service setup script.
-    #     :type setup: bool
-    #     :param legacy: Install the service in 2.8 legacy compatibility mode.
-    #     :type legacy: bool
-    #     :param force: Force install if no service is found.
-    #     :type force: bool
-    #     :return: Replaced service metadata.
-    #     :rtype: dict
-    #     :raise arango.exceptions.FoxxServiceReplaceError: If replace fails.
-    #     """
-    #     params = {'mount': mount}
-    #     if teardown is not None:
-    #         params['teardown'] = teardown
-    #     if setup is not None:
-    #         params['setup'] = setup
-    #     if legacy is not None:
-    #         params['legacy'] = legacy
-    #     if force is not None:
-    #         params['force'] = force
-    #
-    #     data = self._encode_file(filename)
-    #     request = Request(
-    #         method='put',
-    #         endpoint='/_api/foxx',
-    #         params=params,
-    #         data=data,
-    #         headers={'content-type': data.content_type}
-    #     )
-    #
-    #     def response_handler(resp):
-    #         if not resp.is_success:
-    #             raise FoxxServiceReplaceError(resp, request)
-    #         return resp.body
-    #
-    #     return self._execute(request, response_handler)
+    def replace_service_with_file(self,
+                                  mount,
+                                  filename=None,
+                                  teardown=None,
+                                  setup=None,
+                                  legacy=None,
+                                  force=None):
+        """Replace a service using a javascript file or zip bundle.
+
+        :param mount: Service mount path (e.g "/_admin/aardvark").
+        :type mount: str | unicode
+        :param filename: Full path to the javascript file or zip bundle.
+        :type filename: str | unicode
+        :param teardown: Run service teardown script.
+        :type teardown: bool
+        :param setup: Run service setup script.
+        :type setup: bool
+        :param legacy: Replace the service in 2.8 legacy compatibility mode.
+        :type legacy: bool
+        :param force: Force install if no service is found.
+        :type force: bool
+        :return: Replaced service metadata.
+        :rtype: dict
+        :raise arango.exceptions.FoxxServiceReplaceError: If replace fails.
+        """
+        params = {'mount': mount}
+        if teardown is not None:
+            params['teardown'] = teardown
+        if setup is not None:
+            params['setup'] = setup
+        if legacy is not None:
+            params['legacy'] = legacy
+        if force is not None:
+            params['force'] = force
+
+        data = self._encode_file(filename)
+        request = Request(
+            method='put',
+            endpoint='/_api/foxx/service',
+            params=params,
+            data=data,
+            headers={'content-type': data.content_type}
+        )
+
+        def response_handler(resp):
+            if not resp.is_success:
+                raise FoxxServiceReplaceError(resp, request)
+            return resp.body
+
+        return self._execute(request, response_handler)
 
     def delete_service(self, mount, teardown=None):
         """Uninstall a service.
