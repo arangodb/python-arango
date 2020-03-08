@@ -266,6 +266,10 @@ class CursorStateError(ArangoClientError):
     """The cursor object was in a bad state."""
 
 
+class CursorCountError(ArangoClientError, TypeError):
+    """The cursor count was not enabled."""
+
+
 class CursorEmptyError(ArangoClientError):
     """The current batch in cursor was empty."""
 

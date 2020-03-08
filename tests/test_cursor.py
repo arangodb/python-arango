@@ -4,6 +4,7 @@ import pytest
 
 from arango.exceptions import (
     CursorCloseError,
+    CursorCountError,
     CursorEmptyError,
     CursorNextError,
     CursorStateError,
@@ -270,6 +271,22 @@ def test_cursor_no_count(db, col):
         optimizer_rules=['+all'],
         profile=True
     )
+    with pytest.raises(CursorCountError) as err:
+        _ = len(cursor)
+    assert err.value.message == 'cursor count not enabled'
+
+    with pytest.raises(CursorCountError) as err:
+        _ = bool(cursor)
+    assert err.value.message == 'cursor count not enabled'
+
     while cursor.has_more():
         assert cursor.count() is None
+
+        with pytest.raises(CursorCountError) as err:
+            _ = len(cursor)
+        assert err.value.message == 'cursor count not enabled'
+
+        with pytest.raises(CursorCountError) as err:
+            _ = bool(cursor)
+        assert err.value.message == 'cursor count not enabled'
         assert cursor.fetch()

@@ -5,10 +5,11 @@ __all__ = ['Cursor']
 from collections import deque
 
 from arango.exceptions import (
-    CursorNextError,
     CursorCloseError,
+    CursorEmptyError,
+    CursorNextError,
     CursorStateError,
-    CursorEmptyError
+    CursorCountError
 )
 from arango.request import Request
 
@@ -63,6 +64,8 @@ class Cursor(object):
         return self
 
     def __len__(self):
+        if self._count is None:
+            raise CursorCountError('cursor count not enabled')
         return self._count
 
     def __exit__(self, *_):
