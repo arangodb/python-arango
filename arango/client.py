@@ -6,7 +6,11 @@ from six import string_types
 
 __all__ = ['ArangoClient']
 
-from arango.connection import Connection
+from arango.connection import (
+    BasicConnection,
+    JWTConnection,
+    JWTSuperuserConnection
+)
 from arango.database import StandardDatabase
 from arango.exceptions import ServerConnectionError
 from arango.http import DefaultHTTPClient
@@ -85,7 +89,13 @@ class ArangoClient(object):
         """
         return __version__
 
-    def db(self, name='_system', username='root', password='', verify=False):
+    def db(self,
+           name='_system',
+           username='root',
+           password='',
+           verify=False,
+           auth_method='basic',
+           superuser_token=None):
         """Connect to an ArangoDB database and return the database API wrapper.
 
         :param name: Database name.
@@ -96,22 +106,58 @@ class ArangoClient(object):
         :type password: str | unicode
         :param verify: Verify the connection by sending a test request.
         :type verify: bool
+        :param auth_method: HTTP authentication method. Accepted values are
+            "basic" (default) and "jwt". If set to "jwt", the token is
+            refreshed automatically using ArangoDB username and password. This
+            assumes that the clocks of the server and client are synchronized.
+        :type auth_method: str | unicode
+        :param superuser_token: User generated token for superuser access.
+            If set, parameters **username**, **password** and **auth_method**
+            are ignored. This token is not refreshed automatically.
+        :type superuser_token: str | unicode
         :return: Standard database API wrapper.
         :rtype: arango.database.StandardDatabase
         :raise arango.exceptions.ServerConnectionError: If **verify** was set
             to True and the connection fails.
         """
-        connection = Connection(
-            hosts=self._hosts,
-            host_resolver=self._host_resolver,
-            sessions=self._sessions,
-            db_name=name,
-            username=username,
-            password=password,
-            http_client=self._http,
-            serializer=self._serializer,
-            deserializer=self._deserializer
-        )
+        if superuser_token is not None:
+            connection = JWTSuperuserConnection(
+                hosts=self._hosts,
+                host_resolver=self._host_resolver,
+                sessions=self._sessions,
+                db_name=name,
+                http_client=self._http,
+                serializer=self._serializer,
+                deserializer=self._deserializer,
+                superuser_token=superuser_token
+            )
+        elif auth_method == 'basic':
+            connection = BasicConnection(
+                hosts=self._hosts,
+                host_resolver=self._host_resolver,
+                sessions=self._sessions,
+                db_name=name,
+                username=username,
+                password=password,
+                http_client=self._http,
+                serializer=self._serializer,
+                deserializer=self._deserializer,
+            )
+        elif auth_method == 'jwt':
+            connection = JWTConnection(
+                hosts=self._hosts,
+                host_resolver=self._host_resolver,
+                sessions=self._sessions,
+                db_name=name,
+                username=username,
+                password=password,
+                http_client=self._http,
+                serializer=self._serializer,
+                deserializer=self._deserializer,
+            )
+        else:
+            raise ValueError('invalid auth_method: {}'.format(auth_method))
+
         if verify:
             try:
                 connection.ping()

@@ -60,4 +60,15 @@ database.
     # Retrieve server metrics.
     sys_db.metrics()
 
+
+You can also access or hot-reload JWT secrets (enterprise edition only):
+
+.. code-block:: python
+
+    # Retrieve JWT secrets
+    sys_db.jwt_secrets()
+
+    # Hot-reload JWT secrets
+    sys_db.reload_jwt_secrets()
+
 See :ref:`StandardDatabase` for API specification.

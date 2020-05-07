@@ -77,7 +77,7 @@ class Graph(APIWrapper):
             endpoint='/_api/gharial/{}'.format(self._name)
         )
 
-        def response_handler(resp):
+        def response_handler(resp):  # pragma: no cover
             if not resp.is_success:
                 raise GraphPropertiesError(resp, request)
             body = resp.body['graph']
@@ -97,7 +97,7 @@ class Graph(APIWrapper):
             }
             if 'isSmart' in body:
                 properties['smart'] = body['isSmart']
-            if 'smartGraphAttribute' in body:  # pragma: no cover
+            if 'smartGraphAttribute' in body:
                 properties['smart_field'] = body['smartGraphAttribute']
             if 'numberOfShards' in body:
                 properties['shard_count'] = body['numberOfShards']

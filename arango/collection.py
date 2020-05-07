@@ -1441,7 +1441,10 @@ class StandardCollection(Collection):
                sync=None,
                silent=False,
                overwrite=False,
-               return_old=False):
+               return_old=False,
+               overwrite_mode=None,
+               keep_none=None,
+               merge=None):
         """Insert a new document.
 
         :param document: Document to insert. If it contains the "_key" or "_id"
@@ -1457,12 +1460,24 @@ class StandardCollection(Collection):
             can be used to save resources.
         :type silent: bool
         :param overwrite: If set to True, operation does not fail on duplicate
-            key and the existing document is replaced.
+            key and existing document is overwritten (replace-insert).
         :type overwrite: bool
-        :param return_old: Include body of the old document if replaced.
-            Applies only when value of **overwrite** is set to True. Ignored
-            if parameter **silent** is set to True.
+        :param return_old: Include body of the old document if overwritten.
+            Ignored if parameter **silent** is set to True.
         :type return_old: bool
+        :param overwrite_mode: Overwrite behavior used when the document key
+            exists already. Allowed values are "replace" (replace-insert) or
+            "update" (update-insert). Implicitly sets the value of parameter
+            **overwrite**.
+        :type overwrite_mode: str
+        :param keep_none: If set to True, fields with value None are retained
+            in the document. Otherwise, they are removed completely. Applies
+            only when **overwrite_mode** is set to "update" (update-insert).
+        :type keep_none: bool
+        :param merge: If set to True (default), sub-dictionaries are merged
+            instead of the new one overwriting the old one. Applies only when
+            **overwrite_mode** is set to "update" (update-insert).
+        :type merge: bool
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -1478,6 +1493,12 @@ class StandardCollection(Collection):
         }
         if sync is not None:
             params['waitForSync'] = sync
+        if overwrite_mode is not None:
+            params['overwriteMode'] = overwrite_mode
+        if keep_none is not None:
+            params['keepNull'] = keep_none
+        if merge is not None:
+            params['mergeObjects'] = merge
 
         request = Request(
             method='post',
@@ -1569,7 +1590,7 @@ class StandardCollection(Collection):
                         body['_old_rev'] = body.pop('_oldRev')
                     results.append(body)
                 else:
-                    sub_resp = self._conn.build_error_response(resp, body)
+                    sub_resp = self._conn.prep_bulk_err_response(resp, body)
                     results.append(DocumentInsertError(sub_resp, request))
 
             return results
@@ -1731,7 +1752,7 @@ class StandardCollection(Collection):
                     body['_old_rev'] = body.pop('_oldRev')
                     results.append(body)
                 else:
-                    sub_resp = self._conn.build_error_response(resp, body)
+                    sub_resp = self._conn.prep_bulk_err_response(resp, body)
                     if sub_resp.error_code == 1200:
                         error = DocumentRevisionError(sub_resp, request)
                     else:  # pragma: no cover
@@ -1934,7 +1955,7 @@ class StandardCollection(Collection):
                     body['_old_rev'] = body.pop('_oldRev')
                     results.append(body)
                 else:
-                    sub_resp = self._conn.build_error_response(resp, body)
+                    sub_resp = self._conn.prep_bulk_err_response(resp, body)
                     if sub_resp.error_code == 1200:
                         error = DocumentRevisionError(sub_resp, request)
                     else:  # pragma: no cover
@@ -2121,7 +2142,7 @@ class StandardCollection(Collection):
                 if '_id' in body:
                     results.append(body)
                 else:
-                    sub_resp = self._conn.build_error_response(resp, body)
+                    sub_resp = self._conn.prep_bulk_err_response(resp, body)
                     if sub_resp.error_code == 1200:
                         error = DocumentRevisionError(sub_resp, request)
                     else:
@@ -2177,8 +2198,9 @@ class StandardCollection(Collection):
                     sync=None):
         """Insert multiple documents into the collection.
 
-        This is faster than :func:`arango.collection.Collection.insert_many`
-        but does not return as much information.
+        This method is faster than
+        :func:`arango.collection.StandardCollection.insert_many` but does not
+        return as many details.
 
         :param documents: List of new documents to insert. If they contain the
             "_key" or "_id" fields, the values are used as the keys of the new
@@ -2222,9 +2244,7 @@ class StandardCollection(Collection):
 
         params = {
             'type': 'array',
-            'collection': self.name,
-            'complete': halt_on_error,
-            'details': details,
+            'collection': self.name
         }
         if halt_on_error is not None:
             params['complete'] = halt_on_error

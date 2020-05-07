@@ -108,3 +108,9 @@ venv.bak/
 
 # PyCharm
 .idea/
+
+# ArangoDB Starter
+localdata/
+
+# Node Modules
+node_modules/

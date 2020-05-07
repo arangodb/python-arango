@@ -187,6 +187,22 @@ def format_collection(body):  # pragma: no cover
     if 'deleted' in body:
         result['deleted'] = body['deleted']
 
+    # New in 3.7
+    if 'syncByRevision' in body:
+        result['sync_by_revision'] = body['syncByRevision']
+    if 'tempObjectId' in body:
+        result['temp_object_id'] = body['tempObjectId']
+    if 'usesRevisionsAsDocumentIds' in body:
+        result['rev_as_id'] = body['usesRevisionsAsDocumentIds']
+    if 'isDisjoint' in body:
+        result['disjoint'] = body['isDisjoint']
+    if 'isSmartChild' in body:
+        result['smart_child'] = body['isSmartChild']
+    if 'minRevision' in body:
+        result['min_revision'] = body['minRevision']
+    if 'schema' in body:
+        result['schema'] = body['schema']
+
     return verify_format(body, result)
 
 
@@ -784,6 +800,10 @@ def format_view(body):  # pragma: no cover
             format_view_consolidation_policy(body['consolidationPolicy'])
     if 'primarySort' in body:
         result['primary_sort'] = body['primarySort']
+    if 'primarySortCompression' in body:
+        result['primary_sort_compression'] = body['primarySortCompression']
+    if 'storedValues' in body:
+        result['stored_values'] = body['storedValues']
     if 'writebufferIdle' in body:
         result['writebuffer_idle'] = body['writebufferIdle']
     if 'writebufferActive' in body:
@@ -840,3 +860,15 @@ def format_edge(body):  # pragma: no cover
         return result
     else:
         return edge
+
+
+def format_tls(body):  # pragma: no cover
+    """Format TLS data.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    result = body
+    return verify_format(body, result)

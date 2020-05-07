@@ -1,8 +1,11 @@
 from __future__ import absolute_import, unicode_literals
 
+from calendar import timegm
+from datetime import datetime
 from collections import deque
 from uuid import uuid4
 
+import jwt
 import pytest
 
 from arango.cursor import Cursor
@@ -110,6 +113,28 @@ def generate_service_mount():
     :rtype: str | unicode
     """
     return '/test_{}'.format(uuid4().hex)
+
+
+def generate_jwt(secret, exp=3600):
+    """Generate and return a JWT.
+
+    :param secret: JWT secret
+    :type secret: str | unicode
+    :param exp: Time to expire in seconds.
+    :type exp: int
+    :return: JWT
+    :rtype: str | unicode
+    """
+    now = timegm(datetime.utcnow().utctimetuple())
+    return jwt.encode(
+        payload={
+            'iat': now,
+            'exp': now + exp,
+            'iss': 'arangodb',
+            'server_id': 'client'
+        },
+        key=secret,
+    ).decode('utf-8')
 
 
 def clean_doc(obj):

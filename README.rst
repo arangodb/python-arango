@@ -34,28 +34,15 @@
 
 Welcome to the GitHub page for **python-arango**, a Python driver for ArangoDB_.
 
-Announcements
-=============
-
-- Python-arango version `5.0.0`_ is finally up! This release supports ArangoDB
-  version 3.5+ only. It also breaks backward-compatibility and you must make
-  changes in your application code. Please see the releases_ page for details.
-
-Features
-========
-
-- Pythonic interface
-- Lightweight
-- High API coverage
-
 Compatibility
 =============
 
-- Python versions 2.7, 3.5, 3.6 and 3.7 are supported
-- Python-arango 5.x supports ArangoDB 3.5+
-- Python-arango 4.x supports ArangoDB 3.3 ~ 3.4 only
-- Python-arango 3.x supports ArangoDB 3.0 ~ 3.2 only
-- Python-arango 2.x supports ArangoDB 1.x ~ 2.x only
+- Python versions 2.7+ and 3.5+ are supported
+- Python-arango 6.x supports ArangoDB 3.7+
+- Python-arango 5.x supports ArangoDB 3.5 ~ 3.6
+- Python-arango 4.x supports ArangoDB 3.3 ~ 3.4
+- Python-arango 3.x supports ArangoDB 3.0 ~ 3.2
+- Python-arango 2.x supports ArangoDB 1.x ~ 2.x
 
 Installation
 ============

@@ -40,10 +40,11 @@ from arango.exceptions import (
     PermissionGetError,
     PermissionResetError,
     PermissionUpdateError,
-    ServerEndpointsError,
     ServerEngineError,
     ServerDetailsError,
     ServerEchoError,
+    JWTSecretListError,
+    JWTSecretReloadError,
     ServerLogLevelError,
     ServerLogLevelSetError,
     ServerMetricsError,
@@ -56,6 +57,8 @@ from arango.exceptions import (
     ServerStatisticsError,
     ServerStatusError,
     ServerTimeError,
+    ServerTLSError,
+    ServerTLSReloadError,
     ServerVersionError,
     TaskCreateError,
     TaskDeleteError,
@@ -78,6 +81,7 @@ from arango.exceptions import (
 )
 from arango.formatter import (
     format_database,
+    format_tls,
     format_view
 )
 from arango.foxx import Foxx
@@ -378,25 +382,6 @@ class Database(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    def endpoints(self):  # pragma: no cover
-        """Return coordinate endpoints. This method is for clusters only.
-
-        :return: List of endpoints.
-        :rtype: [str | unicode]
-        :raise arango.exceptions.ServerEndpointsError: If retrieval fails.
-        """
-        request = Request(
-            method='get',
-            endpoint='/_api/cluster/endpoints'
-        )
-
-        def response_handler(resp):
-            if not resp.is_success:
-                raise ServerEndpointsError(resp, request)
-            return [item['endpoint'] for item in resp.body['endpoints']]
-
-        return self._execute(request, response_handler)
-
     def engine(self):
         """Return the database engine details.
 
@@ -692,6 +677,83 @@ class Database(APIWrapper):
             if not resp.is_success:
                 raise ServerMetricsError(resp, request)
             return resp.body
+
+        return self._execute(request, response_handler)
+
+    def jwt_secrets(self):  # pragma: no cover
+        """Return information on currently loaded JWT secrets.
+
+        :return: Information on currently loaded JWT secrets.
+        :rtype: dict
+        """
+        request = Request(
+            method='get',
+            endpoint='/_admin/server/jwt'
+        )
+
+        def response_handler(resp):
+            if not resp.is_success:
+                raise JWTSecretListError(resp, request)
+            return resp.body['result']
+
+        return self._execute(request, response_handler)
+
+    def reload_jwt_secrets(self):  # pragma: no cover
+        """Hot-reload JWT secrets.
+
+        Calling this without payload reloads JWT secrets from disk. Only files
+        specified via arangod startup option ``--server.jwt-secret-keyfile`` or
+        ``--server.jwt-secret-folder`` are used. It is not possible to change
+        the location where files are loaded from without restarting the server.
+
+        :return: Information on reloaded JWT secrets.
+        :rtype: dict
+        """
+        request = Request(
+            method='post',
+            endpoint='/_admin/server/jwt'
+        )
+
+        def response_handler(resp):
+            if not resp.is_success:
+                raise JWTSecretReloadError(resp, request)
+            return resp.body['result']
+
+        return self._execute(request, response_handler)
+
+    def tls(self):
+        """Return TLS data (server key, client-auth CA).
+
+        :return: TLS data.
+        :rtype: dict
+        """
+        request = Request(
+            method='get',
+            endpoint='/_admin/server/tls'
+        )
+
+        def response_handler(resp):
+            if not resp.is_success:
+                raise ServerTLSError(resp, request)
+            return format_tls(resp.body['result'])
+
+        return self._execute(request, response_handler)
+
+    def reload_tls(self):
+        """Reload TLS data (server key, client-auth CA).
+
+        :return: New TLS data.
+        :rtype: dict
+        """
+        request = Request(
+            method='post',
+            endpoint='/_admin/server/tls'
+        )
+
+        def response_handler(resp):
+            if not resp.is_success:
+                raise ServerTLSReloadError(resp, request)
+            return format_tls(resp.body['result'])
 
         return self._execute(request, response_handler)
 
@@ -1312,7 +1374,10 @@ class Database(APIWrapper):
                         sync=None,
                         silent=False,
                         overwrite=False,
-                        return_old=False):
+                        return_old=False,
+                        overwrite_mode=None,
+                        keep_none=None,
+                        merge=None):
         """Insert a new document.
 
         :param collection: Collection name.
@@ -1335,6 +1400,19 @@ class Database(APIWrapper):
         :param return_old: Include body of the old document if replaced.
             Applies only when value of **overwrite** is set to True.
         :type return_old: bool
+        :param overwrite_mode: Overwrite behavior used when the document key
+            exists already. Allowed values are "replace" (replace-insert) or
+            "update" (update-insert). Implicitly sets the value of parameter
+            **overwrite**.
+        :type overwrite_mode: str
+        :param keep_none: If set to True, fields with value None are retained
+            in the document. Otherwise, they are removed completely. Applies
+            only when **overwrite_mode** is set to "update" (update-insert).
+        :type keep_none: bool
+        :param merge: If set to True (default), sub-dictionaries are merged
+            instead of the new one overwriting the old one. Applies only when
+            **overwrite_mode** is set to "update" (update-insert).
+        :type merge: bool
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -1346,7 +1424,10 @@ class Database(APIWrapper):
             sync=sync,
             silent=silent,
             overwrite=overwrite,
-            return_old=return_old
+            return_old=return_old,
+            overwrite_mode=overwrite_mode,
+            keep_none=keep_none,
+            merge=merge
         )
 
     def update_document(self,

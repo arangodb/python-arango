@@ -549,10 +549,6 @@ class ServerEngineError(ArangoServerError):
     """Failed to retrieve database engine."""
 
 
-class ServerEndpointsError(ArangoServerError):
-    """Failed to retrieve server endpoints."""
-
-
 class ServerVersionError(ArangoServerError):
     """Failed to retrieve server version."""
 
@@ -611,6 +607,14 @@ class ServerMetricsError(ArangoServerError):
 
 class ServerRoleError(ArangoServerError):
     """Failed to retrieve server role in a cluster."""
+
+
+class ServerTLSError(ArangoServerError):
+    """Failed to retrieve TLS data."""
+
+
+class ServerTLSReloadError(ArangoServerError):
+    """Failed to reload TLS."""
 
 
 #####################
@@ -867,6 +871,10 @@ class ReplicationServerIDError(ArangoServerError):
 # Cluster Exceptions #
 ######################
 
+class ClusterHealthError(ArangoServerError):
+    """Failed to retrieve DBServer health."""
+
+
 class ClusterServerIDError(ArangoServerError):
     """Failed to retrieve server ID."""
 
@@ -875,13 +883,37 @@ class ClusterServerRoleError(ArangoServerError):
     """Failed to retrieve server role."""
 
 
-class ClusterStatisticsError(ArangoServerError):
+class ClusterServerStatisticsError(ArangoServerError):
     """Failed to retrieve DBServer statistics."""
 
 
-class ClusterHealthError(ArangoServerError):
-    """Failed to retrieve DBServer health."""
+class ClusterServerVersionError(ArangoServerError):
+    """Failed to retrieve server node version."""
+
+
+class ClusterServerEngineError(ArangoServerError):
+    """Failed to retrieve server node engine."""
 
 
 class ClusterMaintenanceModeError(ArangoServerError):
     """Failed to enable/disable cluster supervision maintenance mode."""
+
+
+class ClusterEndpointsError(ArangoServerError):
+    """Failed to retrieve cluster endpoints."""
+
+
+##################
+# JWT Exceptions #
+##################
+
+class JWTAuthError(ArangoServerError):
+    """Failed to get a new JWT token from ArangoDB."""
+
+
+class JWTSecretListError(ArangoServerError):
+    """Failed to retrieve information on currently loaded JWT secrets."""
+
+
+class JWTSecretReloadError(ArangoServerError):
+    """Failed to reload JWT secrets."""

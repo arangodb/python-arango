@@ -211,7 +211,6 @@ class Replication(APIWrapper):
         def response_handler(resp):
             if resp.is_success:
                 result = format_replication_header(resp.headers)
-                print(resp.body)
                 result['content'] = [
                     self._conn.deserialize(line) for
                     line in resp.body.split('\n') if line

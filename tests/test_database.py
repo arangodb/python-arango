@@ -11,7 +11,6 @@ from arango.exceptions import (
     DatabasePropertiesError,
     ServerDetailsError,
     ServerEchoError,
-    ServerEndpointsError,
     ServerLogLevelError,
     ServerLogLevelSetError,
     ServerMetricsError,
@@ -37,7 +36,7 @@ def test_database_attributes(db, username):
     assert repr(db) == '<StandardDatabase {}>'.format(db.name)
 
 
-def test_database_misc_methods(db, bad_db, cluster):
+def test_database_misc_methods(sys_db, db, bad_db):
     # Test get properties
     properties = db.properties()
     assert 'id' in properties
@@ -208,15 +207,6 @@ def test_database_misc_methods(db, bad_db, cluster):
     # Test set log levels with bad database
     with assert_raises(ServerLogLevelSetError):
         bad_db.set_log_levels(**new_levels)
-
-    if cluster:
-        # Test get server endpoints
-        assert len(db.endpoints()) > 0
-
-        # Test get server endpoints with bad database
-        with assert_raises(ServerEndpointsError) as err:
-            bad_db.endpoints()
-        assert err.value.error_code in {11, 1228}
 
     # Test get storage engine
     engine = db.engine()

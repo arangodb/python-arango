@@ -12,7 +12,8 @@ from tests.helpers import (
     generate_string,
     generate_username,
     generate_graph_name,
-    empty_collection
+    empty_collection,
+    generate_jwt
 )
 from tests.executors import (
     TestAsyncExecutor,
@@ -27,9 +28,10 @@ def pytest_addoption(parser):
     parser.addoption('--host', action='store', default='127.0.0.1')
     parser.addoption('--port', action='store', default='8529')
     parser.addoption('--passwd', action='store', default='passwd')
-    parser.addoption("--complete", action="store_true")
-    parser.addoption("--cluster", action="store_true")
-    parser.addoption("--replication", action="store_true")
+    parser.addoption('--complete', action='store_true')
+    parser.addoption('--cluster', action='store_true')
+    parser.addoption('--replication', action='store_true')
+    parser.addoption('--secret', action='store', default='secret')
 
 
 # noinspection PyShadowingNames
@@ -38,11 +40,13 @@ def pytest_configure(config):
         config.getoption('host'),
         config.getoption('port')
     )
+    secret = config.getoption('secret')
     client = ArangoClient(hosts=[url, url, url])
     sys_db = client.db(
         name='_system',
         username='root',
-        password=config.getoption('passwd')
+        password=config.getoption('passwd'),
+        superuser_token=generate_jwt(secret)
     )
     # Create a user and non-system database for testing.
     username = generate_username()
@@ -57,11 +61,6 @@ def pytest_configure(config):
             'password': password,
         }]
     )
-    # sys_db.update_permission(
-    #     username=username,
-    #     permission='rw',
-    #     database=tst_db_name
-    # )
     tst_db = client.db(tst_db_name, username, password)
     bad_db = client.db(bad_db_name, username, password)
 
@@ -96,6 +95,7 @@ def pytest_configure(config):
         'client': client,
         'username': username,
         'password': password,
+        'db_name': tst_db_name,
         'sys_db': sys_db,
         'tst_db': tst_db,
         'bad_db': bad_db,
@@ -108,7 +108,9 @@ def pytest_configure(config):
         'tvcol_name': tvcol_name,
         'cluster': config.getoption('cluster'),
         'complete': config.getoption('complete'),
-        'replication': config.getoption('replication')
+        'replication': config.getoption('replication'),
+        'secret': secret,
+        'root_password': config.getoption('passwd')
     })
 
 
@@ -156,8 +158,7 @@ def pytest_generate_tests(metafunc):
         tst_conn = tst_db._conn
         bad_conn = bad_db._conn
 
-        # TODO Add graph tests back
-        if test in {'collection', 'document', 'aql', 'index'}:
+        if test in {'aql', 'collection', 'document', 'index'}:
             # Add test transaction databases
             tst_txn_db = StandardDatabase(tst_conn)
             tst_txn_db._executor = TestTransactionExecutor(tst_conn)
@@ -166,15 +167,6 @@ def pytest_generate_tests(metafunc):
             bad_txn_db._executor = TestTransactionExecutor(bad_conn)
             bad_dbs.append(bad_txn_db)
 
-        if test not in {
-            'async',
-            'batch',
-            'transaction',
-            'client',
-            'exception',
-            'view',
-            'replication'
-        }:
             # Add test async databases
             tst_async_db = StandardDatabase(tst_conn)
             tst_async_db._executor = TestAsyncExecutor(tst_conn)
@@ -183,16 +175,6 @@ def pytest_generate_tests(metafunc):
             bad_async_db._executor = TestAsyncExecutor(bad_conn)
             bad_dbs.append(bad_async_db)
 
-        if test not in {
-            'async',
-            'batch',
-            'transaction',
-            'client',
-            'exception',
-            'view',
-            'replication',
-            'foxx'
-        }:
             # Add test batch databases
             tst_batch_db = StandardDatabase(tst_conn)
             tst_batch_db._executor = TestBatchExecutor(tst_conn)
@@ -238,6 +220,11 @@ def client():
 
 
 @pytest.fixture(autouse=False)
+def db_name():
+    return global_data['db_name']
+
+
+@pytest.fixture(autouse=False)
 def sys_db():
     return global_data['sys_db']
 
@@ -250,6 +237,11 @@ def username():
 @pytest.fixture(autouse=False)
 def password():
     return global_data['password']
+
+
+@pytest.fixture(autouse=False)
+def root_password():
+    return global_data['root_password']
 
 
 @pytest.fixture(autouse=False)
@@ -377,3 +369,8 @@ def cluster():
 @pytest.fixture(autouse=False)
 def replication():
     return global_data['replication']
+
+
+@pytest.fixture(autouse=False)
+def secret():
+    return global_data['secret']

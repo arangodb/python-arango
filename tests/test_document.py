@@ -109,10 +109,46 @@ def test_document_insert(col, docs):
         col.insert(doc)
     assert err.value.error_code == 1210
 
-    # Test insert with overwrite and return_old set to True
-    result = col.insert(doc, overwrite=True, return_old=True)
-    assert isinstance(result['old'], dict)
-    assert isinstance(result['_old_rev'], string_types)
+    # Test insert replace
+    doc = {'_key': doc['_key'], 'foo': {'bar': 1}, 'baz': None}
+    result = col.insert(
+        document=doc,
+        overwrite=True,
+        return_old=True,
+        return_new=True
+    )
+    assert result['new']['foo'] == {'bar': 1}
+    assert result['new']['baz'] is None
+    assert 'val' in result['old']
+    assert 'val' not in result['new']
+
+    # Test insert ignore
+    doc = {'_key': doc['_key'], 'foo': {'qux': 2}}
+    result = col.insert(
+        document=doc,
+        return_old=True,
+        return_new=True,
+        overwrite=True,
+        overwrite_mode='ignore',
+        keep_none=False,
+        merge=True
+    )
+    assert 'old' not in result
+    assert 'new' not in result
+    assert col[doc['_key']]['foo'] == {'bar': 1}
+
+    # Test insert conflict
+    with assert_raises(DocumentInsertError) as err:
+        col.insert(
+            document=doc,
+            return_old=True,
+            return_new=True,
+            overwrite=True,
+            overwrite_mode='conflict',
+            keep_none=False,
+            merge=True
+        )
+    assert err.value.error_code == 1210
 
 
 def test_document_insert_many(col, bad_col, docs):

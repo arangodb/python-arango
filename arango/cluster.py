@@ -4,11 +4,14 @@ __all__ = ['Cluster']
 
 from arango.api import APIWrapper
 from arango.exceptions import (
+    ClusterEndpointsError,
     ClusterHealthError,
     ClusterMaintenanceModeError,
+    ClusterServerEngineError,
     ClusterServerIDError,
     ClusterServerRoleError,
-    ClusterStatisticsError,
+    ClusterServerStatisticsError,
+    ClusterServerVersionError,
 )
 from arango.request import Request
 
@@ -42,7 +45,7 @@ class Cluster(APIWrapper):  # pragma: no cover
 
         :return: Server role. Possible values are "SINGLE" (server which is
             not in a cluster), "COORDINATOR" (cluster coordinator), "PRIMARY",
-            "SECONDARY", "AGENT" (Agency node in a cluster) or "UNDEFINED".
+            "SECONDARY", "AGENT" (Agency server in a cluster) or "UNDEFINED".
         :rtype: str | unicode
         :raise arango.exceptions.ClusterServerRoleError: If retrieval fails.
         """
@@ -58,25 +61,70 @@ class Cluster(APIWrapper):  # pragma: no cover
 
         return self._execute(request, response_handler)
 
-    def statistics(self, server_id):
-        """Return the cluster statistics for the given server.
+    def server_version(self, server_id):
+        """Return the version of the given server.
 
         :param server_id: Server ID.
         :type server_id: str | unicode
-        :return: Cluster statistics for the given server.
+        :return: Version of the given server.
         :rtype: dict
-        :raise arango.exceptions.ClusterStatisticsError: If retrieval fails.
+        :raise arango.exceptions.ClusterServerVersionError: If retrieval fails.
         """
         request = Request(
             method='get',
-            endpoint='/_admin/clusterStatistics',
-            params={'DBserver': server_id}
+            endpoint='/_admin/cluster/nodeVersion',
+            params={'ServerID': server_id}
         )
 
         def response_handler(resp):
             if resp.is_success:
                 return resp.body
-            raise ClusterStatisticsError(resp, request)
+            raise ClusterServerVersionError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def server_engine(self, server_id):
+        """Return the engine details for the given server.
+
+        :param server_id: Server ID.
+        :type server_id: str | unicode
+        :return: Engine details of the given server.
+        :rtype: dict
+        :raise arango.exceptions.ClusterServerEngineError: If retrieval fails.
+        """
+        request = Request(
+            method='get',
+            endpoint='/_admin/cluster/nodeEngine',
+            params={'ServerID': server_id}
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                return resp.body
+            raise ClusterServerEngineError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def server_statistics(self, server_id):
+        """Return the statistics for the given server.
+
+        :param server_id: Server ID.
+        :type server_id: str | unicode
+        :return: Statistics for the given server.
+        :rtype: dict
+        :raise arango.exceptions.ClusterServerStatisticsError: If retrieval
+            fails.
+        """
+        request = Request(
+            method='get',
+            endpoint='/_admin/cluster/nodeStatistics',
+            params={'ServerID': server_id}
+        )
+
+        def response_handler(resp):
+            if resp.is_success:
+                return resp.body
+            raise ClusterServerStatisticsError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -120,5 +168,24 @@ class Cluster(APIWrapper):  # pragma: no cover
             if resp.is_success:
                 return resp.body
             raise ClusterMaintenanceModeError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def endpoints(self):
+        """Return coordinate endpoints. This method is for clusters only.
+
+        :return: List of endpoints.
+        :rtype: [str | unicode]
+        :raise arango.exceptions.ServerEndpointsError: If retrieval fails.
+        """
+        request = Request(
+            method='get',
+            endpoint='/_api/cluster/endpoints'
+        )
+
+        def response_handler(resp):
+            if not resp.is_success:
+                raise ClusterEndpointsError(resp, request)
+            return [item['endpoint'] for item in resp.body['endpoints']]
 
         return self._execute(request, response_handler)

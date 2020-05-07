@@ -70,6 +70,14 @@ Cluster
 .. autoclass:: arango.cluster.Cluster
     :members:
 
+.. _Collection:
+
+Collection
+==========
+
+.. autoclass:: arango.collection.Collection
+    :members:
+
 .. _Cursor:
 
 Cursor
@@ -84,24 +92,6 @@ DefaultHTTPClient
 =================
 
 .. autoclass:: arango.http.DefaultHTTPClient
-    :members:
-
-.. _StandardCollection:
-
-StandardCollection
-==================
-
-.. autoclass:: arango.collection.StandardCollection
-    :inherited-members:
-    :members:
-
-.. _StandardDatabase:
-
-StandardDatabase
-================
-
-.. autoclass:: arango.database.StandardDatabase
-    :inherited-members:
     :members:
 
 .. _EdgeCollection:
@@ -144,6 +134,14 @@ Pregel
 .. autoclass:: arango.pregel.Pregel
     :members:
 
+.. _Replication:
+
+Replication
+===========
+
+.. autoclass:: arango.replication.Replication
+    :members:
+
 .. _Request:
 
 Request
@@ -160,12 +158,22 @@ Response
 .. autoclass:: arango.response.Response
     :members:
 
-.. _Replication:
+.. _StandardCollection:
 
-Replication
-===========
+StandardCollection
+==================
 
-.. autoclass:: arango.replication.Replication
+.. autoclass:: arango.collection.StandardCollection
+    :inherited-members:
+    :members:
+
+.. _StandardDatabase:
+
+StandardDatabase
+================
+
+.. autoclass:: arango.database.StandardDatabase
+    :inherited-members:
     :members:
 
 .. _TransactionDatabase:

@@ -1,23 +1,21 @@
 sudo: false
 language: python
-matrix:
-  include:
-    - python: 2.7
-    - python: 3.5
-    - python: 3.6
-    - python: 3.7
-      dist: xenial
-      sudo: true
+python:
+  - "2.7"
+  - "3.5"
+  - "3.6"
+  - "3.7"
+  - "3.8"
 services:
     - docker
 before_install:
-    - docker run --name arango -d -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd arangodb/arangodb:3.6.1
+    - docker create --name arango -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd arangodb/arangodb-preview:3.7-alpha.3 --server.jwt-secret-keyfile=/tmp/keyfile
     - docker cp tests/static/service.zip arango:/tmp/service.zip
+    - docker cp tests/static/keyfile arango:/tmp/keyfile
+    - docker start arango
 install:
     - pip install flake8 mock
-    - pip install pytest==3.5.1
-    - pip install pytest-cov==2.5.1
-    - pip install python-coveralls==2.9.1
+    - pip install pytest pytest-cov coveralls
     - pip install sphinx sphinx_rtd_theme
     - pip install .
 script:
