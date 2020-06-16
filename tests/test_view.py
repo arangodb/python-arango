@@ -9,7 +9,7 @@ from arango.exceptions import (
     ViewReplaceError,
     ViewUpdateError
 )
-from tests.helpers import assert_raises, generate_view_name
+from tests.helpers import assert_raises, generate_view_name, generate_col_name
 
 
 def test_view_management(db, bad_db, cluster):
@@ -18,15 +18,22 @@ def test_view_management(db, bad_db, cluster):
     bad_view_name = generate_view_name()
     view_type = 'arangosearch'
 
+    col_name = generate_col_name()
+    col = db.create_collection(
+        name=col_name
+    )
+
     result = db.create_view(
         view_name,
         view_type,
-        {'consolidationIntervalMsec': 50000}
+        {'consolidationIntervalMsec': 50000, "links": {col_name: {}}}
     )
     assert 'id' in result
     assert result['name'] == view_name
     assert result['type'] == view_type
     assert result['consolidation_interval_msec'] == 50000
+    assert col_name in result["links"]
+
     view_id = result['id']
 
     # Test create duplicate view
