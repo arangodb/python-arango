@@ -158,7 +158,7 @@ class AQL(APIWrapper):
         :type bind_vars: dict
         :param full_count: This parameter applies only to queries with LIMIT
             clauses. If set to True, the number of matched documents before
-            the last LIMIT clause executed is included in teh cursor. This is
+            the last LIMIT clause executed is included in the cursor. This is
             similar to MySQL SQL_CALC_FOUND_ROWS hint. Using this disables a
             few LIMIT optimizations and may lead to a longer query execution.
         :type full_count: bool
