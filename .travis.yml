@@ -14,8 +14,11 @@ before_install:
     - docker cp tests/static/keyfile arango:/tmp/keyfile
     - docker start arango
 install:
-    - pip install flake8 mock
-    - pip install pytest pytest-cov coveralls
+    - pip install pytest==4.6.11
+    - pip install pytest-cov==2.10.0
+    - pip install coveralls==2.0.0
+    - pip install mock
+    - pip install flake8
     - pip install sphinx sphinx_rtd_theme
     - pip install .
 script:

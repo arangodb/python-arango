@@ -812,7 +812,8 @@ def format_view(body):  # pragma: no cover
         result['writebuffer_max_size'] = body['writebufferSizeMax']
     if 'links' in body:
         result['links'] = {
-            name: format_view_link(link) for name, link in body['links'].items()
+            name: format_view_link(link)
+            for name, link in body['links'].items()
         }
 
     return verify_format(body, result)
