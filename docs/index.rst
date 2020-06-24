@@ -7,7 +7,7 @@ Welcome to the documentation for **python-arango**, a Python driver for ArangoDB
 Compatibility
 =============
 
-- Python versions 2.7+ and 3.5+ are supported
+- Python versions 3.5+ are supported
 - Python-arango 6.x supports ArangoDB 3.7+
 - Python-arango 5.x supports ArangoDB 3.5 ~ 3.6
 - Python-arango 4.x supports ArangoDB 3.3 ~ 3.4

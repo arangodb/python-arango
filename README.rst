@@ -14,7 +14,7 @@
     :target: https://badge.fury.io/py/python-arango
     :alt: Package Version
 
-.. image:: https://img.shields.io/badge/python-2.7%2C%203.5%2C%203.6%2C%203.7-blue.svg
+.. image:: https://img.shields.io/badge/python-3.5%2C%203.6%2C%203.7-blue.svg
     :target: https://github.com/joowani/python-arango
     :alt: Python Versions
 
@@ -37,12 +37,18 @@ Welcome to the GitHub page for **python-arango**, a Python driver for ArangoDB_.
 Compatibility
 =============
 
-- Python versions 2.7+ and 3.5+ are supported
+- Python versions 3.5+ are supported
 - Python-arango 6.x supports ArangoDB 3.7+
 - Python-arango 5.x supports ArangoDB 3.5 ~ 3.6
 - Python-arango 4.x supports ArangoDB 3.3 ~ 3.4
 - Python-arango 3.x supports ArangoDB 3.0 ~ 3.2
 - Python-arango 2.x supports ArangoDB 1.x ~ 2.x
+
+Announcements
+=============
+
+- Python-arango is dropping support for Python 2.7 from version 6.0.0.
+- Check out project aioarangodb_, fork of python-arango using asyncio.
 
 Installation
 ============
@@ -166,3 +172,4 @@ Please take a look at this page_ before submitting a pull request. Thanks!
     http://python-driver-for-arangodb.readthedocs.io/en/master/index.html
 .. _page:
     http://python-driver-for-arangodb.readthedocs.io/en/master/contributing.html
+.. _aioarangodb: https://github.com/bloodbare/aioarangodb
