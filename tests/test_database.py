@@ -151,14 +151,14 @@ def test_database_misc_methods(sys_db, db, bad_db):
     assert err.value.error_code in {11, 1228}
 
     # Test read_log with default parameters
-    log = db.read_log(upto='fatal')
+    log = sys_db.read_log(upto='fatal')
     assert 'lid' in log
     assert 'level' in log
     assert 'text' in log
     assert 'total_amount' in log
 
     # Test read_log with specific parameters
-    log = db.read_log(
+    log = sys_db.read_log(
         level='error',
         start=0,
         size=100000,
@@ -185,7 +185,7 @@ def test_database_misc_methods(sys_db, db, bad_db):
     assert err.value.error_code in {11, 1228}
 
     # Test get log levels
-    assert isinstance(db.log_levels(), dict)
+    assert isinstance(sys_db.log_levels(), dict)
 
     # Test get log levels with bad database
     with assert_raises(ServerLogLevelError) as err:
@@ -198,10 +198,10 @@ def test_database_misc_methods(sys_db, db, bad_db):
         'collector': 'INFO',
         'threads': 'WARNING'
     }
-    result = db.set_log_levels(**new_levels)
+    result = sys_db.set_log_levels(**new_levels)
     for key, value in new_levels.items():
         assert result[key] == value
-    for key, value in db.log_levels().items():
+    for key, value in sys_db.log_levels().items():
         assert result[key] == value
 
     # Test set log levels with bad database
