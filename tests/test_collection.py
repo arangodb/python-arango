@@ -10,7 +10,6 @@ from arango.exceptions import (
     CollectionPropertiesError,
     CollectionRenameError,
     CollectionRevisionError,
-    CollectionRotateJournalError,
     CollectionStatisticsError,
     CollectionTruncateError,
     CollectionUnloadError,
@@ -87,17 +86,6 @@ def test_collection_misc_methods(col, bad_col, cluster):
     # Test unload with bad collection
     with assert_raises(CollectionUnloadError) as err:
         bad_col.unload()
-    assert err.value.error_code in {11, 1228}
-
-    # Test rotate journal
-    try:
-        assert isinstance(col.rotate(), bool)
-    except CollectionRotateJournalError as err:
-        assert err.error_code in {404, 1105}
-
-    # Test rotate journal with bad collection
-    with assert_raises(CollectionRotateJournalError) as err:
-        bad_col.rotate()
     assert err.value.error_code in {11, 1228}
 
     if cluster:
