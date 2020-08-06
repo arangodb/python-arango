@@ -145,16 +145,6 @@ def format_collection(body):  # pragma: no cover
     if 'writeConcern' in body:
         result['write_concern'] = body['writeConcern']
 
-    # MMFiles only
-    if 'doCompact' in body:
-        result['compact'] = body['doCompact']
-    if 'journalSize' in body:
-        result['journal_size'] = body['journalSize']
-    if 'isVolatile' in body:
-        result['volatile'] = body['isVolatile']
-    if 'indexBuckets' in body:
-        result['index_bucket_count'] = body['indexBuckets']
-
     # Cluster only
     if 'shards' in body:
         result['shards'] = body['shards']
