@@ -211,11 +211,10 @@ class AQL(APIWrapper):
             entirety. Results are either returned right away (if the result set
             is small enough), or stored server-side and accessible via cursors
             (while respecting the ttl). You should use this parameter only for
-            short-running queries or without exclusive locks (write-locks on
-            MMFiles). Note: parameters **cache**, **count** and **full_count**
-            do not work for streaming queries. Query statistics, warnings and
-            profiling data are made available only after the query is finished.
-            Default value is False.
+            short-running queries or without exclusive locks. Note: parameters
+            **cache**, **count** and **full_count** do not work for streaming
+            queries. Query statistics, warnings and profiling data are made
+            available only after the query is finished. Default value is False.
         :type stream: bool
         :param skip_inaccessible_cols: If set to True, collections without user
             access are skipped, and query executes normally instead of raising
