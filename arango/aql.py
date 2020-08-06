@@ -183,18 +183,15 @@ class AQL(APIWrapper):
         :param profile: Return additional profiling details in the cursor,
             unless the query cache is used.
         :type profile: bool
-        :param max_transaction_size: Transaction size limit in bytes. Applies
-            only to RocksDB storage engine.
+        :param max_transaction_size: Transaction size limit in bytes.
         :type max_transaction_size: int
         :param max_warning_count: Max number of warnings returned.
         :type max_warning_count: int
         :param intermediate_commit_count: Max number of operations after
-            which an intermediate commit is performed automatically. Applies
-            only to RocksDB storage engine.
+            which an intermediate commit is performed automatically.
         :type intermediate_commit_count: int
         :param intermediate_commit_size: Max size of operations in bytes after
-            which an intermediate commit is performed automatically. Applies
-            only to RocksDB storage engine.
+            which an intermediate commit is performed automatically.
         :type intermediate_commit_size: int
         :param satellite_sync_wait: Number of seconds in which the server must
             synchronize the satellite collections involved in the query. When

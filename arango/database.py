@@ -238,20 +238,17 @@ class Database(APIWrapper):
             ArangoDB server waits indefinitely. If not set, system default
             value is used.
         :type timeout: int
-        :param max_size: Max transaction size limit in bytes. Applies only
-            to RocksDB storage engine.
+        :param max_size: Max transaction size limit in bytes.
         :type max_size: int
         :param allow_implicit: If set to True, undeclared read collections are
             loaded lazily. If set to False, transaction fails on any undeclared
             collections.
         :type allow_implicit: bool
         :param intermediate_commit_count: Max number of operations after which
-            an intermediate commit is performed automatically. Applies only to
-            RocksDB storage engine.
+            an intermediate commit is performed automatically.
         :type intermediate_commit_count: int
         :param intermediate_commit_size: Max size of operations in bytes after
-            which an intermediate commit is performed automatically. Applies
-            only to RocksDB storage engine.
+            which an intermediate commit is performed automatically.
         :type intermediate_commit_size: int
         :return: Return value of **command**.
         :rtype: str | unicode
@@ -2490,8 +2487,7 @@ class StandardDatabase(Database):
             given, a default value is used. Setting it to 0 disables the
             timeout.
         :type lock_timeout: int
-        :param max_size: Max transaction size in bytes. Applicable to RocksDB
-            storage engine only.
+        :param max_size: Max transaction size in bytes.
         :type max_size:
         :return: Database API wrapper object specifically for transactions.
         :rtype: arango.database.TransactionDatabase
@@ -2612,8 +2608,7 @@ class TransactionDatabase(Database):
     :param lock_timeout: Timeout for waiting on collection locks. If not given,
         a default value is used. Setting it to 0 disables the timeout.
     :type lock_timeout: int
-    :param max_size: Max transaction size in bytes. Applicable to RocksDB
-        storage engine only.
+    :param max_size: Max transaction size in bytes.
     :type max_size: int
     """
 

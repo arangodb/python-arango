@@ -40,7 +40,7 @@ class Replication(APIWrapper):
     def inventory(self, batch_id, include_system=None, all_databases=None):
         """Return an overview of collections and indexes.
 
-        :param batch_id: Batch ID. For RocksDB engine only.
+        :param batch_id: Batch ID.
         :type batch_id: str | unicode
         :param include_system: Include system collections in the result.
             Default value is True.
@@ -158,7 +158,7 @@ class Replication(APIWrapper):
         :param chunk_size: Size of the result in bytes. This value is honored
             approximately only.
         :type chunk_size: int
-        :param batch_id: Batch ID. For RocksDB engine only.
+        :param batch_id: Batch ID.
         :type batch_id: str | unicode
         :param deserialize: Deserialize the response content. Default is False.
         :type deserialize: bool
