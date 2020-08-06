@@ -350,18 +350,6 @@ class Collection(APIWrapper):
                 raise CollectionStatisticsError(resp, request)
 
             stats = resp.body.get('figures', resp.body)
-            for f in ['compactors', 'datafiles', 'journals']:
-                if f in stats and 'fileSize' in stats[f]:  # pragma: no cover
-                    stats[f]['file_size'] = stats[f].pop('fileSize')
-            if 'compactionStatus' in stats:  # pragma: no cover
-                status = stats.pop('compactionStatus')
-                if 'bytesRead' in status:
-                    status['bytes_read'] = status.pop('bytesRead')
-                if 'bytesWritten' in status:
-                    status['bytes_written'] = status.pop('bytesWritten')
-                if 'filesCombined' in status:
-                    status['files_combined'] = status.pop('filesCombined')
-                stats['compaction_status'] = status
             if 'documentReferences' in stats:  # pragma: no cover
                 stats['document_refs'] = stats.pop('documentReferences')
             if 'lastTick' in stats:  # pragma: no cover
