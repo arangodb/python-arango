@@ -161,7 +161,6 @@ def test_collection_management(db, bad_db, cluster):
         edge=True,
         shard_count=2,
         shard_fields=['test_attr'],
-        index_bucket_count=10,
         replication_factor=1,
         shard_like='',
         sync_replication=False,

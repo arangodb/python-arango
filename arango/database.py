@@ -958,7 +958,6 @@ class Database(APIWrapper):
                           key_generator='traditional',
                           shard_fields=None,
                           shard_count=None,
-                          index_bucket_count=None,
                           replication_factor=None,
                           shard_like=None,
                           sync_replication=None,
@@ -1000,14 +999,6 @@ class Database(APIWrapper):
         :type shard_fields: [str | unicode]
         :param shard_count: Number of shards to create.
         :type shard_count: int
-        :param index_bucket_count: Number of buckets into which indexes using
-            hash tables are split. The default is 16, and this number has to be
-            a power of 2 and less than or equal to 1024. For large collections,
-            one should increase this to avoid long pauses when the hash table
-            has to be initially built or re-sized, since buckets are re-sized
-            individually and can be initially built in parallel. For instance,
-            64 may be a sensible value for 100 million documents.
-        :type index_bucket_count: int
         :param replication_factor: Number of copies of each shard on different
             servers in a cluster. Allowed values are 1 (only one copy is kept
             and no synchronous replication), and n (n-1 replicas are kept and
@@ -1075,8 +1066,6 @@ class Database(APIWrapper):
             data['numberOfShards'] = shard_count
         if shard_fields is not None:
             data['shardKeys'] = shard_fields
-        if index_bucket_count is not None:
-            data['indexBuckets'] = index_bucket_count
         if replication_factor is not None:
             data['replicationFactor'] = replication_factor
         if shard_like is not None:
