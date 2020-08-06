@@ -949,7 +949,6 @@ class Database(APIWrapper):
                           name,
                           sync=False,
                           system=False,
-                          journal_size=None,
                           edge=False,
                           user_keys=True,
                           key_increment=None,
@@ -974,8 +973,6 @@ class Database(APIWrapper):
         :param system: If set to True, a system collection is created. The
             collection name must have leading underscore "_" character.
         :type system: bool
-        :param journal_size: Max size of the journal in bytes.
-        :type journal_size: int
         :param edge: If set to True, an edge collection is created.
         :type edge: bool
         :param key_generator: Used for generating document keys. Allowed values
@@ -1055,8 +1052,6 @@ class Database(APIWrapper):
             'keyOptions': key_options,
             'type': 3 if edge else 2
         }
-        if journal_size is not None:
-            data['journalSize'] = journal_size
         if shard_count is not None:
             data['numberOfShards'] = shard_count
         if shard_fields is not None:

@@ -45,7 +45,6 @@ def test_collection_misc_methods(col, bad_col, cluster):
     prev_sync = properties['sync']
     properties = col.configure(
         sync=not prev_sync,
-        journal_size=10000000
     )
     assert properties['name'] == col.name
     assert properties['system'] is False
@@ -53,7 +52,7 @@ def test_collection_misc_methods(col, bad_col, cluster):
 
     # Test configure properties with bad collection
     with assert_raises(CollectionConfigureError) as err:
-        bad_col.configure(sync=True, journal_size=10000000)
+        bad_col.configure(sync=True)
     assert err.value.error_code in {11, 1228}
 
     # Test get statistics
@@ -151,7 +150,6 @@ def test_collection_management(db, bad_db, cluster):
     col = db.create_collection(
         name=col_name,
         sync=True,
-        journal_size=7774208,
         system=False,
         key_generator='traditional',
         user_keys=False,
