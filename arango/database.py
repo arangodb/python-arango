@@ -948,7 +948,6 @@ class Database(APIWrapper):
     def create_collection(self,
                           name,
                           sync=False,
-                          compact=True,
                           system=False,
                           journal_size=None,
                           edge=False,
@@ -972,9 +971,6 @@ class Database(APIWrapper):
         :param sync: If set to True, document operations via the collection
             will block until synchronized to disk by default.
         :type sync: bool
-        :param compact: If set to True, the collection is compacted. Applies
-            only to MMFiles storage engine.
-        :type compact: bool
         :param system: If set to True, a system collection is created. The
             collection name must have leading underscore "_" character.
         :type system: bool
@@ -1055,7 +1051,6 @@ class Database(APIWrapper):
         data = {
             'name': name,
             'waitForSync': sync,
-            'doCompact': compact,
             'isSystem': system,
             'keyOptions': key_options,
             'type': 3 if edge else 2

@@ -151,7 +151,6 @@ def test_collection_management(db, bad_db, cluster):
     col = db.create_collection(
         name=col_name,
         sync=True,
-        compact=False,
         journal_size=7774208,
         system=False,
         key_generator='traditional',
