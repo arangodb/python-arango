@@ -952,7 +952,6 @@ class Database(APIWrapper):
                           system=False,
                           journal_size=None,
                           edge=False,
-                          volatile=False,
                           user_keys=True,
                           key_increment=None,
                           key_offset=None,
@@ -984,11 +983,6 @@ class Database(APIWrapper):
         :type journal_size: int
         :param edge: If set to True, an edge collection is created.
         :type edge: bool
-        :param volatile: If set to True, collection data is kept in-memory only
-            and not made persistent. Unloading the collection will cause the
-            collection data to be discarded. Stopping or re-starting the server
-            will also cause full loss of data.
-        :type volatile: bool
         :param key_generator: Used for generating document keys. Allowed values
             are "traditional" or "autoincrement".
         :type key_generator: str | unicode
@@ -1072,7 +1066,6 @@ class Database(APIWrapper):
             'waitForSync': sync,
             'doCompact': compact,
             'isSystem': system,
-            'isVolatile': volatile,
             'keyOptions': key_options,
             'type': 3 if edge else 2
         }

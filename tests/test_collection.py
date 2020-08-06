@@ -154,7 +154,6 @@ def test_collection_management(db, bad_db, cluster):
         compact=False,
         journal_size=7774208,
         system=False,
-        volatile=False,
         key_generator='traditional',
         user_keys=False,
         key_increment=9,
