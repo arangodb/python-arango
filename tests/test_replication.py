@@ -46,12 +46,7 @@ def test_replication_dump_methods(db, bad_db, col, docs, cluster):
     result = db.replication.dump(
         collection=col.name,
         batch_id=batch_id,
-        lower=0,
-        upper=1000000,
         chunk_size=0,
-        include_system=True,
-        ticks=0,
-        flush=True,
         deserialize=True
     )
     assert 'content' in result
