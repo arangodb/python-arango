@@ -149,12 +149,7 @@ class Replication(APIWrapper):
     def dump(self,
              collection,
              batch_id=None,
-             lower=None,
-             upper=None,
              chunk_size=None,
-             include_system=None,
-             ticks=None,
-             flush=None,
              deserialize=False):
         """Return the events data of one collection.
 
@@ -165,19 +160,6 @@ class Replication(APIWrapper):
         :type chunk_size: int
         :param batch_id: Batch ID. For RocksDB engine only.
         :type batch_id: str | unicode
-        :param lower: Lower bound tick value for results. For MMFiles only.
-        :type lower: str | unicode
-        :param upper: Upper bound tick value for results. For MMFiles only.
-        :type upper: str | unicode
-        :param include_system: Include system collections in the result. For
-            MMFiles only. Default value is True.
-        :type include_system: bool
-        :param ticks: Whether to include tick values in the dump. For MMFiles
-            only. Default value is True.
-        :type ticks: bool
-        :param flush: Whether to flush the WAL before dumping. Default value is
-            True.
-        :type flush: bool
         :param deserialize: Deserialize the response content. Default is False.
         :type deserialize: bool
         :return: Collection events data.
@@ -190,16 +172,6 @@ class Replication(APIWrapper):
             params['chunkSize'] = chunk_size
         if batch_id is not None:
             params['batchId'] = batch_id
-        if lower is not None:
-            params['from'] = lower
-        if upper is not None:
-            params['to'] = upper
-        if include_system is not None:
-            params['includeSystem'] = include_system
-        if ticks is not None:
-            params['ticks'] = ticks
-        if flush is not None:
-            params['flush '] = flush
 
         request = Request(
             method='get',
