@@ -10,7 +10,6 @@ from arango.exceptions import (
     CollectionPropertiesError,
     CollectionRenameError,
     CollectionRevisionError,
-    CollectionRotateJournalError,
     CollectionStatisticsError,
     CollectionTruncateError,
     CollectionUnloadError,
@@ -45,7 +44,6 @@ def test_collection_misc_methods(col, bad_col, cluster):
     prev_sync = properties['sync']
     properties = col.configure(
         sync=not prev_sync,
-        journal_size=10000000
     )
     assert properties['name'] == col.name
     assert properties['system'] is False
@@ -53,7 +51,7 @@ def test_collection_misc_methods(col, bad_col, cluster):
 
     # Test configure properties with bad collection
     with assert_raises(CollectionConfigureError) as err:
-        bad_col.configure(sync=True, journal_size=10000000)
+        bad_col.configure(sync=True)
     assert err.value.error_code in {11, 1228}
 
     # Test get statistics
@@ -88,17 +86,6 @@ def test_collection_misc_methods(col, bad_col, cluster):
     # Test unload with bad collection
     with assert_raises(CollectionUnloadError) as err:
         bad_col.unload()
-    assert err.value.error_code in {11, 1228}
-
-    # Test rotate journal
-    try:
-        assert isinstance(col.rotate(), bool)
-    except CollectionRotateJournalError as err:
-        assert err.error_code in {404, 1105}
-
-    # Test rotate journal with bad collection
-    with assert_raises(CollectionRotateJournalError) as err:
-        bad_col.rotate()
     assert err.value.error_code in {11, 1228}
 
     if cluster:
@@ -151,10 +138,7 @@ def test_collection_management(db, bad_db, cluster):
     col = db.create_collection(
         name=col_name,
         sync=True,
-        compact=False,
-        journal_size=7774208,
         system=False,
-        volatile=False,
         key_generator='traditional',
         user_keys=False,
         key_increment=9,
@@ -162,7 +146,6 @@ def test_collection_management(db, bad_db, cluster):
         edge=True,
         shard_count=2,
         shard_fields=['test_attr'],
-        index_bucket_count=10,
         replication_factor=1,
         shard_like='',
         sync_replication=False,

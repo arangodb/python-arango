@@ -302,8 +302,7 @@ class TransactionExecutor(Executor):
     :param lock_timeout: Timeout for waiting on collection locks. If not given,
         a default value is used. Setting it to 0 disables the timeout.
     :type lock_timeout: int
-    :param max_size: Max transaction size in bytes. Applicable to RocksDB
-        storage engine only.
+    :param max_size: Max transaction size in bytes.
     :type max_size: int
     """
     context = 'transaction'

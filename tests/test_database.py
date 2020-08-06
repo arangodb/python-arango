@@ -210,7 +210,7 @@ def test_database_misc_methods(sys_db, db, bad_db):
 
     # Test get storage engine
     engine = db.engine()
-    assert engine['name'] in ['mmfiles', 'rocksdb']
+    assert engine['name'] in ['rocksdb']
     assert 'supports' in engine
 
     # Test get storage engine with bad database

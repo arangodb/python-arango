@@ -15,7 +15,6 @@ from arango.exceptions import (
     CollectionResponsibleShardError,
     CollectionRenameError,
     CollectionRevisionError,
-    CollectionRotateJournalError,
     CollectionStatisticsError,
     CollectionTruncateError,
     CollectionUnloadError,
@@ -307,13 +306,11 @@ class Collection(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    def configure(self, sync=None, journal_size=None):
+    def configure(self, sync=None):
         """Configure collection properties.
 
         :param sync: Block until operations are synchronized to disk.
         :type sync: bool
-        :param journal_size: Journal size in bytes.
-        :type journal_size: int
         :return: New collection properties.
         :rtype: dict
         :raise arango.exceptions.CollectionConfigureError: If operation fails.
@@ -321,8 +318,6 @@ class Collection(APIWrapper):
         data = {}
         if sync is not None:
             data['waitForSync'] = sync
-        if journal_size is not None:
-            data['journalSize'] = journal_size
 
         request = Request(
             method='put',
@@ -355,18 +350,6 @@ class Collection(APIWrapper):
                 raise CollectionStatisticsError(resp, request)
 
             stats = resp.body.get('figures', resp.body)
-            for f in ['compactors', 'datafiles', 'journals']:
-                if f in stats and 'fileSize' in stats[f]:  # pragma: no cover
-                    stats[f]['file_size'] = stats[f].pop('fileSize')
-            if 'compactionStatus' in stats:  # pragma: no cover
-                status = stats.pop('compactionStatus')
-                if 'bytesRead' in status:
-                    status['bytes_read'] = status.pop('bytesRead')
-                if 'bytesWritten' in status:
-                    status['bytes_written'] = status.pop('bytesWritten')
-                if 'filesCombined' in status:
-                    status['files_combined'] = status.pop('filesCombined')
-                stats['compaction_status'] = status
             if 'documentReferences' in stats:  # pragma: no cover
                 stats['document_refs'] = stats.pop('documentReferences')
             if 'lastTick' in stats:  # pragma: no cover
@@ -467,25 +450,6 @@ class Collection(APIWrapper):
             if not resp.is_success:
                 raise CollectionUnloadError(resp, request)
             return True
-
-        return self._execute(request, response_handler)
-
-    def rotate(self):
-        """Rotate the collection journal.
-
-        :return: True if collection journal was rotated successfully.
-        :rtype: bool
-        :raise arango.exceptions.CollectionRotateJournalError: If rotate fails.
-        """
-        request = Request(
-            method='put',
-            endpoint='/_api/collection/{}/rotate'.format(self.name),
-        )
-
-        def response_handler(resp):
-            if not resp.is_success:
-                raise CollectionRotateJournalError(resp, request)
-            return True  # pragma: no cover
 
         return self._execute(request, response_handler)
 

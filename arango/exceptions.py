@@ -245,10 +245,6 @@ class CollectionUnloadError(ArangoServerError):
     """Failed to unload collection."""
 
 
-class CollectionRotateJournalError(ArangoServerError):
-    """Failed to rotate collection journal."""
-
-
 class CollectionRecalculateCountError(ArangoServerError):
     """Failed to recalculate document count."""
 

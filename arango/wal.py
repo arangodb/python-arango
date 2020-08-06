@@ -246,8 +246,7 @@ class WAL(APIWrapper):  # pragma: no cover
         :param client_info: Short description of the client, used for
             informative purposes only.
         :type client_info: str | unicode
-        :param barrier_id: ID of barrier used to keep WAL entries around. Only
-            required for the MMFiles storage engine.
+        :param barrier_id: ID of barrier used to keep WAL entries around.
         :type barrier_id: int
         :param deserialize: Deserialize the response content. Default is False.
         :type deserialize: bool

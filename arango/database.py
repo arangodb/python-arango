@@ -238,20 +238,17 @@ class Database(APIWrapper):
             ArangoDB server waits indefinitely. If not set, system default
             value is used.
         :type timeout: int
-        :param max_size: Max transaction size limit in bytes. Applies only
-            to RocksDB storage engine.
+        :param max_size: Max transaction size limit in bytes.
         :type max_size: int
         :param allow_implicit: If set to True, undeclared read collections are
             loaded lazily. If set to False, transaction fails on any undeclared
             collections.
         :type allow_implicit: bool
         :param intermediate_commit_count: Max number of operations after which
-            an intermediate commit is performed automatically. Applies only to
-            RocksDB storage engine.
+            an intermediate commit is performed automatically.
         :type intermediate_commit_count: int
         :param intermediate_commit_size: Max size of operations in bytes after
-            which an intermediate commit is performed automatically. Applies
-            only to RocksDB storage engine.
+            which an intermediate commit is performed automatically.
         :type intermediate_commit_size: int
         :return: Return value of **command**.
         :rtype: str | unicode
@@ -948,18 +945,14 @@ class Database(APIWrapper):
     def create_collection(self,
                           name,
                           sync=False,
-                          compact=True,
                           system=False,
-                          journal_size=None,
                           edge=False,
-                          volatile=False,
                           user_keys=True,
                           key_increment=None,
                           key_offset=None,
                           key_generator='traditional',
                           shard_fields=None,
                           shard_count=None,
-                          index_bucket_count=None,
                           replication_factor=None,
                           shard_like=None,
                           sync_replication=None,
@@ -974,21 +967,11 @@ class Database(APIWrapper):
         :param sync: If set to True, document operations via the collection
             will block until synchronized to disk by default.
         :type sync: bool
-        :param compact: If set to True, the collection is compacted. Applies
-            only to MMFiles storage engine.
-        :type compact: bool
         :param system: If set to True, a system collection is created. The
             collection name must have leading underscore "_" character.
         :type system: bool
-        :param journal_size: Max size of the journal in bytes.
-        :type journal_size: int
         :param edge: If set to True, an edge collection is created.
         :type edge: bool
-        :param volatile: If set to True, collection data is kept in-memory only
-            and not made persistent. Unloading the collection will cause the
-            collection data to be discarded. Stopping or re-starting the server
-            will also cause full loss of data.
-        :type volatile: bool
         :param key_generator: Used for generating document keys. Allowed values
             are "traditional" or "autoincrement".
         :type key_generator: str | unicode
@@ -1006,14 +989,6 @@ class Database(APIWrapper):
         :type shard_fields: [str | unicode]
         :param shard_count: Number of shards to create.
         :type shard_count: int
-        :param index_bucket_count: Number of buckets into which indexes using
-            hash tables are split. The default is 16, and this number has to be
-            a power of 2 and less than or equal to 1024. For large collections,
-            one should increase this to avoid long pauses when the hash table
-            has to be initially built or re-sized, since buckets are re-sized
-            individually and can be initially built in parallel. For instance,
-            64 may be a sensible value for 100 million documents.
-        :type index_bucket_count: int
         :param replication_factor: Number of copies of each shard on different
             servers in a cluster. Allowed values are 1 (only one copy is kept
             and no synchronous replication), and n (n-1 replicas are kept and
@@ -1070,20 +1045,14 @@ class Database(APIWrapper):
         data = {
             'name': name,
             'waitForSync': sync,
-            'doCompact': compact,
             'isSystem': system,
-            'isVolatile': volatile,
             'keyOptions': key_options,
             'type': 3 if edge else 2
         }
-        if journal_size is not None:
-            data['journalSize'] = journal_size
         if shard_count is not None:
             data['numberOfShards'] = shard_count
         if shard_fields is not None:
             data['shardKeys'] = shard_fields
-        if index_bucket_count is not None:
-            data['indexBuckets'] = index_bucket_count
         if replication_factor is not None:
             data['replicationFactor'] = replication_factor
         if shard_like is not None:
@@ -2518,8 +2487,7 @@ class StandardDatabase(Database):
             given, a default value is used. Setting it to 0 disables the
             timeout.
         :type lock_timeout: int
-        :param max_size: Max transaction size in bytes. Applicable to RocksDB
-            storage engine only.
+        :param max_size: Max transaction size in bytes.
         :type max_size:
         :return: Database API wrapper object specifically for transactions.
         :rtype: arango.database.TransactionDatabase
@@ -2640,8 +2608,7 @@ class TransactionDatabase(Database):
     :param lock_timeout: Timeout for waiting on collection locks. If not given,
         a default value is used. Setting it to 0 disables the timeout.
     :type lock_timeout: int
-    :param max_size: Max transaction size in bytes. Applicable to RocksDB
-        storage engine only.
+    :param max_size: Max transaction size in bytes.
     :type max_size: int
     """
 

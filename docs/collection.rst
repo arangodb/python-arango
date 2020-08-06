@@ -46,7 +46,7 @@ Here is an example showing how you can manage standard collections:
     students.load()
     students.unload()
     students.truncate()
-    students.configure(journal_size=3000000)
+    students.configure()
 
     # Delete the collection.
     db.delete_collection('students')
