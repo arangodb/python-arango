@@ -72,6 +72,7 @@ Contents
     replication
     cluster
     serializer
+    backup
     errno
     contributing
     specs

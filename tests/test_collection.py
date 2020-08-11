@@ -135,6 +135,18 @@ def test_collection_management(db, bad_db, cluster):
     col_name = generate_col_name()
     assert db.has_collection(col_name) is False
 
+    schema = {
+        'rule': {
+            'type': 'object',
+            'properties': {
+                'test_attr': {'type': 'string'},
+            },
+            'required': ['test_attr']
+        },
+        'level': 'moderate',
+        'message': 'Schema Validation Failed.'
+    }
+
     col = db.create_collection(
         name=col_name,
         sync=True,
@@ -152,12 +164,14 @@ def test_collection_management(db, bad_db, cluster):
         enforce_replication_factor=False,
         sharding_strategy='community-compat',
         smart_join_attribute='test',
-        write_concern=1
+        write_concern=1,
+        schema=schema
     )
     assert db.has_collection(col_name) is True
 
     properties = col.properties()
     assert 'key_options' in properties
+    assert properties['schema'] == schema
     assert properties['name'] == col_name
     assert properties['sync'] is True
     assert properties['system'] is False

@@ -865,3 +865,104 @@ def format_tls(body):  # pragma: no cover
     """
     result = body
     return verify_format(body, result)
+
+
+def format_backup(body):  # pragma: no cover
+    """Format backup data.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    result = {}
+
+    if 'previous' in body:
+        result['previous'] = body['previous']
+    if 'id' in body:
+        result['backup_id'] = body['id']
+    if 'datetime' in body:
+        result['datetime'] = body['datetime']
+    if 'potentiallyInconsistent' in body:
+        result['potentially_inconsistent'] = body['potentiallyInconsistent']
+    if 'sizeInBytes' in body:
+        result['size_in_bytes'] = body['sizeInBytes']
+    if 'nrDBServers' in body:
+        result['dbserver_count'] = body['nrDBServers']
+    if 'nrFiles' in body:
+        result['file_count'] = body['nrFiles']
+
+    if 'available' in body:
+        result['available'] = body['available']
+    if 'version' in body:
+        result['version'] = body['version']
+    if 'keys' in body:
+        result['keys'] = body['keys']
+    if 'nrPiecesPresent' in body:
+        result['pieces_present'] = body['nrPiecesPresent']
+
+    return verify_format(body, result)
+
+
+def format_backup_restore(body):  # pragma: no cover
+    """Format backup restore data.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    result = {}
+    if 'id' in body:
+        result['backup_id'] = body['id']
+    if 'isCluster' in body:
+        result['is_cluster'] = body['isCluster']
+    if 'previous' in body:
+        result['previous'] = body['previous']
+
+    return verify_format(body, result)
+
+
+def format_backup_dbserver(body):  # pragma: no cover
+    """Format backup DBserver data.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    return {'status': body['Status']}
+
+
+def format_backup_transfer(body):  # pragma: no cover
+    """Format backup download/upload data.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    if isinstance(body, str):
+        return body
+
+    result = {}
+    if 'Timestamp' in body:
+        result['timestamp'] = body['Timestamp']
+    if 'DownloadId' in body:
+        result['download_id'] = body['DownloadId']
+    if 'downloadId' in body:
+        result['download_id'] = body['downloadId']
+    if 'UploadId' in body:
+        result['upload_id'] = body['UploadId']
+    if 'uploadId' in body:
+        result['upload_id'] = body['uploadId']
+    if 'Cancelled' in body:
+        result['cancelled'] = body['Cancelled']
+    if 'BackupId' in body:
+        result['backup_id'] = body['BackupId']
+    if 'DBServers' in body:
+        result['dbservers'] = {
+            k: format_backup_dbserver(v)
+            for k, v in body['DBServers'].items()
+        }
+    return verify_format(body, result)

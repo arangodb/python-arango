@@ -53,7 +53,7 @@ class Foxx(APIWrapper):
         """Encode file into multipart data.
 
         :param filename: Full path to the javascript file or zip bundle.
-        :type filename: str | unicode
+        :type filename: str
         :return: Multipart encoder object
         :rtype: requests_toolbelt.MultipartEncoder
         """
@@ -95,7 +95,7 @@ class Foxx(APIWrapper):
         """Return service metadata.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :return: Service metadata.
         :rtype: dict
         :raise arango.exceptions.FoxxServiceGetError: If retrieval fails.
@@ -130,11 +130,11 @@ class Foxx(APIWrapper):
         """Install a new service using JSON definition.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param source: Fully qualified URL or absolute path on the server file
             system. Must be accessible by the server, or by all servers if in
             a cluster.
-        :type source: str | unicode
+        :type source: str
         :param config: Configuration values.
         :type config: dict
         :param dependencies: Dependency settings.
@@ -186,9 +186,9 @@ class Foxx(APIWrapper):
         """Install a new service using a javascript file or zip bundle.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param filename: Full path to the javascript file or zip bundle.
-        :type filename: str | unicode
+        :type filename: str
         :param development: Enable development mode.
         :type development: bool
         :param setup: Run service setup script.
@@ -235,11 +235,11 @@ class Foxx(APIWrapper):
         """Update (upgrade) a service.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param source: Fully qualified URL or absolute path on the server file
             system. Must be accessible by the server, or by all servers if in
             a cluster.
-        :type source: str | unicode
+        :type source: str
         :param config: Configuration values.
         :type config: dict
         :param dependencies: Dependency settings.
@@ -298,9 +298,9 @@ class Foxx(APIWrapper):
         """Update (upgrade) a service using a javascript file or zip bundle.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param filename: Full path to the javascript file or zip bundle.
-        :type filename: str | unicode
+        :type filename: str
         :param teardown: Run service teardown script.
         :type teardown: bool
         :param setup: Run service setup script.
@@ -351,11 +351,11 @@ class Foxx(APIWrapper):
         """Replace a service by removing the old one and installing a new one.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param source: Fully qualified URL or absolute path on the server file
             system. Must be accessible by the server, or by all servers if in
             a cluster.
-        :type source: str | unicode
+        :type source: str
         :param config: Configuration values.
         :type config: dict
         :param dependencies: Dependency settings.
@@ -414,9 +414,9 @@ class Foxx(APIWrapper):
         """Replace a service using a javascript file or zip bundle.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param filename: Full path to the javascript file or zip bundle.
-        :type filename: str | unicode
+        :type filename: str
         :param teardown: Run service teardown script.
         :type teardown: bool
         :param setup: Run service setup script.
@@ -459,7 +459,7 @@ class Foxx(APIWrapper):
         """Uninstall a service.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param teardown: Run service teardown script.
         :type teardown: bool
         :return: True if service was deleted successfully.
@@ -487,7 +487,7 @@ class Foxx(APIWrapper):
         """Return service configuration.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :return: Configuration values.
         :rtype: dict
         :raise arango.exceptions.FoxxConfigGetError: If retrieval fails.
@@ -509,7 +509,7 @@ class Foxx(APIWrapper):
         """Update service configuration.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param config: Configuration values. Omitted options are ignored.
         :type config: dict
         :return: Updated configuration values.
@@ -534,7 +534,7 @@ class Foxx(APIWrapper):
         """Replace service configuration.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param config: Configuration values. Omitted options are reset to their
             default values or marked as un-configured.
         :type config: dict
@@ -560,7 +560,7 @@ class Foxx(APIWrapper):
         """Return service dependencies.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :return: Dependency settings.
         :rtype: dict
         :raise arango.exceptions.FoxxDependencyGetError: If retrieval fails.
@@ -582,7 +582,7 @@ class Foxx(APIWrapper):
         """Update service dependencies.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param dependencies: Dependencies settings. Omitted ones are ignored.
         :type dependencies: dict
         :return: Updated dependency settings.
@@ -607,7 +607,7 @@ class Foxx(APIWrapper):
         """Replace service dependencies.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param dependencies: Dependencies settings. Omitted ones are disabled.
         :type dependencies: dict
         :return: Replaced dependency settings.
@@ -639,7 +639,7 @@ class Foxx(APIWrapper):
         one coordinator is not reflected across other coordinators.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :return: Service metadata.
         :rtype: dict
         :raise arango.exceptions.FoxxDevModeEnableError: If operation fails.
@@ -664,7 +664,7 @@ class Foxx(APIWrapper):
         coordinators are replaced with the version on the calling coordinator.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :return: Service metadata.
         :rtype: dict
         :raise arango.exceptions.FoxxDevModeDisableError: If operation fails.
@@ -686,9 +686,9 @@ class Foxx(APIWrapper):
         """Return the service readme.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :return: Service readme.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.FoxxReadmeGetError: If retrieval fails.
         """
         request = Request(
@@ -708,7 +708,7 @@ class Foxx(APIWrapper):
         """Return the Swagger API description for the given service.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :return: Swagger API description.
         :rtype: dict
         :raise arango.exceptions.FoxxSwaggerGetError: If retrieval fails.
@@ -736,9 +736,9 @@ class Foxx(APIWrapper):
         on the server.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :return: Service bundle in raw string form.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.FoxxDownloadError: If download fails.
         """
         request = Request(
@@ -787,7 +787,7 @@ class Foxx(APIWrapper):
         """List service scripts.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :return: Service scripts.
         :rtype: dict
         :raise arango.exceptions.FoxxScriptListError: If retrieval fails.
@@ -809,11 +809,11 @@ class Foxx(APIWrapper):
         """Run a service script.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param name: Script name.
-        :type name: str | unicode
+        :type name: str
         :param arg: Arbitrary value passed into the script as first argument.
-        :type arg: str | unicode | bool | int | list | dict
+        :type arg: str | bool | int | list | dict
         :return: Result of the script, if any.
         :rtype: dict
         :raise arango.exceptions.FoxxScriptRunError: If script fails.
@@ -841,12 +841,12 @@ class Foxx(APIWrapper):
         """Run service tests.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
-        :type mount: str | unicode
+        :type mount: str
         :param reporter: Test reporter. Allowed values are "default" (simple
             list of test cases), "suite" (object of test cases nested in
             suites), "stream" (raw stream of test results), "xunit" (XUnit or
             JUnit compatible structure), or "tap" (raw TAP compatible stream).
-        :type reporter: str | unicode
+        :type reporter: str
         :param idiomatic: Use matching format for the reporter, regardless of
             the value of parameter **output_format**.
         :type: bool
@@ -856,12 +856,12 @@ class Foxx(APIWrapper):
             When using "tap" reporter, setting this to "text" returns plain
             text TAP report. When using "xunit" reporter, settings this to
             "xml" returns an XML instead of JSONML.
-        :type output_format: str | unicode
+        :type output_format: str
         :param name_filter: Only run tests whose full name (test suite and
             test case) matches the given string.
-        :type name_filter: str | unicode
+        :type name_filter: str
         :return: Reporter output (e.g. raw JSON string, XML, plain text).
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.FoxxTestRunError: If test fails.
         """
         params = {'mount': mount, 'reporter': reporter}

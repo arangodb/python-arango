@@ -10,6 +10,7 @@ from arango.exceptions import (
     JWTAuthError,
     # JWTSecretListError,
     # JWTSecretReloadError,
+    ServerEncryptionError,
     ServerTLSError,
     ServerTLSReloadError,
     ServerVersionError
@@ -106,6 +107,15 @@ def test_auth_superuser_token(client, db_name, root_password, secret):
     # Test reload TLS with bad database
     with assert_raises(ServerTLSReloadError) as err:
         bad_db.reload_tls()
+    assert err.value.error_code == FORBIDDEN
+
+    # # Test reload TLS
+    # result = db.encryption()
+    # assert isinstance(result, dict)
+
+    # Test reload user-defined encryption keys.
+    with assert_raises(ServerEncryptionError) as err:
+        bad_db.encryption()
     assert err.value.error_code == FORBIDDEN
 
 

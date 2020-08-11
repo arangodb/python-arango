@@ -17,6 +17,7 @@ from arango.executor import (
     BatchExecutor,
     TransactionExecutor,
 )
+from arango.backup import Backup
 from arango.cluster import Cluster
 from arango.collection import StandardCollection
 from arango.exceptions import (
@@ -40,6 +41,7 @@ from arango.exceptions import (
     PermissionGetError,
     PermissionResetError,
     PermissionUpdateError,
+    ServerEncryptionError,
     ServerEngineError,
     ServerDetailsError,
     ServerEchoError,
@@ -109,7 +111,7 @@ class Database(APIWrapper):
         """Return the collection API wrapper.
 
         :param name: Collection name.
-        :type name: str | unicode
+        :type name: str
         :return: Collection API wrapper.
         :rtype: arango.collection.StandardCollection
         """
@@ -119,7 +121,7 @@ class Database(APIWrapper):
         """Return the collection of the given document.
 
         :param document: Document ID or body with "_id" field.
-        :type document: str | unicode | dict
+        :type document: str | dict
         :return: Collection API wrapper.
         :rtype: arango.collection.StandardCollection
         :raise arango.exceptions.DocumentParseError: On malformed document.
@@ -131,7 +133,7 @@ class Database(APIWrapper):
         """Return database name.
 
         :return: Database name.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self.db_name
 
@@ -189,6 +191,15 @@ class Database(APIWrapper):
         """
         return Cluster(self._conn, self._executor)
 
+    @property
+    def backup(self):
+        """Return Backup API wrapper.
+
+        :return: Backup API wrapper.
+        :rtype: arango.backup.Backup
+        """
+        return Backup(self._conn, self._executor)
+
     def properties(self):
         """Return database properties.
 
@@ -222,14 +233,14 @@ class Database(APIWrapper):
         """Execute raw Javascript command in transaction.
 
         :param command: Javascript command to execute.
-        :type command: str | unicode
+        :type command: str
         :param read: Names of collections read during transaction. If parameter
             **allow_implicit** is set to True, any undeclared read collections
             are loaded lazily.
-        :type read: [str | unicode]
+        :type read: [str]
         :param write: Names of collections written to during transaction.
             Transaction fails on undeclared write collections.
-        :type write: [str | unicode]
+        :type write: [str]
         :param params: Optional parameters passed into the Javascript command.
         :type params: dict
         :param sync: Block until operation is synchronized to disk.
@@ -251,7 +262,7 @@ class Database(APIWrapper):
             which an intermediate commit is performed automatically.
         :type intermediate_commit_size: int
         :return: Return value of **command**.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.TransactionExecuteError: If execution fails.
         """
         collections = {'allowImplicit': allow_implicit}
@@ -293,7 +304,7 @@ class Database(APIWrapper):
         """Return ArangoDB server version.
 
         :return: Server version.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.ServerVersionError: If retrieval fails.
         """
         request = Request(
@@ -363,7 +374,7 @@ class Database(APIWrapper):
         """Return required version of target database.
 
         :return: Required version of target database.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.ServerRequiredDBVersionError: If retrieval
             fails.
         """
@@ -383,7 +394,7 @@ class Database(APIWrapper):
         """Return the database engine details.
 
         :return: Database engine details.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.ServerEngineError: If retrieval fails.
         """
         request = Request(
@@ -430,7 +441,7 @@ class Database(APIWrapper):
         :return: Server role. Possible values are "SINGLE" (server which is not
             in a cluster), "COORDINATOR" (cluster coordinator), "PRIMARY",
             "SECONDARY", "AGENT" (Agency node in a cluster) or "UNDEFINED".
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.ServerRoleError: If retrieval fails.
         """
         request = Request(
@@ -506,7 +517,7 @@ class Database(APIWrapper):
         """Run available unittests on the server.
 
         :param tests: List of files containing the test suites.
-        :type tests: [str | unicode]
+        :type tests: [str]
         :return: Test results.
         :rtype: dict
         :raise arango.exceptions.ServerRunTestsError: If execution fails.
@@ -537,11 +548,11 @@ class Database(APIWrapper):
         :param upto: Return the log entries up to the given level (mutually
             exclusive with parameter **level**). Allowed values are "fatal",
             "error", "warning", "info" (default) and "debug".
-        :type upto: str | unicode | int
+        :type upto: str | int
         :param level: Return the log entries of only the given level (mutually
             exclusive with **upto**). Allowed values are "fatal", "error",
             "warning", "info" (default) and "debug".
-        :type level: str | unicode | int
+        :type level: str | int
         :param start: Return the log entries whose ID is greater or equal to
             the given value.
         :type start: int
@@ -551,10 +562,10 @@ class Database(APIWrapper):
         :param offset: Number of entries to skip (e.g. for pagination).
         :type offset: int
         :param search: Return only the log entries containing the given text.
-        :type search: str | unicode
+        :type search: str
         :param sort: Sort the log entries according to the given fashion, which
             can be "sort" or "desc".
-        :type sort: str | unicode
+        :type sort: str
         :return: Server log entries.
         :rtype: dict
         :raise arango.exceptions.ServerReadLogError: If read fails.
@@ -754,6 +765,27 @@ class Database(APIWrapper):
 
         return self._execute(request, response_handler)
 
+    def encryption(self):
+        """Rotate the user-supplied keys for encryption.
+
+        This method is available only for enterprise edition of ArangoDB.
+
+        :return: New TLS data.
+        :rtype: dict
+        :raise arango.exceptions.ServerEncryptionError: If retrieval fails.
+        """
+        request = Request(
+            method='post',
+            endpoint='/_admin/server/encryption'
+        )
+
+        def response_handler(resp):
+            if resp.is_success:  # pragma: no cover
+                return resp.body['result']
+            raise ServerEncryptionError(resp, request)
+
+        return self._execute(request, response_handler)
+
     #######################
     # Database Management #
     #######################
@@ -762,7 +794,7 @@ class Database(APIWrapper):
         """Return the names all databases.
 
         :return: Database names.
-        :rtype: [str | unicode]
+        :rtype: [str]
         :raise arango.exceptions.DatabaseListError: If retrieval fails.
         """
         request = Request(
@@ -781,7 +813,7 @@ class Database(APIWrapper):
         """Check if a database exists.
 
         :param name: Database name.
-        :type name: str | unicode
+        :type name: str
         :return: True if database exists, False otherwise.
         :rtype: bool
         """
@@ -796,7 +828,7 @@ class Database(APIWrapper):
         """Create a new database.
 
         :param name: Database name.
-        :type name: str | unicode
+        :type name: str
         :param users: List of users with access to the new database, where each
             user is a dictionary with fields "username", "password", "active"
             and "extra" (see below for example). If not set, only the admin and
@@ -871,7 +903,7 @@ class Database(APIWrapper):
         """Delete the database.
 
         :param name: Database name.
-        :type name: str | unicode
+        :type name: str
         :param ignore_missing: Do not raise an exception on missing database.
         :type ignore_missing: bool
         :return: True if database was deleted successfully, False if database
@@ -901,7 +933,7 @@ class Database(APIWrapper):
         """Return the standard collection API wrapper.
 
         :param name: Collection name.
-        :type name: str | unicode
+        :type name: str
         :return: Standard collection API wrapper.
         :rtype: arango.collection.StandardCollection
         """
@@ -911,7 +943,7 @@ class Database(APIWrapper):
         """Check if collection exists in the database.
 
         :param name: Collection name.
-        :type name: str | unicode
+        :type name: str
         :return: True if collection exists, False otherwise.
         :rtype: bool
         """
@@ -959,11 +991,12 @@ class Database(APIWrapper):
                           enforce_replication_factor=None,
                           sharding_strategy=None,
                           smart_join_attribute=None,
-                          write_concern=None):
+                          write_concern=None,
+                          schema=None):
         """Create a new collection.
 
         :param name: Collection name.
-        :type name: str | unicode
+        :type name: str
         :param sync: If set to True, document operations via the collection
             will block until synchronized to disk by default.
         :type sync: bool
@@ -974,7 +1007,7 @@ class Database(APIWrapper):
         :type edge: bool
         :param key_generator: Used for generating document keys. Allowed values
             are "traditional" or "autoincrement".
-        :type key_generator: str | unicode
+        :type key_generator: str
         :param user_keys: If set to True, users are allowed to supply document
             keys. If set to False, the key generator is solely responsible for
             supplying the key values.
@@ -986,7 +1019,7 @@ class Database(APIWrapper):
             **key_generator** is set to "autoincrement".
         :type key_offset: int
         :param shard_fields: Field(s) used to determine the target shard.
-        :type shard_fields: [str | unicode]
+        :type shard_fields: [str]
         :param shard_count: Number of shards to create.
         :type shard_count: int
         :param replication_factor: Number of copies of each shard on different
@@ -1000,7 +1033,7 @@ class Database(APIWrapper):
             specifics are imitated. Prototype collections cannot be dropped
             before imitating collections. Applies to enterprise version of
             ArangoDB only.
-        :type shard_like: str | unicode
+        :type shard_like: str
         :param sync_replication: If set to True, server reports success only
             when collection is created in all replicas. You can set this to
             False for faster server response, and if full replication is not a
@@ -1014,7 +1047,7 @@ class Database(APIWrapper):
             "enterprise-compat", "enterprise-smart-edge-compat", "hash" and
             "enterprise-hash-smart-edge". Refer to ArangoDB documentation for
             more details on each value.
-        :type sharding_strategy: str | unicode
+        :type sharding_strategy: str
         :param smart_join_attribute: Attribute of the collection which must
             contain the shard key value of the smart join collection. The shard
             key for the documents must contain the value of this attribute,
@@ -1023,7 +1056,7 @@ class Database(APIWrapper):
             collection, and parameter **shard_fields** to be set to a single
             shard key attribute, with another colon ":" at the end. Available
             only for enterprise version of ArangoDB.
-        :type smart_join_attribute: str | unicode
+        :type smart_join_attribute: str
         :param write_concern: Write concern for the collection. Determines how
             many copies of each shard are required to be in sync on different
             DBServers. If there are less than these many copies in the cluster
@@ -1032,6 +1065,10 @@ class Database(APIWrapper):
             parameter cannot be larger than that of **replication_factor**.
             Default value is 1. Used for clusters only.
         :type write_concern: int
+        :param schema: Optional dict specifying the collection level schema
+            for documents. See ArangoDB documentation for more information on
+            document schema validation.
+        :type schema: dict
         :return: Standard collection API wrapper.
         :rtype: arango.collection.StandardCollection
         :raise arango.exceptions.CollectionCreateError: If create fails.
@@ -1063,6 +1100,8 @@ class Database(APIWrapper):
             data['smartJoinAttribute'] = smart_join_attribute
         if write_concern is not None:
             data['writeConcern'] = write_concern
+        if schema is not None:
+            data['schema'] = schema
 
         params = {}
         if sync_replication is not None:
@@ -1088,7 +1127,7 @@ class Database(APIWrapper):
         """Delete the collection.
 
         :param name: Collection name.
-        :type name: str | unicode
+        :type name: str
         :param ignore_missing: Do not raise an exception on missing collection.
         :type ignore_missing: bool
         :param system: Whether the collection is a system collection.
@@ -1125,7 +1164,7 @@ class Database(APIWrapper):
         """Return the graph API wrapper.
 
         :param name: Graph name.
-        :type name: str | unicode
+        :type name: str
         :return: Graph API wrapper.
         :rtype: arango.graph.Graph
         """
@@ -1135,7 +1174,7 @@ class Database(APIWrapper):
         """Check if a graph exists in the database.
 
         :param name: Graph name.
-        :type name: str | unicode
+        :type name: str
         :return: True if graph exists, False otherwise.
         :rtype: bool
         """
@@ -1187,7 +1226,7 @@ class Database(APIWrapper):
         """Create a new graph.
 
         :param name: Graph name.
-        :type name: str | unicode
+        :type name: str
         :param edge_definitions: List of edge definitions, where each edge
             definition entry is a dictionary with fields "edge_collection",
             "from_vertex_collections" and "to_vertex_collections" (see below
@@ -1195,7 +1234,7 @@ class Database(APIWrapper):
         :type edge_definitions: [dict]
         :param orphan_collections: Names of additional vertex collections that
             are not in edge definitions.
-        :type orphan_collections: [str | unicode]
+        :type orphan_collections: [str]
         :param smart: If set to True, sharding is enabled (see parameter
             **smart_field** below). Applies only to enterprise version of
             ArangoDB.
@@ -1204,7 +1243,7 @@ class Database(APIWrapper):
             graph. To use this, parameter **smart** must be set to True and
             every vertex in the graph must have the smart field. Applies only
             to enterprise version of ArangoDB.
-        :type smart_field: str | unicode
+        :type smart_field: str
         :param shard_count: Number of shards used for every collection in the
             graph. To use this, parameter **smart** must be set to True and
             every vertex in the graph must have the smart field. This number
@@ -1258,7 +1297,7 @@ class Database(APIWrapper):
         """Drop the graph of the given name from the database.
 
         :param name: Graph name.
-        :type name: str | unicode
+        :type name: str
         :param ignore_missing: Do not raise an exception on missing graph.
         :type ignore_missing: bool
         :param drop_collections: Drop the collections of the graph also. This
@@ -1296,10 +1335,10 @@ class Database(APIWrapper):
         """Check if a document exists.
 
         :param document: Document ID or body with "_id" field.
-        :type document: str | unicode | dict
+        :type document: str | dict
         :param rev: Expected document revision. Overrides value of "_rev" field
             in **document** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
@@ -1318,10 +1357,10 @@ class Database(APIWrapper):
         """Return a document.
 
         :param document: Document ID or body with "_id" field.
-        :type document: str | unicode | dict
+        :type document: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **document** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
@@ -1350,7 +1389,7 @@ class Database(APIWrapper):
         """Insert a new document.
 
         :param collection: Collection name.
-        :type collection: str | unicode
+        :type collection: str
         :param document: Document to insert. If it contains the "_key" or "_id"
             field, the value is used as the key of the new document (otherwise
             it is auto-generated). Any "_rev" field is ignored.
@@ -1500,10 +1539,10 @@ class Database(APIWrapper):
 
         :param document: Document ID, key or body. Document body must contain
             the "_id" field.
-        :type document: str | unicode | dict
+        :type document: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **document** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
@@ -1563,7 +1602,7 @@ class Database(APIWrapper):
         """Return the details of an active server task.
 
         :param task_id: Server task ID.
-        :type task_id: str | unicode
+        :type task_id: str
         :return: Server task details.
         :rtype: dict
         :raise arango.exceptions.TaskGetError: If retrieval fails.
@@ -1592,9 +1631,9 @@ class Database(APIWrapper):
         """Create a new server task.
 
         :param name: Name of the server task.
-        :type name: str | unicode
+        :type name: str
         :param command: Javascript command to execute.
-        :type command: str | unicode
+        :type command: str
         :param params: Optional parameters passed into the Javascript command.
         :type params: dict
         :param period: Number of seconds to wait between executions. If set
@@ -1604,7 +1643,7 @@ class Database(APIWrapper):
         :param offset: Initial delay before execution in seconds.
         :type offset: int
         :param task_id: Pre-defined ID for the new server task.
-        :type task_id: str | unicode
+        :type task_id: str
         :return: Details of the new task.
         :rtype: dict
         :raise arango.exceptions.TaskCreateError: If create fails.
@@ -1641,7 +1680,7 @@ class Database(APIWrapper):
         """Delete a server task.
 
         :param task_id: Server task ID.
-        :type task_id: str | unicode
+        :type task_id: str
         :param ignore_missing: Do not raise an exception on missing task.
         :type ignore_missing: bool
         :return: True if task was successfully deleted, False if task was not
@@ -1671,7 +1710,7 @@ class Database(APIWrapper):
         """Check if user exists.
 
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :return: True if user exists, False otherwise.
         :rtype: bool
         """
@@ -1704,7 +1743,7 @@ class Database(APIWrapper):
         """Return user details.
 
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :return: User details.
         :rtype: dict
         :raise arango.exceptions.UserGetError: If retrieval fails.
@@ -1729,9 +1768,9 @@ class Database(APIWrapper):
         """Create a new user.
 
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :param password: Password.
-        :type password: str | unicode
+        :type password: str
         :param active: True if user is active, False otherwise.
         :type active: bool
         :param extra: Additional data for the user.
@@ -1765,9 +1804,9 @@ class Database(APIWrapper):
         """Update a user.
 
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :param password: New password.
-        :type password: str | unicode
+        :type password: str
         :param active: Whether the user is active.
         :type active: bool
         :param extra: Additional data for the user.
@@ -1805,9 +1844,9 @@ class Database(APIWrapper):
         """Replace a user.
 
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :param password: New password.
-        :type password: str | unicode
+        :type password: str
         :param active: Whether the user is active.
         :type active: bool
         :param extra: Additional data for the user.
@@ -1843,7 +1882,7 @@ class Database(APIWrapper):
         """Delete a user.
 
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :param ignore_missing: Do not raise an exception on missing user.
         :type ignore_missing: bool
         :return: True if user was deleted successfully, False if user was not
@@ -1873,7 +1912,7 @@ class Database(APIWrapper):
         """Return user permissions for all databases and collections.
 
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :return: User permissions for all databases and collections.
         :rtype: dict
         :raise arango.exceptions.PermissionListError: If retrieval fails.
@@ -1895,13 +1934,13 @@ class Database(APIWrapper):
         """Return user permission for a specific database or collection.
 
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :param database: Database name.
-        :type database: str | unicode
+        :type database: str
         :param collection: Collection name.
-        :type collection: str | unicode
+        :type collection: str
         :return: Permission for given database or collection.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.PermissionGetError: If retrieval fails.
         """
         endpoint = '/_api/user/{}/database/{}'.format(username, database)
@@ -1924,14 +1963,14 @@ class Database(APIWrapper):
         """Update user permission for a specific database or collection.
 
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :param database: Database name.
-        :type database: str | unicode
+        :type database: str
         :param collection: Collection name.
-        :type collection: str | unicode
+        :type collection: str
         :param permission: Allowed values are "rw" (read and write), "ro"
             (read only) or "none" (no access).
-        :type permission: str | unicode
+        :type permission: str
         :return: True if access was granted successfully.
         :rtype: bool
         :raise arango.exceptions.PermissionUpdateError: If update fails.
@@ -1957,11 +1996,11 @@ class Database(APIWrapper):
         """Reset user permission for a specific database or collection.
 
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :param database: Database name.
-        :type database: str | unicode
+        :type database: str
         :param collection: Collection name.
-        :type collection: str | unicode
+        :type collection: str
         :return: True if permission was reset successfully.
         :rtype: bool
         :raise arango.exceptions.PermissionRestError: If reset fails.
@@ -1987,11 +2026,11 @@ class Database(APIWrapper):
         """Return IDs of async jobs with given status.
 
         :param status: Job status (e.g. "pending", "done").
-        :type status: str | unicode
+        :type status: str
         :param count: Max number of job IDs to return.
         :type count: int
         :return: List of job IDs.
-        :rtype: [str | unicode]
+        :rtype: [str]
         :raise arango.exceptions.AsyncJobListError: If retrieval fails.
         """
         params = {}
@@ -2087,9 +2126,9 @@ class Database(APIWrapper):
         """Create a view.
 
         :param name: View name.
-        :type name: str | unicode
+        :type name: str
         :param view_type: View type (e.g. "arangosearch").
-        :type view_type: str | unicode
+        :type view_type: str
         :param properties: View properties. For more information see
             https://www.arangodb.com/docs/stable/http/views-arangosearch.html
         :type properties: dict
@@ -2119,7 +2158,7 @@ class Database(APIWrapper):
         """Update a view.
 
         :param name: View name.
-        :type name: str | unicode
+        :type name: str
         :param properties: View properties. For more information see
             https://www.arangodb.com/docs/stable/http/views-arangosearch.html
         :type properties: dict
@@ -2144,7 +2183,7 @@ class Database(APIWrapper):
         """Replace a view.
 
         :param name: View name.
-        :type name: str | unicode
+        :type name: str
         :param properties: View properties. For more information see
             https://www.arangodb.com/docs/stable/http/views-arangosearch.html
         :type properties: dict
@@ -2169,7 +2208,7 @@ class Database(APIWrapper):
         """Delete a view.
 
         :param name: View name.
-        :type name: str | unicode
+        :type name: str
         :param ignore_missing: Do not raise an exception on missing view.
         :type ignore_missing: bool
         :return: True if view was deleted successfully, False if view was not
@@ -2195,9 +2234,9 @@ class Database(APIWrapper):
         """Rename a view.
 
         :param name: View name.
-        :type name: str | unicode
+        :type name: str
         :param new_name: New view name.
-        :type new_name: str | unicode
+        :type new_name: str
         :return: View details.
         :rtype: dict
         :raise arango.exceptions.ViewRenameError: If delete fails.
@@ -2223,7 +2262,7 @@ class Database(APIWrapper):
         """Create an ArangoSearch view.
 
         :param name: View name.
-        :type name: str | unicode
+        :type name: str
         :param properties: View properties. For more information see
             https://www.arangodb.com/docs/stable/http/views-arangosearch.html
         :type properties: dict
@@ -2253,7 +2292,7 @@ class Database(APIWrapper):
         """Update an ArangoSearch view.
 
         :param name: View name.
-        :type name: str | unicode
+        :type name: str
         :param properties: View properties. For more information see
             https://www.arangodb.com/docs/stable/http/views-arangosearch.html
         :type properties: dict
@@ -2278,7 +2317,7 @@ class Database(APIWrapper):
         """Replace an ArangoSearch view.
 
         :param name: View name.
-        :type name: str | unicode
+        :type name: str
         :param properties: View properties. For more information see
             https://www.arangodb.com/docs/stable/http/views-arangosearch.html
         :type properties: dict
@@ -2328,7 +2367,7 @@ class Database(APIWrapper):
         """Return analyzer details.
 
         :param name: Analyzer name.
-        :type name: str | unicode
+        :type name: str
         :return: Analyzer details.
         :rtype: dict
         :raise arango.exceptions.AnalyzerGetError: If retrieval fails.
@@ -2355,9 +2394,9 @@ class Database(APIWrapper):
         """Create an analyzer.
 
         :param name: Analyzer name.
-        :type name: str | unicode
+        :type name: str
         :param analyzer_type: Analyzer type.
-        :type analyzer_type: str | unicode
+        :type analyzer_type: str
         :param properties: Analyzer properties.
         :type properties: dict
         :param features: Analyzer features.
@@ -2391,7 +2430,7 @@ class Database(APIWrapper):
         """Delete an analyzer.
 
         :param name: Analyzer name.
-        :type name: str | unicode
+        :type name: str
         :param force: Remove the analyzer configuration even if in use.
         :type force: bool
         :param ignore_missing: Do not raise an exception on missing analyzer.
@@ -2472,13 +2511,13 @@ class StandardDatabase(Database):
         :param read: Name(s) of collections read during transaction. Read-only
             collections are added lazily but should be declared if possible to
             avoid deadlocks.
-        :type read: str | unicode | [str | unicode]
+        :type read: str | [str]
         :param write: Name(s) of collections written to during transaction with
             shared access.
-        :type write: str | unicode | [str | unicode]
+        :type write: str | [str]
         :param exclusive: Name(s) of collections written to during transaction
             with exclusive access.
-        :type exclusive: str | unicode | [str | unicode]
+        :type exclusive: str | [str]
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool
         :param allow_implicit: Allow reading from undeclared collections.
@@ -2594,13 +2633,13 @@ class TransactionDatabase(Database):
     :param read: Name(s) of collections read during transaction. Read-only
         collections are added lazily but should be declared if possible to
         avoid deadlocks.
-    :type read: str | unicode | [str | unicode]
+    :type read: str | [str]
     :param write: Name(s) of collections written to during transaction with
         shared access.
-    :type write: str | unicode | [str | unicode]
+    :type write: str | [str]
     :param exclusive: Name(s) of collections written to during transaction
         with exclusive access.
-    :type exclusive: str | unicode | [str | unicode]
+    :type exclusive: str | [str]
     :param sync: Block until operation is synchronized to disk.
     :type sync: bool
     :param allow_implicit: Allow reading from undeclared collections.
@@ -2643,7 +2682,7 @@ class TransactionDatabase(Database):
         """Return the transaction ID.
 
         :return: Transaction ID.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._executor.id
 
@@ -2651,7 +2690,7 @@ class TransactionDatabase(Database):
         """Return the transaction status.
 
         :return: Transaction status.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.TransactionStatusError: If retrieval fails.
         """
         return self._executor.status()

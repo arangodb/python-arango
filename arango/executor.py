@@ -52,7 +52,7 @@ class Executor(object):  # pragma: no cover
         :param response_handler: HTTP response handler.
         :type response_handler: callable
         :return: API execution result or job.
-        :rtype: str | unicode | bool | int | list | dict | arango.job.Job
+        :rtype: str | bool | int | list | dict | arango.job.Job
         """
         raise NotImplementedError
 
@@ -76,7 +76,7 @@ class DefaultExecutor(Executor):
         :param response_handler: HTTP response handler.
         :type response_handler: callable
         :return: API execution result.
-        :rtype: str | unicode | bool | int | list | dict
+        :rtype: str | bool | int | list | dict
         """
         resp = self._conn.send_request(request)
         return response_handler(resp)
@@ -288,13 +288,13 @@ class TransactionExecutor(Executor):
     :param read: Name(s) of collections read during transaction. Read-only
         collections are added lazily but should be declared if possible to
         avoid deadlocks.
-    :type read: str | unicode | [str | unicode]
+    :type read: str | [str]
     :param write: Name(s) of collections written to during transaction with
         shared access.
-    :type write: str | unicode | [str | unicode]
+    :type write: str | [str]
     :param exclusive: Name(s) of collections written to during transaction
         with exclusive access.
-    :type exclusive: str | unicode | [str | unicode]
+    :type exclusive: str | [str]
     :param sync: Block until operation is synchronized to disk.
     :type sync: bool
     :param allow_implicit: Allow reading from undeclared collections.
@@ -353,7 +353,7 @@ class TransactionExecutor(Executor):
         """Return the transaction ID.
 
         :return: Transaction ID.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._id
 
@@ -365,7 +365,7 @@ class TransactionExecutor(Executor):
         :param response_handler: HTTP response handler.
         :type response_handler: callable
         :return: API execution result.
-        :rtype: str | unicode | bool | int | list | dict
+        :rtype: str | bool | int | list | dict
         """
         request.headers['x-arango-trx-id'] = self._id
         resp = self._conn.send_request(request)
@@ -375,7 +375,7 @@ class TransactionExecutor(Executor):
         """Return the transaction status.
 
         :return: Transaction status.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.TransactionStatusError: If retrieval fails.
         """
         request = Request(

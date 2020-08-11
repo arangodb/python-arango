@@ -69,9 +69,9 @@ class Pregel(APIWrapper):
         """Start a new Pregel job.
 
         :param graph: Graph name.
-        :type graph: str | unicode
+        :type graph: str
         :param algorithm: Algorithm (e.g. "pagerank").
-        :type algorithm: str | unicode
+        :type algorithm: str
         :param store: If set to True, Pregel engine writes results back to the
             database. If set to False, results can be queried via AQL.
         :type store: bool
@@ -87,7 +87,7 @@ class Pregel(APIWrapper):
         :type async_mode: bool
         :param result_field: If specified, most algorithms will write their
             results into this field.
-        :type result_field: str | unicode
+        :type result_field: str
         :param algorithm_params: Additional algorithm parameters.
         :type algorithm_params: dict
         :return: Pregel job ID.

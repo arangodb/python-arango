@@ -8,7 +8,7 @@ python:
 services:
     - docker
 before_install:
-    - docker create --name arango -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd arangodb/arangodb-preview:3.7.1-rc.1 --server.jwt-secret-keyfile=/tmp/keyfile
+    - docker create --name arango -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd -e ARANGO_LICENSE_KEY=EVALUATION:125f16ada6047bd17eeeefa3f011070510b5fbd9d85122afdeca72c380e7ac83 arangodb/enterprise-preview:3.7.1-rc.1 --server.jwt-secret-keyfile=/tmp/keyfile
     - docker cp tests/static/service.zip arango:/tmp/service.zip
     - docker cp tests/static/keyfile arango:/tmp/keyfile
     - docker start arango

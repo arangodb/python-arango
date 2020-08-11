@@ -9,12 +9,12 @@ class ArangoClientError(ArangoError):
     """Base class for errors originating from python-arango client.
 
     :param msg: Error message.
-    :type msg: str | unicode
+    :type msg: str
 
     :cvar source: Source of the error (always set to "client").
-    :vartype source: str | unicode
+    :vartype source: str
     :ivar message: Error message.
-    :vartype message: str | unicode
+    :vartype message: str
     """
     source = 'client'
 
@@ -37,20 +37,20 @@ class ArangoServerError(ArangoError):
     :param resp: HTTP response.
     :type resp: arango.response.Response
     :param msg: Error message override.
-    :type msg: str | unicode
+    :type msg: str
 
     :cvar source: Source of the error (always set to "server").
-    :vartype source: str | unicode
+    :vartype source: str
     :ivar message: Exception message.
-    :vartype message: str | unicode
+    :vartype message: str
     :ivar url: API URL.
-    :vartype url: str | unicode
+    :vartype url: str
     :ivar response: HTTP response object.
     :vartype response: arango.response.Response
     :ivar request: HTTP request object.
     :vartype request: arango.request.Request
     :ivar http_method: HTTP method in lowercase (e.g. "post").
-    :vartype http_method: str | unicode
+    :vartype http_method: str
     :ivar http_code: HTTP status code.
     :vartype http_code: int
     :ivar http_headers: Response headers.
@@ -58,7 +58,7 @@ class ArangoServerError(ArangoError):
     :ivar error_code: Error code from ArangoDB server.
     :vartype error_code: int
     :ivar error_message: Raw error message from ArangoDB server.
-    :vartype error_message: str | unicode
+    :vartype error_message: str
     """
     source = 'server'
 
@@ -173,6 +173,35 @@ class AsyncJobResultError(ArangoServerError):
 
 class AsyncJobClearError(ArangoServerError):
     """Failed to clear async job results."""
+
+
+##############################
+# Backup Exceptions #
+##############################
+
+
+class BackupCreateError(ArangoServerError):
+    """Failed to create a backup."""
+
+
+class BackupDeleteError(ArangoServerError):
+    """Failed to delete a backup."""
+
+
+class BackupDownloadError(ArangoServerError):
+    """Failed to download a backup from remote repository."""
+
+
+class BackupGetError(ArangoServerError):
+    """Failed to retrieve backup details."""
+
+
+class BackupRestoreError(ArangoServerError):
+    """Failed to restore from backup."""
+
+
+class BackupUploadError(ArangoServerError):
+    """Failed to upload a backup to remote repository."""
 
 
 ##############################
@@ -613,6 +642,10 @@ class ServerTLSReloadError(ArangoServerError):
     """Failed to reload TLS."""
 
 
+class ServerEncryptionError(ArangoServerError):
+    """Failed to reload user-defined encryption keys."""
+
+
 #####################
 # Task Exceptions   #
 #####################
@@ -899,9 +932,14 @@ class ClusterEndpointsError(ArangoServerError):
     """Failed to retrieve cluster endpoints."""
 
 
+class ClusterServerCountError(ArangoServerError):
+    """Failed to retrieve cluster server count."""
+
+
 ##################
 # JWT Exceptions #
 ##################
+
 
 class JWTAuthError(ArangoServerError):
     """Failed to get a new JWT token from ArangoDB."""

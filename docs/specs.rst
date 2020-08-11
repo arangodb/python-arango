@@ -45,6 +45,15 @@ AQLQueryCache
 .. autoclass:: arango.aql.AQLQueryCache
     :members:
 
+.. _Backup:
+
+Backup
+======
+
+.. autoclass:: arango.backup.Backup
+    :inherited-members:
+    :members:
+
 .. _BatchDatabase:
 
 BatchDatabase

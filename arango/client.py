@@ -26,11 +26,11 @@ class ArangoClient(object):
     """ArangoDB client.
 
     :param hosts: Host URL or list of URLs (coordinators in a cluster).
-    :type hosts: [str | unicode]
+    :type hosts: [str]
     :param host_resolver: Host resolver. This parameter used for clusters (when
         multiple host URLs are provided). Accepted values are "roundrobin" and
         "random". Any other value defaults to round robin.
-    :type host_resolver: str | unicode
+    :type host_resolver: str
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
     :param serializer: User-defined JSON serializer. Must be a callable
@@ -76,7 +76,7 @@ class ArangoClient(object):
         """Return the list of ArangoDB host URLs.
 
         :return: List of ArangoDB host URLs.
-        :rtype: [str | unicode]
+        :rtype: [str]
         """
         return self._hosts
 
@@ -85,7 +85,7 @@ class ArangoClient(object):
         """Return the client version.
 
         :return: Client version.
-        :rtype: str | unicode
+        :rtype: str
         """
         return __version__
 
@@ -99,22 +99,22 @@ class ArangoClient(object):
         """Connect to an ArangoDB database and return the database API wrapper.
 
         :param name: Database name.
-        :type name: str | unicode
+        :type name: str
         :param username: Username for basic authentication.
-        :type username: str | unicode
+        :type username: str
         :param password: Password for basic authentication.
-        :type password: str | unicode
+        :type password: str
         :param verify: Verify the connection by sending a test request.
         :type verify: bool
         :param auth_method: HTTP authentication method. Accepted values are
             "basic" (default) and "jwt". If set to "jwt", the token is
             refreshed automatically using ArangoDB username and password. This
             assumes that the clocks of the server and client are synchronized.
-        :type auth_method: str | unicode
+        :type auth_method: str
         :param superuser_token: User generated token for superuser access.
             If set, parameters **username**, **password** and **auth_method**
             are ignored. This token is not refreshed automatically.
-        :type superuser_token: str | unicode
+        :type superuser_token: str
         :return: Standard database API wrapper.
         :rtype: arango.database.StandardDatabase
         :raise arango.exceptions.ServerConnectionError: If **verify** was set

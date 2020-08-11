@@ -10,6 +10,7 @@ from arango.exceptions import (
     ClusterEndpointsError,
     ClusterHealthError,
     ClusterMaintenanceModeError,
+    ClusterServerCountError,
     ClusterServerEngineError,
     ClusterServerIDError,
     ClusterServerRoleError,
@@ -126,4 +127,17 @@ def test_cluster_endpoints(db, bad_db, cluster):
     # Test get server endpoints with bad database
     with assert_raises(ClusterEndpointsError) as err:
         bad_db.cluster.endpoints()
-    assert err.value.error_code in {11, 1228}
+    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
+
+
+def test_cluster_server_count(db, bad_db, cluster):
+    if not cluster:
+        pytest.skip('Only tested in a cluster setup')
+
+    # Test get server count
+    print(db.cluster.server_count())
+
+    # Test get server endpoints with bad database
+    with assert_raises(ClusterServerCountError) as err:
+        bad_db.cluster.server_count()
+    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}

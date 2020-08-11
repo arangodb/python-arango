@@ -30,7 +30,7 @@ class APIWrapper(object):
         """Return the name of the current database.
 
         :return: Database name.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._conn.db_name
 
@@ -39,7 +39,7 @@ class APIWrapper(object):
         """Return the username.
 
         :returns: Username.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._conn.username
 
@@ -49,7 +49,7 @@ class APIWrapper(object):
 
         :return: API execution context. Possible values are "default", "async",
             "batch" and "transaction".
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._executor.context
 
@@ -61,6 +61,6 @@ class APIWrapper(object):
         :param response_handler: HTTP response handler.
         :type response_handler: callable
         :return: API execution result.
-        :rtype: str | unicode | bool | int | list | dict
+        :rtype: str | bool | int | list | dict
         """
         return self._executor.execute(request, response_handler)

@@ -26,7 +26,7 @@ class Cursor(object):
     :param init_data: Cursor initialization data.
     :type init_data: dict | list
     :param cursor_type: Cursor type ("cursor" or "export").
-    :type cursor_type: str | unicode
+    :type cursor_type: str
     """
 
     __slots__ = [
@@ -133,7 +133,7 @@ class Cursor(object):
         """Return the cursor ID.
 
         :return: Cursor ID.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._id
 
@@ -142,7 +142,7 @@ class Cursor(object):
         """Return the cursor type.
 
         :return: Cursor type ("cursor" or "export").
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._type
 
@@ -218,7 +218,7 @@ class Cursor(object):
         sent to ArangoDB server to fetch the next batch and update the cursor.
 
         :return: Next item in current batch.
-        :rtype: str | unicode | bool | int | list | dict
+        :rtype: str | bool | int | list | dict
         :raise StopIteration: If the result set is depleted.
         :raise arango.exceptions.CursorNextError: If batch retrieval fails.
         :raise arango.exceptions.CursorStateError: If cursor ID is not set.
@@ -238,7 +238,7 @@ class Cursor(object):
         batch from server.
 
         :return: Next item in current batch.
-        :rtype: str | unicode | bool | int | list | dict
+        :rtype: str | bool | int | list | dict
         :raise arango.exceptions.CursorEmptyError: If current batch is empty.
         """
         if len(self._batch) == 0:

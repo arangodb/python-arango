@@ -23,7 +23,7 @@ class Job(object):  # pragma: no cover
         """Return the job ID.
 
         :return: Job ID.
-        :rtype: str | unicode
+        :rtype: str
         """
         raise NotImplementedError
 
@@ -31,7 +31,7 @@ class Job(object):  # pragma: no cover
         """Return the job status.
 
         :return: Job status.
-        :rtype: str | unicode
+        :rtype: str
         """
         raise NotImplementedError
 
@@ -39,7 +39,7 @@ class Job(object):  # pragma: no cover
         """Return the job result (if available).
 
         :return: Job result.
-        :rtype: str | unicode | bool | int | list | dict
+        :rtype: str | bool | int | list | dict
         :raise arango.exceptions.ArangoError: If result was an error.
         """
         raise NotImplementedError
@@ -51,7 +51,7 @@ class AsyncJob(Job):
     :param connection: HTTP connection.
     :type connection: arango.connection.Connection
     :param job_id: Async job ID.
-    :type job_id: str | unicode
+    :type job_id: str
     :param response_handler: HTTP response handler.
     :type response_handler: callable
     """
@@ -71,7 +71,7 @@ class AsyncJob(Job):
         """Return the async job ID.
 
         :return: Async job ID.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._id
 
@@ -85,7 +85,7 @@ class AsyncJob(Job):
         :return: Async job status. Possible values are "pending" (job is still
             in queue), "done" (job finished or raised an error), or "cancelled"
             (job was cancelled before completion).
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.AsyncJobStatusError: If retrieval fails.
         """
         request = Request(
@@ -112,7 +112,7 @@ class AsyncJob(Job):
         queries for result will fail.
 
         :return: Async job result.
-        :rtype: str | unicode | bool | int | list | dict
+        :rtype: str | bool | int | list | dict
         :raise arango.exceptions.ArangoError: If the job raised an exception.
         :raise arango.exceptions.AsyncJobResultError: If retrieval fails.
         """
@@ -209,7 +209,7 @@ class BatchJob(Job):
         """Return the batch job ID.
 
         :return: Batch job ID.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._id
 
@@ -219,7 +219,7 @@ class BatchJob(Job):
         :return: Batch job status. Possible values are "pending" (job is still
             waiting for batch to be committed), or "done" (batch was committed
             and the job is updated with the result).
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._status
 
@@ -229,7 +229,7 @@ class BatchJob(Job):
         If the job raised an exception, it is propagated up at this point.
 
         :return: Batch job result.
-        :rtype: str | unicode | bool | int | list | dict
+        :rtype: str | bool | int | list | dict
         :raise arango.exceptions.ArangoError: If the job raised an exception.
         :raise arango.exceptions.BatchJobResultError: If job result is not
             available (i.e. batch is not committed yet).

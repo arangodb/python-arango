@@ -57,7 +57,7 @@ class Collection(APIWrapper):
     :param executor: API executor.
     :type executor: arango.executor.Executor
     :param name: Collection name.
-    :type name: str | unicode
+    :type name: str
     """
 
     types = {
@@ -94,7 +94,7 @@ class Collection(APIWrapper):
         :param code: Collection status code.
         :type code: int
         :return: Collection status text or None if code is None.
-        :rtype: str | unicode
+        :rtype: str
         """
         return None if code is None else self.statuses[code]
 
@@ -102,9 +102,9 @@ class Collection(APIWrapper):
         """Check the collection name in the document ID.
 
         :param doc_id: Document ID.
-        :type doc_id: str | unicode
+        :type doc_id: str
         :return: Verified document ID.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.DocumentParseError: On bad collection name.
         """
         if not doc_id.startswith(self._id_prefix):
@@ -118,7 +118,7 @@ class Collection(APIWrapper):
         :param body: Document body.
         :type body: dict
         :return: Document ID.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.DocumentParseError: On missing ID and key.
         """
         try:
@@ -137,7 +137,7 @@ class Collection(APIWrapper):
         :param check_rev: Whether to check the revision.
         :type check_rev: bool
         :return: Document ID and request headers.
-        :rtype: (str | unicode, dict)
+        :rtype: (str, dict)
         """
         doc_id = self._extract_id(document)
         if not check_rev or '_rev' not in document:
@@ -148,13 +148,13 @@ class Collection(APIWrapper):
         """Prepare document ID, body and request headers.
 
         :param document: Document ID, key or body.
-        :type document: str | unicode | dict
+        :type document: str | dict
         :param rev: Document revision or None.
-        :type rev: str | unicode | None
+        :type rev: str | None
         :param check_rev: Whether to check the revision.
         :type check_rev: bool
         :return: Document ID, body and request headers.
-        :rtype: (str | unicode, str | unicode | body, dict)
+        :rtype: (str, str | body, dict)
         """
         if isinstance(document, dict):
             doc_id = self._extract_id(document)
@@ -212,7 +212,7 @@ class Collection(APIWrapper):
         """Return collection name.
 
         :return: Collection name.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._name
 
@@ -266,7 +266,7 @@ class Collection(APIWrapper):
         wrappers after a rename.
 
         :param new_name: New collection name.
-        :type new_name: str | unicode
+        :type new_name: str
         :return: True if collection was renamed successfully.
         :rtype: bool
         :raise arango.exceptions.CollectionRenameError: If rename fails.
@@ -375,7 +375,7 @@ class Collection(APIWrapper):
         """Return collection revision.
 
         :return: Collection revision.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.CollectionRevisionError: If retrieval fails.
         """
         request = Request(
@@ -399,7 +399,7 @@ class Collection(APIWrapper):
         :param with_data: Include document data in checksum calculation.
         :type with_data: bool
         :return: Collection checksum.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.CollectionChecksumError: If retrieval fails.
         """
         request = Request(
@@ -496,10 +496,10 @@ class Collection(APIWrapper):
 
         :param document: Document ID, key or body. Document body must contain
             the "_id" or "_key" field.
-        :type document: str | unicode | dict
+        :type document: str | dict
         :param rev: Expected document revision. Overrides value of "_rev" field
             in **document** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
@@ -631,9 +631,9 @@ class Collection(APIWrapper):
         :param ttl: Time-to-live for the cursor on the server.
         :type ttl: int
         :param filter_fields: Document fields to filter with.
-        :type filter_fields: [str | unicode]
+        :type filter_fields: [str]
         :param filter_type: Allowed values are "include" or "exclude".
-        :type filter_type: str | unicode
+        :type filter_type: str
         :return: Document cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If export fails.
@@ -769,7 +769,7 @@ class Collection(APIWrapper):
         A skiplist index must be defined in the collection to use this method.
 
         :param field: Document field name.
-        :type field: str | unicode
+        :type field: str
         :param lower: Lower bound (inclusive).
         :type lower: int
         :param upper: Upper bound (exclusive).
@@ -832,7 +832,7 @@ class Collection(APIWrapper):
         :type radius: int | float
         :param distance_field: Document field used to indicate the distance to
             the given coordinate. This parameter is ignored in transactions.
-        :type distance_field: str | unicode
+        :type distance_field: str
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
@@ -898,7 +898,7 @@ class Collection(APIWrapper):
         :type limit: int
         :param index: ID of the geo index to use (without the collection
             prefix). This parameter is ignored in transactions.
-        :type index: str | unicode
+        :type index: str
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
@@ -942,9 +942,9 @@ class Collection(APIWrapper):
         """Return documents that match the given fulltext query.
 
         :param field: Document field with fulltext index.
-        :type field: str | unicode
+        :type field: str
         :param query: Fulltext query.
-        :type query: str | unicode
+        :type query: str
         :param limit: Max number of documents returned.
         :type limit: int
         :returns: Document cursor.
@@ -985,7 +985,7 @@ class Collection(APIWrapper):
 
         :param documents: List of document keys, IDs or bodies. Document bodies
             must contain the "_id" or "_key" fields.
-        :type documents: [str | unicode | dict]
+        :type documents: [str | dict]
         :return: Documents. Missing ones are not included.
         :rtype: [dict]
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
@@ -1089,7 +1089,7 @@ class Collection(APIWrapper):
         """Create a new hash index.
 
         :param fields: Document fields to index.
-        :type fields: [str | unicode]
+        :type fields: [str]
         :param unique: Whether the index is unique.
         :type unique: bool
         :param sparse: If set to True, documents with None in the field
@@ -1099,7 +1099,7 @@ class Collection(APIWrapper):
             from the same document triggers unique constraint errors.
         :type deduplicate: bool
         :param name: Optional name for the index.
-        :type name: str | unicode
+        :type name: str
         :param in_background: Do not hold the collection lock.
         :type in_background: bool
         :return: New index details.
@@ -1131,7 +1131,7 @@ class Collection(APIWrapper):
         """Create a new skiplist index.
 
         :param fields: Document fields to index.
-        :type fields: [str | unicode]
+        :type fields: [str]
         :param unique: Whether the index is unique.
         :type unique: bool
         :param sparse: If set to True, documents with None in the field
@@ -1141,7 +1141,7 @@ class Collection(APIWrapper):
             from the same document triggers unique constraint errors.
         :type deduplicate: bool
         :param name: Optional name for the index.
-        :type name: str | unicode
+        :type name: str
         :param in_background: Do not hold the collection lock.
         :type in_background: bool
         :return: New index details.
@@ -1174,11 +1174,11 @@ class Collection(APIWrapper):
             a single field is given, the field must have values that are lists
             with at least two floats. Documents with missing fields or invalid
             values are excluded.
-        :type fields: str | unicode | list
+        :type fields: str | list
         :param ordered: Whether the order is longitude, then latitude.
         :type ordered: bool
         :param name: Optional name for the index.
-        :type name: str | unicode
+        :type name: str
         :param in_background: Do not hold the collection lock.
         :type in_background: bool
         :return: New index details.
@@ -1204,11 +1204,11 @@ class Collection(APIWrapper):
         """Create a new fulltext index.
 
         :param fields: Document fields to index.
-        :type fields: [str | unicode]
+        :type fields: [str]
         :param min_length: Minimum number of characters to index.
         :type min_length: int
         :param name: Optional name for the index.
-        :type name: str | unicode
+        :type name: str
         :param in_background: Do not hold the collection lock.
         :type in_background: bool
         :return: New index details.
@@ -1238,7 +1238,7 @@ class Collection(APIWrapper):
         cluster.
 
         :param fields: Document fields to index.
-        :type fields: [str | unicode]
+        :type fields: [str]
         :param unique: Whether the index is unique.
         :type unique: bool
         :param sparse: Exclude documents that do not contain at least one of
@@ -1246,7 +1246,7 @@ class Collection(APIWrapper):
             of the indexed fields.
         :type sparse: bool
         :param name: Optional name for the index.
-        :type name: str | unicode
+        :type name: str
         :param in_background: Do not hold the collection lock.
         :type in_background: bool
         :return: New index details.
@@ -1274,11 +1274,11 @@ class Collection(APIWrapper):
         """Create a new TTL (time-to-live) index.
 
         :param fields: Document field to index.
-        :type fields: [str | unicode]
+        :type fields: [str]
         :param expiry_time: Time of expiry in seconds after document creation.
         :type expiry_time: int
         :param name: Optional name for the index.
-        :type name: str | unicode
+        :type name: str
         :param in_background: Do not hold the collection lock.
         :type in_background: bool
         :return: New index details.
@@ -1298,7 +1298,7 @@ class Collection(APIWrapper):
         """Delete an index.
 
         :param index_id: Index ID.
-        :type index_id: str | unicode
+        :type index_id: str
         :param ignore_missing: Do not raise an exception on missing index.
         :type ignore_missing: bool
         :return: True if index was deleted successfully, False if index was
@@ -1350,7 +1350,7 @@ class StandardCollection(Collection):
     :param executor: API executor.
     :type executor: arango.executor.Executor
     :param name: Collection name.
-    :type name: str | unicode
+    :type name: str
     """
 
     def __init__(self, connection, executor, name):
@@ -1367,10 +1367,10 @@ class StandardCollection(Collection):
 
         :param document: Document ID, key or body. Document body must contain
             the "_id" or "_key" field.
-        :type document: str | unicode | dict
+        :type document: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **document** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
@@ -1982,10 +1982,10 @@ class StandardCollection(Collection):
 
         :param document: Document ID, key or body. Document body must contain
             the "_id" or "_key" field.
-        :type document: str | unicode | dict
+        :type document: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **document** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
@@ -2057,7 +2057,7 @@ class StandardCollection(Collection):
 
         :param documents: Document IDs, keys or bodies. Document bodies must
             contain the "_id" or "_key" fields.
-        :type documents: [str | unicode | dict]
+        :type documents: [str | dict]
         :param return_old: Include bodies of the old documents in the result.
         :type return_old: bool
         :param check_rev: If set to True, revisions of **documents** (if given)
@@ -2179,12 +2179,12 @@ class StandardCollection(Collection):
             field in each edge document inserted. For example, prefix "foo"
             prepended to "_from": "bar" will result in "_from": "foo/bar".
             Applies only to edge collections.
-        :type from_prefix: str | unicode
+        :type from_prefix: str
         :param to_prefix: String prefix prepended to the value of "_to" field
             in edge document inserted. For example, prefix "foo" prepended to
             "_to": "bar" will result in "_to": "foo/bar". Applies only to edge
             collections.
-        :type to_prefix: str | unicode
+        :type to_prefix: str
         :param overwrite: If set to True, all existing documents are removed
             prior to the import. Indexes are still preserved.
         :type overwrite: bool
@@ -2197,7 +2197,7 @@ class StandardCollection(Collection):
             them as ignored, as opposed to counting them as errors). Options
             "update" and "replace" may fail on secondary unique key constraint
             violations.
-        :type on_duplicate: str | unicode
+        :type on_duplicate: str
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool
         :return: Result of the bulk import.
@@ -2249,9 +2249,9 @@ class VertexCollection(Collection):
     :param executor: API executor.
     :type executor: arango.executor.Executor
     :param graph: Graph name.
-    :type graph: str | unicode
+    :type graph: str
     :param name: Vertex collection name.
-    :type name: str | unicode
+    :type name: str
     """
 
     def __init__(self, connection, executor, graph, name):
@@ -2269,7 +2269,7 @@ class VertexCollection(Collection):
         """Return the graph name.
 
         :return: Graph name.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._graph
 
@@ -2278,10 +2278,10 @@ class VertexCollection(Collection):
 
         :param vertex: Vertex document ID, key or body. Document body must
             contain the "_id" or "_key" field.
-        :type vertex: str | unicode | dict
+        :type vertex: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **vertex** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **vertex** (if given) is
             compared against the revision of target vertex document.
         :type check_rev: bool
@@ -2505,10 +2505,10 @@ class VertexCollection(Collection):
 
         :param vertex: Vertex document ID, key or body. Document body must
             contain the "_id" or "_key" field.
-        :type vertex: str | unicode | dict
+        :type vertex: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **vertex** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **vertex** (if given) is
             compared against the revision of target vertex document.
         :type check_rev: bool
@@ -2566,9 +2566,9 @@ class EdgeCollection(Collection):
     :param executor: API executor.
     :type executor: arango.executor.Executor
     :param graph: Graph name.
-    :type graph: str | unicode
+    :type graph: str
     :param name: Edge collection name.
-    :type name: str | unicode
+    :type name: str
     """
 
     def __init__(self, connection, executor, graph, name):
@@ -2586,7 +2586,7 @@ class EdgeCollection(Collection):
         """Return the graph name.
 
         :return: Graph name.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._graph
 
@@ -2595,10 +2595,10 @@ class EdgeCollection(Collection):
 
         :param edge: Edge document ID, key or body. Document body must contain
             the "_id" or "_key" field.
-        :type edge: str | unicode | dict
+        :type edge: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **edge** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **edge** (if given) is
             compared against the revision of target edge document.
         :type check_rev: bool
@@ -2824,10 +2824,10 @@ class EdgeCollection(Collection):
 
         :param edge: Edge document ID, key or body. Document body must contain
             the "_id" or "_key" field.
-        :type edge: str | unicode | dict
+        :type edge: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **edge** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **edge** (if given) is
             compared against the revision of target edge document.
         :type check_rev: bool
@@ -2885,9 +2885,9 @@ class EdgeCollection(Collection):
         """Insert a new edge document linking the given vertices.
 
         :param from_vertex: "From" vertex document ID or body with "_id" field.
-        :type from_vertex: str | unicode | dict
+        :type from_vertex: str | dict
         :param to_vertex: "To" vertex document ID or body with "_id" field.
-        :type to_vertex: str | unicode | dict
+        :type to_vertex: str | dict
         :param data: Any extra data for the new edge document. If it has "_key"
             or "_id" field, its value is used as key of the new edge document
             (otherwise it is auto-generated).
@@ -2922,10 +2922,10 @@ class EdgeCollection(Collection):
         """Return the edge documents coming in and/or out of the vertex.
 
         :param vertex: Vertex document ID or body with "_id" field.
-        :type vertex: str | unicode | dict
+        :type vertex: str | dict
         :param direction: The direction of the edges. Allowed values are "in"
             and "out". If not set, edges in both directions are returned.
-        :type direction: str | unicode
+        :type direction: str
         :return: List of edges and statistics.
         :rtype: dict
         :raise arango.exceptions.EdgeListError: If retrieval fails.

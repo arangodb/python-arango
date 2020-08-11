@@ -905,6 +905,9 @@ SIMPLE_CLIENT_COULD_NOT_WRITE = 2002
 # Client could not read data.
 SIMPLE_CLIENT_COULD_NOT_READ = 2003
 
+# Will be raised if was erlaube?!
+WAS_ERLAUBE = 2019
+
 #######################
 # Communicator Errors #
 #######################
@@ -1123,3 +1126,49 @@ QUEUE_FULL = 21003
 
 # Maintenance action cannot be stopped once started.
 ACTION_OPERATION_UNABORTABLE = 6002
+
+# This maintenance action is still processing.
+ACTION_UNFINISHED = 6003
+
+# No such maintenance action exists.
+NO_SUCH_ACTION = 6004
+
+#########################
+# Backup/Restore Errors #
+#########################
+
+# Failed to create hot backup set.
+HOT_BACKUP_INTERNAL = 7001
+
+# Failed to restore to hot backup set.
+HOT_RESTORE_INTERNAL = 7002
+
+# The hot backup set cannot be restored on non-matching cluster topology.
+BACKUP_TOPOLOGY = 7003
+
+# No space left on device.
+NO_SPACE_LEFT_ON_DEVICE = 7004
+
+# Failed to upload hot backup set to remote target.
+FAILED_TO_UPLOAD_BACKUP = 7005
+
+# Failed to download hot backup set from remote source.
+FAILED_TO_DOWNLOAD_BACKUP = 7006
+
+# Cannot find a hot backup set with this ID.
+NO_SUCH_HOT_BACKUP = 7007
+
+# Invalid remote repository configuration.
+REMOTE_REPOSITORY_CONFIG_BAD = 7008
+
+# Some of the db servers cannot be reached for transaction locks.
+LOCAL_LOCK_FAILED = 7009
+
+# Some of the db servers cannot be reached for transaction locks.
+LOCAL_LOCK_RETRY = 7010
+
+# Conflict of multiple hot backup processes.
+HOT_BACKUP_CONFLICT = 7011
+
+# One or more db servers could not be reached for hot backup inquiry.
+HOT_BACKUP_DBSERVERS_AWOL = 7012

@@ -26,7 +26,7 @@ class Graph(APIWrapper):
     :param executor: API executor.
     :type executor: arango.executor.Executor
     :param name: Graph name.
-    :type name: str | unicode
+    :type name: str
     """
 
     def __init__(self, connection, executor, name):
@@ -40,7 +40,7 @@ class Graph(APIWrapper):
         """Return the vertex collection for the given vertex document.
 
         :param vertex: Vertex document ID or body with "_id" field.
-        :type vertex: str | unicode | dict
+        :type vertex: str | dict
         :return: Vertex collection API wrapper.
         :rtype: arango.collection.VertexCollection
         """
@@ -50,7 +50,7 @@ class Graph(APIWrapper):
         """Return the vertex collection for the given edge document.
 
         :param edge: Edge document ID or body with "_id" field.
-        :type edge: str | unicode | dict
+        :type edge: str | dict
         :return: Edge collection API wrapper.
         :rtype: arango.collection.EdgeCollection
         """
@@ -61,7 +61,7 @@ class Graph(APIWrapper):
         """Return the graph name.
 
         :return: Graph name.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._name
 
@@ -115,7 +115,7 @@ class Graph(APIWrapper):
         """Check if the graph has the given vertex collection.
 
         :param name: Vertex collection name.
-        :type name: str | unicode
+        :type name: str
         :return: True if vertex collection exists, False otherwise.
         :rtype: bool
         """
@@ -125,7 +125,7 @@ class Graph(APIWrapper):
         """Return vertex collections in the graph that are not orphaned.
 
         :return: Names of vertex collections that are not orphaned.
-        :rtype: [str | unicode]
+        :rtype: [str]
         :raise arango.exceptions.VertexCollectionListError: If retrieval fails.
         """
         request = Request(
@@ -144,7 +144,7 @@ class Graph(APIWrapper):
         """Return the vertex collection API wrapper.
 
         :param name: Vertex collection name.
-        :type name: str | unicode
+        :type name: str
         :return: Vertex collection API wrapper.
         :rtype: arango.collection.VertexCollection
         """
@@ -154,7 +154,7 @@ class Graph(APIWrapper):
         """Create a vertex collection in the graph.
 
         :param name: Vertex collection name.
-        :type name: str | unicode
+        :type name: str
         :return: Vertex collection API wrapper.
         :rtype: arango.collection.VertexCollection
         :raise arango.exceptions.VertexCollectionCreateError: If create fails.
@@ -176,7 +176,7 @@ class Graph(APIWrapper):
         """Remove a vertex collection from the graph.
 
         :param name: Vertex collection name.
-        :type name: str | unicode
+        :type name: str
         :param purge: If set to True, the vertex collection is not just deleted
             from the graph but also from the database completely.
         :type purge: bool
@@ -205,7 +205,7 @@ class Graph(APIWrapper):
         """Check if the graph has the given edge definition.
 
         :param name: Edge collection name.
-        :type name: str | unicode
+        :type name: str
         :return: True if edge definition exists, False otherwise.
         :rtype: bool
         """
@@ -218,7 +218,7 @@ class Graph(APIWrapper):
         """Check if the graph has the given edge collection.
 
         :param name: Edge collection name.
-        :type name: str | unicode
+        :type name: str
         :return: True if edge collection exists, False otherwise.
         :rtype: bool
         """
@@ -228,7 +228,7 @@ class Graph(APIWrapper):
         """Return the edge collection API wrapper.
 
         :param name: Edge collection name.
-        :type name: str | unicode
+        :type name: str
         :return: Edge collection API wrapper.
         :rtype: arango.collection.EdgeCollection
         """
@@ -264,11 +264,11 @@ class Graph(APIWrapper):
             }
 
         :param edge_collection: Edge collection name.
-        :type edge_collection: str | unicode
+        :type edge_collection: str
         :param from_vertex_collections: Names of "from" vertex collections.
-        :type from_vertex_collections: [str | unicode]
+        :type from_vertex_collections: [str]
         :param to_vertex_collections: Names of "to" vertex collections.
-        :type to_vertex_collections: [str | unicode]
+        :type to_vertex_collections: [str]
         :return: Edge collection API wrapper.
         :rtype: arango.collection.EdgeCollection
         :raise arango.exceptions.EdgeDefinitionCreateError: If create fails.
@@ -297,11 +297,11 @@ class Graph(APIWrapper):
         """Replace an edge definition.
 
         :param edge_collection: Edge collection name.
-        :type edge_collection: str | unicode
+        :type edge_collection: str
         :param from_vertex_collections: Names of "from" vertex collections.
-        :type from_vertex_collections: [str | unicode]
+        :type from_vertex_collections: [str]
         :param to_vertex_collections: Names of "to" vertex collections.
-        :type to_vertex_collections: [str | unicode]
+        :type to_vertex_collections: [str]
         :return: True if edge definition was replaced successfully.
         :rtype: bool
         :raise arango.exceptions.EdgeDefinitionReplaceError: If replace fails.
@@ -329,7 +329,7 @@ class Graph(APIWrapper):
         """Delete an edge definition from the graph.
 
         :param name: Edge collection name.
-        :type name: str | unicode
+        :type name: str
         :param purge: If set to True, the edge definition is not just removed
             from the graph but the edge collection is also deleted completely
             from the database.
@@ -374,25 +374,25 @@ class Graph(APIWrapper):
         """Traverse the graph and return the visited vertices and edges.
 
         :param start_vertex: Start vertex document ID or body with "_id" field.
-        :type start_vertex: str | unicode | dict
+        :type start_vertex: str | dict
         :param direction: Traversal direction. Allowed values are "outbound"
             (default), "inbound" and "any".
-        :type direction: str | unicode
+        :type direction: str
         :param item_order: Item iteration order. Allowed values are "forward"
             (default) and "backward".
-        :type item_order: str | unicode
+        :type item_order: str
         :param strategy: Traversal strategy. Allowed values are "depthfirst"
             and "breadthfirst".
-        :type strategy: str | unicode
+        :type strategy: str
         :param order: Traversal order. Allowed values are "preorder",
             "postorder", and "preorder-expander".
-        :type order: str | unicode
+        :type order: str
         :param vertex_uniqueness: Uniqueness for visited vertices. Allowed
             values are "global", "path" or "none".
-        :type vertex_uniqueness: str | unicode
+        :type vertex_uniqueness: str
         :param edge_uniqueness: Uniqueness for visited edges. Allowed values
             are "global", "path" or "none".
-        :type edge_uniqueness: str | unicode
+        :type edge_uniqueness: str
         :param min_depth: Minimum depth of the nodes to visit.
         :type min_depth: int
         :param max_depth: Maximum depth of the nodes to visit.
@@ -404,28 +404,28 @@ class Graph(APIWrapper):
         :param init_func: Initialization function in Javascript with signature
             ``(config, result) -> void``. This function is used to initialize
             values in the result.
-        :type init_func: str | unicode
+        :type init_func: str
         :param sort_func: Sorting function in Javascript with signature
             ``(left, right) -> integer``, which returns ``-1`` if ``left <
             right``, ``+1`` if ``left > right`` and ``0`` if ``left == right``.
-        :type sort_func: str | unicode
+        :type sort_func: str
         :param filter_func: Filter function in Javascript with signature
             ``(config, vertex, path) -> mixed``, where ``mixed`` can have one
             of the following values (or an array with multiple): "exclude" (do
             not visit the vertex), "prune" (do not follow the edges of the
             vertex), or "undefined" (visit the vertex and follow its edges).
-        :type filter_func: str | unicode
+        :type filter_func: str
         :param visitor_func: Visitor function in Javascript with signature
             ``(config, result, vertex, path, connected) -> void``. The return
             value is ignored, ``result`` is modified by reference, and
             ``connected`` is populated only when parameter **order** is set to
             "preorder-expander".
-        :type visitor_func: str | unicode
+        :type visitor_func: str
         :param expander_func: Expander function in Javascript with signature
             ``(config, vertex, path) -> mixed``. The function must return an
             array of connections for ``vertex``. Each connection is an object
             with attributes "edge" and "vertex".
-        :type expander_func: str | unicode
+        :type expander_func: str
         :return: Visited edges and vertices.
         :rtype: dict
         :raise arango.exceptions.GraphTraverseError: If traversal fails.
@@ -480,10 +480,10 @@ class Graph(APIWrapper):
         """Check if the given vertex document exists in the graph.
 
         :param vertex: Vertex document ID or body with "_id" field.
-        :type vertex: str | unicode | dict
+        :type vertex: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **vertex** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **vertex** (if given) is
             compared against the revision of target vertex document.
         :type check_rev: bool
@@ -498,10 +498,10 @@ class Graph(APIWrapper):
         """Return a vertex document.
 
         :param vertex: Vertex document ID or body with "_id" field.
-        :type vertex: str | unicode | dict
+        :type vertex: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **vertex** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **vertex** (if given) is
             compared against the revision of target vertex document.
         :type check_rev: bool
@@ -516,7 +516,7 @@ class Graph(APIWrapper):
         """Insert a new vertex document.
 
         :param collection: Vertex collection name.
-        :type collection: str | unicode
+        :type collection: str
         :param vertex: New vertex document to insert. If it has "_key" or "_id"
             field, its value is used as key of the new vertex (otherwise it is
             auto-generated). Any "_rev" field is ignored.
@@ -605,10 +605,10 @@ class Graph(APIWrapper):
         """Delete a vertex document.
 
         :param vertex: Vertex document ID or body with "_id" field.
-        :type vertex: str | unicode | dict
+        :type vertex: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **vertex** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **vertex** (if given) is
             compared against the revision of target vertex document.
         :type check_rev: bool
@@ -641,10 +641,10 @@ class Graph(APIWrapper):
         """Check if the given edge document exists in the graph.
 
         :param edge: Edge document ID or body with "_id" field.
-        :type edge: str | unicode | dict
+        :type edge: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **edge** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **edge** (if given) is
             compared against the revision of target edge document.
         :type check_rev: bool
@@ -659,10 +659,10 @@ class Graph(APIWrapper):
         """Return an edge document.
 
         :param edge: Edge document ID or body with "_id" field.
-        :type edge: str | unicode | dict
+        :type edge: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **edge** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **edge** (if given) is
             compared against the revision of target edge document.
         :type check_rev: bool
@@ -677,7 +677,7 @@ class Graph(APIWrapper):
         """Insert a new edge document.
 
         :param collection: Edge collection name.
-        :type collection: str | unicode
+        :type collection: str
         :param edge: New edge document to insert. It must contain "_from" and
             "_to" fields. If it has "_key" or "_id" field, its value is used
             as key of the new edge document (otherwise it is auto-generated).
@@ -768,10 +768,10 @@ class Graph(APIWrapper):
         """Delete an edge document.
 
         :param edge: Edge document ID or body with "_id" field.
-        :type edge: str | unicode | dict
+        :type edge: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **edge** if present.
-        :type rev: str | unicode
+        :type rev: str
         :param check_rev: If set to True, revision of **edge** (if given) is
             compared against the revision of target edge document.
         :type check_rev: bool
@@ -806,11 +806,11 @@ class Graph(APIWrapper):
         """Insert a new edge document linking the given vertices.
 
         :param collection: Edge collection name.
-        :type collection: str | unicode
+        :type collection: str
         :param from_vertex: "From" vertex document ID or body with "_id" field.
-        :type from_vertex: str | unicode | dict
+        :type from_vertex: str | dict
         :param to_vertex: "To" vertex document ID or body with "_id" field.
-        :type to_vertex: str | unicode | dict
+        :type to_vertex: str | dict
         :param data: Any extra data for the new edge document. If it has "_key"
             or "_id" field, its value is used as key of the new edge document
             (otherwise it is auto-generated).
@@ -837,12 +837,12 @@ class Graph(APIWrapper):
         """Return the edge documents coming in and/or out of given vertex.
 
         :param collection: Edge collection name.
-        :type collection: str | unicode
+        :type collection: str
         :param vertex: Vertex document ID or body with "_id" field.
-        :type vertex: str | unicode | dict
+        :type vertex: str | dict
         :param direction: The direction of the edges. Allowed values are "in"
             and "out". If not set, edges in both directions are returned.
-        :type direction: str | unicode
+        :type direction: str
         :return: List of edges and statistics.
         :rtype: dict
         :raise arango.exceptions.EdgeListError: If retrieval fails.

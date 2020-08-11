@@ -7,36 +7,36 @@ class Response(object):
     """HTTP response.
 
     :param method: HTTP method in lowercase (e.g. "post").
-    :type method: str | unicode
+    :type method: str
     :param url: API URL.
-    :type url: str | unicode
+    :type url: str
     :param headers: Response headers.
     :type headers: requests.structures.CaseInsensitiveDict | dict
     :param status_code: Response status code.
     :type status_code: int
     :param status_text: Response status text.
-    :type status_text: str | unicode
+    :type status_text: str
     :param raw_body: Raw response body.
-    :type raw_body: str | unicode
+    :type raw_body: str
 
     :ivar method: HTTP method in lowercase (e.g. "post").
-    :vartype method: str | unicode
+    :vartype method: str
     :ivar url: API URL.
-    :vartype url: str | unicode
+    :vartype url: str
     :ivar headers: Response headers.
     :vartype headers: requests.structures.CaseInsensitiveDict | dict
     :ivar status_code: Response status code.
     :vartype status_code: int
     :ivar status_text: Response status text.
-    :vartype status_text: str | unicode
+    :vartype status_text: str
     :ivar raw_body: Raw response body.
-    :vartype raw_body: str | unicode
+    :vartype raw_body: str
     :ivar body: JSON-deserialized response body.
-    :vartype body: str | unicode | bool | int | list | dict
+    :vartype body: str | bool | int | list | dict
     :ivar error_code: Error code from ArangoDB server.
     :vartype error_code: int
     :ivar error_message: Error message from ArangoDB server.
-    :vartype error_message: str | unicode
+    :vartype error_message: str
     :ivar is_success: True if response status code was 2XX.
     :vartype is_success: bool
     """

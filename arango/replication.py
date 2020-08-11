@@ -41,7 +41,7 @@ class Replication(APIWrapper):
         """Return an overview of collections and indexes.
 
         :param batch_id: Batch ID.
-        :type batch_id: str | unicode
+        :type batch_id: str
         :param include_system: Include system collections in the result.
             Default value is True.
         :type include_system: bool
@@ -101,7 +101,7 @@ class Replication(APIWrapper):
         """Delete a dump batch.
 
         :param batch_id: Dump batch ID.
-        :type batch_id: str | unicode
+        :type batch_id: str
         :return: True if deletion was successful.
         :rtype: bool
         :raise arango.exceptions.ReplicationDumpBatchDeleteError: If delete
@@ -124,7 +124,7 @@ class Replication(APIWrapper):
         """Extend a dump batch.
 
         :param batch_id: Dump batch ID.
-        :type batch_id: str | unicode
+        :type batch_id: str
         :param ttl: Time-to-live for the new batch in seconds.
         :type ttl: int
         :return: True if operation was successful.
@@ -154,16 +154,16 @@ class Replication(APIWrapper):
         """Return the events data of one collection.
 
         :param collection: Name or ID of the collection to dump.
-        :type collection: str | unicode
+        :type collection: str
         :param chunk_size: Size of the result in bytes. This value is honored
             approximately only.
         :type chunk_size: int
         :param batch_id: Batch ID.
-        :type batch_id: str | unicode
+        :type batch_id: str
         :param deserialize: Deserialize the response content. Default is False.
         :type deserialize: bool
         :return: Collection events data.
-        :rtype: str | unicode | [dict]
+        :rtype: str | [dict]
         :raise arango.exceptions.ReplicationDumpError: If retrieval fails.
         """
         params = {'collection': collection}
@@ -206,13 +206,13 @@ class Replication(APIWrapper):
         """Synchronize data from a remote endpoint.
 
         :param endpoint: Master endpoint (e.g. "tcp://192.168.173.13:8529").
-        :type endpoint: str | unicode
+        :type endpoint: str
         :param database: Database name.
-        :type database: str | unicode
+        :type database: str
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :param password: Password.
-        :type password: str | unicode
+        :type password: str
         :param include_system: Whether to include system collection operations.
         :type include_system: bool
         :param incremental: If set to True, then an incremental synchronization
@@ -225,12 +225,12 @@ class Replication(APIWrapper):
         :type incremental: bool
         :param restrict_type: Optional string value for collection filtering.
             Allowed values are "include" or "exclude".
-        :type restrict_type: str | unicode
+        :type restrict_type: str
         :param restrict_collections: Optional list of collections for use with
             argument **restrict_type**. If **restrict_type** set to "include",
             only the specified collections are synchronised. Otherwise, all but
             the specified ones are synchronized.
-        :type restrict_collections: [str | unicode]
+        :type restrict_collections: [str]
         :param initial_sync_wait_time: Maximum wait time in seconds that the
             initial synchronization will wait for a response from master when
             fetching collection data. This can be used to control after what
@@ -325,7 +325,7 @@ class Replication(APIWrapper):
         """Return the first available tick value from the server.
 
         :return: First tick value.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.ReplicationLoggerFirstTickError: If retrieval
             fails.
         """
@@ -386,13 +386,13 @@ class Replication(APIWrapper):
         """Set configuration values of the replication applier.
 
         :param endpoint: Server endpoint (e.g. "tcp://192.168.173.13:8529").
-        :type endpoint: str | unicode
+        :type endpoint: str
         :param database: Database name.
-        :type database: str | unicode
+        :type database: str
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :param password: Password.
-        :type password: str | unicode
+        :type password: str
         :param max_connect_retries: Maximum number of connection attempts the
             applier makes in a row before stopping itself.
         :type max_connect_retries: int
@@ -466,12 +466,12 @@ class Replication(APIWrapper):
         :type verbose: bool
         :param restrict_type: Optional string value for collection filtering.
             Allowed values are "include" or "exclude".
-        :type restrict_type: str | unicode
+        :type restrict_type: str
         :param restrict_collections: Optional list of collections for use with
             argument **restrict_type**. If **restrict_type** set to "include",
             only the specified collections are included. Otherwise, only the
             specified collections are excluded.
-        :type restrict_collections: [str | unicode]
+        :type restrict_collections: [str]
         :return: Updated configuration.
         :rtype: dict
         :raise arango.exceptions.ReplicationApplierConfigSetError: If update
@@ -561,7 +561,7 @@ class Replication(APIWrapper):
             the previous applier run is used. If there is no previous applier
             state saved, the applier starts at the beginning of the logger
             server's log.
-        :type last_tick: str | unicode
+        :type last_tick: str
         :return: Applier state and details.
         :rtype: dict
         :raise arango.exceptions.ReplicationApplierStartError: If operation
@@ -624,24 +624,24 @@ class Replication(APIWrapper):
         """Change the server role to slave.
 
         :param endpoint: Master endpoint (e.g. "tcp://192.168.173.13:8529").
-        :type endpoint: str | unicode
+        :type endpoint: str
         :param database: Database name.
-        :type database: str | unicode
+        :type database: str
         :param username: Username.
-        :type username: str | unicode
+        :type username: str
         :param password: Password.
-        :type password: str | unicode
+        :type password: str
         :param include_system: Whether system collection operations are
             applied.
         :type include_system: bool
         :param restrict_type: Optional string value for collection filtering.
             Allowed values are "include" or "exclude".
-        :type restrict_type: str | unicode
+        :type restrict_type: str
         :param restrict_collections: Optional list of collections for use with
             argument **restrict_type**. If **restrict_type** set to "include",
             only the specified collections are included. Otherwise, only the
             specified collections are excluded.
-        :type restrict_collections: [str | unicode]
+        :type restrict_collections: [str]
         :param max_connect_retries: Maximum number of connection attempts the
             applier makes in a row before stopping itself.
         :type max_connect_retries: int
@@ -770,7 +770,7 @@ class Replication(APIWrapper):
         """Return this server's ID.
 
         :return: Server ID.
-        :rtype: str | unicode
+        :rtype: str
         :raise arango.exceptions.ReplicationServerIDError: If retrieval fails.
         """
         request = Request(

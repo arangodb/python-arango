@@ -21,7 +21,7 @@ class HTTPClient(object):  # pragma: no cover
         This method must be overridden by the user.
 
         :param host: ArangoDB host URL.
-        :type host: str | unicode
+        :type host: str
         :returns: Requests session object.
         :rtype: requests.Session
         """
@@ -43,15 +43,15 @@ class HTTPClient(object):  # pragma: no cover
         :param session: Requests session object.
         :type session: requests.Session
         :param method: HTTP method in lowercase (e.g. "post").
-        :type method: str | unicode
+        :type method: str
         :param url: Request URL.
-        :type url: str | unicode
+        :type url: str
         :param headers: Request headers.
         :type headers: dict
         :param params: URL (query) parameters.
         :type params: dict
         :param data: Request payload.
-        :type data: str | unicode | bool | int | list | dict
+        :type data: str | bool | int | list | dict
         :param auth: Username and password.
         :type auth: tuple
         :returns: HTTP response.
@@ -67,7 +67,7 @@ class DefaultHTTPClient(HTTPClient):
         """Create and return a new session/connection.
 
         :param host: ArangoDB host URL.
-        :type host: str | unicode
+        :type host: str
         :returns: requests session object
         :rtype: requests.Session
         """
@@ -86,15 +86,15 @@ class DefaultHTTPClient(HTTPClient):
         :param session: Requests session object.
         :type session: requests.Session
         :param method: HTTP method in lowercase (e.g. "post").
-        :type method: str | unicode
+        :type method: str
         :param url: Request URL.
-        :type url: str | unicode
+        :type url: str
         :param headers: Request headers.
         :type headers: dict
         :param params: URL (query) parameters.
         :type params: dict
         :param data: Request payload.
-        :type data: str | unicode | bool | int | list | dict
+        :type data: str | bool | int | list | dict
         :param auth: Username and password.
         :type auth: tuple
         :returns: HTTP response.

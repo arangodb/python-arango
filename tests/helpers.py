@@ -20,7 +20,7 @@ def generate_db_name():
     """Generate and return a random database name.
 
     :return: Random database name.
-    :rtype: str | unicode
+    :rtype: str
     """
     return 'test_database_{}'.format(uuid4().hex)
 
@@ -29,7 +29,7 @@ def generate_col_name():
     """Generate and return a random collection name.
 
     :return: Random collection name.
-    :rtype: str | unicode
+    :rtype: str
     """
     return 'test_collection_{}'.format(uuid4().hex)
 
@@ -38,7 +38,7 @@ def generate_graph_name():
     """Generate and return a random graph name.
 
     :return: Random graph name.
-    :rtype: str | unicode
+    :rtype: str
     """
     return 'test_graph_{}'.format(uuid4().hex)
 
@@ -47,7 +47,7 @@ def generate_doc_key():
     """Generate and return a random document key.
 
     :return: Random document key.
-    :rtype: str | unicode
+    :rtype: str
     """
     return 'test_document_{}'.format(uuid4().hex)
 
@@ -56,7 +56,7 @@ def generate_task_name():
     """Generate and return a random task name.
 
     :return: Random task name.
-    :rtype: str | unicode
+    :rtype: str
     """
     return 'test_task_{}'.format(uuid4().hex)
 
@@ -65,7 +65,7 @@ def generate_task_id():
     """Generate and return a random task ID.
 
     :return: Random task ID
-    :rtype: str | unicode
+    :rtype: str
     """
     return 'test_task_id_{}'.format(uuid4().hex)
 
@@ -74,7 +74,7 @@ def generate_username():
     """Generate and return a random username.
 
     :return: Random username.
-    :rtype: str | unicode
+    :rtype: str
     """
     return 'test_user_{}'.format(uuid4().hex)
 
@@ -83,7 +83,7 @@ def generate_view_name():
     """Generate and return a random view name.
 
     :return: Random view name.
-    :rtype: str | unicode
+    :rtype: str
     """
     return 'test_view_{}'.format(uuid4().hex)
 
@@ -92,7 +92,7 @@ def generate_analyzer_name():
     """Generate and return a random analyzer name.
 
     :return: Random analyzer name.
-    :rtype: str | unicode
+    :rtype: str
     """
     return 'test_analyzer_{}'.format(uuid4().hex)
 
@@ -101,7 +101,7 @@ def generate_string():
     """Generate and return a random unique string.
 
     :return: Random unique string.
-    :rtype: str | unicode
+    :rtype: str
     """
     return uuid4().hex
 
@@ -110,7 +110,7 @@ def generate_service_mount():
     """Generate and return a random service name.
 
     :return: Random service name.
-    :rtype: str | unicode
+    :rtype: str
     """
     return '/test_{}'.format(uuid4().hex)
 
@@ -119,11 +119,11 @@ def generate_jwt(secret, exp=3600):
     """Generate and return a JWT.
 
     :param secret: JWT secret
-    :type secret: str | unicode
+    :type secret: str
     :param exp: Time to expire in seconds.
     :type exp: int
     :return: JWT
-    :rtype: str | unicode
+    :rtype: str
     """
     now = timegm(datetime.utcnow().utctimetuple())
     return jwt.encode(
@@ -170,11 +170,11 @@ def extract(key, items):
     """Return the sorted values from dicts using the given key.
 
     :param key: Dictionary key
-    :type key: str | unicode
+    :type key: str
     :param items: Items to filter.
     :type items: [dict]
     :return: Set of values.
-    :rtype: [str | unicode]
+    :rtype: [str]
     """
     return sorted(item[key] for item in items)
 

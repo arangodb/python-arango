@@ -27,13 +27,13 @@ class Connection(object):
     """Base connection to specific ArangoDB database.
 
     :param hosts: Host URL or list of URLs (coordinators in a cluster).
-    :type hosts: [str | unicode]
+    :type hosts: [str]
     :param host_resolver: Host resolver (used for clusters).
     :type host_resolver: arango.resolver.HostResolver
     :param sessions: HTTP session objects per host.
     :type sessions: [requests.Session]
     :param db_name: Database name.
-    :type db_name: str | unicode
+    :type db_name: str
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
     """
@@ -63,7 +63,7 @@ class Connection(object):
         """Return the database name.
 
         :returns: Database name.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._db_name
 
@@ -71,9 +71,9 @@ class Connection(object):
         """Serialize the object and return the string.
 
         :param obj: Object to serialize.
-        :type obj: str | unicode | bool | int | list | dict
+        :type obj: str | bool | int | list | dict
         :return: Serialized string.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._serializer(obj)
 
@@ -81,9 +81,9 @@ class Connection(object):
         """De-serialize the string and return the object.
 
         :param string: String to de-serialize.
-        :type string: str | unicode
+        :type string: str
         :return: De-serialized object.
-        :rtype: str | unicode | bool | int | list | dict
+        :rtype: str | bool | int | list | dict
         """
         try:
             return self._deserializer(string)
@@ -142,7 +142,7 @@ class Connection(object):
         :param request: HTTP request.
         :type request: arango.request.Request
         :return: Normalized data.
-        :rtype: str | unicode | bool | int | list | dict
+        :rtype: str | bool | int | list | dict
         """
         if request.data is None:
             return request.data
@@ -185,17 +185,17 @@ class BasicConnection(Connection):
     """Connection to specific ArangoDB database using basic authentication.
 
     :param hosts: Host URL or list of URLs (coordinators in a cluster).
-    :type hosts: [str | unicode]
+    :type hosts: [str]
     :param host_resolver: Host resolver (used for clusters).
     :type host_resolver: arango.resolver.HostResolver
     :param sessions: HTTP session objects per host.
     :type sessions: [requests.Session]
     :param db_name: Database name.
-    :type db_name: str | unicode
+    :type db_name: str
     :param username: Username.
-    :type username: str | unicode
+    :type username: str
     :param password: Password.
-    :type password: str | unicode
+    :type password: str
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
     """
@@ -227,7 +227,7 @@ class BasicConnection(Connection):
         """Return the username.
 
         :returns: Username.
-        :rtype: str | unicode
+        :rtype: str
         """
         return self._username
 
@@ -256,17 +256,17 @@ class JWTConnection(Connection):
     """Connection to specific ArangoDB database using JWT authentication.
 
     :param hosts: Host URL or list of URLs (coordinators in a cluster).
-    :type hosts: [str | unicode]
+    :type hosts: [str]
     :param host_resolver: Host resolver (used for clusters).
     :type host_resolver: arango.resolver.HostResolver
     :param sessions: HTTP session objects per host.
     :type sessions: [requests.Session]
     :param db_name: Database name.
-    :type db_name: str | unicode
+    :type db_name: str
     :param username: Username.
-    :type username: str | unicode
+    :type username: str
     :param password: Password.
-    :type password: str | unicode
+    :type password: str
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
     """
@@ -345,7 +345,7 @@ class JWTConnection(Connection):
         """Get a new JWT token for the current user (cannot be a superuser).
 
         :return: JWT token.
-        :rtype: str | unicode
+        :rtype: str
         """
         request = Request(
             method='post',
@@ -387,17 +387,17 @@ class JWTSuperuserConnection(Connection):
     """Connection to specific ArangoDB database using superuser JWT.
 
     :param hosts: Host URL or list of URLs (coordinators in a cluster).
-    :type hosts: [str | unicode]
+    :type hosts: [str]
     :param host_resolver: Host resolver (used for clusters).
     :type host_resolver: arango.resolver.HostResolver
     :param sessions: HTTP session objects per host.
     :type sessions: [requests.Session]
     :param db_name: Database name.
-    :type db_name: str | unicode
+    :type db_name: str
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
     :param superuser_token: User generated token for superuser access.
-    :type superuser_token: str | unicode
+    :type superuser_token: str
     """
 
     def __init__(self,

@@ -216,14 +216,14 @@ class WAL(APIWrapper):  # pragma: no cover
         :param lower: Exclusive lower bound tick value. On successive calls to
             this method you should set this to the value of "last_included"
             from previous call (unless the value was 0).
-        :type lower: str | unicode
+        :type lower: str
         :param upper: Inclusive upper bound tick value for results.
-        :type upper: str | unicode
+        :type upper: str
         :param last_scanned: On successive calls to this method you should
             set this to the value of "last_scanned" from previous call (or 0
             on first try). This allows the rocksdb engine to break up large
             transactions over multiple responses.
-        :type last_scanned: str | unicode
+        :type last_scanned: str
         :param all_databases: Whether operations for all databases should be
             included. When set to False only the operations for the current
             database are included. The value True is only valid on "_system"
@@ -245,7 +245,7 @@ class WAL(APIWrapper):  # pragma: no cover
         :type server_id: int
         :param client_info: Short description of the client, used for
             informative purposes only.
-        :type client_info: str | unicode
+        :type client_info: str
         :param barrier_id: ID of barrier used to keep WAL entries around.
         :type barrier_id: int
         :param deserialize: Deserialize the response content. Default is False.

@@ -13,7 +13,7 @@ def suppress_warning(logger_name):
     """Suppress logger messages.
 
     :param logger_name: Full name of the logger.
-    :type logger_name: str | unicode
+    :type logger_name: str
     """
     logger = logging.getLogger(logger_name)
     original_log_level = logger.getEffectiveLevel()
@@ -26,9 +26,9 @@ def get_col_name(doc):
     """Return the collection name from input.
 
     :param doc: Document ID or body with "_id" field.
-    :type doc: str | unicode | dict
+    :type doc: str | dict
     :return: Collection name.
-    :rtype: [str | unicode]
+    :rtype: [str]
     :raise arango.exceptions.DocumentParseError: If document ID is missing.
     """
     try:
@@ -42,9 +42,9 @@ def get_doc_id(doc):
     """Return the document ID from input.
 
     :param doc: Document ID or body with "_id" field.
-    :type doc: str | unicode | dict
+    :type doc: str | dict
     :return: Document ID.
-    :rtype: str | unicode
+    :rtype: str
     :raise arango.exceptions.DocumentParseError: If document ID is missing.
     """
     try:

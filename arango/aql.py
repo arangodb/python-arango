@@ -57,7 +57,7 @@ class AQL(APIWrapper):
         """Inspect the query and return its metadata without executing it.
 
         :param query: Query to inspect.
-        :type query: str | unicode
+        :type query: str
         :param all_plans: If set to True, all possible execution plans are
             returned in the result. If set to False, only the optimal plan
             is returned.
@@ -96,7 +96,7 @@ class AQL(APIWrapper):
         """Parse and validate the query without executing it.
 
         :param query: Query to validate.
-        :type query: str | unicode
+        :type query: str
         :return: Query details.
         :rtype: dict
         :raise arango.exceptions.AQLQueryValidateError: If validation fails.
@@ -145,7 +145,7 @@ class AQL(APIWrapper):
         """Execute the query and return the result cursor.
 
         :param query: Query to execute.
-        :type query: str | unicode
+        :type query: str
         :param count: If set to True, the total document count is included in
             the result cursor.
         :type count: bool
@@ -165,7 +165,7 @@ class AQL(APIWrapper):
         :param max_plans: Max number of plans the optimizer generates.
         :type max_plans: int
         :param optimizer_rules: List of optimizer rules.
-        :type optimizer_rules: [str | unicode]
+        :type optimizer_rules: [str]
         :param cache: If set to True, the query cache is used. The operation
             mode of the query cache must be set to "on" or "demand".
         :type cache: bool
@@ -200,10 +200,10 @@ class AQL(APIWrapper):
         :type satellite_sync_wait: int | float
         :param read_collections: Names of collections read during query
             execution. This parameter is deprecated.
-        :type read_collections: [str | unicode]
+        :type read_collections: [str]
         :param write_collections: Names of collections written to during query
             execution. This parameter is deprecated.
-        :type write_collections: [str | unicode]
+        :type write_collections: [str]
         :param stream: If set to True, query is executed in streaming fashion:
             query result is not stored server-side but calculated on the fly.
             Note: long-running queries hold collection locks for as long as the
@@ -296,7 +296,7 @@ class AQL(APIWrapper):
         """Kill a running query.
 
         :param query_id: Query ID.
-        :type query_id: str | unicode
+        :type query_id: str
         :return: True if kill request was sent successfully.
         :rtype: bool
         :raise arango.exceptions.AQLQueryKillError: If the send fails.
@@ -462,9 +462,9 @@ class AQL(APIWrapper):
         """Create a new AQL function.
 
         :param name: AQL function name.
-        :type name: str | unicode
+        :type name: str
         :param code: Function definition in Javascript.
-        :type code: str | unicode
+        :type code: str
         :return: Whether the AQL function was newly created or an existing one
             was replaced.
         :rtype: dict
@@ -487,7 +487,7 @@ class AQL(APIWrapper):
         """Delete an AQL function.
 
         :param name: AQL function name.
-        :type name: str | unicode
+        :type name: str
         :param group: If set to True, value of parameter **name** is treated
             as a namespace prefix, and all functions in the namespace are
             deleted. If set to False, the value of **name** must be a fully
@@ -552,7 +552,7 @@ class AQLQueryCache(APIWrapper):
 
         :param mode: Operation mode. Allowed values are "off", "on" and
             "demand".
-        :type mode: str | unicode
+        :type mode: str
         :param max_results: Max number of query results stored per
             database-specific cache.
         :type max_results: int
