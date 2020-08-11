@@ -61,14 +61,31 @@ database.
     sys_db.metrics()
 
 
-You can also access or hot-reload JWT secrets (enterprise edition only):
+Features available in enterprise edition only:
 
 .. code-block:: python
 
-    # Retrieve JWT secrets
+    from arango import ArangoClient
+
+    # Initialize the ArangoDB client.
+    client = ArangoClient()
+
+    # Connect to "_system" database as root user using JWT authentication.
+    sys_db = client.db(
+        '_system',
+        username='root',
+        password='passwd',
+        auth_method='jwt'
+    )
+
+    # Retrieve JWT secrets.
     sys_db.jwt_secrets()
 
-    # Hot-reload JWT secrets
+    # Hot-reload JWT secrets.
     sys_db.reload_jwt_secrets()
+
+    # Rotate the user-supplied keys for encryption.
+    sys_db.encryption()
+
 
 See :ref:`StandardDatabase` for API specification.

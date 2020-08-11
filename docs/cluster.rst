@@ -80,7 +80,8 @@ Below is an example on how to manage clusters using python-arango.
     # Get the cluster health.
     cluster.health()
 
-    # Get details for a specific server in the cluster.
+    # Get cluster server details.
+    cluster.server_count()
     server_id = cluster.server_id()
     cluster.server_engine(server_id)
     cluster.server_version(server_id)

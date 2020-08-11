@@ -131,7 +131,7 @@ class ArangoClient(object):
                 deserializer=self._deserializer,
                 superuser_token=superuser_token
             )
-        elif auth_method == 'basic':
+        elif auth_method.lower() == 'basic':
             connection = BasicConnection(
                 hosts=self._hosts,
                 host_resolver=self._host_resolver,
@@ -143,7 +143,7 @@ class ArangoClient(object):
                 serializer=self._serializer,
                 deserializer=self._deserializer,
             )
-        elif auth_method == 'jwt':
+        elif auth_method.lower() == 'jwt':
             connection = JWTConnection(
                 hosts=self._hosts,
                 host_resolver=self._host_resolver,

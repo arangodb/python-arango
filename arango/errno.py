@@ -682,6 +682,16 @@ CURSOR_NOT_FOUND = 1600
 # Concurrent request still using the cursor.
 CURSOR_BUSY = 1601
 
+##############################
+# ArangoDB Validation Errors #
+##############################
+
+# Document does not pass schema validation.
+VALIDATION_FAILED = 1620
+
+# Schema description is invalid.
+VALIDATION_BAD_PARAMETER = 1621
+
 ###############################
 # ArangoDB Transaction Errors #
 ###############################
