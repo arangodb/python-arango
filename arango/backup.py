@@ -19,7 +19,7 @@ from arango.formatter import (
 from arango.request import Request
 
 
-class Backup(APIWrapper):
+class Backup(APIWrapper):  # pragma: no cover
 
     def __init__(self, connection, executor):
         super(Backup, self).__init__(connection, executor)
@@ -242,7 +242,7 @@ class Backup(APIWrapper):
         )
 
         def response_handler(resp):
-            if resp.is_success:  # pragma: no cover
+            if resp.is_success:
                 return format_backup_restore(resp.body['result'])
             raise BackupRestoreError(resp, request)
 

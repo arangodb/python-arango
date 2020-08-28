@@ -1,5 +1,6 @@
 from __future__ import absolute_import, unicode_literals
 
+import pytest
 from six import string_types
 
 from arango.errno import (
@@ -19,6 +20,8 @@ from tests.helpers import assert_raises
 
 
 def test_backup_management(sys_db, bad_db):
+    pytest.skip('Only for ArangoDB enterprise edition')
+
     # Test create backup "foo".
     result = sys_db.backup.create(
         label='foo',
@@ -112,8 +115,8 @@ def test_backup_management(sys_db, bad_db):
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
 
     # Test restore backup.
-    # result = sys_db.backup.restore(backup_id_foo)
-    # assert isinstance(result, dict)
+    result = sys_db.backup.restore(backup_id_foo)
+    assert isinstance(result, dict)
 
     # Test restore backup with bad database.
     with assert_raises(BackupRestoreError) as err:

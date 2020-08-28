@@ -4,6 +4,9 @@ from datetime import datetime
 
 from six import string_types
 
+from arango.aql import AQL
+from arango.backup import Backup
+from arango.cluster import Cluster
 from arango.exceptions import (
     DatabaseCreateError,
     DatabaseDeleteError,
@@ -24,6 +27,10 @@ from arango.exceptions import (
     ServerVersionError,
     ServerEngineError,
 )
+from arango.foxx import Foxx
+from arango.pregel import Pregel
+from arango.replication import Replication
+from arango.wal import WAL
 from tests.helpers import assert_raises, generate_db_name
 
 
@@ -34,6 +41,14 @@ def test_database_attributes(db, username):
     assert db.name.startswith('test_database')
     assert db.conn is not None
     assert repr(db) == '<StandardDatabase {}>'.format(db.name)
+
+    assert isinstance(db.aql, AQL)
+    assert isinstance(db.backup, Backup)
+    assert isinstance(db.cluster, Cluster)
+    assert isinstance(db.foxx, Foxx)
+    assert isinstance(db.pregel, Pregel)
+    assert isinstance(db.replication, Replication)
+    assert isinstance(db.wal, WAL)
 
 
 def test_database_misc_methods(sys_db, db, bad_db):

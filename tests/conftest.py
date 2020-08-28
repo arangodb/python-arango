@@ -144,9 +144,9 @@ def pytest_unconfigure(*_):  # pragma: no cover
         if col_name.startswith('test_collection'):
             sys_db.delete_collection(col_name, ignore_missing=True)
 
-    # Remove all backups.
-    for backup_id in sys_db.backup.get()['list'].keys():
-        sys_db.backup.delete(backup_id)
+    # # Remove all backups.
+    # for backup_id in sys_db.backup.get()['list'].keys():
+    #     sys_db.backup.delete(backup_id)
 
 
 # noinspection PyProtectedMember
