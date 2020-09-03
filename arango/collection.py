@@ -306,11 +306,13 @@ class Collection(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    def configure(self, sync=None):
+    def configure(self, sync=None, schema=None):
         """Configure collection properties.
 
         :param sync: Block until operations are synchronized to disk.
         :type sync: bool
+        :param schema: document schema for validation of objects.
+        :type schema: dict
         :return: New collection properties.
         :rtype: dict
         :raise arango.exceptions.CollectionConfigureError: If operation fails.
@@ -318,6 +320,8 @@ class Collection(APIWrapper):
         data = {}
         if sync is not None:
             data['waitForSync'] = sync
+        if schema is not None:
+            data['schema'] = schema
 
         request = Request(
             method='put',
