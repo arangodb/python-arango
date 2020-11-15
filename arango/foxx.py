@@ -49,11 +49,15 @@ class Foxx(APIWrapper):
         return '<Foxx in {}>'.format(self._conn.db_name)
 
     # noinspection PyMethodMayBeStatic
-    def _encode_file(self, filename):
-        """Encode file into multipart data.
+    def _encode(self, filename, config, deps):
+        """Encode file, configuration and dependencies into multipart data.
 
         :param filename: Full path to the javascript file or zip bundle.
         :type filename: str
+        :param config: Configuration values.
+        :type config: dict
+        :param deps: Dependency settings.
+        :type deps: dict
         :return: Multipart encoder object
         :rtype: requests_toolbelt.MultipartEncoder
         """
@@ -65,9 +69,16 @@ class Foxx(APIWrapper):
         else:
             raise ValueError('File extension must be .zip or .js')
 
-        return MultipartEncoder(
-            fields={'source': (None, open(filename, 'rb'), source_type)}
-        )
+        fields = {'source': (None, open(filename, 'rb'), source_type)}
+
+        if config is not None:
+            fields['configuration'] = \
+                self._conn.serialize(config).encode('utf-8')
+        if deps is not None:
+            fields['dependencies'] = \
+                self._conn.serialize(deps).encode('utf-8')
+
+        return MultipartEncoder(fields=fields)
 
     def services(self, exclude_system=False):
         """List installed services.
@@ -182,7 +193,9 @@ class Foxx(APIWrapper):
                                  filename,
                                  development=None,
                                  setup=None,
-                                 legacy=None):
+                                 legacy=None,
+                                 config=None,
+                                 dependencies=None):
         """Install a new service using a javascript file or zip bundle.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
@@ -195,6 +208,10 @@ class Foxx(APIWrapper):
         :type setup: bool
         :param legacy: Install the service in 2.8 legacy compatibility mode.
         :type legacy: bool
+        :param config: Configuration values.
+        :type config: dict
+        :param dependencies: Dependency settings.
+        :type dependencies: dict
         :return: Service metadata.
         :rtype: dict
         :raise arango.exceptions.FoxxServiceCreateError: If install fails.
@@ -207,7 +224,7 @@ class Foxx(APIWrapper):
         if legacy is not None:
             params['legacy'] = legacy
 
-        data = self._encode_file(filename)
+        data = self._encode(filename, config, dependencies)
         request = Request(
             method='post',
             endpoint='/_api/foxx',
@@ -294,7 +311,9 @@ class Foxx(APIWrapper):
                                  teardown=None,
                                  setup=None,
                                  legacy=None,
-                                 force=None):
+                                 force=None,
+                                 config=None,
+                                 dependencies=None):
         """Update (upgrade) a service using a javascript file or zip bundle.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
@@ -309,6 +328,10 @@ class Foxx(APIWrapper):
         :type legacy: bool
         :param force: Force update if no service is found.
         :type force: bool
+        :param config: Configuration values.
+        :type config: dict
+        :param dependencies: Dependency settings.
+        :type dependencies: dict
         :return: Updated service metadata.
         :rtype: dict
         :raise arango.exceptions.FoxxServiceUpdateError: If update fails.
@@ -323,7 +346,7 @@ class Foxx(APIWrapper):
         if force is not None:
             params['force'] = force
 
-        data = self._encode_file(filename)
+        data = self._encode(filename, config, dependencies)
         request = Request(
             method='patch',
             endpoint='/_api/foxx/service',
@@ -410,7 +433,9 @@ class Foxx(APIWrapper):
                                   teardown=None,
                                   setup=None,
                                   legacy=None,
-                                  force=None):
+                                  force=None,
+                                  config=None,
+                                  dependencies=None):
         """Replace a service using a javascript file or zip bundle.
 
         :param mount: Service mount path (e.g "/_admin/aardvark").
@@ -425,6 +450,10 @@ class Foxx(APIWrapper):
         :type legacy: bool
         :param force: Force install if no service is found.
         :type force: bool
+        :param config: Configuration values.
+        :type config: dict
+        :param dependencies: Dependency settings.
+        :type dependencies: dict
         :return: Replaced service metadata.
         :rtype: dict
         :raise arango.exceptions.FoxxServiceReplaceError: If replace fails.
@@ -439,7 +468,7 @@ class Foxx(APIWrapper):
         if force is not None:
             params['force'] = force
 
-        data = self._encode_file(filename)
+        data = self._encode(filename, config, dependencies)
         request = Request(
             method='put',
             endpoint='/_api/foxx/service',

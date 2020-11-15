@@ -37,6 +37,7 @@ from tests.helpers import (
 )
 
 service_file = '/tmp/service.zip'
+service_name = 'test'
 
 
 def test_foxx_attributes(db):
@@ -76,7 +77,7 @@ def test_foxx_service_management_json(db, bad_db, cluster):
         legacy=True
     )
     assert service['mount'] == service_mount
-    assert service['name'] == 'test'
+    assert service['name'] == service_name
     assert service['development'] is True
     assert service['legacy'] is True
     assert service['manifest']['configuration'] == {}
@@ -90,7 +91,7 @@ def test_foxx_service_management_json(db, bad_db, cluster):
     # Test get service
     service = db.foxx.service(service_mount)
     assert service['mount'] == service_mount
-    assert service['name'] == 'test'
+    assert service['name'] == service_name
     assert service['development'] is True
     assert service['manifest']['configuration'] == {}
     assert service['manifest']['dependencies'] == {}
@@ -116,7 +117,7 @@ def test_foxx_service_management_json(db, bad_db, cluster):
         force=False
     )
     assert service['mount'] == service_mount
-    assert service['name'] == 'test'
+    assert service['name'] == service_name
     assert service['legacy'] is False
 
     # Test update missing service
@@ -136,7 +137,7 @@ def test_foxx_service_management_json(db, bad_db, cluster):
         force=False
     )
     assert service['mount'] == service_mount
-    assert service['name'] == 'test'
+    assert service['name'] == service_name
     assert service['legacy'] is True
 
     # Test replace missing service
@@ -173,10 +174,12 @@ def test_foxx_service_management_file(db, cluster):
         filename=path,
         development=True,
         setup=True,
-        legacy=True
+        legacy=True,
+        config={'foo': 'bar'},
+        dependencies={}
     )
     assert service['mount'] == service_mount
-    assert service['name'] == 'test'
+    assert service['name'] == service_name
     assert service['development'] is True
     assert service['legacy'] is True
     assert service['manifest']['configuration'] == {}
@@ -198,11 +201,15 @@ def test_foxx_service_management_file(db, cluster):
         teardown=False,
         setup=False,
         legacy=False,
-        force=False
+        force=False,
+        config={},
+        dependencies={}
     )
     assert service['mount'] == service_mount
-    assert service['name'] == 'test'
+    assert service['name'] == service_name
     assert service['legacy'] is False
+    assert service['manifest']['configuration'] == {}
+    assert service['manifest']['dependencies'] == {}
 
     # Test update missing service
     with assert_raises(FoxxServiceUpdateError) as err:
@@ -216,11 +223,15 @@ def test_foxx_service_management_file(db, cluster):
         teardown=True,
         setup=True,
         legacy=True,
-        force=False
+        force=False,
+        config={},
+        dependencies={}
     )
     assert service['mount'] == service_mount
-    assert service['name'] == 'test'
+    assert service['name'] == service_name
     assert service['legacy'] is True
+    assert service['manifest']['configuration'] == {}
+    assert service['manifest']['dependencies'] == {}
 
     # Test replace missing service
     with assert_raises(FoxxServiceReplaceError) as err:
@@ -326,7 +337,7 @@ def test_foxx_development_toggle(db, cluster):
     # Test enable development mode
     service = db.foxx.enable_development(service_mount)
     assert service['mount'] == service_mount
-    assert service['name'] == 'test'
+    assert service['name'] == service_name
     assert service['development'] is True
 
     # Test enable development mode for missing service
@@ -337,7 +348,7 @@ def test_foxx_development_toggle(db, cluster):
     # Test disable development mode
     service = db.foxx.disable_development(service_mount)
     assert service['mount'] == service_mount
-    assert service['name'] == 'test'
+    assert service['name'] == service_name
     assert service['development'] is False
 
     # Test disable development mode for missing service

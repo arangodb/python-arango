@@ -44,6 +44,7 @@ def test_collection_misc_methods(col, bad_col, cluster):
     prev_sync = properties['sync']
     properties = col.configure(
         sync=not prev_sync,
+        schema={}
     )
     assert properties['name'] == col.name
     assert properties['system'] is False
