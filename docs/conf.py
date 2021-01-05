@@ -53,7 +53,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'python-arango'
-copyright = '2016, Joohwan Oh'
+copyright = '2021, Joohwan Oh'
 author = 'Joohwan Oh'
 
 # The version info for the project you're documenting, acts as replacement for
