@@ -1,12 +1,14 @@
-from __future__ import absolute_import, unicode_literals
-
 from datetime import datetime
-
-from six import string_types
 
 from arango.aql import AQL
 from arango.backup import Backup
 from arango.cluster import Cluster
+from arango.errno import (
+    DATABASE_NOT_FOUND,
+    DUPLICATE_NAME,
+    FORBIDDEN,
+    USE_SYSTEM_DATABASE,
+)
 from arango.exceptions import (
     DatabaseCreateError,
     DatabaseDeleteError,
@@ -14,6 +16,7 @@ from arango.exceptions import (
     DatabasePropertiesError,
     ServerDetailsError,
     ServerEchoError,
+    ServerEngineError,
     ServerLogLevelError,
     ServerLogLevelSetError,
     ServerMetricsError,
@@ -21,11 +24,10 @@ from arango.exceptions import (
     ServerReloadRoutingError,
     ServerRequiredDBVersionError,
     ServerRoleError,
-    ServerStatusError,
     ServerStatisticsError,
+    ServerStatusError,
     ServerTimeError,
     ServerVersionError,
-    ServerEngineError,
 )
 from arango.foxx import Foxx
 from arango.pregel import Pregel
@@ -35,12 +37,12 @@ from tests.helpers import assert_raises, generate_db_name
 
 
 def test_database_attributes(db, username):
-    assert db.context in ['default', 'async', 'batch', 'transaction']
+    assert db.context in ["default", "async", "batch", "transaction"]
     assert db.username == username
     assert db.db_name == db.name
-    assert db.name.startswith('test_database')
+    assert db.name.startswith("test_database")
     assert db.conn is not None
-    assert repr(db) == '<StandardDatabase {}>'.format(db.name)
+    assert repr(db) == f"<StandardDatabase {db.name}>"
 
     assert isinstance(db.aql, AQL)
     assert isinstance(db.backup, Backup)
@@ -54,10 +56,10 @@ def test_database_attributes(db, username):
 def test_database_misc_methods(sys_db, db, bad_db):
     # Test get properties
     properties = db.properties()
-    assert 'id' in properties
-    assert 'path' in properties
-    assert properties['name'] == db.name
-    assert properties['system'] is False
+    assert "id" in properties
+    assert "path" in properties
+    assert properties["name"] == db.name
+    assert properties["system"] is False
 
     # Test get properties with bad database
     with assert_raises(DatabasePropertiesError) as err:
@@ -65,7 +67,7 @@ def test_database_misc_methods(sys_db, db, bad_db):
     assert err.value.error_code in {11, 1228}
 
     # Test get server version
-    assert isinstance(db.version(), string_types)
+    assert isinstance(db.version(), str)
 
     # Test get server version with bad database
     with assert_raises(ServerVersionError) as err:
@@ -74,8 +76,8 @@ def test_database_misc_methods(sys_db, db, bad_db):
 
     # Test get server details
     details = db.details()
-    assert 'architecture' in details
-    assert 'server-version' in details
+    assert "architecture" in details
+    assert "server-version" in details
 
     # Test get server details with bad database
     with assert_raises(ServerDetailsError) as err:
@@ -84,7 +86,7 @@ def test_database_misc_methods(sys_db, db, bad_db):
 
     # Test get server required database version
     version = db.required_db_version()
-    assert isinstance(version, string_types)
+    assert isinstance(version, str)
 
     # Test get server target version with bad database
     with assert_raises(ServerRequiredDBVersionError):
@@ -92,7 +94,7 @@ def test_database_misc_methods(sys_db, db, bad_db):
 
     # Test get server metrics
     metrics = db.metrics()
-    assert isinstance(metrics, string_types)
+    assert isinstance(metrics, str)
 
     # Test get server statistics with bad database
     with assert_raises(ServerMetricsError) as err:
@@ -102,15 +104,15 @@ def test_database_misc_methods(sys_db, db, bad_db):
     # Test get server statistics
     statistics = db.statistics(description=False)
     assert isinstance(statistics, dict)
-    assert 'time' in statistics
-    assert 'system' in statistics
-    assert 'server' in statistics
+    assert "time" in statistics
+    assert "system" in statistics
+    assert "server" in statistics
 
     # Test get server statistics with description
     description = db.statistics(description=True)
     assert isinstance(description, dict)
-    assert 'figures' in description
-    assert 'groups' in description
+    assert "figures" in description
+    assert "groups" in description
 
     # Test get server statistics with bad database
     with assert_raises(ServerStatisticsError) as err:
@@ -118,13 +120,7 @@ def test_database_misc_methods(sys_db, db, bad_db):
     assert err.value.error_code in {11, 1228}
 
     # Test get server role
-    assert db.role() in {
-        'SINGLE',
-        'COORDINATOR',
-        'PRIMARY',
-        'SECONDARY',
-        'UNDEFINED'
-    }
+    assert db.role() in {"SINGLE", "COORDINATOR", "PRIMARY", "SECONDARY", "UNDEFINED"}
 
     # Test get server role with bad database
     with assert_raises(ServerRoleError) as err:
@@ -133,12 +129,12 @@ def test_database_misc_methods(sys_db, db, bad_db):
 
     # Test get server status
     status = db.status()
-    assert 'host' in status
-    assert 'operation_mode' in status
-    assert 'server_info' in status
-    assert 'read_only' in status['server_info']
-    assert 'write_ops_enabled' in status['server_info']
-    assert 'version' in status
+    assert "host" in status
+    assert "operation_mode" in status
+    assert "server_info" in status
+    assert "read_only" in status["server_info"]
+    assert "write_ops_enabled" in status["server_info"]
+    assert "version" in status
 
     # Test get status with bad database
     with assert_raises(ServerStatusError) as err:
@@ -155,10 +151,10 @@ def test_database_misc_methods(sys_db, db, bad_db):
 
     # Test echo (get last request)
     last_request = db.echo()
-    assert 'protocol' in last_request
-    assert 'user' in last_request
-    assert 'requestType' in last_request
-    assert 'rawRequestBody' in last_request
+    assert "protocol" in last_request
+    assert "user" in last_request
+    assert "requestType" in last_request
+    assert "rawRequestBody" in last_request
 
     # Test echo with bad database
     with assert_raises(ServerEchoError) as err:
@@ -166,25 +162,25 @@ def test_database_misc_methods(sys_db, db, bad_db):
     assert err.value.error_code in {11, 1228}
 
     # Test read_log with default parameters
-    log = sys_db.read_log(upto='fatal')
-    assert 'lid' in log
-    assert 'level' in log
-    assert 'text' in log
-    assert 'total_amount' in log
+    log = sys_db.read_log(upto="fatal")
+    assert "lid" in log
+    assert "level" in log
+    assert "text" in log
+    assert "total_amount" in log
 
     # Test read_log with specific parameters
     log = sys_db.read_log(
-        level='error',
+        level="error",
         start=0,
         size=100000,
         offset=0,
-        search='test',
-        sort='desc',
+        search="test",
+        sort="desc",
     )
-    assert 'lid' in log
-    assert 'level' in log
-    assert 'text' in log
-    assert 'total_amount' in log
+    assert "lid" in log
+    assert "level" in log
+    assert "text" in log
+    assert "total_amount" in log
 
     # Test read_log with bad database
     with assert_raises(ServerReadLogError) as err:
@@ -208,11 +204,7 @@ def test_database_misc_methods(sys_db, db, bad_db):
     assert err.value.error_code in {11, 1228}
 
     # Test set log levels
-    new_levels = {
-        'agency': 'DEBUG',
-        'collector': 'INFO',
-        'threads': 'WARNING'
-    }
+    new_levels = {"agency": "DEBUG", "collector": "INFO", "threads": "WARNING"}
     result = sys_db.set_log_levels(**new_levels)
     for key, value in new_levels.items():
         assert result[key] == value
@@ -225,8 +217,8 @@ def test_database_misc_methods(sys_db, db, bad_db):
 
     # Test get storage engine
     engine = db.engine()
-    assert engine['name'] in ['rocksdb']
-    assert 'supports' in engine
+    assert engine["name"] in ["rocksdb"]
+    assert "supports" in engine
 
     # Test get storage engine with bad database
     with assert_raises(ServerEngineError) as err:
@@ -237,7 +229,7 @@ def test_database_misc_methods(sys_db, db, bad_db):
 def test_database_management(db, sys_db, bad_db):
     # Test list databases
     result = sys_db.databases()
-    assert '_system' in result
+    assert "_system" in result
 
     # Test list databases with bad database
     with assert_raises(DatabaseListError):
@@ -246,28 +238,38 @@ def test_database_management(db, sys_db, bad_db):
     # Test create database
     db_name = generate_db_name()
     assert sys_db.has_database(db_name) is False
-    assert sys_db.create_database(
-        name=db_name,
-        replication_factor=1,
-        write_concern=1,
-        sharding="single"
-    ) is True
+    assert (
+        sys_db.create_database(
+            name=db_name, replication_factor=1, write_concern=1, sharding="single"
+        )
+        is True
+    )
     assert sys_db.has_database(db_name) is True
+
+    # Test list database with bad database
+    with assert_raises(DatabaseListError) as err:
+        bad_db.has_database(db_name)
+    assert err.value.error_code == FORBIDDEN
+
+    # Test has database with bad database
+    with assert_raises(DatabaseListError) as err:
+        bad_db.has_database(db_name)
+    assert err.value.error_code == FORBIDDEN
 
     # Test create duplicate database
     with assert_raises(DatabaseCreateError) as err:
         sys_db.create_database(db_name)
-    assert err.value.error_code == 1207
+    assert err.value.error_code == DUPLICATE_NAME
 
     # Test create database without permissions
     with assert_raises(DatabaseCreateError) as err:
         db.create_database(db_name)
-    assert err.value.error_code == 1230
+    assert err.value.error_code == USE_SYSTEM_DATABASE
 
     # Test delete database without permissions
     with assert_raises(DatabaseDeleteError) as err:
         db.delete_database(db_name)
-    assert err.value.error_code == 1230
+    assert err.value.error_code == USE_SYSTEM_DATABASE
 
     # Test delete database
     assert sys_db.delete_database(db_name) is True
@@ -276,5 +278,5 @@ def test_database_management(db, sys_db, bad_db):
     # Test delete missing database
     with assert_raises(DatabaseDeleteError) as err:
         sys_db.delete_database(db_name)
-    assert err.value.error_code in {11, 1228}
+    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
     assert sys_db.delete_database(db_name, ignore_missing=True) is False

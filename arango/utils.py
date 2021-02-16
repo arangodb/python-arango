@@ -1,15 +1,21 @@
-from __future__ import absolute_import, unicode_literals
+__all__ = [
+    "suppress_warning",
+    "get_col_name",
+    "get_doc_id",
+    "is_none_or_int",
+    "is_none_or_str",
+]
 
 import logging
 from contextlib import contextmanager
-
-from six import string_types
+from typing import Any, Iterator, Union
 
 from arango.exceptions import DocumentParseError
+from arango.typings import Json
 
 
 @contextmanager
-def suppress_warning(logger_name):
+def suppress_warning(logger_name: str) -> Iterator[None]:
     """Suppress logger messages.
 
     :param logger_name: Full name of the logger.
@@ -22,23 +28,24 @@ def suppress_warning(logger_name):
     logger.setLevel(original_log_level)
 
 
-def get_col_name(doc):
+def get_col_name(doc: Union[str, Json]) -> str:
     """Return the collection name from input.
 
     :param doc: Document ID or body with "_id" field.
     :type doc: str | dict
     :return: Collection name.
-    :rtype: [str]
+    :rtype: str
     :raise arango.exceptions.DocumentParseError: If document ID is missing.
     """
     try:
-        doc_id = doc['_id'] if isinstance(doc, dict) else doc
+        doc_id: str = doc["_id"] if isinstance(doc, dict) else doc
     except KeyError:
         raise DocumentParseError('field "_id" required')
-    return doc_id.split('/', 1)[0]
+    else:
+        return doc_id.split("/", 1)[0]
 
 
-def get_doc_id(doc):
+def get_doc_id(doc: Union[str, Json]) -> str:
     """Return the document ID from input.
 
     :param doc: Document ID or body with "_id" field.
@@ -48,12 +55,14 @@ def get_doc_id(doc):
     :raise arango.exceptions.DocumentParseError: If document ID is missing.
     """
     try:
-        return doc['_id'] if isinstance(doc, dict) else doc
+        doc_id: str = doc["_id"] if isinstance(doc, dict) else doc
     except KeyError:
         raise DocumentParseError('field "_id" required')
+    else:
+        return doc_id
 
 
-def is_none_or_int(obj):
+def is_none_or_int(obj: Any) -> bool:
     """Check if obj is None or an integer.
 
     :param obj: Object to check.
@@ -64,7 +73,7 @@ def is_none_or_int(obj):
     return obj is None or (isinstance(obj, int) and obj >= 0)
 
 
-def is_none_or_str(obj):
+def is_none_or_str(obj: Any) -> bool:
     """Check if obj is None or a string.
 
     :param obj: Object to check.
@@ -72,4 +81,4 @@ def is_none_or_str(obj):
     :return: True if object is None or a string.
     :rtype: bool
     """
-    return obj is None or isinstance(obj, string_types)
+    return obj is None or isinstance(obj, str)

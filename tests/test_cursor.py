@@ -1,5 +1,3 @@
-from __future__ import absolute_import, unicode_literals
-
 import pytest
 
 from arango.exceptions import (
@@ -19,16 +17,16 @@ def setup_collection(col, docs):
 
 def test_cursor_from_execute_query(db, col, docs):
     cursor = db.aql.execute(
-        'FOR d IN {} SORT d._key RETURN d'.format(col.name),
+        f"FOR d IN {col.name} SORT d._key RETURN d",
         count=True,
         batch_size=2,
         ttl=1000,
-        optimizer_rules=['+all'],
-        profile=True
+        optimizer_rules=["+all"],
+        profile=True,
     )
     cursor_id = cursor.id
-    assert 'Cursor' in repr(cursor)
-    assert cursor.type == 'cursor'
+    assert "Cursor" in repr(cursor)
+    assert cursor.type == "cursor"
     assert cursor.has_more() is True
     assert cursor.cached() is False
     assert cursor.warnings() == []
@@ -36,18 +34,18 @@ def test_cursor_from_execute_query(db, col, docs):
     assert clean_doc(cursor.batch()) == docs[:2]
 
     statistics = cursor.statistics()
-    assert statistics['modified'] == 0
-    assert statistics['filtered'] == 0
-    assert statistics['ignored'] == 0
-    assert statistics['execution_time'] > 0
-    assert 'http_requests' in statistics
-    assert 'scanned_full' in statistics
-    assert 'scanned_index' in statistics
+    assert statistics["modified"] == 0
+    assert statistics["filtered"] == 0
+    assert statistics["ignored"] == 0
+    assert statistics["execution_time"] > 0
+    assert "http_requests" in statistics
+    assert "scanned_full" in statistics
+    assert "scanned_index" in statistics
     assert cursor.warnings() == []
 
     profile = cursor.profile()
-    assert profile['initializing'] > 0
-    assert profile['parsing'] > 0
+    assert profile["initializing"] > 0
+    assert profile["parsing"] > 0
 
     assert clean_doc(cursor.next()) == docs[0]
     assert cursor.id == cursor_id
@@ -96,21 +94,23 @@ def test_cursor_from_execute_query(db, col, docs):
 
 def test_cursor_write_query(db, col, docs):
     cursor = db.aql.execute(
-        '''
+        """
         FOR d IN {col} FILTER d._key == @first OR d._key == @second
         UPDATE {{_key: d._key, _val: @val }} IN {col}
         RETURN NEW
-        '''.format(col=col.name),
-        bind_vars={'first': '1', 'second': '2', 'val': 42},
+        """.format(
+            col=col.name
+        ),
+        bind_vars={"first": "1", "second": "2", "val": 42},
         count=True,
         batch_size=1,
         ttl=1000,
-        optimizer_rules=['+all'],
+        optimizer_rules=["+all"],
         profile=True,
-        max_runtime=0.0
+        max_runtime=0.0,
     )
     cursor_id = cursor.id
-    assert 'Cursor' in repr(cursor)
+    assert "Cursor" in repr(cursor)
     assert cursor.has_more() is True
     assert cursor.cached() is False
     assert cursor.warnings() == []
@@ -118,18 +118,18 @@ def test_cursor_write_query(db, col, docs):
     assert clean_doc(cursor.batch()) == [docs[0]]
 
     statistics = cursor.statistics()
-    assert statistics['modified'] == 2
-    assert statistics['filtered'] == 0
-    assert statistics['ignored'] == 0
-    assert statistics['execution_time'] > 0
-    assert 'http_requests' in statistics
-    assert 'scanned_full' in statistics
-    assert 'scanned_index' in statistics
+    assert statistics["modified"] == 2
+    assert statistics["filtered"] == 0
+    assert statistics["ignored"] == 0
+    assert statistics["execution_time"] > 0
+    assert "http_requests" in statistics
+    assert "scanned_full" in statistics
+    assert "scanned_index" in statistics
     assert cursor.warnings() == []
 
     profile = cursor.profile()
-    assert profile['initializing'] > 0
-    assert profile['parsing'] > 0
+    assert profile["initializing"] > 0
+    assert profile["parsing"] > 0
 
     assert clean_doc(cursor.next()) == docs[0]
     assert cursor.id == cursor_id
@@ -159,15 +159,15 @@ def test_cursor_write_query(db, col, docs):
 
 def test_cursor_invalid_id(db, col):
     cursor = db.aql.execute(
-        'FOR d IN {} SORT d._key RETURN d'.format(col.name),
+        f"FOR d IN {col.name} SORT d._key RETURN d",
         count=True,
         batch_size=2,
         ttl=1000,
-        optimizer_rules=['+all'],
-        profile=True
+        optimizer_rules=["+all"],
+        profile=True,
     )
     # Set the cursor ID to "invalid" and assert errors
-    setattr(cursor, '_id', 'invalid')
+    setattr(cursor, "_id", "invalid")
 
     with pytest.raises(CursorNextError) as err:
         list(cursor)
@@ -179,27 +179,27 @@ def test_cursor_invalid_id(db, col):
     assert cursor.close(ignore_missing=True) is False
 
     # Set the cursor ID to None and assert errors
-    setattr(cursor, '_id', None)
+    setattr(cursor, "_id", None)
 
     with pytest.raises(CursorStateError) as err:
         cursor.next()
-    assert err.value.message == 'cursor ID not set'
+    assert err.value.message == "cursor ID not set"
 
     with pytest.raises(CursorStateError) as err:
         cursor.fetch()
-    assert err.value.message == 'cursor ID not set'
+    assert err.value.message == "cursor ID not set"
 
     assert cursor.close() is None
 
 
 def test_cursor_premature_close(db, col, docs):
     cursor = db.aql.execute(
-        'FOR d IN {} SORT d._key RETURN d'.format(col.name),
+        f"FOR d IN {col.name} SORT d._key RETURN d",
         count=True,
         batch_size=2,
         ttl=1000,
-        optimizer_rules=['+all'],
-        profile=True
+        optimizer_rules=["+all"],
+        profile=True,
     )
     assert clean_doc(cursor.batch()) == docs[:2]
     assert cursor.close() is True
@@ -211,12 +211,12 @@ def test_cursor_premature_close(db, col, docs):
 
 def test_cursor_context_manager(db, col, docs):
     with db.aql.execute(
-            'FOR d IN {} SORT d._key RETURN d'.format(col.name),
-            count=True,
-            batch_size=2,
-            ttl=1000,
-            optimizer_rules=['+all'],
-            profile=True
+        f"FOR d IN {col.name} SORT d._key RETURN d",
+        count=True,
+        batch_size=2,
+        ttl=1000,
+        optimizer_rules=["+all"],
+        profile=True,
     ) as cursor:
         assert clean_doc(cursor.next()) == docs[0]
 
@@ -228,23 +228,23 @@ def test_cursor_context_manager(db, col, docs):
 
 def test_cursor_manual_fetch_and_pop(db, col, docs):
     cursor = db.aql.execute(
-        'FOR d IN {} SORT d._key RETURN d'.format(col.name),
+        f"FOR d IN {col.name} SORT d._key RETURN d",
         count=True,
         batch_size=1,
         ttl=1000,
-        optimizer_rules=['+all'],
-        profile=True
+        optimizer_rules=["+all"],
+        profile=True,
     )
     for size in range(2, 6):
         result = cursor.fetch()
-        assert result['id'] == cursor.id
-        assert result['count'] == len(docs)
-        assert result['cached'] == cursor.cached()
-        assert result['has_more'] == cursor.has_more()
-        assert result['profile'] == cursor.profile()
-        assert result['warnings'] == cursor.warnings()
-        assert result['statistics'] == cursor.statistics()
-        assert len(result['batch']) > 0
+        assert result["id"] == cursor.id
+        assert result["count"] == len(docs)
+        assert result["cached"] == cursor.cached()
+        assert result["has_more"] == cursor.has_more()
+        assert result["profile"] == cursor.profile()
+        assert result["warnings"] == cursor.warnings()
+        assert result["statistics"] == cursor.statistics()
+        assert len(result["batch"]) > 0
         assert cursor.count() == len(docs)
         assert cursor.has_more()
         assert len(cursor.batch()) == size
@@ -259,34 +259,34 @@ def test_cursor_manual_fetch_and_pop(db, col, docs):
 
     with pytest.raises(CursorEmptyError) as err:
         cursor.pop()
-    assert err.value.message == 'current batch is empty'
+    assert err.value.message == "current batch is empty"
 
 
 def test_cursor_no_count(db, col):
     cursor = db.aql.execute(
-        'FOR d IN {} SORT d._key RETURN d'.format(col.name),
+        f"FOR d IN {col.name} SORT d._key RETURN d",
         count=False,
         batch_size=2,
         ttl=1000,
-        optimizer_rules=['+all'],
-        profile=True
+        optimizer_rules=["+all"],
+        profile=True,
     )
     with pytest.raises(CursorCountError) as err:
         _ = len(cursor)
-    assert err.value.message == 'cursor count not enabled'
+    assert err.value.message == "cursor count not enabled"
 
     with pytest.raises(CursorCountError) as err:
         _ = bool(cursor)
-    assert err.value.message == 'cursor count not enabled'
+    assert err.value.message == "cursor count not enabled"
 
     while cursor.has_more():
         assert cursor.count() is None
 
         with pytest.raises(CursorCountError) as err:
             _ = len(cursor)
-        assert err.value.message == 'cursor count not enabled'
+        assert err.value.message == "cursor count not enabled"
 
         with pytest.raises(CursorCountError) as err:
             _ = bool(cursor)
-        assert err.value.message == 'cursor count not enabled'
+        assert err.value.message == "cursor count not enabled"
         assert cursor.fetch()

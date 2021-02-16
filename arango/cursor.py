@@ -1,20 +1,21 @@
-from __future__ import absolute_import, unicode_literals
-
-__all__ = ['Cursor']
+__all__ = ["Cursor"]
 
 from collections import deque
+from typing import Any, Deque, Optional, Sequence
 
+from arango.connection import BaseConnection
 from arango.exceptions import (
     CursorCloseError,
+    CursorCountError,
     CursorEmptyError,
     CursorNextError,
     CursorStateError,
-    CursorCountError
 )
 from arango.request import Request
+from arango.typings import Json
 
 
-class Cursor(object):
+class Cursor:
     """Cursor API wrapper.
 
     Cursors fetch query results from ArangoDB server in batches. Cursor objects
@@ -22,114 +23,120 @@ class Cursor(object):
     shared across threads without proper locking mechanism.
 
     :param connection: HTTP connection.
-    :type connection: arango.connection.Connection
     :param init_data: Cursor initialization data.
-    :type init_data: dict | list
+    :type init_data: dict
     :param cursor_type: Cursor type ("cursor" or "export").
     :type cursor_type: str
     """
 
     __slots__ = [
-        '_conn',
-        '_type',
-        '_id',
-        '_count',
-        '_cached',
-        '_stats',
-        '_profile',
-        '_warnings',
-        '_has_more',
-        '_batch'
+        "_conn",
+        "_type",
+        "_id",
+        "_count",
+        "_cached",
+        "_stats",
+        "_profile",
+        "_warnings",
+        "_has_more",
+        "_batch",
     ]
 
-    def __init__(self, connection, init_data, cursor_type='cursor'):
+    def __init__(
+        self,
+        connection: BaseConnection,
+        init_data: Json,
+        cursor_type: str = "cursor",
+    ) -> None:
         self._conn = connection
         self._type = cursor_type
-        self._batch = deque()
+        self._batch: Deque[Any] = deque()
         self._id = None
-        self._count = None
+        self._count: Optional[int] = None
         self._cached = None
         self._stats = None
         self._profile = None
         self._warnings = None
         self._update(init_data)
 
-    def __iter__(self):
+    def __iter__(self) -> "Cursor":
         return self
 
-    def __next__(self):  # pragma: no cover
+    def __next__(self) -> Any:  # pragma: no cover
         return self.next()
 
-    def __enter__(self):
+    def __enter__(self) -> "Cursor":
         return self
 
-    def __len__(self):
+    def __len__(self) -> int:
         if self._count is None:
-            raise CursorCountError('cursor count not enabled')
+            raise CursorCountError("cursor count not enabled")
         return self._count
 
-    def __exit__(self, *_):
+    def __exit__(self, *_: Any) -> None:
         self.close(ignore_missing=True)
 
-    def __repr__(self):
-        return '<Cursor {}>'.format(self._id) if self._id else '<Cursor>'
+    def __repr__(self) -> str:
+        return f"<Cursor {self._id}>" if self._id else "<Cursor>"
 
-    def _update(self, data):
+    def _update(self, data: Json) -> Json:
         """Update the cursor using data from ArangoDB server.
 
         :param data: Cursor data from ArangoDB server (e.g. results).
         :type data: dict
+        :return: Update cursor data.
+        :rtype: dict
         """
-        result = {}
+        result: Json = {}
 
-        if 'id' in data:
-            self._id = data['id']
-            result['id'] = data['id']
-        if 'count' in data:
-            self._count = data['count']
-            result['count'] = data['count']
-        if 'cached' in data:
-            self._cached = data['cached']
-            result['cached'] = data['cached']
+        if "id" in data:
+            self._id = data["id"]
+            result["id"] = data["id"]
+        if "count" in data:
+            self._count = data["count"]
+            result["count"] = data["count"]
+        if "cached" in data:
+            self._cached = data["cached"]
+            result["cached"] = data["cached"]
 
-        self._has_more = data['hasMore']
-        result['has_more'] = data['hasMore']
+        self._has_more = bool(data["hasMore"])
+        result["has_more"] = data["hasMore"]
 
-        self._batch.extend(data['result'])
-        result['batch'] = data['result']
+        self._batch.extend(data["result"])
+        result["batch"] = data["result"]
 
-        if 'extra' in data:
-            extra = data['extra']
+        if "extra" in data:
+            extra = data["extra"]
 
-            if 'profile' in extra:
-                self._profile = extra['profile']
-                result['profile'] = extra['profile']
+            if "profile" in extra:
+                self._profile = extra["profile"]
+                result["profile"] = extra["profile"]
 
-            if 'warnings' in extra:
-                self._warnings = extra['warnings']
-                result['warnings'] = extra['warnings']
+            if "warnings" in extra:
+                self._warnings = extra["warnings"]
+                result["warnings"] = extra["warnings"]
 
-            if 'stats' in extra:
-                stats = extra['stats']
-                if 'writesExecuted' in stats:
-                    stats['modified'] = stats.pop('writesExecuted')
-                if 'writesIgnored' in stats:
-                    stats['ignored'] = stats.pop('writesIgnored')
-                if 'scannedFull' in stats:
-                    stats['scanned_full'] = stats.pop('scannedFull')
-                if 'scannedIndex' in stats:
-                    stats['scanned_index'] = stats.pop('scannedIndex')
-                if 'executionTime' in stats:
-                    stats['execution_time'] = stats.pop('executionTime')
-                if 'httpRequests' in stats:
-                    stats['http_requests'] = stats.pop('httpRequests')
+            if "stats" in extra:
+                stats = extra["stats"]
+                if "writesExecuted" in stats:
+                    stats["modified"] = stats.pop("writesExecuted")
+                if "writesIgnored" in stats:
+                    stats["ignored"] = stats.pop("writesIgnored")
+                if "scannedFull" in stats:
+                    stats["scanned_full"] = stats.pop("scannedFull")
+                if "scannedIndex" in stats:
+                    stats["scanned_index"] = stats.pop("scannedIndex")
+                if "executionTime" in stats:
+                    stats["execution_time"] = stats.pop("executionTime")
+                if "httpRequests" in stats:
+                    stats["http_requests"] = stats.pop("httpRequests")
                 self._stats = stats
-                result['statistics'] = stats
+                result["statistics"] = stats
 
         return result
 
     @property
-    def id(self):
+    def id(self) -> Optional[str]:
         """Return the cursor ID.
 
         :return: Cursor ID.
@@ -138,7 +145,7 @@ class Cursor(object):
         return self._id
 
     @property
-    def type(self):
+    def type(self) -> str:
         """Return the cursor type.
 
         :return: Cursor type ("cursor" or "export").
@@ -146,7 +153,7 @@ class Cursor(object):
         """
         return self._type
 
-    def batch(self):
+    def batch(self) -> Optional[Deque[Any]]:
         """Return the current batch of results.
 
         :return: Current batch.
@@ -154,7 +161,7 @@ class Cursor(object):
         """
         return self._batch
 
-    def has_more(self):
+    def has_more(self) -> Optional[bool]:
         """Return True if more results are available on the server.
 
         :return: True if more results are available on the server.
@@ -162,7 +169,7 @@ class Cursor(object):
         """
         return self._has_more
 
-    def count(self):
+    def count(self) -> Optional[int]:
         """Return the total number of documents in the entire result set.
 
         :return: Total number of documents, or None if the count option
@@ -171,7 +178,7 @@ class Cursor(object):
         """
         return self._count
 
-    def cached(self):
+    def cached(self) -> Optional[bool]:
         """Return True if results are cached.
 
         :return: True if results are cached.
@@ -179,7 +186,7 @@ class Cursor(object):
         """
         return self._cached
 
-    def statistics(self):
+    def statistics(self) -> Optional[Json]:
         """Return cursor statistics.
 
         :return: Cursor statistics.
@@ -187,7 +194,7 @@ class Cursor(object):
         """
         return self._stats
 
-    def profile(self):
+    def profile(self) -> Optional[Json]:
         """Return cursor performance profile.
 
         :return: Cursor performance profile.
@@ -195,15 +202,15 @@ class Cursor(object):
         """
         return self._profile
 
-    def warnings(self):
+    def warnings(self) -> Optional[Sequence[Json]]:
         """Return any warnings from the query execution.
 
         :return: Warnings, or None if there are none.
-        :rtype: list
+        :rtype: [str]
         """
         return self._warnings
 
-    def empty(self):
+    def empty(self) -> bool:
         """Check if the current batch is empty.
 
         :return: True if current batch is empty, False otherwise.
@@ -211,14 +218,13 @@ class Cursor(object):
         """
         return len(self._batch) == 0
 
-    def next(self):
+    def next(self) -> Any:
         """Pop the next item from the current batch.
 
         If current batch is empty/depleted, an API request is automatically
         sent to ArangoDB server to fetch the next batch and update the cursor.
 
         :return: Next item in current batch.
-        :rtype: str | bool | int | list | dict
         :raise StopIteration: If the result set is depleted.
         :raise arango.exceptions.CursorNextError: If batch retrieval fails.
         :raise arango.exceptions.CursorStateError: If cursor ID is not set.
@@ -230,7 +236,7 @@ class Cursor(object):
 
         return self.pop()
 
-    def pop(self):
+    def pop(self) -> Any:
         """Pop the next item from current batch.
 
         If current batch is empty/depleted, an exception is raised. You must
@@ -238,14 +244,13 @@ class Cursor(object):
         batch from server.
 
         :return: Next item in current batch.
-        :rtype: str | bool | int | list | dict
         :raise arango.exceptions.CursorEmptyError: If current batch is empty.
         """
         if len(self._batch) == 0:
-            raise CursorEmptyError('current batch is empty')
+            raise CursorEmptyError("current batch is empty")
         return self._batch.popleft()
 
-    def fetch(self):
+    def fetch(self) -> Json:
         """Fetch the next batch from server and update the cursor.
 
         :return: New batch details.
@@ -254,18 +259,16 @@ class Cursor(object):
         :raise arango.exceptions.CursorStateError: If cursor ID is not set.
         """
         if self._id is None:
-            raise CursorStateError('cursor ID not set')
-        request = Request(
-            method='put',
-            endpoint='/_api/{}/{}'.format(self._type, self._id)
-        )
+            raise CursorStateError("cursor ID not set")
+        request = Request(method="put", endpoint=f"/_api/{self._type}/{self._id}")
         resp = self._conn.send_request(request)
 
         if not resp.is_success:
             raise CursorNextError(resp, request)
+
         return self._update(resp.body)
 
-    def close(self, ignore_missing=False):
+    def close(self, ignore_missing: bool = False) -> Optional[bool]:
         """Close the cursor and free any server resources tied to it.
 
         :param ignore_missing: Do not raise exception on missing cursors.
@@ -280,10 +283,7 @@ class Cursor(object):
         """
         if self._id is None:
             return None
-        request = Request(
-            method='delete',
-            endpoint='/_api/{}/{}'.format(self._type, self._id)
-        )
+        request = Request(method="delete", endpoint=f"/_api/{self._type}/{self._id}")
         resp = self._conn.send_request(request)
         if resp.is_success:
             return True

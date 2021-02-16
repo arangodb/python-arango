@@ -1,4 +1,7 @@
-from __future__ import absolute_import, unicode_literals
+from typing import Optional
+
+from arango.request import Request
+from arango.response import Response
 
 
 class ArangoError(Exception):
@@ -16,10 +19,11 @@ class ArangoClientError(ArangoError):
     :ivar message: Error message.
     :vartype message: str
     """
-    source = 'client'
 
-    def __init__(self, msg):
-        super(ArangoClientError, self).__init__(msg)
+    source = "client"
+
+    def __init__(self, msg: str) -> None:
+        super().__init__(msg)
         self.message = msg
         self.error_message = None
         self.error_code = None
@@ -54,25 +58,27 @@ class ArangoServerError(ArangoError):
     :ivar http_code: HTTP status code.
     :vartype http_code: int
     :ivar http_headers: Response headers.
-    :vartype http_headers: requests.structures.CaseInsensitiveDict | dict
+    :vartype http_headers: dict
     :ivar error_code: Error code from ArangoDB server.
     :vartype error_code: int
     :ivar error_message: Raw error message from ArangoDB server.
     :vartype error_message: str
     """
-    source = 'server'
 
-    def __init__(self, resp, request, msg=None):
+    source = "server"
+
+    def __init__(
+        self, resp: Response, request: Request, msg: Optional[str] = None
+    ) -> None:
         msg = msg or resp.error_message or resp.status_text
         self.error_message = resp.error_message
         self.error_code = resp.error_code
         if self.error_code is not None:
-            msg = '[HTTP {}][ERR {}] {}'.format(
-                resp.status_code, self.error_code, msg)
+            msg = f"[HTTP {resp.status_code}][ERR {self.error_code}] {msg}"
         else:
-            msg = '[HTTP {}] {}'.format(resp.status_code, msg)
+            msg = f"[HTTP {resp.status_code}] {msg}"
             self.error_code = resp.status_code
-        super(ArangoServerError, self).__init__(msg)
+        super().__init__(msg)
         self.message = msg
         self.url = resp.url
         self.response = resp
@@ -80,6 +86,7 @@ class ArangoServerError(ArangoError):
         self.http_method = resp.method
         self.http_code = resp.status_code
         self.http_headers = resp.headers
+
 
 ##################
 # AQL Exceptions #
@@ -758,6 +765,7 @@ class ViewRenameError(ArangoServerError):
 # Analyzer Exceptions #
 #######################
 
+
 class AnalyzerListError(ArangoServerError):
     """Failed to retrieve analyzers."""
 
@@ -832,6 +840,7 @@ class WALTailError(ArangoServerError):
 # Replication Exceptions #
 ##########################
 
+
 class ReplicationInventoryError(ArangoServerError):
     """Failed to retrieve inventory of collection and indexes."""
 
@@ -899,6 +908,7 @@ class ReplicationServerIDError(ArangoServerError):
 ######################
 # Cluster Exceptions #
 ######################
+
 
 class ClusterHealthError(ArangoServerError):
     """Failed to retrieve DBServer health."""

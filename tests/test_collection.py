@@ -1,39 +1,35 @@
-from __future__ import absolute_import, unicode_literals
-
-from six import string_types
-
 from arango.collection import StandardCollection
 from arango.exceptions import (
     CollectionChecksumError,
     CollectionConfigureError,
+    CollectionCreateError,
+    CollectionDeleteError,
+    CollectionListError,
     CollectionLoadError,
     CollectionPropertiesError,
+    CollectionRecalculateCountError,
     CollectionRenameError,
     CollectionRevisionError,
     CollectionStatisticsError,
     CollectionTruncateError,
     CollectionUnloadError,
-    CollectionCreateError,
-    CollectionListError,
-    CollectionDeleteError,
-    CollectionRecalculateCountError
 )
 from tests.helpers import assert_raises, extract, generate_col_name
 
 
 def test_collection_attributes(db, col, username):
-    assert col.context in ['default', 'async', 'batch', 'transaction']
+    assert col.context in ["default", "async", "batch", "transaction"]
     assert col.username == username
     assert col.db_name == db.name
-    assert col.name.startswith('test_collection')
-    assert repr(col) == '<StandardCollection {}>'.format(col.name)
+    assert col.name.startswith("test_collection")
+    assert repr(col) == f"<StandardCollection {col.name}>"
 
 
 def test_collection_misc_methods(col, bad_col, cluster):
     # Test get properties
     properties = col.properties()
-    assert properties['name'] == col.name
-    assert properties['system'] is False
+    assert properties["name"] == col.name
+    assert properties["system"] is False
 
     # Test get properties with bad collection
     with assert_raises(CollectionPropertiesError) as err:
@@ -41,14 +37,11 @@ def test_collection_misc_methods(col, bad_col, cluster):
     assert err.value.error_code in {11, 1228}
 
     # Test configure properties
-    prev_sync = properties['sync']
-    properties = col.configure(
-        sync=not prev_sync,
-        schema={}
-    )
-    assert properties['name'] == col.name
-    assert properties['system'] is False
-    assert properties['sync'] is not prev_sync
+    prev_sync = properties["sync"]
+    properties = col.configure(sync=not prev_sync, schema={})
+    assert properties["name"] == col.name
+    assert properties["system"] is False
+    assert properties["sync"] is not prev_sync
 
     # Test configure properties with bad collection
     with assert_raises(CollectionConfigureError) as err:
@@ -58,7 +51,7 @@ def test_collection_misc_methods(col, bad_col, cluster):
     # Test get statistics
     stats = col.statistics()
     assert isinstance(stats, dict)
-    assert 'indexes' in stats
+    assert "indexes" in stats
 
     # Test get statistics with bad collection
     with assert_raises(CollectionStatisticsError) as err:
@@ -66,7 +59,7 @@ def test_collection_misc_methods(col, bad_col, cluster):
     assert err.value.error_code in {11, 1228}
 
     # Test get revision
-    assert isinstance(col.revision(), string_types)
+    assert isinstance(col.revision(), str)
 
     # Test get revision with bad collection
     with assert_raises(CollectionRevisionError) as err:
@@ -137,45 +130,45 @@ def test_collection_management(db, bad_db, cluster):
     assert db.has_collection(col_name) is False
 
     schema = {
-        'rule': {
-            'type': 'object',
-            'properties': {
-                'test_attr': {'type': 'string'},
+        "rule": {
+            "type": "object",
+            "properties": {
+                "test_attr": {"type": "string"},
             },
-            'required': ['test_attr']
+            "required": ["test_attr"],
         },
-        'level': 'moderate',
-        'message': 'Schema Validation Failed.'
+        "level": "moderate",
+        "message": "Schema Validation Failed.",
     }
 
     col = db.create_collection(
         name=col_name,
         sync=True,
         system=False,
-        key_generator='traditional',
+        key_generator="traditional",
         user_keys=False,
         key_increment=9,
         key_offset=100,
         edge=True,
         shard_count=2,
-        shard_fields=['test_attr'],
+        shard_fields=["test_attr"],
         replication_factor=1,
-        shard_like='',
+        shard_like="",
         sync_replication=False,
         enforce_replication_factor=False,
-        sharding_strategy='community-compat',
-        smart_join_attribute='test',
+        sharding_strategy="community-compat",
+        smart_join_attribute="test",
         write_concern=1,
-        schema=schema
+        schema=schema,
     )
     assert db.has_collection(col_name) is True
 
     properties = col.properties()
-    assert 'key_options' in properties
-    assert properties['schema'] == schema
-    assert properties['name'] == col_name
-    assert properties['sync'] is True
-    assert properties['system'] is False
+    assert "key_options" in properties
+    assert properties["schema"] == schema
+    assert properties["name"] == col_name
+    assert properties["sync"] is True
+    assert properties["system"] is False
 
     # Test create duplicate collection
     with assert_raises(CollectionCreateError) as err:
@@ -184,14 +177,18 @@ def test_collection_management(db, bad_db, cluster):
 
     # Test list collections
     assert all(
-        entry['name'].startswith('test_collection')
-        or entry['name'].startswith('_')
+        entry["name"].startswith("test_collection") or entry["name"].startswith("_")
         for entry in db.collections()
     )
 
     # Test list collections with bad database
     with assert_raises(CollectionListError) as err:
         bad_db.collections()
+    assert err.value.error_code in {11, 1228}
+
+    # Test has collection with bad database
+    with assert_raises(CollectionListError) as err:
+        bad_db.has_collection(col_name)
     assert err.value.error_code in {11, 1228}
 
     # Test get collection object
@@ -205,7 +202,7 @@ def test_collection_management(db, bad_db, cluster):
 
     # Test delete collection
     assert db.delete_collection(col_name, system=False) is True
-    assert col_name not in extract('name', db.collections())
+    assert col_name not in extract("name", db.collections())
 
     # Test drop missing collection
     with assert_raises(CollectionDeleteError) as err:
@@ -219,12 +216,12 @@ def test_collection_management(db, bad_db, cluster):
         col = db.create_collection(new_name)
         assert col.rename(new_name) is True
         assert col.name == new_name
-        assert repr(col) == '<StandardCollection {}>'.format(new_name)
+        assert repr(col) == f"<StandardCollection {new_name}>"
 
         # Try again (the operation should be idempotent)
         assert col.rename(new_name) is True
         assert col.name == new_name
-        assert repr(col) == '<StandardCollection {}>'.format(new_name)
+        assert repr(col) == f"<StandardCollection {new_name}>"
 
         # Test rename with bad collection
         with assert_raises(CollectionRenameError) as err:

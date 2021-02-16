@@ -1,32 +1,27 @@
-from __future__ import absolute_import, unicode_literals
+__all__ = ["Pregel"]
 
-__all__ = ['Pregel']
+from typing import Optional
 
-from arango.api import APIWrapper
+from arango.api import ApiGroup
 from arango.exceptions import (
-    PregelJobGetError,
     PregelJobCreateError,
-    PregelJobDeleteError
+    PregelJobDeleteError,
+    PregelJobGetError,
 )
+from arango.formatter import format_pregel_job_data
 from arango.request import Request
+from arango.response import Response
+from arango.result import Result
+from arango.typings import Json
 
 
-class Pregel(APIWrapper):
-    """Pregel API wrapper.
+class Pregel(ApiGroup):
+    """Pregel API wrapper."""
 
-    :param connection: HTTP connection.
-    :type connection: arango.connection.Connection
-    :param executor: API executor.
-    :type executor: arango.executor.Executor
-    """
+    def __repr__(self) -> str:
+        return f"<Pregel in {self._conn.db_name}>"
 
-    def __init__(self, connection, executor):
-        super(Pregel, self).__init__(connection, executor)
-
-    def __repr__(self):
-        return '<Pregel in {}>'.format(self._conn.db_name)
-
-    def job(self, job_id):
+    def job(self, job_id: int) -> Result[Json]:
         """Return the details of a Pregel job.
 
         :param job_id: Pregel job ID.
@@ -35,37 +30,26 @@ class Pregel(APIWrapper):
         :rtype: dict
         :raise arango.exceptions.PregelJobGetError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/control_pregel/{}'.format(job_id)
-        )
+        request = Request(method="get", endpoint=f"/_api/control_pregel/{job_id}")
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise PregelJobGetError(resp, request)
-            if 'receivedCount' in resp.body:
-                resp.body['received_count'] = resp.body.pop('receivedCount')
-            if 'sendCount' in resp.body:
-                resp.body['send_count'] = resp.body.pop('sendCount')
-            if 'totalRuntime' in resp.body:
-                resp.body['total_runtime'] = resp.body.pop('totalRuntime')
-            if 'edgeCount' in resp.body:  # pragma: no cover
-                resp.body['edge_count'] = resp.body.pop('edgeCount')
-            if 'vertexCount' in resp.body:  # pragma: no cover
-                resp.body['vertex_count'] = resp.body.pop('vertexCount')
-            return resp.body
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_pregel_job_data(resp.body)
+            raise PregelJobGetError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def create_job(self,
-                   graph,
-                   algorithm,
-                   store=True,
-                   max_gss=None,
-                   thread_count=None,
-                   async_mode=None,
-                   result_field=None,
-                   algorithm_params=None):
+    def create_job(
+        self,
+        graph: str,
+        algorithm: str,
+        store: bool = True,
+        max_gss: Optional[int] = None,
+        thread_count: Optional[int] = None,
+        async_mode: Optional[bool] = None,
+        result_field: Optional[str] = None,
+        algorithm_params: Optional[Json] = None,
+    ) -> Result[int]:
         """Start a new Pregel job.
 
         :param graph: Graph name.
@@ -76,56 +60,52 @@ class Pregel(APIWrapper):
             database. If set to False, results can be queried via AQL.
         :type store: bool
         :param max_gss: Max number of global iterations for the algorithm.
-        :type max_gss: int
+        :type max_gss: int | None
         :param thread_count: Number of parallel threads to use per worker.
             This does not influence the number of threads used to load or store
             data from the database (it depends on the number of shards).
-        :type thread_count: int
+        :type thread_count: int | None
         :param async_mode: If set to True, algorithms which support async mode
             run without synchronized global iterations. This might lead to
             performance increase if there are load imbalances.
-        :type async_mode: bool
+        :type async_mode: bool | None
         :param result_field: If specified, most algorithms will write their
             results into this field.
-        :type result_field: str
+        :type result_field: str | None
         :param algorithm_params: Additional algorithm parameters.
-        :type algorithm_params: dict
+        :type algorithm_params: dict | None
         :return: Pregel job ID.
         :rtype: int
         :raise arango.exceptions.PregelJobCreateError: If create fails.
         """
-        data = {'algorithm': algorithm, 'graphName': graph}
+        data: Json = {"algorithm": algorithm, "graphName": graph}
 
         if algorithm_params is None:
             algorithm_params = {}
 
         if store is not None:
-            algorithm_params['store'] = store
+            algorithm_params["store"] = store
         if max_gss is not None:
-            algorithm_params['maxGSS'] = max_gss
+            algorithm_params["maxGSS"] = max_gss
         if thread_count is not None:
-            algorithm_params['parallelism'] = thread_count
+            algorithm_params["parallelism"] = thread_count
         if async_mode is not None:
-            algorithm_params['async'] = async_mode
+            algorithm_params["async"] = async_mode
         if result_field is not None:
-            algorithm_params['resultField'] = result_field
+            algorithm_params["resultField"] = result_field
         if algorithm_params:
-            data['params'] = algorithm_params
+            data["params"] = algorithm_params
 
-        request = Request(
-            method='post',
-            endpoint='/_api/control_pregel',
-            data=data
-        )
+        request = Request(method="post", endpoint="/_api/control_pregel", data=data)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> int:
             if resp.is_success:
-                return resp.body
+                return int(resp.body)
             raise PregelJobCreateError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def delete_job(self, job_id):
+    def delete_job(self, job_id: int) -> Result[bool]:
         """Delete a Pregel job.
 
         :param job_id: Pregel job ID.
@@ -134,12 +114,9 @@ class Pregel(APIWrapper):
         :rtype: bool
         :raise arango.exceptions.PregelJobDeleteError: If delete fails.
         """
-        request = Request(
-            method='delete',
-            endpoint='/_api/control_pregel/{}'.format(job_id)
-        )
+        request = Request(method="delete", endpoint=f"/_api/control_pregel/{job_id}")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.is_success:
                 return True
             raise PregelJobDeleteError(resp, request)

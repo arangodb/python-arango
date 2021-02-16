@@ -1,42 +1,53 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
-version = {}
-with open("./arango/version.py") as fp:
-    exec(fp.read(), version)
-
-with open('./README.rst') as fp:
+with open("./README.md") as fp:
     description = fp.read()
 
 setup(
-    name='python-arango',
-    description='Python Driver for ArangoDB',
+    name="python-arango",
+    description="Python Driver for ArangoDB",
     long_description=description,
-    version=version['__version__'],
-    author='Joohwan Oh',
-    author_email='joohwan.oh@outlook.com',
-    url='https://github.com/joowani/python-arango',
-    packages=find_packages(exclude=['tests']),
+    long_description_content_type="text/markdown",
+    author="Joohwan Oh",
+    author_email="joohwan.oh@outlook.com",
+    url="https://github.com/joowani/python-arango",
+    keywords=["arangodb", "python", "driver"],
+    packages=find_packages(exclude=["tests"]),
     include_package_data=True,
-    install_requires=['requests', 'six', 'requests_toolbelt', 'PyJWT'],
-    tests_require=[
-        'pytest-cov',
-        'python-coveralls',
-        'mock',
-        'pytest',
+    python_requires=">=3.6",
+    license="MIT",
+    use_scm_version=True,
+    setup_requires=["setuptools_scm"],
+    install_requires=[
+        "dataclasses>=0.6; python_version < '3.7'",
+        "requests",
+        "requests_toolbelt",
+        "PyJWT",
+        "setuptools>=42",
+        "setuptools_scm[toml]>=3.4",
     ],
-    license='MIT',
+    extras_require={
+        "dev": [
+            "black",
+            "flake8>=3.8.4",
+            "isort>=5.0.0",
+            "mypy>=0.790",
+            "mock",
+            "pre-commit>=2.9.3",
+            "pytest>=6.0.0",
+            "pytest-cov>=2.0.0",
+            "sphinx",
+            "sphinx_rtd_theme",
+        ],
+    },
     classifiers=[
-        'Intended Audience :: Developers',
-        'Intended Audience :: End Users/Desktop',
-        'Intended Audience :: Information Technology',
-        'License :: OSI Approved :: MIT License',
-        'Operating System :: MacOS',
-        'Operating System :: Microsoft :: Windows',
-        'Operating System :: POSIX',
-        'Operating System :: Unix',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 3',
-        'Topic :: Documentation :: Sphinx'
-    ]
+        "Intended Audience :: Developers",
+        "License :: OSI Approved :: MIT License",
+        "Natural Language :: English",
+        "Operating System :: MacOS",
+        "Operating System :: Microsoft :: Windows",
+        "Operating System :: Unix",
+        "Programming Language :: Python :: 3",
+        "Topic :: Documentation :: Sphinx",
+    ],
 )

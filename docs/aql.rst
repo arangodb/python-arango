@@ -76,7 +76,6 @@ AQL queries are invoked from AQL API wrapper. Executing queries returns
     except AQLQueryKillError as err:
         assert err.http_code == 404
         assert err.error_code == 1591
-        assert 'cannot kill query' in err.message
 
 See :ref:`AQL` for API specification.
 

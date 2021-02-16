@@ -1,21 +1,20 @@
-from __future__ import absolute_import, unicode_literals
+__all__ = ["HTTPClient", "DefaultHTTPClient"]
 
-__all__ = ['HTTPClient', 'DefaultHTTPClient']
+from abc import ABC, abstractmethod
+from typing import MutableMapping, Optional, Tuple, Union
 
-from abc import ABCMeta, abstractmethod
-
-import requests
+from requests import Session
+from requests_toolbelt import MultipartEncoder
 
 from arango.response import Response
+from arango.typings import Headers
 
 
-class HTTPClient(object):  # pragma: no cover
+class HTTPClient(ABC):  # pragma: no cover
     """Abstract base class for HTTP clients."""
 
-    __metaclass__ = ABCMeta
-
     @abstractmethod
-    def create_session(self, host):
+    def create_session(self, host: str) -> Session:
         """Return a new requests session given the host URL.
 
         This method must be overridden by the user.
@@ -28,14 +27,16 @@ class HTTPClient(object):  # pragma: no cover
         raise NotImplementedError
 
     @abstractmethod
-    def send_request(self,
-                     session,
-                     method,
-                     url,
-                     headers=None,
-                     params=None,
-                     data=None,
-                     auth=None):
+    def send_request(
+        self,
+        session: Session,
+        method: str,
+        url: str,
+        headers: Optional[Headers] = None,
+        params: Optional[MutableMapping[str, str]] = None,
+        data: Union[str, MultipartEncoder, None] = None,
+        auth: Optional[Tuple[str, str]] = None,
+    ) -> Response:
         """Send an HTTP request.
 
         This method must be overridden by the user.
@@ -51,7 +52,7 @@ class HTTPClient(object):  # pragma: no cover
         :param params: URL (query) parameters.
         :type params: dict
         :param data: Request payload.
-        :type data: str | bool | int | list | dict
+        :type data: str | MultipartEncoder | None
         :param auth: Username and password.
         :type auth: tuple
         :returns: HTTP response.
@@ -63,7 +64,7 @@ class HTTPClient(object):  # pragma: no cover
 class DefaultHTTPClient(HTTPClient):
     """Default HTTP client implementation."""
 
-    def create_session(self, host):
+    def create_session(self, host: str) -> Session:
         """Create and return a new session/connection.
 
         :param host: ArangoDB host URL.
@@ -71,16 +72,18 @@ class DefaultHTTPClient(HTTPClient):
         :returns: requests session object
         :rtype: requests.Session
         """
-        return requests.Session()
+        return Session()
 
-    def send_request(self,
-                     session,
-                     method,
-                     url,
-                     params=None,
-                     data=None,
-                     headers=None,
-                     auth=None):
+    def send_request(
+        self,
+        session: Session,
+        method: str,
+        url: str,
+        headers: Optional[Headers] = None,
+        params: Optional[MutableMapping[str, str]] = None,
+        data: Union[str, MultipartEncoder, None] = None,
+        auth: Optional[Tuple[str, str]] = None,
+    ) -> Response:
         """Send an HTTP request.
 
         :param session: Requests session object.
@@ -94,22 +97,17 @@ class DefaultHTTPClient(HTTPClient):
         :param params: URL (query) parameters.
         :type params: dict
         :param data: Request payload.
-        :type data: str | bool | int | list | dict
+        :type data: str | MultipartEncoder | None
         :param auth: Username and password.
         :type auth: tuple
         :returns: HTTP response.
         :rtype: arango.response.Response
         """
         response = session.request(
-            method=method,
-            url=url,
-            params=params,
-            data=data,
-            headers=headers,
-            auth=auth
+            method=method, url=url, params=params, data=data, headers=headers, auth=auth
         )
         return Response(
-            method=response.request.method,
+            method=method,
             url=response.url,
             headers=response.headers,
             status_code=response.status_code,

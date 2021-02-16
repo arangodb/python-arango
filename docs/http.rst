@@ -64,7 +64,7 @@ Your ``CustomHTTPClient`` class might look something like this:
                          headers=None,
                          auth=None):
             # Add your own debug statement.
-            self._logger.debug('Sending request to {}'.format(url))
+            self._logger.debug(f'Sending request to {url}')
 
             # Send a request.
             response = session.request(
@@ -76,7 +76,7 @@ Your ``CustomHTTPClient`` class might look something like this:
                 auth=auth,
                 verify=False  # Disable SSL verification
             )
-            self._logger.debug('Got {}'.format(response.status_code))
+            self._logger.debug(f'Got {response.status_code}')
 
             # Return an instance of arango.response.Response.
             return Response(

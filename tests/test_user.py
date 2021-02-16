@@ -1,7 +1,4 @@
-from __future__ import absolute_import, unicode_literals
-
 import pytest
-from six import string_types
 
 from arango.exceptions import (
     DatabasePropertiesError,
@@ -16,8 +13,8 @@ from tests.helpers import (
     assert_raises,
     extract,
     generate_db_name,
-    generate_username,
     generate_string,
+    generate_username,
 )
 
 
@@ -31,26 +28,23 @@ def test_user_management(sys_db, bad_db):
         username=username,
         password=password,
         active=True,
-        extra={'foo': 'bar'},
+        extra={"foo": "bar"},
     )
-    assert new_user['username'] == username
-    assert new_user['active'] is True
-    assert new_user['extra'] == {'foo': 'bar'}
+    assert new_user["username"] == username
+    assert new_user["active"] is True
+    assert new_user["extra"] == {"foo": "bar"}
     assert sys_db.has_user(username)
 
     # Test create duplicate user
     with assert_raises(UserCreateError) as err:
-        sys_db.create_user(
-            username=username,
-            password=password
-        )
+        sys_db.create_user(username=username, password=password)
     assert err.value.error_code == 1702
 
     # Test list users
     for user in sys_db.users():
-        assert isinstance(user['username'], string_types)
-        assert isinstance(user['active'], bool)
-        assert isinstance(user['extra'], dict)
+        assert isinstance(user["username"], str)
+        assert isinstance(user["active"], bool)
+        assert isinstance(user["extra"], dict)
     assert sys_db.user(username) == new_user
 
     # Test list users with bad database
@@ -58,13 +52,18 @@ def test_user_management(sys_db, bad_db):
         bad_db.users()
     assert err.value.error_code in {11, 1228}
 
+    # Test has user with bad database
+    with assert_raises(UserListError) as err:
+        bad_db.has_user(username)
+    assert err.value.error_code in {11, 1228}
+
     # Test get user
     users = sys_db.users()
     for user in users:
-        assert 'active' in user
-        assert 'extra' in user
-        assert 'username' in user
-    assert username in extract('username', sys_db.users())
+        assert "active" in user
+        assert "extra" in user
+        assert "username" in user
+    assert username in extract("username", sys_db.users())
 
     # Test get missing user
     with assert_raises(UserGetError) as err:
@@ -76,19 +75,16 @@ def test_user_management(sys_db, bad_db):
         username=username,
         password=password,
         active=False,
-        extra={'bar': 'baz'},
+        extra={"bar": "baz"},
     )
-    assert new_user['username'] == username
-    assert new_user['active'] is False
-    assert new_user['extra'] == {'bar': 'baz'}
+    assert new_user["username"] == username
+    assert new_user["active"] is False
+    assert new_user["extra"] == {"bar": "baz"}
     assert sys_db.user(username) == new_user
 
     # Update missing user
     with assert_raises(UserUpdateError) as err:
-        sys_db.update_user(
-            username=generate_username(),
-            password=generate_string()
-        )
+        sys_db.update_user(username=generate_username(), password=generate_string())
     assert err.value.error_code == 1703
 
     # Replace existing user
@@ -96,19 +92,16 @@ def test_user_management(sys_db, bad_db):
         username=username,
         password=password,
         active=False,
-        extra={'baz': 'qux'},
+        extra={"baz": "qux"},
     )
-    assert new_user['username'] == username
-    assert new_user['active'] is False
-    assert new_user['extra'] == {'baz': 'qux'}
+    assert new_user["username"] == username
+    assert new_user["active"] is False
+    assert new_user["extra"] == {"baz": "qux"}
     assert sys_db.user(username) == new_user
 
     # Replace missing user
     with assert_raises(UserReplaceError) as err:
-        sys_db.replace_user(
-            username=generate_username(),
-            password=generate_string()
-        )
+        sys_db.replace_user(username=generate_username(), password=generate_string())
     assert err.value.error_code == 1703
 
     # Delete an existing user
@@ -123,14 +116,14 @@ def test_user_management(sys_db, bad_db):
 
 def test_user_change_password(client, sys_db, cluster):
     if cluster:
-        pytest.skip('Not tested in a cluster setup')
+        pytest.skip("Not tested in a cluster setup")
 
     username = generate_username()
     password1 = generate_string()
     password2 = generate_string()
 
     sys_db.create_user(username, password1)
-    sys_db.update_permission(username, 'rw', sys_db.name)
+    sys_db.update_permission(username, "rw", sys_db.name)
 
     db1 = client.db(sys_db.name, username, password1)
     db2 = client.db(sys_db.name, username, password2)
@@ -158,7 +151,7 @@ def test_user_change_password(client, sys_db, cluster):
 
 def test_user_create_with_new_database(client, sys_db, cluster):
     if cluster:
-        pytest.skip('Not tested in a cluster setup')
+        pytest.skip("Not tested in a cluster setup")
 
     db_name = generate_db_name()
 
@@ -173,19 +166,19 @@ def test_user_create_with_new_database(client, sys_db, cluster):
     result = sys_db.create_database(
         name=db_name,
         users=[
-            {'username': username1, 'password': password1, 'active': True},
-            {'username': username2, 'password': password2, 'active': True},
-            {'username': username3, 'password': password3, 'active': False},
-        ]
+            {"username": username1, "password": password1, "active": True},
+            {"username": username2, "password": password2, "active": True},
+            {"username": username3, "password": password3, "active": False},
+        ],
     )
     assert result is True
 
-    sys_db.update_permission(username1, permission='rw', database=db_name)
-    sys_db.update_permission(username2, permission='rw', database=db_name)
-    sys_db.update_permission(username3, permission='rw', database=db_name)
+    sys_db.update_permission(username1, permission="rw", database=db_name)
+    sys_db.update_permission(username2, permission="rw", database=db_name)
+    sys_db.update_permission(username3, permission="rw", database=db_name)
 
     # Test if the users were created properly
-    usernames = extract('username', sys_db.users())
+    usernames = extract("username", sys_db.users())
     assert all(u in usernames for u in [username1, username2, username3])
 
     # Test if the first user has access to the database

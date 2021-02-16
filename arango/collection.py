@@ -1,30 +1,31 @@
-from __future__ import absolute_import, unicode_literals
-
-__all__ = ['StandardCollection', 'VertexCollection', 'EdgeCollection']
+__all__ = ["StandardCollection", "VertexCollection", "EdgeCollection"]
 
 from numbers import Number
+from typing import List, Optional, Sequence, Tuple, Union
 
-from arango.api import APIWrapper
+from arango.api import ApiGroup
+from arango.connection import Connection
 from arango.cursor import Cursor
 from arango.exceptions import (
+    ArangoServerError,
     CollectionChecksumError,
     CollectionConfigureError,
     CollectionLoadError,
     CollectionPropertiesError,
     CollectionRecalculateCountError,
-    CollectionResponsibleShardError,
     CollectionRenameError,
+    CollectionResponsibleShardError,
     CollectionRevisionError,
     CollectionStatisticsError,
     CollectionTruncateError,
     CollectionUnloadError,
     DocumentCountError,
-    DocumentInError,
     DocumentDeleteError,
     DocumentGetError,
-    DocumentKeysError,
     DocumentIDsError,
+    DocumentInError,
     DocumentInsertError,
+    DocumentKeysError,
     DocumentParseError,
     DocumentReplaceError,
     DocumentRevisionError,
@@ -35,60 +36,51 @@ from arango.exceptions import (
     IndexListError,
     IndexLoadError,
 )
-from arango.formatter import (
-    format_collection,
-    format_edge,
-    format_index,
-    format_vertex,
-)
+from arango.executor import ApiExecutor
+from arango.formatter import format_collection, format_edge, format_index, format_vertex
 from arango.request import Request
-from arango.utils import (
-    get_doc_id,
-    is_none_or_int,
-    is_none_or_str,
-)
+from arango.response import Response
+from arango.result import Result
+from arango.typings import Fields, Headers, Json, Params
+from arango.utils import get_doc_id, is_none_or_int, is_none_or_str
 
 
-class Collection(APIWrapper):
+class Collection(ApiGroup):
     """Base class for collection API wrappers.
 
     :param connection: HTTP connection.
-    :type connection: arango.connection.Connection
     :param executor: API executor.
-    :type executor: arango.executor.Executor
     :param name: Collection name.
-    :type name: str
     """
 
-    types = {
-        2: 'document',
-        3: 'edge'
-    }
+    types = {2: "document", 3: "edge"}
 
     statuses = {
-        1: 'new',
-        2: 'unloaded',
-        3: 'loaded',
-        4: 'unloading',
-        5: 'deleted',
-        6: 'loading'
+        1: "new",
+        2: "unloaded",
+        3: "loaded",
+        4: "unloading",
+        5: "deleted",
+        6: "loading",
     }
 
-    def __init__(self, connection, executor, name):
-        super(Collection, self).__init__(connection, executor)
+    def __init__(
+        self, connection: Connection, executor: ApiExecutor, name: str
+    ) -> None:
+        super().__init__(connection, executor)
         self._name = name
-        self._id_prefix = name + '/'
+        self._id_prefix = name + "/"
 
-    def __iter__(self):
+    def __iter__(self) -> Result[Cursor]:
         return self.all()
 
-    def __len__(self):
+    def __len__(self) -> Result[int]:
         return self.count()
 
-    def __contains__(self, document):
+    def __contains__(self, document: Json) -> Result[bool]:
         return self.has(document, check_rev=False)
 
-    def _get_status_text(self, code):  # pragma: no cover
+    def _get_status_text(self, code: int) -> str:  # pragma: no cover
         """Return the collection status text.
 
         :param code: Collection status code.
@@ -98,7 +90,7 @@ class Collection(APIWrapper):
         """
         return None if code is None else self.statuses[code]
 
-    def _validate_id(self, doc_id):
+    def _validate_id(self, doc_id: str) -> str:
         """Check the collection name in the document ID.
 
         :param doc_id: Document ID.
@@ -108,11 +100,10 @@ class Collection(APIWrapper):
         :raise arango.exceptions.DocumentParseError: On bad collection name.
         """
         if not doc_id.startswith(self._id_prefix):
-            raise DocumentParseError(
-                'bad collection name in document ID "{}"'.format(doc_id))
+            raise DocumentParseError(f'bad collection name in document ID "{doc_id}"')
         return doc_id
 
-    def _extract_id(self, body):
+    def _extract_id(self, body: Json) -> str:
         """Extract the document ID from document body.
 
         :param body: Document body.
@@ -122,14 +113,15 @@ class Collection(APIWrapper):
         :raise arango.exceptions.DocumentParseError: On missing ID and key.
         """
         try:
-            if '_id' in body:
-                return self._validate_id(body['_id'])
+            if "_id" in body:
+                return self._validate_id(body["_id"])
             else:
-                return self._id_prefix + body['_key']
+                key: str = body["_key"]
+                return self._id_prefix + key
         except KeyError:
             raise DocumentParseError('field "_key" or "_id" required')
 
-    def _prep_from_body(self, document, check_rev):
+    def _prep_from_body(self, document: Json, check_rev: bool) -> Tuple[str, Headers]:
         """Prepare document ID and request headers.
 
         :param document: Document body.
@@ -140,11 +132,13 @@ class Collection(APIWrapper):
         :rtype: (str, dict)
         """
         doc_id = self._extract_id(document)
-        if not check_rev or '_rev' not in document:
+        if not check_rev or "_rev" not in document:
             return doc_id, {}
-        return doc_id, {'If-Match': document['_rev']}
+        return doc_id, {"If-Match": document["_rev"]}
 
-    def _prep_from_doc(self, document, rev, check_rev):
+    def _prep_from_doc(
+        self, document: Union[str, Json], rev: Optional[str], check_rev: bool
+    ) -> Tuple[str, Union[str, Json], Json]:
         """Prepare document ID, body and request headers.
 
         :param document: Document ID, key or body.
@@ -158,14 +152,14 @@ class Collection(APIWrapper):
         """
         if isinstance(document, dict):
             doc_id = self._extract_id(document)
-            rev = rev or document.get('_rev')
+            rev = rev or document.get("_rev")
 
             if not check_rev or rev is None:
                 return doc_id, doc_id, {}
             else:
-                return doc_id, doc_id, {'If-Match': rev}
+                return doc_id, doc_id, {"If-Match": rev}
         else:
-            if '/' in document:
+            if "/" in document:
                 doc_id = self._validate_id(document)
             else:
                 doc_id = self._id_prefix + document
@@ -173,9 +167,9 @@ class Collection(APIWrapper):
             if not check_rev or rev is None:
                 return doc_id, doc_id, {}
             else:
-                return doc_id, doc_id, {'If-Match': rev}
+                return doc_id, doc_id, {"If-Match": rev}
 
-    def _ensure_key_in_body(self, body):
+    def _ensure_key_in_body(self, body: Json) -> Json:
         """Return the document body with "_key" field populated.
 
         :param body: Document body.
@@ -184,16 +178,16 @@ class Collection(APIWrapper):
         :rtype: dict
         :raise arango.exceptions.DocumentParseError: On missing ID and key.
         """
-        if '_key' in body:
+        if "_key" in body:
             return body
-        elif '_id' in body:
-            doc_id = self._validate_id(body['_id'])
+        elif "_id" in body:
+            doc_id = self._validate_id(body["_id"])
             body = body.copy()
-            body['_key'] = doc_id[len(self._id_prefix):]
+            body["_key"] = doc_id[len(self._id_prefix) :]
             return body
         raise DocumentParseError('field "_key" or "_id" required')
 
-    def _ensure_key_from_id(self, body):
+    def _ensure_key_from_id(self, body: Json) -> Json:
         """Return the body with "_key" field if it has "_id" field.
 
         :param body: Document body.
@@ -201,14 +195,14 @@ class Collection(APIWrapper):
         :return: Document body with "_key" field if it has "_id" field.
         :rtype: dict
         """
-        if '_id' in body and '_key' not in body:
-            doc_id = self._validate_id(body['_id'])
+        if "_id" in body and "_key" not in body:
+            doc_id = self._validate_id(body["_id"])
             body = body.copy()
-            body['_key'] = doc_id[len(self._id_prefix):]
+            body["_key"] = doc_id[len(self._id_prefix) :]
         return body
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return collection name.
 
         :return: Collection name.
@@ -216,49 +210,49 @@ class Collection(APIWrapper):
         """
         return self._name
 
-    def recalculate_count(self):
+    def recalculate_count(self) -> Result[bool]:
         """Recalculate the document count.
 
         :return: True if recalculation was successful.
         :rtype: bool
-        :raise arango.exceptions.CollectionRecalculateCountError: If operation
-            fails.
+        :raise arango.exceptions.CollectionRecalculateCountError: If operation fails.
         """
         request = Request(
-            method='put',
-            endpoint='/_api/collection/{}/recalculateCount'.format(self.name)
+            method="put",
+            endpoint=f"/_api/collection/{self.name}/recalculateCount",
         )
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise CollectionRecalculateCountError(resp, request)
-            return True
+        def response_handler(resp: Response) -> bool:
+            if resp.is_success:
+                return True
+            raise CollectionRecalculateCountError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def responsible_shard(self, document):  # pragma: no cover
+    def responsible_shard(self, document: Json) -> Result[str]:  # pragma: no cover
         """Return the ID of the shard responsible for given **document**.
 
         If the document does not exist, return the shard that would be
         responsible.
 
         :return: Shard ID
+        :rtype: str
         """
         request = Request(
-            method='put',
-            endpoint='/_api/collection/{}/responsibleShard'.format(self.name),
+            method="put",
+            endpoint=f"/_api/collection/{self.name}/responsibleShard",
             data=document,
-            read=self.name
+            read=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> str:
             if resp.is_success:
-                return resp.body['shardId']
+                return str(resp.body["shardId"])
             raise CollectionResponsibleShardError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def rename(self, new_name):
+    def rename(self, new_name: str) -> Result[bool]:
         """Rename the collection.
 
         Renames may not be reflected immediately in async execution, batch
@@ -272,21 +266,21 @@ class Collection(APIWrapper):
         :raise arango.exceptions.CollectionRenameError: If rename fails.
         """
         request = Request(
-            method='put',
-            endpoint='/_api/collection/{}/rename'.format(self.name),
-            data={'name': new_name}
+            method="put",
+            endpoint=f"/_api/collection/{self.name}/rename",
+            data={"name": new_name},
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if not resp.is_success:
                 raise CollectionRenameError(resp, request)
             self._name = new_name
-            self._id_prefix = new_name + '/'
+            self._id_prefix = new_name + "/"
             return True
 
         return self._execute(request, response_handler)
 
-    def properties(self):
+    def properties(self) -> Result[Json]:
         """Return collection properties.
 
         :return: Collection properties.
@@ -294,49 +288,51 @@ class Collection(APIWrapper):
         :raise arango.exceptions.CollectionPropertiesError: If retrieval fails.
         """
         request = Request(
-            method='get',
-            endpoint='/_api/collection/{}/properties'.format(self.name),
-            read=self.name
+            method="get",
+            endpoint=f"/_api/collection/{self.name}/properties",
+            read=self.name,
         )
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise CollectionPropertiesError(resp, request)
-            return format_collection(resp.body)
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_collection(resp.body)
+            raise CollectionPropertiesError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def configure(self, sync=None, schema=None):
+    def configure(
+        self, sync: Optional[bool] = None, schema: Optional[Json] = None
+    ) -> Result[Json]:
         """Configure collection properties.
 
         :param sync: Block until operations are synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param schema: document schema for validation of objects.
         :type schema: dict
         :return: New collection properties.
         :rtype: dict
         :raise arango.exceptions.CollectionConfigureError: If operation fails.
         """
-        data = {}
+        data: Json = {}
         if sync is not None:
-            data['waitForSync'] = sync
+            data["waitForSync"] = sync
         if schema is not None:
-            data['schema'] = schema
+            data["schema"] = schema
 
         request = Request(
-            method='put',
-            endpoint='/_api/collection/{}/properties'.format(self.name),
-            data=data
+            method="put",
+            endpoint=f"/_api/collection/{self.name}/properties",
+            data=data,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise CollectionConfigureError(resp, request)
             return format_collection(resp.body)
 
         return self._execute(request, response_handler)
 
-    def statistics(self):
+    def statistics(self) -> Result[Json]:
         """Return collection statistics.
 
         :return: Collection statistics.
@@ -344,38 +340,39 @@ class Collection(APIWrapper):
         :raise arango.exceptions.CollectionStatisticsError: If retrieval fails.
         """
         request = Request(
-            method='get',
-            endpoint='/_api/collection/{}/figures'.format(self.name),
-            read=self.name
+            method="get",
+            endpoint=f"/_api/collection/{self.name}/figures",
+            read=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise CollectionStatisticsError(resp, request)
 
-            stats = resp.body.get('figures', resp.body)
-            if 'documentReferences' in stats:  # pragma: no cover
-                stats['document_refs'] = stats.pop('documentReferences')
-            if 'lastTick' in stats:  # pragma: no cover
-                stats['last_tick'] = stats.pop('lastTick')
-            if 'waitingFor' in stats:  # pragma: no cover
-                stats['waiting_for'] = stats.pop('waitingFor')
-            if 'documentsSize' in stats:  # pragma: no cover
-                stats['documents_size'] = stats.pop('documentsSize')
-            if 'cacheInUse' in stats:  # pragma: no cover
-                stats['cache_in_use'] = stats.pop('cacheInUse')
-            if 'cacheSize' in stats:  # pragma: no cover
-                stats['cache_size'] = stats.pop('cacheSize')
-            if 'cacheUsage' in stats:  # pragma: no cover
-                stats['cache_usage'] = stats.pop('cacheUsage')
-            if 'uncollectedLogfileEntries' in stats:  # pragma: no cover
-                stats['uncollected_logfile_entries'] = \
-                    stats.pop('uncollectedLogfileEntries')
+            stats: Json = resp.body.get("figures", resp.body)
+            if "documentReferences" in stats:  # pragma: no cover
+                stats["document_refs"] = stats.pop("documentReferences")
+            if "lastTick" in stats:  # pragma: no cover
+                stats["last_tick"] = stats.pop("lastTick")
+            if "waitingFor" in stats:  # pragma: no cover
+                stats["waiting_for"] = stats.pop("waitingFor")
+            if "documentsSize" in stats:  # pragma: no cover
+                stats["documents_size"] = stats.pop("documentsSize")
+            if "cacheInUse" in stats:  # pragma: no cover
+                stats["cache_in_use"] = stats.pop("cacheInUse")
+            if "cacheSize" in stats:  # pragma: no cover
+                stats["cache_size"] = stats.pop("cacheSize")
+            if "cacheUsage" in stats:  # pragma: no cover
+                stats["cache_usage"] = stats.pop("cacheUsage")
+            if "uncollectedLogfileEntries" in stats:  # pragma: no cover
+                stats["uncollected_logfile_entries"] = stats.pop(
+                    "uncollectedLogfileEntries"
+                )
             return stats
 
         return self._execute(request, response_handler)
 
-    def revision(self):
+    def revision(self) -> Result[str]:
         """Return collection revision.
 
         :return: Collection revision.
@@ -383,19 +380,19 @@ class Collection(APIWrapper):
         :raise arango.exceptions.CollectionRevisionError: If retrieval fails.
         """
         request = Request(
-            method='get',
-            endpoint='/_api/collection/{}/revision'.format(self.name),
-            read=self.name
+            method="get",
+            endpoint=f"/_api/collection/{self.name}/revision",
+            read=self.name,
         )
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise CollectionRevisionError(resp, request)
-            return resp.body['revision']
+        def response_handler(resp: Response) -> str:
+            if resp.is_success:
+                return str(resp.body["revision"])
+            raise CollectionRevisionError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def checksum(self, with_rev=False, with_data=False):
+    def checksum(self, with_rev: bool = False, with_data: bool = False) -> Result[str]:
         """Return collection checksum.
 
         :param with_rev: Include document revisions in checksum calculation.
@@ -407,57 +404,51 @@ class Collection(APIWrapper):
         :raise arango.exceptions.CollectionChecksumError: If retrieval fails.
         """
         request = Request(
-            method='get',
-            endpoint='/_api/collection/{}/checksum'.format(self.name),
-            params={'withRevision': with_rev, 'withData': with_data}
+            method="get",
+            endpoint=f"/_api/collection/{self.name}/checksum",
+            params={"withRevision": with_rev, "withData": with_data},
         )
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise CollectionChecksumError(resp, request)
-            return resp.body['checksum']
+        def response_handler(resp: Response) -> str:
+            if resp.is_success:
+                return str(resp.body["checksum"])
+            raise CollectionChecksumError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def load(self):
+    def load(self) -> Result[bool]:
         """Load the collection into memory.
 
         :return: True if collection was loaded successfully.
         :rtype: bool
         :raise arango.exceptions.CollectionLoadError: If operation fails.
         """
-        request = Request(
-            method='put',
-            endpoint='/_api/collection/{}/load'.format(self.name)
-        )
+        request = Request(method="put", endpoint=f"/_api/collection/{self.name}/load")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if not resp.is_success:
                 raise CollectionLoadError(resp, request)
             return True
 
         return self._execute(request, response_handler)
 
-    def unload(self):
+    def unload(self) -> Result[bool]:
         """Unload the collection from memory.
 
         :return: True if collection was unloaded successfully.
         :rtype: bool
         :raise arango.exceptions.CollectionUnloadError: If operation fails.
         """
-        request = Request(
-            method='put',
-            endpoint='/_api/collection/{}/unload'.format(self.name)
-        )
+        request = Request(method="put", endpoint=f"/_api/collection/{self.name}/unload")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if not resp.is_success:
                 raise CollectionUnloadError(resp, request)
             return True
 
         return self._execute(request, response_handler)
 
-    def truncate(self):
+    def truncate(self) -> Result[bool]:
         """Delete all documents in the collection.
 
         :return: True if collection was truncated successfully.
@@ -465,37 +456,39 @@ class Collection(APIWrapper):
         :raise arango.exceptions.CollectionTruncateError: If operation fails.
         """
         request = Request(
-            method='put',
-            endpoint='/_api/collection/{}/truncate'.format(self.name)
+            method="put", endpoint=f"/_api/collection/{self.name}/truncate"
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if not resp.is_success:
                 raise CollectionTruncateError(resp, request)
             return True
 
         return self._execute(request, response_handler)
 
-    def count(self):
+    def count(self) -> Result[int]:
         """Return the total document count.
 
         :return: Total document count.
         :rtype: int
         :raise arango.exceptions.DocumentCountError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/collection/{}/count'.format(self.name)
-        )
+        request = Request(method="get", endpoint=f"/_api/collection/{self.name}/count")
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise DocumentCountError(resp, request)
-            return resp.body['count']
+        def response_handler(resp: Response) -> int:
+            if resp.is_success:
+                result: int = resp.body["count"]
+                return result
+            raise DocumentCountError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def has(self, document, rev=None, check_rev=True):
+    def has(
+        self,
+        document: Union[str, Json],
+        rev: Optional[str] = None,
+        check_rev: bool = True,
+    ) -> Result[bool]:
         """Check if a document exists in the collection.
 
         :param document: Document ID, key or body. Document body must contain
@@ -503,7 +496,7 @@ class Collection(APIWrapper):
         :type document: str | dict
         :param rev: Expected document revision. Overrides value of "_rev" field
             in **document** if present.
-        :type rev: str
+        :type rev: str | None
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
@@ -515,13 +508,13 @@ class Collection(APIWrapper):
         handle, body, headers = self._prep_from_doc(document, rev, check_rev)
 
         request = Request(
-            method='get',
-            endpoint='/_api/document/{}'.format(handle),
+            method="get",
+            endpoint=f"/_api/document/{handle}",
             headers=headers,
-            read=self.name
+            read=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.error_code == 1202:
                 return False
             if resp.status_code == 412:
@@ -532,7 +525,7 @@ class Collection(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    def ids(self):
+    def ids(self) -> Result[Cursor]:
         """Return the IDs of all documents in the collection.
 
         :return: Document ID cursor.
@@ -540,20 +533,20 @@ class Collection(APIWrapper):
         :raise arango.exceptions.DocumentIDsError: If retrieval fails.
         """
         request = Request(
-            method='put',
-            endpoint='/_api/simple/all-keys',
-            data={'collection': self.name, 'type': 'id'},
-            read=self.name
+            method="put",
+            endpoint="/_api/simple/all-keys",
+            data={"collection": self.name, "type": "id"},
+            read=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Cursor:
             if not resp.is_success:
                 raise DocumentIDsError(resp, request)
             return Cursor(self._conn, resp.body)
 
         return self._execute(request, response_handler)
 
-    def keys(self):
+    def keys(self) -> Result[Cursor]:
         """Return the keys of all documents in the collection.
 
         :return: Document key cursor.
@@ -561,62 +554,63 @@ class Collection(APIWrapper):
         :raise arango.exceptions.DocumentKeysError: If retrieval fails.
         """
         request = Request(
-            method='put',
-            endpoint='/_api/simple/all-keys',
-            data={'collection': self.name, 'type': 'key'},
-            read=self.name
+            method="put",
+            endpoint="/_api/simple/all-keys",
+            data={"collection": self.name, "type": "key"},
+            read=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Cursor:
             if not resp.is_success:
                 raise DocumentKeysError(resp, request)
             return Cursor(self._conn, resp.body)
 
         return self._execute(request, response_handler)
 
-    def all(self, skip=None, limit=None):
+    def all(
+        self, skip: Optional[int] = None, limit: Optional[int] = None
+    ) -> Result[Cursor]:
         """Return all documents in the collection.
 
         :param skip: Number of documents to skip.
-        :type skip: int
+        :type skip: int | None
         :param limit: Max number of documents returned.
-        :type limit: int
+        :type limit: int | None
         :return: Document cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        assert is_none_or_int(skip), 'skip must be a non-negative int'
-        assert is_none_or_int(limit), 'limit must be a non-negative int'
+        assert is_none_or_int(skip), "skip must be a non-negative int"
+        assert is_none_or_int(limit), "limit must be a non-negative int"
 
-        data = {'collection': self.name}
+        data: Json = {"collection": self.name}
         if skip is not None:
-            data['skip'] = skip
+            data["skip"] = skip
         if limit is not None:
-            data['limit'] = limit
+            data["limit"] = limit
 
         request = Request(
-            method='put',
-            endpoint='/_api/simple/all',
-            data=data,
-            read=self.name
+            method="put", endpoint="/_api/simple/all", data=data, read=self.name
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Cursor:
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
 
         return self._execute(request, response_handler)
 
-    def export(self,
-               limit=None,
-               count=False,
-               batch_size=None,
-               flush=False,
-               flush_wait=None,
-               ttl=None,
-               filter_fields=None,
-               filter_type='include'):
+    def export(
+        self,
+        limit: Optional[int] = None,
+        count: bool = False,
+        batch_size: Optional[int] = None,
+        flush: bool = False,
+        flush_wait: Optional[int] = None,
+        ttl: Optional[Number] = None,
+        filter_fields: Optional[Sequence[str]] = None,
+        filter_type: str = "include",
+    ) -> Result[Cursor]:
         """Export all documents in the collection using a server cursor.
 
         :param flush: If set to True, flush the write-ahead log prior to the
@@ -624,92 +618,90 @@ class Collection(APIWrapper):
             the export are not included in the result.
         :type flush: bool
         :param flush_wait: Max wait time in seconds for write-ahead log flush.
-        :type flush_wait: int
+        :type flush_wait: int | None
         :param count: Include the document count in the server cursor.
         :type count: bool
         :param batch_size: Max number of documents in the batch fetched by
             the cursor in one round trip.
-        :type batch_size: int
+        :type batch_size: int | None
         :param limit: Max number of documents fetched by the cursor.
-        :type limit: int
+        :type limit: int | None
         :param ttl: Time-to-live for the cursor on the server.
-        :type ttl: int
+        :type ttl: int | float | None
         :param filter_fields: Document fields to filter with.
-        :type filter_fields: [str]
+        :type filter_fields: [str] | None
         :param filter_type: Allowed values are "include" or "exclude".
         :type filter_type: str
         :return: Document cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If export fails.
         """
-        data = {'count': count, 'flush': flush}
+        data: Json = {"count": count, "flush": flush}
         if flush_wait is not None:
-            data['flushWait'] = flush_wait
+            data["flushWait"] = flush_wait
         if batch_size is not None:
-            data['batchSize'] = batch_size
+            data["batchSize"] = batch_size
         if limit is not None:
-            data['limit'] = limit
+            data["limit"] = limit
         if ttl is not None:
-            data['ttl'] = ttl
+            data["ttl"] = ttl
         if filter_fields is not None:
-            data['restrict'] = {
-                'fields': filter_fields,
-                'type': filter_type
-            }
+            data["restrict"] = {"fields": filter_fields, "type": filter_type}
         request = Request(
-            method='post',
-            endpoint='/_api/export',
-            params={'collection': self.name},
-            data=data
+            method="post",
+            endpoint="/_api/export",
+            params={"collection": self.name},
+            data=data,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Cursor:
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
-            return Cursor(self._conn, resp.body, 'export')
+            return Cursor(self._conn, resp.body, "export")
 
         return self._execute(request, response_handler)
 
-    def find(self, filters, skip=None, limit=None):
+    def find(
+        self, filters: Json, skip: Optional[int] = None, limit: Optional[int] = None
+    ) -> Result[Cursor]:
         """Return all documents that match the given filters.
 
         :param filters: Document filters.
         :type filters: dict
         :param skip: Number of documents to skip.
-        :type skip: int
+        :type skip: int | None
         :param limit: Max number of documents returned.
-        :type limit: int
+        :type limit: int | None
         :return: Document cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        assert isinstance(filters, dict), 'filters must be a dict'
-        assert is_none_or_int(skip), 'skip must be a non-negative int'
-        assert is_none_or_int(limit), 'limit must be a non-negative int'
+        assert isinstance(filters, dict), "filters must be a dict"
+        assert is_none_or_int(skip), "skip must be a non-negative int"
+        assert is_none_or_int(limit), "limit must be a non-negative int"
 
-        data = {
-            'collection': self.name,
-            'example': filters,
-            'skip': skip,
+        data: Json = {
+            "collection": self.name,
+            "example": filters,
+            "skip": skip,
         }
         if limit is not None:
-            data['limit'] = limit
+            data["limit"] = limit
 
         request = Request(
-            method='put',
-            endpoint='/_api/simple/by-example',
-            data=data,
-            read=self.name
+            method="put", endpoint="/_api/simple/by-example", data=data, read=self.name
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Cursor:
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
 
         return self._execute(request, response_handler)
 
-    def find_near(self, latitude, longitude, limit=None):
+    def find_near(
+        self, latitude: Number, longitude: Number, limit: Optional[int] = None
+    ) -> Result[Cursor]:
         """Return documents near a given coordinate.
 
         Documents returned are sorted according to distance, with the nearest
@@ -722,52 +714,52 @@ class Collection(APIWrapper):
         :param longitude: Longitude.
         :type longitude: int | float
         :param limit: Max number of documents returned.
-        :type limit: int
+        :type limit: int | None
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        assert isinstance(latitude, Number), 'latitude must be a number'
-        assert isinstance(longitude, Number), 'longitude must be a number'
-        assert is_none_or_int(limit), 'limit must be a non-negative int'
+        assert isinstance(latitude, Number), "latitude must be a number"
+        assert isinstance(longitude, Number), "longitude must be a number"
+        assert is_none_or_int(limit), "limit must be a non-negative int"
 
         query = """
         FOR doc IN NEAR(@collection, @latitude, @longitude{})
             RETURN doc
-        """.format('' if limit is None else ', @limit ')
-
-        bind_vars = {
-            'collection': self._name,
-            'latitude': latitude,
-            'longitude': longitude
-        }
-        if limit is not None:
-            bind_vars['limit'] = limit
-
-        request = Request(
-            method='post',
-            endpoint='/_api/cursor',
-            data={
-                'query': query,
-                'bindVars': bind_vars,
-                'count': True
-            },
-            read=self.name
+        """.format(
+            "" if limit is None else ", @limit "
         )
 
-        def response_handler(resp):
+        bind_vars = {
+            "collection": self._name,
+            "latitude": latitude,
+            "longitude": longitude,
+        }
+        if limit is not None:
+            bind_vars["limit"] = limit
+
+        request = Request(
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": query, "bindVars": bind_vars, "count": True},
+            read=self.name,
+        )
+
+        def response_handler(resp: Response) -> Cursor:
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
 
         return self._execute(request, response_handler)
 
-    def find_in_range(self,
-                      field,
-                      lower,
-                      upper,
-                      skip=None,
-                      limit=None):
+    def find_in_range(
+        self,
+        field: str,
+        lower: int,
+        upper: int,
+        skip: Optional[int] = None,
+        limit: Optional[int] = None,
+    ) -> Result[Cursor]:
         """Return documents within a given range in a random order.
 
         A skiplist index must be defined in the collection to use this method.
@@ -779,23 +771,23 @@ class Collection(APIWrapper):
         :param upper: Upper bound (exclusive).
         :type upper: int
         :param skip: Number of documents to skip.
-        :type skip: int
+        :type skip: int | None
         :param limit: Max number of documents returned.
-        :type limit: int
+        :type limit: int | None
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        assert is_none_or_int(skip), 'skip must be a non-negative int'
-        assert is_none_or_int(limit), 'limit must be a non-negative int'
+        assert is_none_or_int(skip), "skip must be a non-negative int"
+        assert is_none_or_int(limit), "limit must be a non-negative int"
 
         bind_vars = {
-            '@collection': self._name,
-            'field': field,
-            'lower': lower,
-            'upper': upper,
-            'skip': 0 if skip is None else skip,
-            'limit': 2147483647 if limit is None else limit,  # 2 ^ 31 - 1
+            "@collection": self._name,
+            "field": field,
+            "lower": lower,
+            "upper": upper,
+            "skip": 0 if skip is None else skip,
+            "limit": 2147483647 if limit is None else limit,  # 2 ^ 31 - 1
         }
 
         query = """
@@ -806,24 +798,26 @@ class Collection(APIWrapper):
         """
 
         request = Request(
-            method='post',
-            endpoint='/_api/cursor',
-            data={
-                'query': query,
-                'bindVars': bind_vars,
-                'count': True
-            },
-            read=self.name
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": query, "bindVars": bind_vars, "count": True},
+            read=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Cursor:
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
 
         return self._execute(request, response_handler)
 
-    def find_in_radius(self, latitude, longitude, radius, distance_field=None):
+    def find_in_radius(
+        self,
+        latitude: Number,
+        longitude: Number,
+        radius: Number,
+        distance_field: Optional[str] = None,
+    ) -> Result[Cursor]:
         """Return documents within a given radius around a coordinate.
 
         A geo index must be defined in the collection to use this method.
@@ -841,51 +835,51 @@ class Collection(APIWrapper):
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        assert isinstance(latitude, Number), 'latitude must be a number'
-        assert isinstance(longitude, Number), 'longitude must be a number'
-        assert isinstance(radius, Number), 'radius must be a number'
-        assert is_none_or_str(distance_field), 'distance_field must be a str'
+        assert isinstance(latitude, Number), "latitude must be a number"
+        assert isinstance(longitude, Number), "longitude must be a number"
+        assert isinstance(radius, Number), "radius must be a number"
+        assert is_none_or_str(distance_field), "distance_field must be a str"
 
         query = """
         FOR doc IN WITHIN(@@collection, @latitude, @longitude, @radius{})
             RETURN doc
-        """.format('' if distance_field is None else ', @distance')
-
-        bind_vars = {
-            '@collection': self._name,
-            'latitude': latitude,
-            'longitude': longitude,
-            'radius': radius
-        }
-        if distance_field is not None:
-            bind_vars['distance'] = distance_field
-
-        request = Request(
-            method='post',
-            endpoint='/_api/cursor',
-            data={
-                'query': query,
-                'bindVars': bind_vars,
-                'count': True
-            },
-            read=self.name
+        """.format(
+            "" if distance_field is None else ", @distance"
         )
 
-        def response_handler(resp):
+        bind_vars = {
+            "@collection": self._name,
+            "latitude": latitude,
+            "longitude": longitude,
+            "radius": radius,
+        }
+        if distance_field is not None:
+            bind_vars["distance"] = distance_field
+
+        request = Request(
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": query, "bindVars": bind_vars, "count": True},
+            read=self.name,
+        )
+
+        def response_handler(resp: Response) -> Cursor:
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
 
         return self._execute(request, response_handler)
 
-    def find_in_box(self,
-                    latitude1,
-                    longitude1,
-                    latitude2,
-                    longitude2,
-                    skip=None,
-                    limit=None,
-                    index=None):
+    def find_in_box(
+        self,
+        latitude1: Number,
+        longitude1: Number,
+        latitude2: Number,
+        longitude2: Number,
+        skip: Optional[int] = None,
+        limit: Optional[int] = None,
+        index: Optional[str] = None,
+    ) -> Result[Cursor]:
         """Return all documents in an rectangular area.
 
         :param latitude1: First latitude.
@@ -897,52 +891,54 @@ class Collection(APIWrapper):
         :param longitude2: Second longitude
         :type longitude2: int | float
         :param skip: Number of documents to skip.
-        :type skip: int
+        :type skip: int | None
         :param limit: Max number of documents returned.
-        :type limit: int
+        :type limit: int | None
         :param index: ID of the geo index to use (without the collection
             prefix). This parameter is ignored in transactions.
-        :type index: str
+        :type index: str | None
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        assert isinstance(latitude1, Number), 'latitude1 must be a number'
-        assert isinstance(longitude1, Number), 'longitude1 must be a number'
-        assert isinstance(latitude2, Number), 'latitude2 must be a number'
-        assert isinstance(longitude2, Number), 'longitude2 must be a number'
-        assert is_none_or_int(skip), 'skip must be a non-negative int'
-        assert is_none_or_int(limit), 'limit must be a non-negative int'
+        assert isinstance(latitude1, Number), "latitude1 must be a number"
+        assert isinstance(longitude1, Number), "longitude1 must be a number"
+        assert isinstance(latitude2, Number), "latitude2 must be a number"
+        assert isinstance(longitude2, Number), "longitude2 must be a number"
+        assert is_none_or_int(skip), "skip must be a non-negative int"
+        assert is_none_or_int(limit), "limit must be a non-negative int"
 
-        data = {
-            'collection': self._name,
-            'latitude1': latitude1,
-            'longitude1': longitude1,
-            'latitude2': latitude2,
-            'longitude2': longitude2,
+        data: Json = {
+            "collection": self._name,
+            "latitude1": latitude1,
+            "longitude1": longitude1,
+            "latitude2": latitude2,
+            "longitude2": longitude2,
         }
         if skip is not None:
-            data['skip'] = skip
+            data["skip"] = skip
         if limit is not None:
-            data['limit'] = limit
+            data["limit"] = limit
         if index is not None:
-            data['geo'] = self._name + '/' + index
+            data["geo"] = self._name + "/" + index
 
         request = Request(
-            method='put',
-            endpoint='/_api/simple/within-rectangle',
+            method="put",
+            endpoint="/_api/simple/within-rectangle",
             data=data,
-            read=self.name
+            read=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Cursor:
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
 
         return self._execute(request, response_handler)
 
-    def find_by_text(self, field, query, limit=None):
+    def find_by_text(
+        self, field: str, query: str, limit: Optional[int] = None
+    ) -> Result[Cursor]:
         """Return documents that match the given fulltext query.
 
         :param field: Document field with fulltext index.
@@ -950,41 +946,43 @@ class Collection(APIWrapper):
         :param query: Fulltext query.
         :type query: str
         :param limit: Max number of documents returned.
-        :type limit: int
+        :type limit: int | None
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        assert is_none_or_int(limit), 'limit must be a non-negative int'
+        assert is_none_or_int(limit), "limit must be a non-negative int"
 
-        bind_vars = {
-            'collection': self._name,
-            'field': field,
-            'query': query,
+        bind_vars: Json = {
+            "collection": self._name,
+            "field": field,
+            "query": query,
         }
         if limit is not None:
-            bind_vars['limit'] = limit
+            bind_vars["limit"] = limit
 
         aql = """
         FOR doc IN FULLTEXT(@collection, @field, @query{})
             RETURN doc
-        """.format('' if limit is None else ', @limit')
-
-        request = Request(
-            method='post',
-            endpoint='/_api/cursor',
-            data={'query': aql, 'bindVars': bind_vars, 'count': True},
-            read=self.name
+        """.format(
+            "" if limit is None else ", @limit"
         )
 
-        def response_handler(resp):
+        request = Request(
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": aql, "bindVars": bind_vars, "count": True},
+            read=self.name,
+        )
+
+        def response_handler(resp: Response) -> Cursor:
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return Cursor(self._conn, resp.body)
 
         return self._execute(request, response_handler)
 
-    def get_many(self, documents):
+    def get_many(self, documents: Sequence[Union[str, Json]]) -> Result[List[Json]]:
         """Return multiple documents ignoring any missing ones.
 
         :param documents: List of document keys, IDs or bodies. Document bodies
@@ -994,27 +992,24 @@ class Collection(APIWrapper):
         :rtype: [dict]
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
         """
-        handles = [
-            self._extract_id(doc) if isinstance(doc, dict) else doc
-            for doc in documents
-        ]
+        handles = [self._extract_id(d) if isinstance(d, dict) else d for d in documents]
 
         request = Request(
-            method='put',
-            endpoint='/_api/simple/lookup-by-keys',
-            data={'collection': self.name, 'keys': handles},
-            read=self.name
+            method="put",
+            endpoint="/_api/simple/lookup-by-keys",
+            data={"collection": self.name, "keys": handles},
+            read=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> List[Json]:
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
-            docs = resp.body['documents']
-            return [doc for doc in docs if '_id' in doc]
+            docs = resp.body["documents"]
+            return [doc for doc in docs if "_id" in doc]
 
         return self._execute(request, response_handler)
 
-    def random(self):
+    def random(self) -> Result[Json]:
         """Return a random document from the collection.
 
         :return: A random document.
@@ -1022,16 +1017,17 @@ class Collection(APIWrapper):
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
         """
         request = Request(
-            method='put',
-            endpoint='/_api/simple/any',
-            data={'collection': self.name},
-            read=self.name
+            method="put",
+            endpoint="/_api/simple/any",
+            data={"collection": self.name},
+            read=self.name,
         )
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise DocumentGetError(resp, request)
-            return resp.body['document']
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body["document"]
+                return result
+            raise DocumentGetError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -1039,7 +1035,7 @@ class Collection(APIWrapper):
     # Index Management #
     ####################
 
-    def indexes(self):
+    def indexes(self) -> Result[List[Json]]:
         """Return the collection indexes.
 
         :return: Collection indexes.
@@ -1047,20 +1043,20 @@ class Collection(APIWrapper):
         :raise arango.exceptions.IndexListError: If retrieval fails.
         """
         request = Request(
-            method='get',
-            endpoint='/_api/index',
-            params={'collection': self.name},
+            method="get",
+            endpoint="/_api/index",
+            params={"collection": self.name},
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> List[Json]:
             if not resp.is_success:
                 raise IndexListError(resp, request)
-            result = resp.body['indexes']
+            result = resp.body["indexes"]
             return [format_index(index) for index in result]
 
         return self._execute(request, response_handler)
 
-    def _add_index(self, data):
+    def _add_index(self, data: Json) -> Result[Json]:
         """Helper method for creating a new index.
 
         :param data: Index data.
@@ -1070,172 +1066,182 @@ class Collection(APIWrapper):
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
         request = Request(
-            method='post',
-            endpoint='/_api/index',
+            method="post",
+            endpoint="/_api/index",
             data=data,
-            params={'collection': self.name}
+            params={"collection": self.name},
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise IndexCreateError(resp, request)
             return format_index(resp.body)
 
         return self._execute(request, response_handler)
 
-    def add_hash_index(self,
-                       fields,
-                       unique=None,
-                       sparse=None,
-                       deduplicate=None,
-                       name=None,
-                       in_background=None):
+    def add_hash_index(
+        self,
+        fields: Sequence[str],
+        unique: Optional[bool] = None,
+        sparse: Optional[bool] = None,
+        deduplicate: Optional[bool] = None,
+        name: Optional[str] = None,
+        in_background: Optional[bool] = None,
+    ) -> Result[Json]:
         """Create a new hash index.
 
         :param fields: Document fields to index.
         :type fields: [str]
         :param unique: Whether the index is unique.
-        :type unique: bool
+        :type unique: bool | None
         :param sparse: If set to True, documents with None in the field
             are also indexed. If set to False, they are skipped.
-        :type sparse: bool
+        :type sparse: bool | None
         :param deduplicate: If set to True, inserting duplicate index values
             from the same document triggers unique constraint errors.
-        :type deduplicate: bool
+        :type deduplicate: bool | None
         :param name: Optional name for the index.
-        :type name: str
+        :type name: str | None
         :param in_background: Do not hold the collection lock.
-        :type in_background: bool
+        :type in_background: bool | None
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
-        data = {'type': 'hash', 'fields': fields}
+        data: Json = {"type": "hash", "fields": fields}
 
         if unique is not None:
-            data['unique'] = unique
+            data["unique"] = unique
         if sparse is not None:
-            data['sparse'] = sparse
+            data["sparse"] = sparse
         if deduplicate is not None:
-            data['deduplicate'] = deduplicate
+            data["deduplicate"] = deduplicate
         if name is not None:
-            data['name'] = name
+            data["name"] = name
         if in_background is not None:
-            data['inBackground'] = in_background
+            data["inBackground"] = in_background
 
         return self._add_index(data)
 
-    def add_skiplist_index(self,
-                           fields,
-                           unique=None,
-                           sparse=None,
-                           deduplicate=None,
-                           name=None,
-                           in_background=None):
+    def add_skiplist_index(
+        self,
+        fields: Sequence[str],
+        unique: Optional[bool] = None,
+        sparse: Optional[bool] = None,
+        deduplicate: Optional[bool] = None,
+        name: Optional[str] = None,
+        in_background: Optional[bool] = None,
+    ) -> Result[Json]:
         """Create a new skiplist index.
 
         :param fields: Document fields to index.
         :type fields: [str]
         :param unique: Whether the index is unique.
-        :type unique: bool
+        :type unique: bool | None
         :param sparse: If set to True, documents with None in the field
             are also indexed. If set to False, they are skipped.
-        :type sparse: bool
+        :type sparse: bool | None
         :param deduplicate: If set to True, inserting duplicate index values
             from the same document triggers unique constraint errors.
-        :type deduplicate: bool
+        :type deduplicate: bool | None
         :param name: Optional name for the index.
-        :type name: str
+        :type name: str | None
         :param in_background: Do not hold the collection lock.
-        :type in_background: bool
+        :type in_background: bool | None
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
-        data = {'type': 'skiplist', 'fields': fields}
+        data: Json = {"type": "skiplist", "fields": fields}
 
         if unique is not None:
-            data['unique'] = unique
+            data["unique"] = unique
         if sparse is not None:
-            data['sparse'] = sparse
+            data["sparse"] = sparse
         if deduplicate is not None:
-            data['deduplicate'] = deduplicate
+            data["deduplicate"] = deduplicate
         if name is not None:
-            data['name'] = name
+            data["name"] = name
         if in_background is not None:
-            data['inBackground'] = in_background
+            data["inBackground"] = in_background
 
         return self._add_index(data)
 
-    def add_geo_index(self,
-                      fields,
-                      ordered=None,
-                      name=None,
-                      in_background=None):
+    def add_geo_index(
+        self,
+        fields: Fields,
+        ordered: Optional[bool] = None,
+        name: Optional[str] = None,
+        in_background: Optional[bool] = None,
+    ) -> Result[Json]:
         """Create a new geo-spatial index.
 
         :param fields: A single document field or a list of document fields. If
             a single field is given, the field must have values that are lists
             with at least two floats. Documents with missing fields or invalid
             values are excluded.
-        :type fields: str | list
+        :type fields: str | [str]
         :param ordered: Whether the order is longitude, then latitude.
-        :type ordered: bool
+        :type ordered: bool | None
         :param name: Optional name for the index.
-        :type name: str
+        :type name: str | None
         :param in_background: Do not hold the collection lock.
-        :type in_background: bool
+        :type in_background: bool | None
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
-        data = {'type': 'geo', 'fields': fields}
+        data: Json = {"type": "geo", "fields": fields}
 
         if ordered is not None:
-            data['geoJson'] = ordered
+            data["geoJson"] = ordered
         if name is not None:
-            data['name'] = name
+            data["name"] = name
         if in_background is not None:
-            data['inBackground'] = in_background
+            data["inBackground"] = in_background
 
         return self._add_index(data)
 
-    def add_fulltext_index(self,
-                           fields,
-                           min_length=None,
-                           name=None,
-                           in_background=None):
+    def add_fulltext_index(
+        self,
+        fields: Sequence[str],
+        min_length: Optional[int] = None,
+        name: Optional[str] = None,
+        in_background: Optional[bool] = None,
+    ) -> Result[Json]:
         """Create a new fulltext index.
 
         :param fields: Document fields to index.
         :type fields: [str]
         :param min_length: Minimum number of characters to index.
-        :type min_length: int
+        :type min_length: int | None
         :param name: Optional name for the index.
-        :type name: str
+        :type name: str | None
         :param in_background: Do not hold the collection lock.
-        :type in_background: bool
+        :type in_background: bool | None
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
-        data = {'type': 'fulltext', 'fields': fields}
+        data: Json = {"type": "fulltext", "fields": fields}
 
         if min_length is not None:
-            data['minLength'] = min_length
+            data["minLength"] = min_length
         if name is not None:
-            data['name'] = name
+            data["name"] = name
         if in_background is not None:
-            data['inBackground'] = in_background
+            data["inBackground"] = in_background
 
         return self._add_index(data)
 
-    def add_persistent_index(self,
-                             fields,
-                             unique=None,
-                             sparse=None,
-                             name=None,
-                             in_background=None):
+    def add_persistent_index(
+        self,
+        fields: Sequence[str],
+        unique: Optional[bool] = None,
+        sparse: Optional[bool] = None,
+        name: Optional[str] = None,
+        in_background: Optional[bool] = None,
+    ) -> Result[Json]:
         """Create a new persistent index.
 
         Unique persistent indexes on non-sharded keys are not supported in a
@@ -1244,37 +1250,39 @@ class Collection(APIWrapper):
         :param fields: Document fields to index.
         :type fields: [str]
         :param unique: Whether the index is unique.
-        :type unique: bool
+        :type unique: bool | None
         :param sparse: Exclude documents that do not contain at least one of
             the indexed fields, or documents that have a value of None in any
             of the indexed fields.
-        :type sparse: bool
+        :type sparse: bool | None
         :param name: Optional name for the index.
-        :type name: str
+        :type name: str | None
         :param in_background: Do not hold the collection lock.
-        :type in_background: bool
+        :type in_background: bool | None
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
-        data = {'type': 'persistent', 'fields': fields}
+        data: Json = {"type": "persistent", "fields": fields}
 
         if unique is not None:
-            data['unique'] = unique
+            data["unique"] = unique
         if sparse is not None:
-            data['sparse'] = sparse
+            data["sparse"] = sparse
         if name is not None:
-            data['name'] = name
+            data["name"] = name
         if in_background is not None:
-            data['inBackground'] = in_background
+            data["inBackground"] = in_background
 
         return self._add_index(data)
 
-    def add_ttl_index(self,
-                      fields,
-                      expiry_time,
-                      name=None,
-                      in_background=None):
+    def add_ttl_index(
+        self,
+        fields: Sequence[str],
+        expiry_time: int,
+        name: Optional[str] = None,
+        in_background: Optional[bool] = None,
+    ) -> Result[Json]:
         """Create a new TTL (time-to-live) index.
 
         :param fields: Document field to index.
@@ -1282,23 +1290,23 @@ class Collection(APIWrapper):
         :param expiry_time: Time of expiry in seconds after document creation.
         :type expiry_time: int
         :param name: Optional name for the index.
-        :type name: str
+        :type name: str | None
         :param in_background: Do not hold the collection lock.
-        :type in_background: bool
+        :type in_background: bool | None
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
-        data = {'type': 'ttl', 'fields': fields, 'expireAfter': expiry_time}
+        data: Json = {"type": "ttl", "fields": fields, "expireAfter": expiry_time}
 
         if name is not None:
-            data['name'] = name
+            data["name"] = name
         if in_background is not None:
-            data['inBackground'] = in_background
+            data["inBackground"] = in_background
 
         return self._add_index(data)
 
-    def delete_index(self, index_id, ignore_missing=False):
+    def delete_index(self, index_id: str, ignore_missing: bool = False) -> Result[bool]:
         """Delete an index.
 
         :param index_id: Index ID.
@@ -1311,11 +1319,10 @@ class Collection(APIWrapper):
         :raise arango.exceptions.IndexDeleteError: If delete fails.
         """
         request = Request(
-            method='delete',
-            endpoint='/_api/index/{}/{}'.format(self.name, index_id)
+            method="delete", endpoint=f"/_api/index/{self.name}/{index_id}"
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.error_code == 1212 and ignore_missing:
                 return False
             if not resp.is_success:
@@ -1324,7 +1331,7 @@ class Collection(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    def load_indexes(self):
+    def load_indexes(self) -> Result[bool]:
         """Cache all indexes in the collection into memory.
 
         :return: True if index was loaded successfully.
@@ -1332,13 +1339,11 @@ class Collection(APIWrapper):
         :raise arango.exceptions.IndexLoadError: If operation fails.
         """
         request = Request(
-            method='put',
-            endpoint='/_api/collection/{}/loadIndexesIntoMemory'.format(
-                self.name
-            )
+            method="put",
+            endpoint=f"/_api/collection/{self.name}/loadIndexesIntoMemory",
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if not resp.is_success:
                 raise IndexLoadError(resp, request)
             return True
@@ -1347,26 +1352,20 @@ class Collection(APIWrapper):
 
 
 class StandardCollection(Collection):
-    """Standard ArangoDB collection API wrapper.
+    """Standard ArangoDB collection API wrapper."""
 
-    :param connection: HTTP connection.
-    :type connection: arango.connection.Connection
-    :param executor: API executor.
-    :type executor: arango.executor.Executor
-    :param name: Collection name.
-    :type name: str
-    """
+    def __repr__(self) -> str:
+        return f"<StandardCollection {self.name}>"
 
-    def __init__(self, connection, executor, name):
-        super(StandardCollection, self).__init__(connection, executor, name)
-
-    def __repr__(self):
-        return '<StandardCollection {}>'.format(self.name)
-
-    def __getitem__(self, key):
+    def __getitem__(self, key: Union[str, Json]) -> Result[Optional[Json]]:
         return self.get(key)
 
-    def get(self, document, rev=None, check_rev=True):
+    def get(
+        self,
+        document: Union[str, Json],
+        rev: Optional[str] = None,
+        check_rev: bool = True,
+    ) -> Result[Optional[Json]]:
         """Return a document.
 
         :param document: Document ID, key or body. Document body must contain
@@ -1374,7 +1373,7 @@ class StandardCollection(Collection):
         :type document: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **document** if present.
-        :type rev: str
+        :type rev: str | None
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
@@ -1386,33 +1385,37 @@ class StandardCollection(Collection):
         handle, body, headers = self._prep_from_doc(document, rev, check_rev)
 
         request = Request(
-            method='get',
-            endpoint='/_api/document/{}'.format(handle),
+            method="get",
+            endpoint=f"/_api/document/{handle}",
             headers=headers,
-            read=self.name
+            read=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Optional[Json]:
             if resp.error_code == 1202:
                 return None
             if resp.status_code == 412:
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
-            return resp.body
+
+            result: Json = resp.body
+            return result
 
         return self._execute(request, response_handler)
 
-    def insert(self,
-               document,
-               return_new=False,
-               sync=None,
-               silent=False,
-               overwrite=False,
-               return_old=False,
-               overwrite_mode=None,
-               keep_none=None,
-               merge=None):
+    def insert(
+        self,
+        document: Json,
+        return_new: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+        overwrite: bool = False,
+        return_old: bool = False,
+        overwrite_mode: Optional[str] = None,
+        keep_none: Optional[bool] = None,
+        merge: Optional[bool] = None,
+    ) -> Result[Union[bool, Json]]:
         """Insert a new document.
 
         :param document: Document to insert. If it contains the "_key" or "_id"
@@ -1423,7 +1426,7 @@ class StandardCollection(Collection):
             metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -1437,15 +1440,15 @@ class StandardCollection(Collection):
             exists already. Allowed values are "replace" (replace-insert) or
             "update" (update-insert). Implicitly sets the value of parameter
             **overwrite**.
-        :type overwrite_mode: str
+        :type overwrite_mode: str | None
         :param keep_none: If set to True, fields with value None are retained
             in the document. Otherwise, they are removed completely. Applies
             only when **overwrite_mode** is set to "update" (update-insert).
-        :type keep_none: bool
+        :type keep_none: bool | None
         :param merge: If set to True (default), sub-dictionaries are merged
             instead of the new one overwriting the old one. Applies only when
             **overwrite_mode** is set to "update" (update-insert).
-        :type merge: bool
+        :type merge: bool | None
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -1453,47 +1456,52 @@ class StandardCollection(Collection):
         """
         document = self._ensure_key_from_id(document)
 
-        params = {
-            'returnNew': return_new,
-            'silent': silent,
-            'overwrite': overwrite,
-            'returnOld': return_old
+        params: Params = {
+            "returnNew": return_new,
+            "silent": silent,
+            "overwrite": overwrite,
+            "returnOld": return_old,
         }
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
         if overwrite_mode is not None:
-            params['overwriteMode'] = overwrite_mode
+            params["overwriteMode"] = overwrite_mode
         if keep_none is not None:
-            params['keepNull'] = keep_none
+            params["keepNull"] = keep_none
         if merge is not None:
-            params['mergeObjects'] = merge
+            params["mergeObjects"] = merge
 
         request = Request(
-            method='post',
-            endpoint='/_api/document/{}'.format(self.name),
+            method="post",
+            endpoint=f"/_api/document/{self.name}",
             data=document,
             params=params,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Union[bool, Json]:
             if not resp.is_success:
                 raise DocumentInsertError(resp, request)
+
             if silent:
                 return True
-            if '_oldRev' in resp.body:
-                resp.body['_old_rev'] = resp.body.pop('_oldRev')
-            return resp.body
+
+            result: Json = resp.body
+            if "_oldRev" in result:
+                result["_old_rev"] = result.pop("_oldRev")
+            return result
 
         return self._execute(request, response_handler)
 
-    def insert_many(self,
-                    documents,
-                    return_new=False,
-                    sync=None,
-                    silent=False,
-                    overwrite=False,
-                    return_old=False):
+    def insert_many(
+        self,
+        documents: Sequence[Json],
+        return_new: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+        overwrite: bool = False,
+        return_old: bool = False,
+    ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Insert multiple documents.
 
         .. note::
@@ -1512,7 +1520,7 @@ class StandardCollection(Collection):
             metadata. Ignored if parameter **silent** is set to True
         :type return_new: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -1524,38 +1532,40 @@ class StandardCollection(Collection):
         :type return_old: bool
         :return: List of document metadata (e.g. document keys, revisions) and
             any exception, or True if parameter **silent** was set to True.
-        :rtype: [dict | ArangoError] | bool
+        :rtype: [dict | ArangoServerError] | bool
         :raise arango.exceptions.DocumentInsertError: If insert fails.
         """
         documents = [self._ensure_key_from_id(doc) for doc in documents]
 
-        params = {
-            'returnNew': return_new,
-            'silent': silent,
-            'overwrite': overwrite,
-            'returnOld': return_old
+        params: Params = {
+            "returnNew": return_new,
+            "silent": silent,
+            "overwrite": overwrite,
+            "returnOld": return_old,
         }
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='post',
-            endpoint='/_api/document/{}'.format(self.name),
+            method="post",
+            endpoint=f"/_api/document/{self.name}",
             data=documents,
-            params=params
+            params=params,
         )
 
-        def response_handler(resp):
+        def response_handler(
+            resp: Response,
+        ) -> Union[bool, List[Union[Json, ArangoServerError]]]:
             if not resp.is_success:
                 raise DocumentInsertError(resp, request)
             if silent is True:
                 return True
 
-            results = []
+            results: List[Union[Json, ArangoServerError]] = []
             for body in resp.body:
-                if '_id' in body:
-                    if '_oldRev' in body:
-                        body['_old_rev'] = body.pop('_oldRev')
+                if "_id" in body:
+                    if "_oldRev" in body:
+                        body["_old_rev"] = body.pop("_oldRev")
                     results.append(body)
                 else:
                     sub_resp = self._conn.prep_bulk_err_response(resp, body)
@@ -1565,15 +1575,17 @@ class StandardCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def update(self,
-               document,
-               check_rev=True,
-               merge=True,
-               keep_none=True,
-               return_new=False,
-               return_old=False,
-               sync=None,
-               silent=False):
+    def update(
+        self,
+        document: Json,
+        check_rev: bool = True,
+        merge: bool = True,
+        keep_none: bool = True,
+        return_new: bool = False,
+        return_old: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Update a document.
 
         :param document: Partial or full document with the updated values. It
@@ -1584,10 +1596,10 @@ class StandardCollection(Collection):
         :type check_rev: bool
         :param merge: If set to True, sub-dictionaries are merged instead of
             the new one overwriting the old one.
-        :type merge: bool
+        :type merge: bool | None
         :param keep_none: If set to True, fields with value None are retained
             in the document. Otherwise, they are removed completely.
-        :type keep_none: bool
+        :type keep_none: bool | None
         :param return_new: Include body of the new document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
@@ -1595,7 +1607,7 @@ class StandardCollection(Collection):
             metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -1605,49 +1617,51 @@ class StandardCollection(Collection):
         :raise arango.exceptions.DocumentUpdateError: If update fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
-        params = {
-            'keepNull': keep_none,
-            'mergeObjects': merge,
-            'returnNew': return_new,
-            'returnOld': return_old,
-            'ignoreRevs': not check_rev,
-            'overwrite': not check_rev,
-            'silent': silent
+        params: Params = {
+            "keepNull": keep_none,
+            "mergeObjects": merge,
+            "returnNew": return_new,
+            "returnOld": return_old,
+            "ignoreRevs": not check_rev,
+            "overwrite": not check_rev,
+            "silent": silent,
         }
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='patch',
-            endpoint='/_api/document/{}'.format(
-                self._extract_id(document)
-            ),
+            method="patch",
+            endpoint=f"/_api/document/{self._extract_id(document)}",
             data=document,
             params=params,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Union[bool, Json]:
             if resp.status_code == 412:
                 raise DocumentRevisionError(resp, request)
             elif not resp.is_success:
                 raise DocumentUpdateError(resp, request)
             if silent is True:
                 return True
-            resp.body['_old_rev'] = resp.body.pop('_oldRev')
-            return resp.body
+
+            result: Json = resp.body
+            result["_old_rev"] = result.pop("_oldRev")
+            return result
 
         return self._execute(request, response_handler)
 
-    def update_many(self,
-                    documents,
-                    check_rev=True,
-                    merge=True,
-                    keep_none=True,
-                    return_new=False,
-                    return_old=False,
-                    sync=None,
-                    silent=False):
+    def update_many(
+        self,
+        documents: Sequence[Json],
+        check_rev: bool = True,
+        merge: bool = True,
+        keep_none: bool = True,
+        return_new: bool = False,
+        return_old: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+    ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Update multiple documents.
 
         .. note::
@@ -1666,10 +1680,10 @@ class StandardCollection(Collection):
         :type check_rev: bool
         :param merge: If set to True, sub-dictionaries are merged instead of
             the new ones overwriting the old ones.
-        :type merge: bool
+        :type merge: bool | None
         :param keep_none: If set to True, fields with value None are retained
             in the document. Otherwise, they are removed completely.
-        :type keep_none: bool
+        :type keep_none: bool | None
         :param return_new: Include body of the new document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
@@ -1677,7 +1691,7 @@ class StandardCollection(Collection):
             metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -1686,29 +1700,31 @@ class StandardCollection(Collection):
         :rtype: [dict | ArangoError] | bool
         :raise arango.exceptions.DocumentUpdateError: If update fails.
         """
-        params = {
-            'keepNull': keep_none,
-            'mergeObjects': merge,
-            'returnNew': return_new,
-            'returnOld': return_old,
-            'ignoreRevs': not check_rev,
-            'overwrite': not check_rev,
-            'silent': silent
+        params: Params = {
+            "keepNull": keep_none,
+            "mergeObjects": merge,
+            "returnNew": return_new,
+            "returnOld": return_old,
+            "ignoreRevs": not check_rev,
+            "overwrite": not check_rev,
+            "silent": silent,
         }
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         documents = [self._ensure_key_in_body(doc) for doc in documents]
 
         request = Request(
-            method='patch',
-            endpoint='/_api/document/{}'.format(self.name),
+            method="patch",
+            endpoint=f"/_api/document/{self.name}",
             data=documents,
             params=params,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(
+            resp: Response,
+        ) -> Union[bool, List[Union[Json, ArangoServerError]]]:
             if not resp.is_success:
                 raise DocumentUpdateError(resp, request)
             if silent is True:
@@ -1716,28 +1732,33 @@ class StandardCollection(Collection):
 
             results = []
             for body in resp.body:
-                if '_id' in body:
-                    body['_old_rev'] = body.pop('_oldRev')
+                if "_id" in body:
+                    body["_old_rev"] = body.pop("_oldRev")
                     results.append(body)
                 else:
                     sub_resp = self._conn.prep_bulk_err_response(resp, body)
+
+                    error: ArangoServerError
                     if sub_resp.error_code == 1200:
                         error = DocumentRevisionError(sub_resp, request)
                     else:  # pragma: no cover
                         error = DocumentUpdateError(sub_resp, request)
+
                     results.append(error)
 
             return results
 
         return self._execute(request, response_handler)
 
-    def update_match(self,
-                     filters,
-                     body,
-                     limit=None,
-                     keep_none=True,
-                     sync=None,
-                     merge=True):
+    def update_match(
+        self,
+        filters: Json,
+        body: Json,
+        limit: Optional[int] = None,
+        keep_none: bool = True,
+        sync: Optional[bool] = None,
+        merge: bool = True,
+    ) -> Result[int]:
         """Update matching documents.
 
         :param filters: Document filters.
@@ -1747,52 +1768,55 @@ class StandardCollection(Collection):
         :param limit: Max number of documents to update. If the limit is lower
             than the number of matched documents, random documents are
             chosen. This parameter is not supported on sharded collections.
-        :type limit: int
+        :type limit: int | None
         :param keep_none: If set to True, fields with value None are retained
             in the document. Otherwise, they are removed completely.
-        :type keep_none: bool
+        :type keep_none: bool | None
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param merge: If set to True, sub-dictionaries are merged instead of
             the new ones overwriting the old ones.
-        :type merge: bool
+        :type merge: bool | None
         :return: Number of documents updated.
         :rtype: int
         :raise arango.exceptions.DocumentUpdateError: If update fails.
         """
-        data = {
-            'collection': self.name,
-            'example': filters,
-            'newValue': body,
-            'keepNull': keep_none,
-            'mergeObjects': merge
+        data: Json = {
+            "collection": self.name,
+            "example": filters,
+            "newValue": body,
+            "keepNull": keep_none,
+            "mergeObjects": merge,
         }
         if limit is not None:
-            data['limit'] = limit
+            data["limit"] = limit
         if sync is not None:
-            data['waitForSync'] = sync
+            data["waitForSync"] = sync
 
         request = Request(
-            method='put',
-            endpoint='/_api/simple/update-by-example',
+            method="put",
+            endpoint="/_api/simple/update-by-example",
             data=data,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise DocumentUpdateError(resp, request)
-            return resp.body['updated']
+        def response_handler(resp: Response) -> int:
+            if resp.is_success:
+                result: int = resp.body["updated"]
+                return result
+            raise DocumentUpdateError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def replace(self,
-                document,
-                check_rev=True,
-                return_new=False,
-                return_old=False,
-                sync=None,
-                silent=False):
+    def replace(
+        self,
+        document: Json,
+        check_rev: bool = True,
+        return_new: bool = False,
+        return_old: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Replace a document.
 
         :param document: New document to replace the old one with. It must
@@ -1809,7 +1833,7 @@ class StandardCollection(Collection):
             metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -1819,45 +1843,49 @@ class StandardCollection(Collection):
         :raise arango.exceptions.DocumentReplaceError: If replace fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
-        params = {
-            'returnNew': return_new,
-            'returnOld': return_old,
-            'ignoreRevs': not check_rev,
-            'overwrite': not check_rev,
-            'silent': silent
+        params: Params = {
+            "returnNew": return_new,
+            "returnOld": return_old,
+            "ignoreRevs": not check_rev,
+            "overwrite": not check_rev,
+            "silent": silent,
         }
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='put',
-            endpoint='/_api/document/{}'.format(
-                self._extract_id(document)
-            ),
+            method="put",
+            endpoint=f"/_api/document/{self._extract_id(document)}",
             params=params,
             data=document,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Union[bool, Json]:
             if resp.status_code == 412:
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentReplaceError(resp, request)
+
             if silent is True:
                 return True
-            resp.body['_old_rev'] = resp.body.pop('_oldRev')
-            return resp.body
+
+            result: Json = resp.body
+            if "_oldRev" in result:
+                result["_old_rev"] = result.pop("_oldRev")
+            return result
 
         return self._execute(request, response_handler)
 
-    def replace_many(self,
-                     documents,
-                     check_rev=True,
-                     return_new=False,
-                     return_old=False,
-                     sync=None,
-                     silent=False):
+    def replace_many(
+        self,
+        documents: Sequence[Json],
+        check_rev: bool = True,
+        return_new: bool = False,
+        return_old: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+    ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Replace multiple documents.
 
         .. note::
@@ -1882,59 +1910,70 @@ class StandardCollection(Collection):
             metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
-        :rtype: [dict | ArangoError] | bool
+        :rtype: [dict | ArangoServerError] | bool
         :raise arango.exceptions.DocumentReplaceError: If replace fails.
         """
-        params = {
-            'returnNew': return_new,
-            'returnOld': return_old,
-            'ignoreRevs': not check_rev,
-            'overwrite': not check_rev,
-            'silent': silent
+        params: Params = {
+            "returnNew": return_new,
+            "returnOld": return_old,
+            "ignoreRevs": not check_rev,
+            "overwrite": not check_rev,
+            "silent": silent,
         }
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         documents = [self._ensure_key_in_body(doc) for doc in documents]
 
         request = Request(
-            method='put',
-            endpoint='/_api/document/{}'.format(self.name),
+            method="put",
+            endpoint=f"/_api/document/{self.name}",
             params=params,
             data=documents,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(
+            resp: Response,
+        ) -> Union[bool, List[Union[Json, ArangoServerError]]]:
             if not resp.is_success:
                 raise DocumentReplaceError(resp, request)
             if silent is True:
                 return True
 
-            results = []
+            results: List[Union[Json, ArangoServerError]] = []
             for body in resp.body:
-                if '_id' in body:
-                    body['_old_rev'] = body.pop('_oldRev')
+                if "_id" in body:
+                    body["_old_rev"] = body.pop("_oldRev")
                     results.append(body)
                 else:
                     sub_resp = self._conn.prep_bulk_err_response(resp, body)
+
+                    error: ArangoServerError
                     if sub_resp.error_code == 1200:
                         error = DocumentRevisionError(sub_resp, request)
                     else:  # pragma: no cover
                         error = DocumentReplaceError(sub_resp, request)
+
                     results.append(error)
 
             return results
 
         return self._execute(request, response_handler)
 
-    def replace_match(self, filters, body, limit=None, sync=None):
+    def replace_match(
+        self,
+        filters: Json,
+        body: Json,
+        limit: Optional[int] = None,
+        sync: Optional[bool] = None,
+    ) -> Result[int]:
         """Replace matching documents.
 
         :param filters: Document filters.
@@ -1943,45 +1982,44 @@ class StandardCollection(Collection):
         :type body: dict
         :param limit: Max number of documents to replace. If the limit is lower
             than the number of matched documents, random documents are chosen.
-        :type limit: int
+        :type limit: int | None
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :return: Number of documents replaced.
         :rtype: int
         :raise arango.exceptions.DocumentReplaceError: If replace fails.
         """
-        data = {
-            'collection': self.name,
-            'example': filters,
-            'newValue': body
-        }
+        data: Json = {"collection": self.name, "example": filters, "newValue": body}
         if limit is not None:
-            data['limit'] = limit
+            data["limit"] = limit
         if sync is not None:
-            data['waitForSync'] = sync
+            data["waitForSync"] = sync
 
         request = Request(
-            method='put',
-            endpoint='/_api/simple/replace-by-example',
+            method="put",
+            endpoint="/_api/simple/replace-by-example",
             data=data,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> int:
             if not resp.is_success:
                 raise DocumentReplaceError(resp, request)
-            return resp.body['replaced']
+            result: int = resp.body["replaced"]
+            return result
 
         return self._execute(request, response_handler)
 
-    def delete(self,
-               document,
-               rev=None,
-               check_rev=True,
-               ignore_missing=False,
-               return_old=False,
-               sync=None,
-               silent=False):
+    def delete(
+        self,
+        document: Union[str, Json],
+        rev: Optional[str] = None,
+        check_rev: bool = True,
+        ignore_missing: bool = False,
+        return_old: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Delete a document.
 
         :param document: Document ID, key or body. Document body must contain
@@ -1989,7 +2027,7 @@ class StandardCollection(Collection):
         :type document: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **document** if present.
-        :type rev: str
+        :type rev: str | None
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
@@ -2001,7 +2039,7 @@ class StandardCollection(Collection):
             metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -2015,24 +2053,24 @@ class StandardCollection(Collection):
         """
         handle, body, headers = self._prep_from_doc(document, rev, check_rev)
 
-        params = {
-            'returnOld': return_old,
-            'ignoreRevs': not check_rev,
-            'overwrite': not check_rev,
-            'silent': silent
+        params: Params = {
+            "returnOld": return_old,
+            "ignoreRevs": not check_rev,
+            "overwrite": not check_rev,
+            "silent": silent,
         }
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='delete',
-            endpoint='/_api/document/{}'.format(handle),
+            method="delete",
+            endpoint=f"/_api/document/{handle}",
             params=params,
             headers=headers,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Union[bool, Json]:
             if resp.error_code == 1202 and ignore_missing:
                 return False
             if resp.status_code == 412:
@@ -2043,12 +2081,14 @@ class StandardCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def delete_many(self,
-                    documents,
-                    return_old=False,
-                    check_rev=True,
-                    sync=None,
-                    silent=False):
+    def delete_many(
+        self,
+        documents: Sequence[Json],
+        return_old: bool = False,
+        check_rev: bool = True,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+    ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Delete multiple documents.
 
         .. note::
@@ -2068,23 +2108,23 @@ class StandardCollection(Collection):
             are compared against the revisions of target documents.
         :type check_rev: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
-        :rtype: [dict | ArangoError] | bool
+        :rtype: [dict | ArangoServerError] | bool
         :raise arango.exceptions.DocumentDeleteError: If delete fails.
         """
-        params = {
-            'returnOld': return_old,
-            'ignoreRevs': not check_rev,
-            'overwrite': not check_rev,
-            'silent': silent
+        params: Params = {
+            "returnOld": return_old,
+            "ignoreRevs": not check_rev,
+            "overwrite": not check_rev,
+            "silent": silent,
         }
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         documents = [
             self._ensure_key_in_body(doc) if isinstance(doc, dict) else doc
@@ -2092,25 +2132,29 @@ class StandardCollection(Collection):
         ]
 
         request = Request(
-            method='delete',
-            endpoint='/_api/document/{}'.format(self.name),
+            method="delete",
+            endpoint=f"/_api/document/{self.name}",
             params=params,
             data=documents,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(
+            resp: Response,
+        ) -> Union[bool, List[Union[Json, ArangoServerError]]]:
             if not resp.is_success:
                 raise DocumentDeleteError(resp, request)
             if silent is True:
                 return True
 
-            results = []
+            results: List[Union[Json, ArangoServerError]] = []
             for body in resp.body:
-                if '_id' in body:
+                if "_id" in body:
                     results.append(body)
                 else:
                     sub_resp = self._conn.prep_bulk_err_response(resp, body)
+
+                    error: ArangoServerError
                     if sub_resp.error_code == 1200:
                         error = DocumentRevisionError(sub_resp, request)
                     else:
@@ -2121,49 +2165,54 @@ class StandardCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def delete_match(self, filters, limit=None, sync=None):
+    def delete_match(
+        self, filters: Json, limit: Optional[int] = None, sync: Optional[bool] = None
+    ) -> Result[int]:
         """Delete matching documents.
 
         :param filters: Document filters.
         :type filters: dict
         :param limit: Max number of documents to delete. If the limit is lower
             than the number of matched documents, random documents are chosen.
-        :type limit: int
+        :type limit: int | None
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :return: Number of documents deleted.
-        :rtype: dict
+        :rtype: int
         :raise arango.exceptions.DocumentDeleteError: If delete fails.
         """
-        data = {'collection': self.name, 'example': filters}
+        data: Json = {"collection": self.name, "example": filters}
         if sync is not None:
-            data['waitForSync'] = sync
+            data["waitForSync"] = sync
         if limit is not None and limit != 0:
-            data['limit'] = limit
+            data["limit"] = limit
 
         request = Request(
-            method='put',
-            endpoint='/_api/simple/remove-by-example',
+            method="put",
+            endpoint="/_api/simple/remove-by-example",
             data=data,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise DocumentDeleteError(resp, request)
-            return resp.body['deleted']
+        def response_handler(resp: Response) -> int:
+            if resp.is_success:
+                result: int = resp.body["deleted"]
+                return result
+            raise DocumentDeleteError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def import_bulk(self,
-                    documents,
-                    halt_on_error=True,
-                    details=True,
-                    from_prefix=None,
-                    to_prefix=None,
-                    overwrite=None,
-                    on_duplicate=None,
-                    sync=None):
+    def import_bulk(
+        self,
+        documents: Sequence[Json],
+        halt_on_error: bool = True,
+        details: bool = True,
+        from_prefix: Optional[str] = None,
+        to_prefix: Optional[str] = None,
+        overwrite: Optional[bool] = None,
+        on_duplicate: Optional[str] = None,
+        sync: Optional[bool] = None,
+    ) -> Result[Json]:
         """Insert multiple documents into the collection.
 
         This method is faster than
@@ -2203,44 +2252,42 @@ class StandardCollection(Collection):
             violations.
         :type on_duplicate: str
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :return: Result of the bulk import.
         :rtype: dict
         :raise arango.exceptions.DocumentInsertError: If import fails.
         """
         documents = [self._ensure_key_from_id(doc) for doc in documents]
 
-        params = {
-            'type': 'array',
-            'collection': self.name
-        }
+        params: Params = {"type": "array", "collection": self.name}
         if halt_on_error is not None:
-            params['complete'] = halt_on_error
+            params["complete"] = halt_on_error
         if details is not None:
-            params['details'] = details
+            params["details"] = details
         if from_prefix is not None:  # pragma: no cover
-            params['fromPrefix'] = from_prefix
+            params["fromPrefix"] = from_prefix
         if to_prefix is not None:  # pragma: no cover
-            params['toPrefix'] = to_prefix
+            params["toPrefix"] = to_prefix
         if overwrite is not None:
-            params['overwrite'] = overwrite
+            params["overwrite"] = overwrite
         if on_duplicate is not None:
-            params['onDuplicate'] = on_duplicate
+            params["onDuplicate"] = on_duplicate
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='post',
-            endpoint='/_api/import',
+            method="post",
+            endpoint="/_api/import",
             data=documents,
             params=params,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise DocumentInsertError(resp, request)
-            return resp.body
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body
+                return result
+            raise DocumentInsertError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -2249,27 +2296,25 @@ class VertexCollection(Collection):
     """Vertex collection API wrapper.
 
     :param connection: HTTP connection.
-    :type connection: arango.connection.Connection
     :param executor: API executor.
-    :type executor: arango.executor.Executor
     :param graph: Graph name.
-    :type graph: str
     :param name: Vertex collection name.
-    :type name: str
     """
 
-    def __init__(self, connection, executor, graph, name):
-        super(VertexCollection, self).__init__(connection, executor, name)
+    def __init__(
+        self, connection: Connection, executor: ApiExecutor, graph: str, name: str
+    ) -> None:
+        super().__init__(connection, executor, name)
         self._graph = graph
 
-    def __repr__(self):
-        return '<VertexCollection {}>'.format(self.name)
+    def __repr__(self) -> str:
+        return f"<VertexCollection {self.name}>"
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Union[str, Json]) -> Result[Optional[Json]]:
         return self.get(key)
 
     @property
-    def graph(self):
+    def graph(self) -> str:
         """Return the graph name.
 
         :return: Graph name.
@@ -2277,7 +2322,12 @@ class VertexCollection(Collection):
         """
         return self._graph
 
-    def get(self, vertex, rev=None, check_rev=True):
+    def get(
+        self,
+        vertex: Union[str, Json],
+        rev: Optional[str] = None,
+        check_rev: bool = True,
+    ) -> Result[Optional[Json]]:
         """Return a vertex document.
 
         :param vertex: Vertex document ID, key or body. Document body must
@@ -2285,7 +2335,7 @@ class VertexCollection(Collection):
         :type vertex: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **vertex** if present.
-        :type rev: str
+        :type rev: str | None
         :param check_rev: If set to True, revision of **vertex** (if given) is
             compared against the revision of target vertex document.
         :type check_rev: bool
@@ -2297,26 +2347,31 @@ class VertexCollection(Collection):
         handle, body, headers = self._prep_from_doc(vertex, rev, check_rev)
 
         request = Request(
-            method='get',
-            endpoint='/_api/gharial/{}/vertex/{}'.format(
-                self._graph, handle
-            ),
+            method="get",
+            endpoint=f"/_api/gharial/{self._graph}/vertex/{handle}",
             headers=headers,
-            read=self.name
+            read=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Optional[Json]:
             if resp.error_code == 1202:
                 return None
             if resp.status_code == 412:
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
-            return resp.body['vertex']
+            result: Json = resp.body["vertex"]
+            return result
 
         return self._execute(request, response_handler)
 
-    def insert(self, vertex, sync=None, silent=False, return_new=False):
+    def insert(
+        self,
+        vertex: Json,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+        return_new: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Insert a new vertex document.
 
         :param vertex: New vertex document to insert. If it has "_key" or "_id"
@@ -2324,7 +2379,7 @@ class VertexCollection(Collection):
             auto-generated). Any "_rev" field is ignored.
         :type vertex: dict
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -2338,24 +2393,19 @@ class VertexCollection(Collection):
         """
         vertex = self._ensure_key_from_id(vertex)
 
-        params = {
-            'silent': silent,
-            'returnNew': return_new
-        }
+        params: Params = {"silent": silent, "returnNew": return_new}
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='post',
-            endpoint='/_api/gharial/{}/vertex/{}'.format(
-                self._graph, self.name
-            ),
+            method="post",
+            endpoint=f"/_api/gharial/{self._graph}/vertex/{self.name}",
             data=vertex,
             params=params,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Union[bool, Json]:
             if not resp.is_success:
                 raise DocumentInsertError(resp, request)
             if silent:
@@ -2364,14 +2414,16 @@ class VertexCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def update(self,
-               vertex,
-               check_rev=True,
-               keep_none=True,
-               sync=None,
-               silent=False,
-               return_old=False,
-               return_new=False):
+    def update(
+        self,
+        vertex: Json,
+        check_rev: bool = True,
+        keep_none: bool = True,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+        return_old: bool = False,
+        return_new: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Update a vertex document.
 
         :param vertex: Partial or full vertex document with updated values. It
@@ -2382,9 +2434,9 @@ class VertexCollection(Collection):
         :type check_rev: bool
         :param keep_none: If set to True, fields with value None are retained
             in the document. If set to False, they are removed completely.
-        :type keep_none: bool
+        :type keep_none: bool | None
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -2402,28 +2454,26 @@ class VertexCollection(Collection):
         """
         vertex_id, headers = self._prep_from_body(vertex, check_rev)
 
-        params = {
-            'keepNull': keep_none,
-            'overwrite': not check_rev,
-            'silent': silent,
-            'returnNew': return_new,
-            'returnOld': return_old
+        params: Params = {
+            "keepNull": keep_none,
+            "overwrite": not check_rev,
+            "silent": silent,
+            "returnNew": return_new,
+            "returnOld": return_old,
         }
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='patch',
-            endpoint='/_api/gharial/{}/vertex/{}'.format(
-                self._graph, vertex_id
-            ),
+            method="patch",
+            endpoint=f"/_api/gharial/{self._graph}/vertex/{vertex_id}",
             headers=headers,
             params=params,
             data=vertex,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Union[bool, Json]:
             if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             elif not resp.is_success:
@@ -2434,13 +2484,15 @@ class VertexCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def replace(self,
-                vertex,
-                check_rev=True,
-                sync=None,
-                silent=False,
-                return_old=False,
-                return_new=False):
+    def replace(
+        self,
+        vertex: Json,
+        check_rev: bool = True,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+        return_old: bool = False,
+        return_new: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Replace a vertex document.
 
         :param vertex: New vertex document to replace the old one with. It must
@@ -2450,7 +2502,7 @@ class VertexCollection(Collection):
             compared against the revision of target vertex document.
         :type check_rev: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -2468,26 +2520,24 @@ class VertexCollection(Collection):
         """
         vertex_id, headers = self._prep_from_body(vertex, check_rev)
 
-        params = {
-            'silent': silent,
-            'returnNew': return_new,
-            'returnOld': return_old
+        params: Params = {
+            "silent": silent,
+            "returnNew": return_new,
+            "returnOld": return_old,
         }
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='put',
-            endpoint='/_api/gharial/{}/vertex/{}'.format(
-                self._graph, vertex_id
-            ),
+            method="put",
+            endpoint=f"/_api/gharial/{self._graph}/vertex/{vertex_id}",
             headers=headers,
             params=params,
             data=vertex,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Union[bool, Json]:
             if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             elif not resp.is_success:
@@ -2498,13 +2548,15 @@ class VertexCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def delete(self,
-               vertex,
-               rev=None,
-               check_rev=True,
-               ignore_missing=False,
-               sync=None,
-               return_old=False):
+    def delete(
+        self,
+        vertex: Union[str, Json],
+        rev: Optional[str] = None,
+        check_rev: bool = True,
+        ignore_missing: bool = False,
+        sync: Optional[bool] = None,
+        return_old: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Delete a vertex document.
 
         :param vertex: Vertex document ID, key or body. Document body must
@@ -2512,7 +2564,7 @@ class VertexCollection(Collection):
         :type vertex: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **vertex** if present.
-        :type rev: str
+        :type rev: str | None
         :param check_rev: If set to True, revision of **vertex** (if given) is
             compared against the revision of target vertex document.
         :type check_rev: bool
@@ -2521,7 +2573,7 @@ class VertexCollection(Collection):
             always raised on failures.
         :type ignore_missing: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param return_old: Return body of the old document in the result.
         :type return_old: bool
         :return: True if vertex was deleted successfully, False if vertex was
@@ -2534,30 +2586,28 @@ class VertexCollection(Collection):
         """
         handle, _, headers = self._prep_from_doc(vertex, rev, check_rev)
 
-        params = {'returnOld': return_old}
+        params: Params = {"returnOld": return_old}
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='delete',
-            endpoint='/_api/gharial/{}/vertex/{}'.format(
-                self._graph, handle
-            ),
+            method="delete",
+            endpoint=f"/_api/gharial/{self._graph}/vertex/{handle}",
             params=params,
             headers=headers,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Union[bool, Json]:
             if resp.error_code == 1202 and ignore_missing:
                 return False
             if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentDeleteError(resp, request)
-            if 'old' in resp.body:
-                return {'old': resp.body['old']}
-            return True
+
+            result: Json = resp.body
+            return {"old": result["old"]} if return_old else True
 
         return self._execute(request, response_handler)
 
@@ -2566,27 +2616,25 @@ class EdgeCollection(Collection):
     """ArangoDB edge collection API wrapper.
 
     :param connection: HTTP connection.
-    :type connection: arango.connection.Connection
     :param executor: API executor.
-    :type executor: arango.executor.Executor
     :param graph: Graph name.
-    :type graph: str
     :param name: Edge collection name.
-    :type name: str
     """
 
-    def __init__(self, connection, executor, graph, name):
-        super(EdgeCollection, self).__init__(connection, executor, name)
+    def __init__(
+        self, connection: Connection, executor: ApiExecutor, graph: str, name: str
+    ) -> None:
+        super().__init__(connection, executor, name)
         self._graph = graph
 
-    def __repr__(self):
-        return '<EdgeCollection {}>'.format(self.name)
+    def __repr__(self) -> str:
+        return f"<EdgeCollection {self.name}>"
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: Union[str, Json]) -> Result[Optional[Json]]:
         return self.get(key)
 
     @property
-    def graph(self):
+    def graph(self) -> str:
         """Return the graph name.
 
         :return: Graph name.
@@ -2594,7 +2642,9 @@ class EdgeCollection(Collection):
         """
         return self._graph
 
-    def get(self, edge, rev=None, check_rev=True):
+    def get(
+        self, edge: Union[str, Json], rev: Optional[str] = None, check_rev: bool = True
+    ) -> Result[Optional[Json]]:
         """Return an edge document.
 
         :param edge: Edge document ID, key or body. Document body must contain
@@ -2602,7 +2652,7 @@ class EdgeCollection(Collection):
         :type edge: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **edge** if present.
-        :type rev: str
+        :type rev: str | None
         :param check_rev: If set to True, revision of **edge** (if given) is
             compared against the revision of target edge document.
         :type check_rev: bool
@@ -2614,26 +2664,32 @@ class EdgeCollection(Collection):
         handle, body, headers = self._prep_from_doc(edge, rev, check_rev)
 
         request = Request(
-            method='get',
-            endpoint='/_api/gharial/{}/edge/{}'.format(
-                self._graph, handle
-            ),
+            method="get",
+            endpoint=f"/_api/gharial/{self._graph}/edge/{handle}",
             headers=headers,
-            read=self.name
+            read=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Optional[Json]:
             if resp.error_code == 1202:
                 return None
             if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
-            return resp.body['edge']
+
+            result: Json = resp.body["edge"]
+            return result
 
         return self._execute(request, response_handler)
 
-    def insert(self, edge, sync=None, silent=False, return_new=False):
+    def insert(
+        self,
+        edge: Json,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+        return_new: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Insert a new edge document.
 
         :param edge: New edge document to insert. It must contain "_from" and
@@ -2642,7 +2698,7 @@ class EdgeCollection(Collection):
             Any "_rev" field is ignored.
         :type edge: dict
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -2656,24 +2712,19 @@ class EdgeCollection(Collection):
         """
         edge = self._ensure_key_from_id(edge)
 
-        params = {
-            'silent': silent,
-            'returnNew': return_new
-        }
+        params: Params = {"silent": silent, "returnNew": return_new}
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='post',
-            endpoint='/_api/gharial/{}/edge/{}'.format(
-                self._graph, self.name
-            ),
+            method="post",
+            endpoint=f"/_api/gharial/{self._graph}/edge/{self.name}",
             data=edge,
             params=params,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Union[bool, Json]:
             if not resp.is_success:
                 raise DocumentInsertError(resp, request)
             if silent:
@@ -2682,14 +2733,16 @@ class EdgeCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def update(self,
-               edge,
-               check_rev=True,
-               keep_none=True,
-               sync=None,
-               silent=False,
-               return_old=False,
-               return_new=False):
+    def update(
+        self,
+        edge: Json,
+        check_rev: bool = True,
+        keep_none: bool = True,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+        return_old: bool = False,
+        return_new: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Update an edge document.
 
         :param edge: Partial or full edge document with updated values. It must
@@ -2700,9 +2753,9 @@ class EdgeCollection(Collection):
         :type check_rev: bool
         :param keep_none: If set to True, fields with value None are retained
             in the document. If set to False, they are removed completely.
-        :type keep_none: bool
+        :type keep_none: bool | None
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -2720,28 +2773,26 @@ class EdgeCollection(Collection):
         """
         edge_id, headers = self._prep_from_body(edge, check_rev)
 
-        params = {
-            'keepNull': keep_none,
-            'overwrite': not check_rev,
-            'silent': silent,
-            'returnNew': return_new,
-            'returnOld': return_old
+        params: Params = {
+            "keepNull": keep_none,
+            "overwrite": not check_rev,
+            "silent": silent,
+            "returnNew": return_new,
+            "returnOld": return_old,
         }
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='patch',
-            endpoint='/_api/gharial/{}/edge/{}'.format(
-                self._graph, edge_id
-            ),
+            method="patch",
+            endpoint=f"/_api/gharial/{self._graph}/edge/{edge_id}",
             headers=headers,
             params=params,
             data=edge,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Union[bool, Json]:
             if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
@@ -2752,13 +2803,15 @@ class EdgeCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def replace(self,
-                edge,
-                check_rev=True,
-                sync=None,
-                silent=False,
-                return_old=False,
-                return_new=False):
+    def replace(
+        self,
+        edge: Json,
+        check_rev: bool = True,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+        return_old: bool = False,
+        return_new: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Replace an edge document.
 
         :param edge: New edge document to replace the old one with. It must
@@ -2769,7 +2822,7 @@ class EdgeCollection(Collection):
             compared against the revision of target edge document.
         :type check_rev: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -2787,26 +2840,24 @@ class EdgeCollection(Collection):
         """
         edge_id, headers = self._prep_from_body(edge, check_rev)
 
-        params = {
-            'silent': silent,
-            'returnNew': return_new,
-            'returnOld': return_old
+        params: Params = {
+            "silent": silent,
+            "returnNew": return_new,
+            "returnOld": return_old,
         }
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='put',
-            endpoint='/_api/gharial/{}/edge/{}'.format(
-                self._graph, edge_id
-            ),
+            method="put",
+            endpoint=f"/_api/gharial/{self._graph}/edge/{edge_id}",
             headers=headers,
             params=params,
             data=edge,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Union[bool, Json]:
             if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
@@ -2817,13 +2868,15 @@ class EdgeCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def delete(self,
-               edge,
-               rev=None,
-               check_rev=True,
-               ignore_missing=False,
-               sync=None,
-               return_old=False):
+    def delete(
+        self,
+        edge: Union[str, Json],
+        rev: Optional[str] = None,
+        check_rev: bool = True,
+        ignore_missing: bool = False,
+        sync: Optional[bool] = None,
+        return_old: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Delete an edge document.
 
         :param edge: Edge document ID, key or body. Document body must contain
@@ -2831,7 +2884,7 @@ class EdgeCollection(Collection):
         :type edge: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **edge** if present.
-        :type rev: str
+        :type rev: str | None
         :param check_rev: If set to True, revision of **edge** (if given) is
             compared against the revision of target edge document.
         :type check_rev: bool
@@ -2840,7 +2893,7 @@ class EdgeCollection(Collection):
             always raised on failures.
         :type ignore_missing: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param return_old: Return body of the old document in the result.
         :type return_old: bool
         :return: True if edge was deleted successfully, False if edge was not
@@ -2852,40 +2905,40 @@ class EdgeCollection(Collection):
         """
         handle, _, headers = self._prep_from_doc(edge, rev, check_rev)
 
-        params = {'returnOld': return_old}
+        params: Params = {"returnOld": return_old}
         if sync is not None:
-            params['waitForSync'] = sync
+            params["waitForSync"] = sync
 
         request = Request(
-            method='delete',
-            endpoint='/_api/gharial/{}/edge/{}'.format(
-                self._graph, handle
-            ),
+            method="delete",
+            endpoint=f"/_api/gharial/{self._graph}/edge/{handle}",
             params=params,
             headers=headers,
-            write=self.name
+            write=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Union[bool, Json]:
             if resp.error_code == 1202 and ignore_missing:
                 return False
             if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentDeleteError(resp, request)
-            if 'old' in resp.body:
-                return {'old': resp.body['old']}
-            return True
+
+            result: Json = resp.body
+            return {"old": result["old"]} if return_old else True
 
         return self._execute(request, response_handler)
 
-    def link(self,
-             from_vertex,
-             to_vertex,
-             data=None,
-             sync=None,
-             silent=False,
-             return_new=False):
+    def link(
+        self,
+        from_vertex: Union[str, Json],
+        to_vertex: Union[str, Json],
+        data: Optional[Json] = None,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+        return_new: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Insert a new edge document linking the given vertices.
 
         :param from_vertex: "From" vertex document ID or body with "_id" field.
@@ -2895,9 +2948,9 @@ class EdgeCollection(Collection):
         :param data: Any extra data for the new edge document. If it has "_key"
             or "_id" field, its value is used as key of the new edge document
             (otherwise it is auto-generated).
-        :type data: dict
+        :type data: dict | None
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -2909,20 +2962,14 @@ class EdgeCollection(Collection):
         :rtype: bool | dict
         :raise arango.exceptions.DocumentInsertError: If insert fails.
         """
-        edge = {
-            '_from': get_doc_id(from_vertex),
-            '_to': get_doc_id(to_vertex)
-        }
+        edge = {"_from": get_doc_id(from_vertex), "_to": get_doc_id(to_vertex)}
         if data is not None:
             edge.update(self._ensure_key_from_id(data))
-        return self.insert(
-            edge,
-            sync=sync,
-            silent=silent,
-            return_new=return_new
-        )
+        return self.insert(edge, sync=sync, silent=silent, return_new=return_new)
 
-    def edges(self, vertex, direction=None):
+    def edges(
+        self, vertex: Union[str, Json], direction: Optional[str] = None
+    ) -> Result[Json]:
         """Return the edge documents coming in and/or out of the vertex.
 
         :param vertex: Vertex document ID or body with "_id" field.
@@ -2934,27 +2981,27 @@ class EdgeCollection(Collection):
         :rtype: dict
         :raise arango.exceptions.EdgeListError: If retrieval fails.
         """
-        params = {'vertex': get_doc_id(vertex)}
+        params: Params = {"vertex": get_doc_id(vertex)}
         if direction is not None:
-            params['direction'] = direction
+            params["direction"] = direction
 
         request = Request(
-            method='get',
-            endpoint='/_api/edges/{}'.format(self.name),
+            method="get",
+            endpoint=f"/_api/edges/{self.name}",
             params=params,
-            read=self.name
+            read=self.name,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise EdgeListError(resp, request)
-            stats = resp.body['stats']
+            stats = resp.body["stats"]
             return {
-                'edges': resp.body['edges'],
-                'stats': {
-                    'filtered': stats['filtered'],
-                    'scanned_index': stats['scannedIndex'],
-                }
+                "edges": resp.body["edges"],
+                "stats": {
+                    "filtered": stats["filtered"],
+                    "scanned_index": stats["scannedIndex"],
+                },
             }
 
         return self._execute(request, response_handler)

@@ -1,19 +1,13 @@
-from __future__ import absolute_import, unicode_literals
-
 from calendar import timegm
-from datetime import datetime
 from collections import deque
+from datetime import datetime
 from uuid import uuid4
 
 import jwt
 import pytest
 
 from arango.cursor import Cursor
-from arango.exceptions import (
-    AsyncExecuteError,
-    BatchExecuteError,
-    TransactionInitError
-)
+from arango.exceptions import AsyncExecuteError, BatchExecuteError, TransactionInitError
 
 
 def generate_db_name():
@@ -22,7 +16,7 @@ def generate_db_name():
     :return: Random database name.
     :rtype: str
     """
-    return 'test_database_{}'.format(uuid4().hex)
+    return f"test_database_{uuid4().hex}"
 
 
 def generate_col_name():
@@ -31,7 +25,7 @@ def generate_col_name():
     :return: Random collection name.
     :rtype: str
     """
-    return 'test_collection_{}'.format(uuid4().hex)
+    return f"test_collection_{uuid4().hex}"
 
 
 def generate_graph_name():
@@ -40,7 +34,7 @@ def generate_graph_name():
     :return: Random graph name.
     :rtype: str
     """
-    return 'test_graph_{}'.format(uuid4().hex)
+    return f"test_graph_{uuid4().hex}"
 
 
 def generate_doc_key():
@@ -49,7 +43,7 @@ def generate_doc_key():
     :return: Random document key.
     :rtype: str
     """
-    return 'test_document_{}'.format(uuid4().hex)
+    return f"test_document_{uuid4().hex}"
 
 
 def generate_task_name():
@@ -58,7 +52,7 @@ def generate_task_name():
     :return: Random task name.
     :rtype: str
     """
-    return 'test_task_{}'.format(uuid4().hex)
+    return f"test_task_{uuid4().hex}"
 
 
 def generate_task_id():
@@ -67,7 +61,7 @@ def generate_task_id():
     :return: Random task ID
     :rtype: str
     """
-    return 'test_task_id_{}'.format(uuid4().hex)
+    return f"test_task_id_{uuid4().hex}"
 
 
 def generate_username():
@@ -76,7 +70,7 @@ def generate_username():
     :return: Random username.
     :rtype: str
     """
-    return 'test_user_{}'.format(uuid4().hex)
+    return f"test_user_{uuid4().hex}"
 
 
 def generate_view_name():
@@ -85,7 +79,7 @@ def generate_view_name():
     :return: Random view name.
     :rtype: str
     """
-    return 'test_view_{}'.format(uuid4().hex)
+    return f"test_view_{uuid4().hex}"
 
 
 def generate_analyzer_name():
@@ -94,7 +88,7 @@ def generate_analyzer_name():
     :return: Random analyzer name.
     :rtype: str
     """
-    return 'test_analyzer_{}'.format(uuid4().hex)
+    return f"test_analyzer_{uuid4().hex}"
 
 
 def generate_string():
@@ -112,7 +106,7 @@ def generate_service_mount():
     :return: Random service name.
     :rtype: str
     """
-    return '/test_{}'.format(uuid4().hex)
+    return f"/test_{uuid4().hex}"
 
 
 def generate_jwt(secret, exp=3600):
@@ -128,13 +122,13 @@ def generate_jwt(secret, exp=3600):
     now = timegm(datetime.utcnow().utctimetuple())
     return jwt.encode(
         payload={
-            'iat': now,
-            'exp': now + exp,
-            'iss': 'arangodb',
-            'server_id': 'client'
+            "iat": now,
+            "exp": now + exp,
+            "iss": "arangodb",
+            "server_id": "client",
         },
         key=secret,
-    ).decode('utf-8')
+    )
 
 
 def clean_doc(obj):
@@ -147,12 +141,13 @@ def clean_doc(obj):
     """
     if isinstance(obj, (Cursor, list, deque)):
         docs = [clean_doc(d) for d in obj]
-        return sorted(docs, key=lambda doc: doc['_key'])
+        return sorted(docs, key=lambda doc: doc["_key"])
 
     if isinstance(obj, dict):
         return {
-            field: value for field, value in obj.items()
-            if field in {'_key', '_from', '_to'} or not field.startswith('_')
+            field: value
+            for field, value in obj.items()
+            if field in {"_key", "_from", "_to"} or not field.startswith("_")
         }
 
 
@@ -185,7 +180,6 @@ def assert_raises(*exc):
     :param exc: Expected exception(s).
     :type: exc
     """
-    # noinspection PyTypeChecker
     return pytest.raises(
         exc + (AsyncExecuteError, BatchExecuteError, TransactionInitError)
     )

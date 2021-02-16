@@ -1,35 +1,23 @@
 import time
 
-from arango.executor import (
-    AsyncExecutor,
-    BatchExecutor,
-    TransactionExecutor,
-)
+from arango.executor import AsyncApiExecutor, BatchApiExecutor, TransactionApiExecutor
 from arango.job import BatchJob
 
 
-class TestAsyncExecutor(AsyncExecutor):
-
-    def __init__(self, connection):
-        super(TestAsyncExecutor, self).__init__(
-            connection=connection,
-            return_result=True
-        )
+class TestAsyncApiExecutor(AsyncApiExecutor):
+    def __init__(self, connection) -> None:
+        super().__init__(connection=connection, return_result=True)
 
     def execute(self, request, response_handler):
-        job = AsyncExecutor.execute(self, request, response_handler)
-        while job.status() != 'done':
-            time.sleep(.01)
+        job = AsyncApiExecutor.execute(self, request, response_handler)
+        while job.status() != "done":
+            time.sleep(0.01)
         return job.result()
 
 
-class TestBatchExecutor(BatchExecutor):
-
-    def __init__(self, connection):
-        super(TestBatchExecutor, self).__init__(
-            connection=connection,
-            return_result=True
-        )
+class TestBatchExecutor(BatchApiExecutor):
+    def __init__(self, connection) -> None:
+        super().__init__(connection=connection, return_result=True)
 
     def execute(self, request, response_handler):
         self._committed = False
@@ -41,10 +29,10 @@ class TestBatchExecutor(BatchExecutor):
         return job.result()
 
 
-class TestTransactionExecutor(TransactionExecutor):
+class TestTransactionApiExecutor(TransactionApiExecutor):
 
     # noinspection PyMissingConstructor
-    def __init__(self, connection):
+    def __init__(self, connection) -> None:
         self._conn = connection
 
     def execute(self, request, response_handler):
@@ -52,15 +40,15 @@ class TestTransactionExecutor(TransactionExecutor):
             resp = self._conn.send_request(request)
             return response_handler(resp)
 
-        super(TestTransactionExecutor, self).__init__(
+        super().__init__(
             connection=self._conn,
             sync=True,
             allow_implicit=False,
             lock_timeout=0,
             read=request.read,
             write=request.write,
-            exclusive=request.exclusive
+            exclusive=request.exclusive,
         )
-        result = TransactionExecutor.execute(self, request, response_handler)
+        result = super().execute(request, response_handler)
         self.commit()
         return result

@@ -1,25 +1,15 @@
-from __future__ import absolute_import, unicode_literals
-
-__all__ = [
-    'StandardDatabase',
-    'AsyncDatabase',
-    'BatchDatabase',
-    'TransactionDatabase'
-]
+__all__ = ["StandardDatabase", "AsyncDatabase", "BatchDatabase", "TransactionDatabase"]
 
 from datetime import datetime
+from numbers import Number
+from typing import Any, List, Optional, Sequence, Union
 
-from arango.api import APIWrapper
+from arango.api import ApiGroup
 from arango.aql import AQL
-from arango.executor import (
-    DefaultExecutor,
-    AsyncExecutor,
-    BatchExecutor,
-    TransactionExecutor,
-)
 from arango.backup import Backup
 from arango.cluster import Cluster
 from arango.collection import StandardCollection
+from arango.connection import Connection
 from arango.exceptions import (
     AnalyzerCreateError,
     AnalyzerDeleteError,
@@ -30,23 +20,23 @@ from arango.exceptions import (
     CollectionCreateError,
     CollectionDeleteError,
     CollectionListError,
-    DatabaseDeleteError,
     DatabaseCreateError,
+    DatabaseDeleteError,
     DatabaseListError,
     DatabasePropertiesError,
-    GraphListError,
     GraphCreateError,
     GraphDeleteError,
-    PermissionListError,
-    PermissionGetError,
-    PermissionResetError,
-    PermissionUpdateError,
-    ServerEncryptionError,
-    ServerEngineError,
-    ServerDetailsError,
-    ServerEchoError,
+    GraphListError,
     JWTSecretListError,
     JWTSecretReloadError,
+    PermissionGetError,
+    PermissionListError,
+    PermissionResetError,
+    PermissionUpdateError,
+    ServerDetailsError,
+    ServerEchoError,
+    ServerEncryptionError,
+    ServerEngineError,
     ServerLogLevelError,
     ServerLogLevelSetError,
     ServerMetricsError,
@@ -79,35 +69,38 @@ from arango.exceptions import (
     ViewListError,
     ViewRenameError,
     ViewReplaceError,
-    ViewUpdateError
+    ViewUpdateError,
+)
+from arango.executor import (
+    AsyncApiExecutor,
+    BatchApiExecutor,
+    DefaultApiExecutor,
+    TransactionApiExecutor,
 )
 from arango.formatter import (
+    format_body,
     format_database,
+    format_server_status,
     format_tls,
-    format_view
+    format_view,
 )
 from arango.foxx import Foxx
 from arango.graph import Graph
+from arango.job import BatchJob
 from arango.pregel import Pregel
 from arango.replication import Replication
 from arango.request import Request
-from arango.wal import WAL
+from arango.response import Response
+from arango.result import Result
+from arango.typings import Json, Jsons, Params
 from arango.utils import get_col_name
+from arango.wal import WAL
 
 
-class Database(APIWrapper):
-    """Base class for Database API wrappers.
+class Database(ApiGroup):
+    """Base class for Database API wrappers."""
 
-    :param connection: HTTP connection.
-    :type connection: arango.connection.Connection
-    :param executor: API executor.
-    :type executor: arango.executor.Executor
-    """
-
-    def __init__(self, connection, executor):
-        super(Database, self).__init__(connection, executor)
-
-    def __getitem__(self, name):
+    def __getitem__(self, name: str) -> StandardCollection:
         """Return the collection API wrapper.
 
         :param name: Collection name.
@@ -117,7 +110,7 @@ class Database(APIWrapper):
         """
         return self.collection(name)
 
-    def _get_col_by_doc(self, document):
+    def _get_col_by_doc(self, document: Union[str, Json]) -> StandardCollection:
         """Return the collection of the given document.
 
         :param document: Document ID or body with "_id" field.
@@ -129,7 +122,7 @@ class Database(APIWrapper):
         return self.collection(get_col_name(document))
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return database name.
 
         :return: Database name.
@@ -138,7 +131,7 @@ class Database(APIWrapper):
         return self.db_name
 
     @property
-    def aql(self):
+    def aql(self) -> AQL:
         """Return AQL (ArangoDB Query Language) API wrapper.
 
         :return: AQL API wrapper.
@@ -147,7 +140,7 @@ class Database(APIWrapper):
         return AQL(self._conn, self._executor)
 
     @property
-    def wal(self):
+    def wal(self) -> WAL:
         """Return WAL (Write-Ahead Log) API wrapper.
 
         :return: WAL API wrapper.
@@ -156,7 +149,7 @@ class Database(APIWrapper):
         return WAL(self._conn, self._executor)
 
     @property
-    def foxx(self):
+    def foxx(self) -> Foxx:
         """Return Foxx API wrapper.
 
         :return: Foxx API wrapper.
@@ -165,7 +158,7 @@ class Database(APIWrapper):
         return Foxx(self._conn, self._executor)
 
     @property
-    def pregel(self):
+    def pregel(self) -> Pregel:
         """Return Pregel API wrapper.
 
         :return: Pregel API wrapper.
@@ -174,7 +167,7 @@ class Database(APIWrapper):
         return Pregel(self._conn, self._executor)
 
     @property
-    def replication(self):
+    def replication(self) -> Replication:
         """Return Replication API wrapper.
 
         :return: Replication API wrapper.
@@ -183,7 +176,7 @@ class Database(APIWrapper):
         return Replication(self._conn, self._executor)
 
     @property
-    def cluster(self):  # pragma: no cover
+    def cluster(self) -> Cluster:  # pragma: no cover
         """Return Cluster API wrapper.
 
         :return: Cluster API wrapper.
@@ -192,7 +185,7 @@ class Database(APIWrapper):
         return Cluster(self._conn, self._executor)
 
     @property
-    def backup(self):
+    def backup(self) -> Backup:
         """Return Backup API wrapper.
 
         :return: Backup API wrapper.
@@ -200,7 +193,7 @@ class Database(APIWrapper):
         """
         return Backup(self._conn, self._executor)
 
-    def properties(self):
+    def properties(self) -> Result[Json]:
         """Return database properties.
 
         :return: Database properties.
@@ -208,28 +201,30 @@ class Database(APIWrapper):
         :raise arango.exceptions.DatabasePropertiesError: If retrieval fails.
         """
         request = Request(
-            method='get',
-            endpoint='/_api/database/current',
+            method="get",
+            endpoint="/_api/database/current",
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise DatabasePropertiesError(resp, request)
-            return format_database(resp.body['result'])
+            return format_database(resp.body["result"])
 
         return self._execute(request, response_handler)
 
-    def execute_transaction(self,
-                            command,
-                            params=None,
-                            read=None,
-                            write=None,
-                            sync=None,
-                            timeout=None,
-                            max_size=None,
-                            allow_implicit=None,
-                            intermediate_commit_count=None,
-                            intermediate_commit_size=None):
+    def execute_transaction(
+        self,
+        command: str,
+        params: Optional[Json] = None,
+        read: Optional[Sequence[str]] = None,
+        write: Optional[Sequence[str]] = None,
+        sync: Optional[bool] = None,
+        timeout: Optional[Number] = None,
+        max_size: Optional[int] = None,
+        allow_implicit: Optional[bool] = None,
+        intermediate_commit_count: Optional[int] = None,
+        intermediate_commit_size: Optional[int] = None,
+    ) -> Result[Any]:
         """Execute raw Javascript command in transaction.
 
         :param command: Javascript command to execute.
@@ -237,70 +232,67 @@ class Database(APIWrapper):
         :param read: Names of collections read during transaction. If parameter
             **allow_implicit** is set to True, any undeclared read collections
             are loaded lazily.
-        :type read: [str]
+        :type read: [str] | None
         :param write: Names of collections written to during transaction.
             Transaction fails on undeclared write collections.
-        :type write: [str]
+        :type write: [str] | None
         :param params: Optional parameters passed into the Javascript command.
-        :type params: dict
+        :type params: dict | None
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param timeout: Timeout for waiting on collection locks. If set to 0,
             ArangoDB server waits indefinitely. If not set, system default
             value is used.
-        :type timeout: int
+        :type timeout: int | None
         :param max_size: Max transaction size limit in bytes.
-        :type max_size: int
+        :type max_size: int | None
         :param allow_implicit: If set to True, undeclared read collections are
             loaded lazily. If set to False, transaction fails on any undeclared
             collections.
-        :type allow_implicit: bool
+        :type allow_implicit: bool | None
         :param intermediate_commit_count: Max number of operations after which
             an intermediate commit is performed automatically.
-        :type intermediate_commit_count: int
+        :type intermediate_commit_count: int | None
         :param intermediate_commit_size: Max size of operations in bytes after
             which an intermediate commit is performed automatically.
-        :type intermediate_commit_size: int
+        :type intermediate_commit_size: int | None
         :return: Return value of **command**.
-        :rtype: str
+        :rtype: Any
         :raise arango.exceptions.TransactionExecuteError: If execution fails.
         """
-        collections = {'allowImplicit': allow_implicit}
+        collections: Json = {"allowImplicit": allow_implicit}
         if read is not None:
-            collections['read'] = read
+            collections["read"] = read
         if write is not None:
-            collections['write'] = write
+            collections["write"] = write
 
-        data = {'action': command}
+        data: Json = {"action": command}
         if collections:
-            data['collections'] = collections
+            data["collections"] = collections
         if params is not None:
-            data['params'] = params
+            data["params"] = params
         if timeout is not None:
-            data['lockTimeout'] = timeout
+            data["lockTimeout"] = timeout
         if sync is not None:
-            data['waitForSync'] = sync
+            data["waitForSync"] = sync
         if max_size is not None:
-            data['maxTransactionSize'] = max_size
+            data["maxTransactionSize"] = max_size
         if intermediate_commit_count is not None:
-            data['intermediateCommitCount'] = intermediate_commit_count
+            data["intermediateCommitCount"] = intermediate_commit_count
         if intermediate_commit_size is not None:
-            data['intermediateCommitSize'] = intermediate_commit_size
+            data["intermediateCommitSize"] = intermediate_commit_size
 
-        request = Request(
-            method='post',
-            endpoint='/_api/transaction',
-            data=data
-        )
+        request = Request(method="post", endpoint="/_api/transaction", data=data)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Any:
             if not resp.is_success:
                 raise TransactionExecuteError(resp, request)
-            return resp.body.get('result')
+
+            return resp.body.get("result")
 
         return self._execute(request, response_handler)
 
-    def version(self):
+    def version(self) -> Result[str]:
         """Return ArangoDB server version.
 
         :return: Server version.
@@ -308,19 +300,17 @@ class Database(APIWrapper):
         :raise arango.exceptions.ServerVersionError: If retrieval fails.
         """
         request = Request(
-            method='get',
-            endpoint='/_api/version',
-            params={'details': False}
+            method="get", endpoint="/_api/version", params={"details": False}
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> str:
             if not resp.is_success:
                 raise ServerVersionError(resp, request)
-            return resp.body['version']
+            return str(resp.body["version"])
 
         return self._execute(request, response_handler)
 
-    def details(self):
+    def details(self) -> Result[Json]:
         """Return ArangoDB server details.
 
         :return: Server details.
@@ -328,19 +318,18 @@ class Database(APIWrapper):
         :raise arango.exceptions.ServerDetailsError: If retrieval fails.
         """
         request = Request(
-            method='get',
-            endpoint='/_api/version',
-            params={'details': True}
+            method="get", endpoint="/_api/version", params={"details": True}
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
-                return resp.body['details']
+                result: Json = resp.body["details"]
+                return result
             raise ServerDetailsError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def status(self):
+    def status(self) -> Result[Json]:
         """Return ArangoDB server status.
 
         :return: Server status.
@@ -348,68 +337,50 @@ class Database(APIWrapper):
         :raise arango.exceptions.ServerStatusError: If retrieval fails.
         """
         request = Request(
-            method='get',
-            endpoint='/_admin/status',
+            method="get",
+            endpoint="/_admin/status",
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise ServerStatusError(resp, request)
-
-            body = resp.body or {}
-            if 'operationMode' in body:
-                body['operation_mode'] = body.pop('operationMode')
-            if 'serverInfo' in body:
-                info = body['serverInfo']
-                if 'writeOpsEnabled' in info:
-                    info['write_ops_enabled'] = info.pop('writeOpsEnabled')
-                if 'readOnly' in info:
-                    info['read_only'] = info.pop('readOnly')
-                body['server_info'] = body.pop('serverInfo')
-            return body
+            return format_server_status(resp.body)
 
         return self._execute(request, response_handler)
 
-    def required_db_version(self):
+    def required_db_version(self) -> Result[str]:
         """Return required version of target database.
 
         :return: Required version of target database.
         :rtype: str
-        :raise arango.exceptions.ServerRequiredDBVersionError: If retrieval
-            fails.
+        :raise arango.exceptions.ServerRequiredDBVersionError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_admin/database/target-version'
-        )
+        request = Request(method="get", endpoint="/_admin/database/target-version")
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise ServerRequiredDBVersionError(resp, request)
-            return resp.body['version']
+        def response_handler(resp: Response) -> str:
+            if resp.is_success:
+                return str(resp.body["version"])
+            raise ServerRequiredDBVersionError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def engine(self):
+    def engine(self) -> Result[Json]:
         """Return the database engine details.
 
         :return: Database engine details.
-        :rtype: str
+        :rtype: dict
         :raise arango.exceptions.ServerEngineError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/engine'
-        )
+        request = Request(method="get", endpoint="/_api/engine")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
-                return resp.body
+                return format_body(resp.body)
             raise ServerEngineError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def statistics(self, description=False):
+    def statistics(self, description: bool = False) -> Result[Json]:
         """Return server statistics.
 
         :return: Server statistics.
@@ -417,25 +388,20 @@ class Database(APIWrapper):
         :raise arango.exceptions.ServerStatisticsError: If retrieval fails.
         """
         if description:
-            endpoint = '/_admin/statistics-description'
+            endpoint = "/_admin/statistics-description"
         else:
-            endpoint = '/_admin/statistics'
+            endpoint = "/_admin/statistics"
 
-        request = Request(
-            method='get',
-            endpoint=endpoint
-        )
+        request = Request(method="get", endpoint=endpoint)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
-                resp.body.pop('code')
-                resp.body.pop('error')
-                return resp.body
+                return format_body(resp.body)
             raise ServerStatisticsError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def role(self):
+    def role(self) -> Result[str]:
         """Return server role.
 
         :return: Server role. Possible values are "SINGLE" (server which is not
@@ -444,76 +410,65 @@ class Database(APIWrapper):
         :rtype: str
         :raise arango.exceptions.ServerRoleError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_admin/server/role'
-        )
+        request = Request(method="get", endpoint="/_admin/server/role")
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise ServerRoleError(resp, request)
-            return resp.body.get('role')
+        def response_handler(resp: Response) -> str:
+            if resp.is_success:
+                return str(resp.body["role"])
+            raise ServerRoleError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def time(self):
+    def time(self) -> Result[datetime]:
         """Return server system time.
 
         :return: Server system time.
         :rtype: datetime.datetime
         :raise arango.exceptions.ServerTimeError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_admin/time'
-        )
+        request = Request(method="get", endpoint="/_admin/time")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> datetime:
             if not resp.is_success:
                 raise ServerTimeError(resp, request)
-            return datetime.fromtimestamp(resp.body['time'])
+            return datetime.fromtimestamp(resp.body["time"])
 
         return self._execute(request, response_handler)
 
-    def echo(self):
+    def echo(self) -> Result[Json]:
         """Return details of the last request (e.g. headers, payload).
 
         :return: Details of the last request.
         :rtype: dict
         :raise arango.exceptions.ServerEchoError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_admin/echo'
-        )
+        request = Request(method="get", endpoint="/_admin/echo")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise ServerEchoError(resp, request)
-            return resp.body
+            result: Json = resp.body
+            return result
 
         return self._execute(request, response_handler)
 
-    def shutdown(self):  # pragma: no cover
+    def shutdown(self) -> Result[bool]:  # pragma: no cover
         """Initiate server shutdown sequence.
 
         :return: True if the server was shutdown successfully.
         :rtype: bool
         :raise arango.exceptions.ServerShutdownError: If shutdown fails.
         """
-        request = Request(
-            method='delete',
-            endpoint='/_admin/shutdown'
-        )
+        request = Request(method="delete", endpoint="/_admin/shutdown")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if not resp.is_success:
                 raise ServerShutdownError(resp, request)
             return True
 
         return self._execute(request, response_handler)
 
-    def run_tests(self, tests):  # pragma: no cover
+    def run_tests(self, tests: Sequence[str]) -> Result[Json]:  # pragma: no cover
         """Run available unittests on the server.
 
         :param tests: List of files containing the test suites.
@@ -522,37 +477,36 @@ class Database(APIWrapper):
         :rtype: dict
         :raise arango.exceptions.ServerRunTestsError: If execution fails.
         """
-        request = Request(
-            method='post',
-            endpoint='/_admin/test',
-            data={'tests': tests}
-        )
+        request = Request(method="post", endpoint="/_admin/test", data={"tests": tests})
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise ServerRunTestsError(resp, request)
-            return resp.body
+            result: Json = resp.body
+            return result
 
         return self._execute(request, response_handler)
 
-    def read_log(self,
-                 upto=None,
-                 level=None,
-                 start=None,
-                 size=None,
-                 offset=None,
-                 search=None,
-                 sort=None):
+    def read_log(
+        self,
+        upto: Optional[Union[int, str]] = None,
+        level: Optional[Union[int, str]] = None,
+        start: Optional[int] = None,
+        size: Optional[int] = None,
+        offset: Optional[int] = None,
+        search: Optional[str] = None,
+        sort: Optional[str] = None,
+    ) -> Result[Json]:
         """Read the global log from server.
 
         :param upto: Return the log entries up to the given level (mutually
             exclusive with parameter **level**). Allowed values are "fatal",
             "error", "warning", "info" (default) and "debug".
-        :type upto: str | int
+        :type upto: int | str
         :param level: Return the log entries of only the given level (mutually
             exclusive with **upto**). Allowed values are "fatal", "error",
             "warning", "info" (default) and "debug".
-        :type level: str | int
+        :type level: int | str
         :param start: Return the log entries whose ID is greater or equal to
             the given value.
         :type start: int
@@ -572,54 +526,50 @@ class Database(APIWrapper):
         """
         params = dict()
         if upto is not None:
-            params['upto'] = upto
+            params["upto"] = upto
         if level is not None:
-            params['level'] = level
+            params["level"] = level
         if start is not None:
-            params['start'] = start
+            params["start"] = start
         if size is not None:
-            params['size'] = size
+            params["size"] = size
         if offset is not None:
-            params['offset'] = offset
+            params["offset"] = offset
         if search is not None:
-            params['search'] = search
+            params["search"] = search
         if sort is not None:
-            params['sort'] = sort
+            params["sort"] = sort
 
-        request = Request(
-            method='get',
-            endpoint='/_admin/log',
-            params=params
-        )
+        request = Request(method="get", endpoint="/_admin/log", params=params)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise ServerReadLogError(resp, request)
-            if 'totalAmount' in resp.body:
-                resp.body['total_amount'] = resp.body.pop('totalAmount')
-            return resp.body
+
+            result: Json = resp.body
+            if "totalAmount" in result:
+                resp.body["total_amount"] = resp.body.pop("totalAmount")
+            return result
 
         return self._execute(request, response_handler)
 
-    def log_levels(self):
+    def log_levels(self) -> Result[Json]:
         """Return current logging levels.
 
         :return: Current logging levels.
         :rtype: dict
         """
-        request = Request(
-            method='get',
-            endpoint='/_admin/log/level'
-        )
+        request = Request(method="get", endpoint="/_admin/log/level")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise ServerLogLevelError(resp, request)
-            return resp.body
+            result: Json = resp.body
+            return result
 
         return self._execute(request, response_handler)
 
-    def set_log_levels(self, **kwargs):
+    def set_log_levels(self, **kwargs: str) -> Result[Json]:
         """Set the logging levels.
 
         This method takes arbitrary keyword arguments where the keys are the
@@ -638,75 +588,64 @@ class Database(APIWrapper):
         :return: New logging levels.
         :rtype: dict
         """
-        request = Request(
-            method='put',
-            endpoint='/_admin/log/level',
-            data=kwargs
-        )
+        request = Request(method="put", endpoint="/_admin/log/level", data=kwargs)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise ServerLogLevelSetError(resp, request)
-            return resp.body
+            result: Json = resp.body
+            return result
 
         return self._execute(request, response_handler)
 
-    def reload_routing(self):
+    def reload_routing(self) -> Result[bool]:
         """Reload the routing information.
 
         :return: True if routing was reloaded successfully.
         :rtype: bool
         :raise arango.exceptions.ServerReloadRoutingError: If reload fails.
         """
-        request = Request(
-            method='post',
-            endpoint='/_admin/routing/reload'
-        )
+        request = Request(method="post", endpoint="/_admin/routing/reload")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if not resp.is_success:
                 raise ServerReloadRoutingError(resp, request)
             return True
 
         return self._execute(request, response_handler)
 
-    def metrics(self):
+    def metrics(self) -> Result[str]:
         """Return server metrics in Prometheus format.
 
         :return: Server metrics in Prometheus format.
         :rtype: str
         """
-        request = Request(
-            method='get',
-            endpoint='/_admin/metrics'
-        )
+        request = Request(method="get", endpoint="/_admin/metrics")
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise ServerMetricsError(resp, request)
-            return resp.body
+        def response_handler(resp: Response) -> str:
+            if resp.is_success:
+                return resp.raw_body
+            raise ServerMetricsError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def jwt_secrets(self):  # pragma: no cover
+    def jwt_secrets(self) -> Result[Json]:  # pragma: no cover
         """Return information on currently loaded JWT secrets.
 
         :return: Information on currently loaded JWT secrets.
         :rtype: dict
         """
-        request = Request(
-            method='get',
-            endpoint='/_admin/server/jwt'
-        )
+        request = Request(method="get", endpoint="/_admin/server/jwt")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise JWTSecretListError(resp, request)
-            return resp.body['result']
+            result: Json = resp.body["result"]
+            return result
 
         return self._execute(request, response_handler)
 
-    def reload_jwt_secrets(self):  # pragma: no cover
+    def reload_jwt_secrets(self) -> Result[Json]:  # pragma: no cover
         """Hot-reload JWT secrets.
 
         Calling this without payload reloads JWT secrets from disk. Only files
@@ -717,55 +656,47 @@ class Database(APIWrapper):
         :return: Information on reloaded JWT secrets.
         :rtype: dict
         """
-        request = Request(
-            method='post',
-            endpoint='/_admin/server/jwt'
-        )
+        request = Request(method="post", endpoint="/_admin/server/jwt")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise JWTSecretReloadError(resp, request)
-            return resp.body['result']
+            result: Json = resp.body["result"]
+            return result
 
         return self._execute(request, response_handler)
 
-    def tls(self):
+    def tls(self) -> Result[Json]:
         """Return TLS data (server key, client-auth CA).
 
         :return: TLS data.
         :rtype: dict
         """
-        request = Request(
-            method='get',
-            endpoint='/_admin/server/tls'
-        )
+        request = Request(method="get", endpoint="/_admin/server/tls")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise ServerTLSError(resp, request)
-            return format_tls(resp.body['result'])
+            return format_tls(resp.body["result"])
 
         return self._execute(request, response_handler)
 
-    def reload_tls(self):
+    def reload_tls(self) -> Result[Json]:
         """Reload TLS data (server key, client-auth CA).
 
         :return: New TLS data.
         :rtype: dict
         """
-        request = Request(
-            method='post',
-            endpoint='/_admin/server/tls'
-        )
+        request = Request(method="post", endpoint="/_admin/server/tls")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise ServerTLSReloadError(resp, request)
-            return format_tls(resp.body['result'])
+            return format_tls(resp.body["result"])
 
         return self._execute(request, response_handler)
 
-    def encryption(self):
+    def encryption(self) -> Result[Json]:
         """Rotate the user-supplied keys for encryption.
 
         This method is available only for enterprise edition of ArangoDB.
@@ -774,14 +705,12 @@ class Database(APIWrapper):
         :rtype: dict
         :raise arango.exceptions.ServerEncryptionError: If retrieval fails.
         """
-        request = Request(
-            method='post',
-            endpoint='/_admin/server/encryption'
-        )
+        request = Request(method="post", endpoint="/_admin/server/encryption")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:  # pragma: no cover
-                return resp.body['result']
+                result: Json = resp.body["result"]
+                return result
             raise ServerEncryptionError(resp, request)
 
         return self._execute(request, response_handler)
@@ -790,26 +719,24 @@ class Database(APIWrapper):
     # Database Management #
     #######################
 
-    def databases(self):
+    def databases(self) -> Result[List[str]]:
         """Return the names all databases.
 
         :return: Database names.
         :rtype: [str]
         :raise arango.exceptions.DatabaseListError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/database'
-        )
+        request = Request(method="get", endpoint="/_api/database")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> List[str]:
             if not resp.is_success:
                 raise DatabaseListError(resp, request)
-            return resp.body['result']
+            result: List[str] = resp.body["result"]
+            return result
 
         return self._execute(request, response_handler)
 
-    def has_database(self, name):
+    def has_database(self, name: str) -> Result[bool]:
         """Check if a database exists.
 
         :param name: Database name.
@@ -817,14 +744,23 @@ class Database(APIWrapper):
         :return: True if database exists, False otherwise.
         :rtype: bool
         """
-        return name in self.databases()
+        request = Request(method="get", endpoint="/_api/database")
 
-    def create_database(self,
-                        name,
-                        users=None,
-                        replication_factor=None,
-                        write_concern=None,
-                        sharding=None):
+        def response_handler(resp: Response) -> bool:
+            if not resp.is_success:
+                raise DatabaseListError(resp, request)
+            return name in resp.body["result"]
+
+        return self._execute(request, response_handler)
+
+    def create_database(
+        self,
+        name: str,
+        users: Optional[Sequence[Json]] = None,
+        replication_factor: Union[int, str, None] = None,
+        write_concern: Optional[int] = None,
+        sharding: Optional[str] = None,
+    ) -> Result[bool]:
         """Create a new database.
 
         :param name: Database name.
@@ -838,7 +774,7 @@ class Database(APIWrapper):
             created in this database. Special values include "satellite" which
             replicates the collection to every DBServer, and 1 which disables
             replication. Used for clusters only.
-        :type replication_factor: str | int
+        :type replication_factor: int | str
         :param write_concern: Default write concern for collections created in
             this database. Determines how many copies of each shard are
             required to be in sync on different DBServers. If there are less
@@ -866,40 +802,39 @@ class Database(APIWrapper):
                 'extra': {'Department': 'IT'}
             }
         """
-        data = {'name': name}
+        data: Json = {"name": name}
 
-        options = {}
+        options: Json = {}
         if replication_factor is not None:
-            options['replicationFactor'] = replication_factor
+            options["replicationFactor"] = replication_factor
         if write_concern is not None:
-            options['writeConcern'] = write_concern
+            options["writeConcern"] = write_concern
         if sharding is not None:
-            options['sharding'] = sharding
+            options["sharding"] = sharding
         if options:
-            data['options'] = options
+            data["options"] = options
 
         if users is not None:
-            data['users'] = [{
-                'username': user['username'],
-                'passwd': user['password'],
-                'active': user.get('active', True),
-                'extra': user.get('extra', {})
-            } for user in users]
+            data["users"] = [
+                {
+                    "username": user["username"],
+                    "passwd": user["password"],
+                    "active": user.get("active", True),
+                    "extra": user.get("extra", {}),
+                }
+                for user in users
+            ]
 
-        request = Request(
-            method='post',
-            endpoint='/_api/database',
-            data=data
-        )
+        request = Request(method="post", endpoint="/_api/database", data=data)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if not resp.is_success:
                 raise DatabaseCreateError(resp, request)
             return True
 
         return self._execute(request, response_handler)
 
-    def delete_database(self, name, ignore_missing=False):
+    def delete_database(self, name: str, ignore_missing: bool = False) -> Result[bool]:
         """Delete the database.
 
         :param name: Database name.
@@ -911,17 +846,14 @@ class Database(APIWrapper):
         :rtype: bool
         :raise arango.exceptions.DatabaseDeleteError: If delete fails.
         """
-        request = Request(
-            method='delete',
-            endpoint='/_api/database/{}'.format(name)
-        )
+        request = Request(method="delete", endpoint=f"/_api/database/{name}")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.error_code == 1228 and ignore_missing:
                 return False
             if not resp.is_success:
                 raise DatabaseDeleteError(resp, request)
-            return resp.body['result']
+            return True
 
         return self._execute(request, response_handler)
 
@@ -929,7 +861,7 @@ class Database(APIWrapper):
     # Collection Management #
     #########################
 
-    def collection(self, name):
+    def collection(self, name: str) -> StandardCollection:
         """Return the standard collection API wrapper.
 
         :param name: Collection name.
@@ -939,7 +871,7 @@ class Database(APIWrapper):
         """
         return StandardCollection(self._conn, self._executor, name)
 
-    def has_collection(self, name):
+    def has_collection(self, name: str) -> Result[bool]:
         """Check if collection exists in the database.
 
         :param name: Collection name.
@@ -947,59 +879,68 @@ class Database(APIWrapper):
         :return: True if collection exists, False otherwise.
         :rtype: bool
         """
-        return any(col['name'] == name for col in self.collections())
+        request = Request(method="get", endpoint="/_api/collection")
 
-    def collections(self):
+        def response_handler(resp: Response) -> bool:
+            if not resp.is_success:
+                raise CollectionListError(resp, request)
+            return any(col["name"] == name for col in resp.body["result"])
+
+        return self._execute(request, response_handler)
+
+    def collections(self) -> Result[Jsons]:
         """Return the collections in the database.
 
         :return: Collections in the database and their details.
         :rtype: [dict]
         :raise arango.exceptions.CollectionListError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/collection'
-        )
+        request = Request(method="get", endpoint="/_api/collection")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Jsons:
             if not resp.is_success:
                 raise CollectionListError(resp, request)
-            return [{
-                'id': col['id'],
-                'name': col['name'],
-                'system': col['isSystem'],
-                'type': StandardCollection.types[col['type']],
-                'status': StandardCollection.statuses[col['status']],
-            } for col in map(dict, resp.body['result'])]
+            return [
+                {
+                    "id": col["id"],
+                    "name": col["name"],
+                    "system": col["isSystem"],
+                    "type": StandardCollection.types[col["type"]],
+                    "status": StandardCollection.statuses[col["status"]],
+                }
+                for col in resp.body["result"]
+            ]
 
         return self._execute(request, response_handler)
 
-    def create_collection(self,
-                          name,
-                          sync=False,
-                          system=False,
-                          edge=False,
-                          user_keys=True,
-                          key_increment=None,
-                          key_offset=None,
-                          key_generator='traditional',
-                          shard_fields=None,
-                          shard_count=None,
-                          replication_factor=None,
-                          shard_like=None,
-                          sync_replication=None,
-                          enforce_replication_factor=None,
-                          sharding_strategy=None,
-                          smart_join_attribute=None,
-                          write_concern=None,
-                          schema=None):
+    def create_collection(
+        self,
+        name: str,
+        sync: bool = False,
+        system: bool = False,
+        edge: bool = False,
+        user_keys: bool = True,
+        key_increment: Optional[int] = None,
+        key_offset: Optional[int] = None,
+        key_generator: str = "traditional",
+        shard_fields: Optional[Sequence[str]] = None,
+        shard_count: Optional[int] = None,
+        replication_factor: Optional[int] = None,
+        shard_like: Optional[str] = None,
+        sync_replication: Optional[bool] = None,
+        enforce_replication_factor: Optional[bool] = None,
+        sharding_strategy: Optional[str] = None,
+        smart_join_attribute: Optional[str] = None,
+        write_concern: Optional[int] = None,
+        schema: Optional[Json] = None,
+    ) -> Result[StandardCollection]:
         """Create a new collection.
 
         :param name: Collection name.
         :type name: str
         :param sync: If set to True, document operations via the collection
             will block until synchronized to disk by default.
-        :type sync: bool
+        :type sync: bool | None
         :param system: If set to True, a system collection is created. The
             collection name must have leading underscore "_" character.
         :type system: bool
@@ -1073,57 +1014,56 @@ class Database(APIWrapper):
         :rtype: arango.collection.StandardCollection
         :raise arango.exceptions.CollectionCreateError: If create fails.
         """
-        key_options = {'type': key_generator, 'allowUserKeys': user_keys}
+        key_options: Json = {"type": key_generator, "allowUserKeys": user_keys}
         if key_increment is not None:
-            key_options['increment'] = key_increment
+            key_options["increment"] = key_increment
         if key_offset is not None:
-            key_options['offset'] = key_offset
+            key_options["offset"] = key_offset
 
-        data = {
-            'name': name,
-            'waitForSync': sync,
-            'isSystem': system,
-            'keyOptions': key_options,
-            'type': 3 if edge else 2
+        data: Json = {
+            "name": name,
+            "waitForSync": sync,
+            "isSystem": system,
+            "keyOptions": key_options,
+            "type": 3 if edge else 2,
         }
         if shard_count is not None:
-            data['numberOfShards'] = shard_count
+            data["numberOfShards"] = shard_count
         if shard_fields is not None:
-            data['shardKeys'] = shard_fields
+            data["shardKeys"] = shard_fields
         if replication_factor is not None:
-            data['replicationFactor'] = replication_factor
+            data["replicationFactor"] = replication_factor
         if shard_like is not None:
-            data['distributeShardsLike'] = shard_like
+            data["distributeShardsLike"] = shard_like
         if sharding_strategy is not None:
-            data['shardingStrategy'] = sharding_strategy
+            data["shardingStrategy"] = sharding_strategy
         if smart_join_attribute is not None:
-            data['smartJoinAttribute'] = smart_join_attribute
+            data["smartJoinAttribute"] = smart_join_attribute
         if write_concern is not None:
-            data['writeConcern'] = write_concern
+            data["writeConcern"] = write_concern
         if schema is not None:
-            data['schema'] = schema
+            data["schema"] = schema
 
-        params = {}
+        params: Params = {}
         if sync_replication is not None:
-            params['waitForSyncReplication'] = sync_replication
+            params["waitForSyncReplication"] = sync_replication
         if enforce_replication_factor is not None:
-            params['enforceReplicationFactor'] = enforce_replication_factor
+            params["enforceReplicationFactor"] = enforce_replication_factor
 
         request = Request(
-            method='post',
-            endpoint='/_api/collection',
-            params=params,
-            data=data
+            method="post", endpoint="/_api/collection", params=params, data=data
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> StandardCollection:
             if resp.is_success:
                 return self.collection(name)
             raise CollectionCreateError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def delete_collection(self, name, ignore_missing=False, system=None):
+    def delete_collection(
+        self, name: str, ignore_missing: bool = False, system: Optional[bool] = None
+    ) -> Result[bool]:
         """Delete the collection.
 
         :param name: Collection name.
@@ -1137,17 +1077,15 @@ class Database(APIWrapper):
         :rtype: bool
         :raise arango.exceptions.CollectionDeleteError: If delete fails.
         """
-        params = {}
+        params: Params = {}
         if system is not None:
-            params['isSystem'] = system
+            params["isSystem"] = system
 
         request = Request(
-            method='delete',
-            endpoint='/_api/collection/{}'.format(name),
-            params=params
+            method="delete", endpoint=f"/_api/collection/{name}", params=params
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.error_code == 1203 and ignore_missing:
                 return False
             if not resp.is_success:
@@ -1160,7 +1098,7 @@ class Database(APIWrapper):
     # Graph Management #
     ####################
 
-    def graph(self, name):
+    def graph(self, name: str) -> Graph:
         """Return the graph API wrapper.
 
         :param name: Graph name.
@@ -1170,7 +1108,7 @@ class Database(APIWrapper):
         """
         return Graph(self._conn, self._executor, name)
 
-    def has_graph(self, name):
+    def has_graph(self, name: str) -> Result[bool]:
         """Check if a graph exists in the database.
 
         :param name: Graph name.
@@ -1178,51 +1116,58 @@ class Database(APIWrapper):
         :return: True if graph exists, False otherwise.
         :rtype: bool
         """
-        for graph in self.graphs():
-            if graph['name'] == name:
-                return True
-        return False
+        request = Request(method="get", endpoint="/_api/gharial")
 
-    def graphs(self):
+        def response_handler(resp: Response) -> bool:
+            if not resp.is_success:
+                raise GraphListError(resp, request)
+            return any(name == graph["_key"] for graph in resp.body["graphs"])
+
+        return self._execute(request, response_handler)
+
+    def graphs(self) -> Result[Jsons]:
         """List all graphs in the database.
 
         :return: Graphs in the database.
         :rtype: [dict]
         :raise arango.exceptions.GraphListError: If retrieval fails.
         """
-        request = Request(method='get', endpoint='/_api/gharial')
+        request = Request(method="get", endpoint="/_api/gharial")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Jsons:
             if not resp.is_success:
                 raise GraphListError(resp, request)
             return [
                 {
-                    'id': body['_id'],
-                    'name': body['_key'],
-                    'revision': body['_rev'],
-                    'orphan_collections': body['orphanCollections'],
-                    'edge_definitions': [
+                    "id": body["_id"],
+                    "name": body["_key"],
+                    "revision": body["_rev"],
+                    "orphan_collections": body["orphanCollections"],
+                    "edge_definitions": [
                         {
-                            'edge_collection': definition['collection'],
-                            'from_vertex_collections': definition['from'],
-                            'to_vertex_collections': definition['to'],
+                            "edge_collection": definition["collection"],
+                            "from_vertex_collections": definition["from"],
+                            "to_vertex_collections": definition["to"],
                         }
-                        for definition in body['edgeDefinitions']
+                        for definition in body["edgeDefinitions"]
                     ],
-                    'shard_count': body.get('numberOfShards'),
-                    'replication_factor': body.get('replicationFactor')
-                } for body in resp.body['graphs']
+                    "shard_count": body.get("numberOfShards"),
+                    "replication_factor": body.get("replicationFactor"),
+                }
+                for body in resp.body["graphs"]
             ]
 
         return self._execute(request, response_handler)
 
-    def create_graph(self,
-                     name,
-                     edge_definitions=None,
-                     orphan_collections=None,
-                     smart=None,
-                     smart_field=None,
-                     shard_count=None):
+    def create_graph(
+        self,
+        name: str,
+        edge_definitions: Optional[Sequence[Json]] = None,
+        orphan_collections: Optional[Sequence[str]] = None,
+        smart: Optional[bool] = None,
+        smart_field: Optional[str] = None,
+        shard_count: Optional[int] = None,
+    ) -> Result[Graph]:
         """Create a new graph.
 
         :param name: Graph name.
@@ -1231,25 +1176,25 @@ class Database(APIWrapper):
             definition entry is a dictionary with fields "edge_collection",
             "from_vertex_collections" and "to_vertex_collections" (see below
             for example).
-        :type edge_definitions: [dict]
+        :type edge_definitions: [dict] | None
         :param orphan_collections: Names of additional vertex collections that
             are not in edge definitions.
-        :type orphan_collections: [str]
+        :type orphan_collections: [str] | None
         :param smart: If set to True, sharding is enabled (see parameter
             **smart_field** below). Applies only to enterprise version of
             ArangoDB.
-        :type smart: bool
+        :type smart: bool | None
         :param smart_field: Document field used to shard the vertices of the
             graph. To use this, parameter **smart** must be set to True and
             every vertex in the graph must have the smart field. Applies only
             to enterprise version of ArangoDB.
-        :type smart_field: str
+        :type smart_field: str | None
         :param shard_count: Number of shards used for every collection in the
             graph. To use this, parameter **smart** must be set to True and
             every vertex in the graph must have the smart field. This number
             cannot be modified later once set. Applies only to enterprise
             version of ArangoDB.
-        :type shard_count: int
+        :type shard_count: int | None
         :return: Graph API wrapper.
         :rtype: arango.graph.Graph
         :raise arango.exceptions.GraphCreateError: If create fails.
@@ -1264,36 +1209,40 @@ class Database(APIWrapper):
                 'to_vertex_collections': ['lectures']
             }
         """
-        data = {'name': name}
+        data: Json = {"name": name}
         if edge_definitions is not None:
-            data['edgeDefinitions'] = [{
-                'collection': definition['edge_collection'],
-                'from': definition['from_vertex_collections'],
-                'to': definition['to_vertex_collections']
-            } for definition in edge_definitions]
+            data["edgeDefinitions"] = [
+                {
+                    "collection": definition["edge_collection"],
+                    "from": definition["from_vertex_collections"],
+                    "to": definition["to_vertex_collections"],
+                }
+                for definition in edge_definitions
+            ]
         if orphan_collections is not None:
-            data['orphanCollections'] = orphan_collections
+            data["orphanCollections"] = orphan_collections
         if smart is not None:  # pragma: no cover
-            data['isSmart'] = smart
+            data["isSmart"] = smart
         if smart_field is not None:  # pragma: no cover
-            data['smartGraphAttribute'] = smart_field
+            data["smartGraphAttribute"] = smart_field
         if shard_count is not None:  # pragma: no cover
-            data['numberOfShards'] = shard_count
+            data["numberOfShards"] = shard_count
 
-        request = Request(
-            method='post',
-            endpoint='/_api/gharial',
-            data=data
-        )
+        request = Request(method="post", endpoint="/_api/gharial", data=data)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Graph:
             if resp.is_success:
                 return Graph(self._conn, self._executor, name)
             raise GraphCreateError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def delete_graph(self, name, ignore_missing=False, drop_collections=None):
+    def delete_graph(
+        self,
+        name: str,
+        ignore_missing: bool = False,
+        drop_collections: Optional[bool] = None,
+    ) -> Result[bool]:
         """Drop the graph of the given name from the database.
 
         :param name: Graph name.
@@ -1302,23 +1251,21 @@ class Database(APIWrapper):
         :type ignore_missing: bool
         :param drop_collections: Drop the collections of the graph also. This
             is only if they are not in use by other graphs.
-        :type drop_collections: bool
+        :type drop_collections: bool | None
         :return: True if graph was deleted successfully, False if graph was not
             found and **ignore_missing** was set to True.
         :rtype: bool
         :raise arango.exceptions.GraphDeleteError: If delete fails.
         """
-        params = {}
+        params: Params = {}
         if drop_collections is not None:
-            params['dropCollections'] = drop_collections
+            params["dropCollections"] = drop_collections
 
         request = Request(
-            method='delete',
-            endpoint='/_api/gharial/{}'.format(name),
-            params=params
+            method="delete", endpoint=f"/_api/gharial/{name}", params=params
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.error_code == 1924 and ignore_missing:
                 return False
             if not resp.is_success:
@@ -1331,14 +1278,16 @@ class Database(APIWrapper):
     # Document Management #
     #######################
 
-    def has_document(self, document, rev=None, check_rev=True):
+    def has_document(
+        self, document: Json, rev: Optional[str] = None, check_rev: bool = True
+    ) -> Result[bool]:
         """Check if a document exists.
 
         :param document: Document ID or body with "_id" field.
         :type document: str | dict
         :param rev: Expected document revision. Overrides value of "_rev" field
             in **document** if present.
-        :type rev: str
+        :type rev: str | None
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
@@ -1348,19 +1297,19 @@ class Database(APIWrapper):
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
         return self._get_col_by_doc(document).has(
-            document=document,
-            rev=rev,
-            check_rev=check_rev
+            document=document, rev=rev, check_rev=check_rev
         )
 
-    def document(self, document, rev=None, check_rev=True):
+    def document(
+        self, document: Json, rev: Optional[str] = None, check_rev: bool = True
+    ) -> Result[Optional[Json]]:
         """Return a document.
 
         :param document: Document ID or body with "_id" field.
         :type document: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **document** if present.
-        :type rev: str
+        :type rev: str | None
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
@@ -1370,22 +1319,22 @@ class Database(APIWrapper):
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
         return self._get_col_by_doc(document).get(
-            document=document,
-            rev=rev,
-            check_rev=check_rev
+            document=document, rev=rev, check_rev=check_rev
         )
 
-    def insert_document(self,
-                        collection,
-                        document,
-                        return_new=False,
-                        sync=None,
-                        silent=False,
-                        overwrite=False,
-                        return_old=False,
-                        overwrite_mode=None,
-                        keep_none=None,
-                        merge=None):
+    def insert_document(
+        self,
+        collection: str,
+        document: Json,
+        return_new: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+        overwrite: bool = False,
+        return_old: bool = False,
+        overwrite_mode: Optional[str] = None,
+        keep_none: Optional[bool] = None,
+        merge: Optional[bool] = None,
+    ) -> Result[Union[bool, Json]]:
         """Insert a new document.
 
         :param collection: Collection name.
@@ -1398,7 +1347,7 @@ class Database(APIWrapper):
             metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -1412,15 +1361,15 @@ class Database(APIWrapper):
             exists already. Allowed values are "replace" (replace-insert) or
             "update" (update-insert). Implicitly sets the value of parameter
             **overwrite**.
-        :type overwrite_mode: str
+        :type overwrite_mode: str | None
         :param keep_none: If set to True, fields with value None are retained
             in the document. Otherwise, they are removed completely. Applies
             only when **overwrite_mode** is set to "update" (update-insert).
-        :type keep_none: bool
+        :type keep_none: bool | None
         :param merge: If set to True (default), sub-dictionaries are merged
             instead of the new one overwriting the old one. Applies only when
             **overwrite_mode** is set to "update" (update-insert).
-        :type merge: bool
+        :type merge: bool | None
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -1435,18 +1384,20 @@ class Database(APIWrapper):
             return_old=return_old,
             overwrite_mode=overwrite_mode,
             keep_none=keep_none,
-            merge=merge
+            merge=merge,
         )
 
-    def update_document(self,
-                        document,
-                        check_rev=True,
-                        merge=True,
-                        keep_none=True,
-                        return_new=False,
-                        return_old=False,
-                        sync=None,
-                        silent=False):
+    def update_document(
+        self,
+        document: Json,
+        check_rev: bool = True,
+        merge: bool = True,
+        keep_none: bool = True,
+        return_new: bool = False,
+        return_old: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Update a document.
 
         :param document: Partial or full document with the updated values. It
@@ -1457,16 +1408,16 @@ class Database(APIWrapper):
         :type check_rev: bool
         :param merge: If set to True, sub-dictionaries are merged instead of
             the new one overwriting the old one.
-        :type merge: bool
+        :type merge: bool | None
         :param keep_none: If set to True, fields with value None are retained
             in the document. Otherwise, they are removed completely.
-        :type keep_none: bool
+        :type keep_none: bool | None
         :param return_new: Include body of the new document in the result.
         :type return_new: bool
         :param return_old: Include body of the old document in the result.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -1484,16 +1435,18 @@ class Database(APIWrapper):
             return_new=return_new,
             return_old=return_old,
             sync=sync,
-            silent=silent
+            silent=silent,
         )
 
-    def replace_document(self,
-                         document,
-                         check_rev=True,
-                         return_new=False,
-                         return_old=False,
-                         sync=None,
-                         silent=False):
+    def replace_document(
+        self,
+        document: Json,
+        check_rev: bool = True,
+        return_new: bool = False,
+        return_old: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Replace a document.
 
         :param document: New document to replace the old one with. It must
@@ -1508,7 +1461,7 @@ class Database(APIWrapper):
         :param return_old: Include body of the old document in the result.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -1524,17 +1477,19 @@ class Database(APIWrapper):
             return_new=return_new,
             return_old=return_old,
             sync=sync,
-            silent=silent
+            silent=silent,
         )
 
-    def delete_document(self,
-                        document,
-                        rev=None,
-                        check_rev=True,
-                        ignore_missing=False,
-                        return_old=False,
-                        sync=None,
-                        silent=False):
+    def delete_document(
+        self,
+        document: Union[str, Json],
+        rev: Optional[str] = None,
+        check_rev: bool = True,
+        ignore_missing: bool = False,
+        return_old: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+    ) -> Result[Union[bool, Json]]:
         """Delete a document.
 
         :param document: Document ID, key or body. Document body must contain
@@ -1542,7 +1497,7 @@ class Database(APIWrapper):
         :type document: str | dict
         :param rev: Expected document revision. Overrides the value of "_rev"
             field in **document** if present.
-        :type rev: str
+        :type rev: str | None
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
@@ -1553,7 +1508,7 @@ class Database(APIWrapper):
         :param return_old: Include body of the old document in the result.
         :type return_old: bool
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
@@ -1572,33 +1527,31 @@ class Database(APIWrapper):
             ignore_missing=ignore_missing,
             return_old=return_old,
             sync=sync,
-            silent=silent
+            silent=silent,
         )
 
     ###################
     # Task Management #
     ###################
 
-    def tasks(self):
+    def tasks(self) -> Result[Jsons]:
         """Return all currently active server tasks.
 
         :return: Currently active server tasks.
         :rtype: [dict]
         :raise arango.exceptions.TaskListError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/tasks'
-        )
+        request = Request(method="get", endpoint="/_api/tasks")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Jsons:
             if not resp.is_success:
                 raise TaskListError(resp, request)
-            return resp.body
+            result: Jsons = resp.body
+            return result
 
         return self._execute(request, response_handler)
 
-    def task(self, task_id):
+    def task(self, task_id: str) -> Result[Json]:
         """Return the details of an active server task.
 
         :param task_id: Server task ID.
@@ -1607,27 +1560,24 @@ class Database(APIWrapper):
         :rtype: dict
         :raise arango.exceptions.TaskGetError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/tasks/{}'.format(task_id)
-        )
+        request = Request(method="get", endpoint=f"/_api/tasks/{task_id}")
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise TaskGetError(resp, request)
-            resp.body.pop('code', None)
-            resp.body.pop('error', None)
-            return resp.body
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_body(resp.body)
+            raise TaskGetError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def create_task(self,
-                    name,
-                    command,
-                    params=None,
-                    period=None,
-                    offset=None,
-                    task_id=None):
+    def create_task(
+        self,
+        name: str,
+        command: str,
+        params: Optional[Json] = None,
+        period: Optional[int] = None,
+        offset: Optional[int] = None,
+        task_id: Optional[str] = None,
+    ) -> Result[Json]:
         """Create a new server task.
 
         :param name: Name of the server task.
@@ -1635,48 +1585,42 @@ class Database(APIWrapper):
         :param command: Javascript command to execute.
         :type command: str
         :param params: Optional parameters passed into the Javascript command.
-        :type params: dict
+        :type params: dict | None
         :param period: Number of seconds to wait between executions. If set
             to 0, the new task will be "timed", meaning it will execute only
             once and be deleted afterwards.
-        :type period: int
+        :type period: int | None
         :param offset: Initial delay before execution in seconds.
-        :type offset: int
+        :type offset: int | None
         :param task_id: Pre-defined ID for the new server task.
-        :type task_id: str
+        :type task_id: str | None
         :return: Details of the new task.
         :rtype: dict
         :raise arango.exceptions.TaskCreateError: If create fails.
         """
-        data = {'name': name, 'command': command}
+        data: Json = {"name": name, "command": command}
         if params is not None:
-            data['params'] = params
+            data["params"] = params
         if task_id is not None:
-            data['id'] = task_id
+            data["id"] = task_id
         if period is not None:
-            data['period'] = period
+            data["period"] = period
         if offset is not None:
-            data['offset'] = offset
+            data["offset"] = offset
 
         if task_id is None:
-            task_id = ''
+            task_id = ""
 
-        request = Request(
-            method='post',
-            endpoint='/_api/tasks/{}'.format(task_id),
-            data=data
-        )
+        request = Request(method="post", endpoint=f"/_api/tasks/{task_id}", data=data)
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise TaskCreateError(resp, request)
-            resp.body.pop('code', None)
-            resp.body.pop('error', None)
-            return resp.body
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_body(resp.body)
+            raise TaskCreateError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def delete_task(self, task_id, ignore_missing=False):
+    def delete_task(self, task_id: str, ignore_missing: bool = False) -> Result[bool]:
         """Delete a server task.
 
         :param task_id: Server task ID.
@@ -1688,12 +1632,9 @@ class Database(APIWrapper):
         :rtype: bool
         :raise arango.exceptions.TaskDeleteError: If delete fails.
         """
-        request = Request(
-            method='delete',
-            endpoint='/_api/tasks/{}'.format(task_id)
-        )
+        request = Request(method="delete", endpoint=f"/_api/tasks/{task_id}")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.error_code == 1852 and ignore_missing:
                 return False
             if not resp.is_success:
@@ -1706,7 +1647,7 @@ class Database(APIWrapper):
     # User Management #
     ###################
 
-    def has_user(self, username):
+    def has_user(self, username: str) -> Result[bool]:
         """Check if user exists.
 
         :param username: Username.
@@ -1714,32 +1655,39 @@ class Database(APIWrapper):
         :return: True if user exists, False otherwise.
         :rtype: bool
         """
-        return any(user['username'] == username for user in self.users())
+        request = Request(method="get", endpoint="/_api/user")
 
-    def users(self):
+        def response_handler(resp: Response) -> bool:
+            if not resp.is_success:
+                raise UserListError(resp, request)
+            return any(user["user"] == username for user in resp.body["result"])
+
+        return self._execute(request, response_handler)
+
+    def users(self) -> Result[Jsons]:
         """Return all user details.
 
         :return: List of user details.
         :rtype: [dict]
         :raise arango.exceptions.UserListError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/user'
-        )
+        request = Request(method="get", endpoint="/_api/user")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Jsons:
             if not resp.is_success:
                 raise UserListError(resp, request)
-            return [{
-                'username': record['user'],
-                'active': record['active'],
-                'extra': record['extra'],
-            } for record in resp.body['result']]
+            return [
+                {
+                    "username": record["user"],
+                    "active": record["active"],
+                    "extra": record["extra"],
+                }
+                for record in resp.body["result"]
+            ]
 
         return self._execute(request, response_handler)
 
-    def user(self, username):
+    def user(self, username: str) -> Result[Json]:
         """Return user details.
 
         :param username: Username.
@@ -1748,99 +1696,110 @@ class Database(APIWrapper):
         :rtype: dict
         :raise arango.exceptions.UserGetError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/user/{}'.format(username)
-        )
+        request = Request(method="get", endpoint=f"/_api/user/{username}")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise UserGetError(resp, request)
             return {
-                'username': resp.body['user'],
-                'active': resp.body['active'],
-                'extra': resp.body['extra']
+                "username": resp.body["user"],
+                "active": resp.body["active"],
+                "extra": resp.body["extra"],
             }
 
         return self._execute(request, response_handler)
 
-    def create_user(self, username, password, active=True, extra=None):
+    def create_user(
+        self,
+        username: str,
+        password: Optional[str] = None,
+        active: Optional[bool] = None,
+        extra: Optional[Json] = None,
+    ) -> Result[Json]:
         """Create a new user.
 
         :param username: Username.
         :type username: str
         :param password: Password.
-        :type password: str
+        :type password: str | None
         :param active: True if user is active, False otherwise.
-        :type active: bool
+        :type active: bool | None
         :param extra: Additional data for the user.
-        :type extra: dict
+        :type extra: dict | None
         :return: New user details.
         :rtype: dict
         :raise arango.exceptions.UserCreateError: If create fails.
         """
-        data = {'user': username, 'passwd': password, 'active': active}
+        data: Json = {"user": username, "passwd": password, "active": active}
         if extra is not None:
-            data['extra'] = extra
+            data["extra"] = extra
 
-        request = Request(
-            method='post',
-            endpoint='/_api/user',
-            data=data
-        )
+        request = Request(method="post", endpoint="/_api/user", data=data)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise UserCreateError(resp, request)
             return {
-                'username': resp.body['user'],
-                'active': resp.body['active'],
-                'extra': resp.body['extra'],
+                "username": resp.body["user"],
+                "active": resp.body["active"],
+                "extra": resp.body["extra"],
             }
 
         return self._execute(request, response_handler)
 
-    def update_user(self, username, password=None, active=None, extra=None):
+    def update_user(
+        self,
+        username: str,
+        password: Optional[str] = None,
+        active: Optional[bool] = None,
+        extra: Optional[Json] = None,
+    ) -> Result[Json]:
         """Update a user.
 
         :param username: Username.
         :type username: str
         :param password: New password.
-        :type password: str
+        :type password: str | None
         :param active: Whether the user is active.
-        :type active: bool
+        :type active: bool | None
         :param extra: Additional data for the user.
-        :type extra: dict
+        :type extra: dict | None
         :return: New user details.
         :rtype: dict
         :raise arango.exceptions.UserUpdateError: If update fails.
         """
-        data = {}
+        data: Json = {}
         if password is not None:
-            data['passwd'] = password
+            data["passwd"] = password
         if active is not None:
-            data['active'] = active
+            data["active"] = active
         if extra is not None:
-            data['extra'] = extra
+            data["extra"] = extra
 
         request = Request(
-            method='patch',
-            endpoint='/_api/user/{user}'.format(user=username),
-            data=data
+            method="patch",
+            endpoint=f"/_api/user/{username}",
+            data=data,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise UserUpdateError(resp, request)
             return {
-                'username': resp.body['user'],
-                'active': resp.body['active'],
-                'extra': resp.body['extra'],
+                "username": resp.body["user"],
+                "active": resp.body["active"],
+                "extra": resp.body["extra"],
             }
 
         return self._execute(request, response_handler)
 
-    def replace_user(self, username, password, active=None, extra=None):
+    def replace_user(
+        self,
+        username: str,
+        password: str,
+        active: Optional[bool] = None,
+        extra: Optional[Json] = None,
+    ) -> Result[Json]:
         """Replace a user.
 
         :param username: Username.
@@ -1848,37 +1807,33 @@ class Database(APIWrapper):
         :param password: New password.
         :type password: str
         :param active: Whether the user is active.
-        :type active: bool
+        :type active: bool | None
         :param extra: Additional data for the user.
-        :type extra: dict
+        :type extra: dict | None
         :return: New user details.
         :rtype: dict
         :raise arango.exceptions.UserReplaceError: If replace fails.
         """
-        data = {'user': username, 'passwd': password}
+        data: Json = {"user": username, "passwd": password}
         if active is not None:
-            data['active'] = active
+            data["active"] = active
         if extra is not None:
-            data['extra'] = extra
+            data["extra"] = extra
 
-        request = Request(
-            method='put',
-            endpoint='/_api/user/{user}'.format(user=username),
-            data=data
-        )
+        request = Request(method="put", endpoint=f"/_api/user/{username}", data=data)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
                 return {
-                    'username': resp.body['user'],
-                    'active': resp.body['active'],
-                    'extra': resp.body['extra'],
+                    "username": resp.body["user"],
+                    "active": resp.body["active"],
+                    "extra": resp.body["extra"],
                 }
             raise UserReplaceError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def delete_user(self, username, ignore_missing=False):
+    def delete_user(self, username: str, ignore_missing: bool = False) -> Result[bool]:
         """Delete a user.
 
         :param username: Username.
@@ -1890,12 +1845,9 @@ class Database(APIWrapper):
         :rtype: bool
         :raise arango.exceptions.UserDeleteError: If delete fails.
         """
-        request = Request(
-            method='delete',
-            endpoint='/_api/user/{user}'.format(user=username)
-        )
+        request = Request(method="delete", endpoint=f"/_api/user/{username}")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.is_success:
                 return True
             elif resp.status_code == 404 and ignore_missing:
@@ -1908,7 +1860,7 @@ class Database(APIWrapper):
     # Permission Management #
     #########################
 
-    def permissions(self, username):
+    def permissions(self, username: str) -> Result[Json]:
         """Return user permissions for all databases and collections.
 
         :param username: Username.
@@ -1918,19 +1870,22 @@ class Database(APIWrapper):
         :raise arango.exceptions.PermissionListError: If retrieval fails.
         """
         request = Request(
-            method='get',
-            endpoint='/_api/user/{}/database'.format(username),
-            params={'full': True}
+            method="get",
+            endpoint=f"/_api/user/{username}/database",
+            params={"full": True},
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
-                return resp.body['result']
+                result: Json = resp.body["result"]
+                return result
             raise PermissionListError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def permission(self, username, database, collection=None):
+    def permission(
+        self, username: str, database: str, collection: Optional[str] = None
+    ) -> Result[str]:
         """Return user permission for a specific database or collection.
 
         :param username: Username.
@@ -1938,61 +1893,61 @@ class Database(APIWrapper):
         :param database: Database name.
         :type database: str
         :param collection: Collection name.
-        :type collection: str
+        :type collection: str | None
         :return: Permission for given database or collection.
         :rtype: str
         :raise arango.exceptions.PermissionGetError: If retrieval fails.
         """
-        endpoint = '/_api/user/{}/database/{}'.format(username, database)
+        endpoint = f"/_api/user/{username}/database/{database}"
         if collection is not None:
-            endpoint += '/' + collection
-        request = Request(method='get', endpoint=endpoint)
+            endpoint += "/" + collection
+        request = Request(method="get", endpoint=endpoint)
 
-        def response_handler(resp):
-            if not resp.is_success:
-                raise PermissionGetError(resp, request)
-            return resp.body['result']
+        def response_handler(resp: Response) -> str:
+            if resp.is_success:
+                return str(resp.body["result"])
+            raise PermissionGetError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def update_permission(self,
-                          username,
-                          permission,
-                          database,
-                          collection=None):
+    def update_permission(
+        self,
+        username: str,
+        permission: str,
+        database: str,
+        collection: Optional[str] = None,
+    ) -> Result[bool]:
         """Update user permission for a specific database or collection.
 
         :param username: Username.
         :type username: str
-        :param database: Database name.
-        :type database: str
-        :param collection: Collection name.
-        :type collection: str
         :param permission: Allowed values are "rw" (read and write), "ro"
             (read only) or "none" (no access).
         :type permission: str
+        :param database: Database name.
+        :type database: str
+        :param collection: Collection name.
+        :type collection: str | None
         :return: True if access was granted successfully.
         :rtype: bool
         :raise arango.exceptions.PermissionUpdateError: If update fails.
         """
-        endpoint = '/_api/user/{}/database/{}'.format(username, database)
+        endpoint = f"/_api/user/{username}/database/{database}"
         if collection is not None:
-            endpoint += '/' + collection
+            endpoint += "/" + collection
 
-        request = Request(
-            method='put',
-            endpoint=endpoint,
-            data={'grant': permission}
-        )
+        request = Request(method="put", endpoint=endpoint, data={"grant": permission})
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.is_success:
                 return True
             raise PermissionUpdateError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def reset_permission(self, username, database, collection=None):
+    def reset_permission(
+        self, username: str, database: str, collection: Optional[str] = None
+    ) -> Result[bool]:
         """Reset user permission for a specific database or collection.
 
         :param username: Username.
@@ -2005,13 +1960,13 @@ class Database(APIWrapper):
         :rtype: bool
         :raise arango.exceptions.PermissionRestError: If reset fails.
         """
-        endpoint = '/_api/user/{}/database/{}'.format(username, database)
+        endpoint = f"/_api/user/{username}/database/{database}"
         if collection is not None:
-            endpoint += '/' + collection
+            endpoint += "/" + collection
 
-        request = Request(method='delete', endpoint=endpoint)
+        request = Request(method="delete", endpoint=endpoint)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.is_success:
                 return True
             raise PermissionResetError(resp, request)
@@ -2022,7 +1977,7 @@ class Database(APIWrapper):
     # Async Job Management #
     ########################
 
-    def async_jobs(self, status, count=None):
+    def async_jobs(self, status: str, count: Optional[int] = None) -> Result[List[str]]:
         """Return IDs of async jobs with given status.
 
         :param status: Job status (e.g. "pending", "done").
@@ -2033,24 +1988,21 @@ class Database(APIWrapper):
         :rtype: [str]
         :raise arango.exceptions.AsyncJobListError: If retrieval fails.
         """
-        params = {}
+        params: Params = {}
         if count is not None:
-            params['count'] = count
+            params["count"] = count
 
-        request = Request(
-            method='get',
-            endpoint='/_api/job/{}'.format(status),
-            params=params
-        )
+        request = Request(method="get", endpoint=f"/_api/job/{status}", params=params)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> List[str]:
             if resp.is_success:
-                return resp.body
+                result: List[str] = resp.body
+                return result
             raise AsyncJobListError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def clear_async_jobs(self, threshold=None):
+    def clear_async_jobs(self, threshold: Optional[int] = None) -> Result[bool]:
         """Clear async job results from the server.
 
         Async jobs that are still queued or running are not stopped.
@@ -2058,25 +2010,21 @@ class Database(APIWrapper):
         :param threshold: If specified, only the job results created prior to
             the threshold (a unix timestamp) are deleted. Otherwise, all job
             results are deleted.
-        :type threshold: int
+        :type threshold: int | None
         :return: True if job results were cleared successfully.
         :rtype: bool
         :raise arango.exceptions.AsyncJobClearError: If operation fails.
         """
         if threshold is None:
-            url = '/_api/job/all'
-            params = None
+            request = Request(method="delete", endpoint="/_api/job/all")
         else:
-            url = '/_api/job/expired'
-            params = {'stamp': threshold}
+            request = Request(
+                method="delete",
+                endpoint="/_api/job/expired",
+                params={"stamp": threshold},
+            )
 
-        request = Request(
-            method='delete',
-            endpoint=url,
-            params=params
-        )
-
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.is_success:
                 return True
             raise AsyncJobClearError(resp, request)
@@ -2087,42 +2035,41 @@ class Database(APIWrapper):
     # View Management #
     ###################
 
-    def views(self):
+    def views(self) -> Result[Jsons]:
         """Return list of views and their summaries.
 
         :return: List of views.
         :rtype: [dict]
         :raise arango.exceptions.ViewListError: If retrieval fails.
         """
-        request = Request(method='get', endpoint='/_api/view')
+        request = Request(method="get", endpoint="/_api/view")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Jsons:
             if resp.is_success:
-                return [format_view(view) for view in resp.body['result']]
+                return [format_view(view) for view in resp.body["result"]]
             raise ViewListError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def view(self, name):
+    def view(self, name: str) -> Result[Json]:
         """Return view details.
 
         :return: View details.
         :rtype: dict
         :raise arango.exceptions.ViewGetError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/view/{}/properties'.format(name)
-        )
+        request = Request(method="get", endpoint=f"/_api/view/{name}/properties")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
                 return format_view(resp.body)
             raise ViewGetError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def create_view(self, name, view_type, properties=None):
+    def create_view(
+        self, name: str, view_type: str, properties: Optional[Json] = None
+    ) -> Result[Json]:
         """Create a view.
 
         :param name: View name.
@@ -2136,25 +2083,21 @@ class Database(APIWrapper):
         :rtype: dict
         :raise arango.exceptions.ViewCreateError: If create fails.
         """
-        data = {'name': name, 'type': view_type}
+        data: Json = {"name": name, "type": view_type}
 
         if properties is not None:
             data.update(properties)
 
-        request = Request(
-            method='post',
-            endpoint='/_api/view',
-            data=data
-        )
+        request = Request(method="post", endpoint="/_api/view", data=data)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
                 return format_view(resp.body)
             raise ViewCreateError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def update_view(self, name, properties):
+    def update_view(self, name: str, properties: Json) -> Result[Json]:
         """Update a view.
 
         :param name: View name.
@@ -2167,19 +2110,19 @@ class Database(APIWrapper):
         :raise arango.exceptions.ViewUpdateError: If update fails.
         """
         request = Request(
-            method='patch',
-            endpoint='/_api/view/{}/properties'.format(name),
-            data=properties
+            method="patch",
+            endpoint=f"/_api/view/{name}/properties",
+            data=properties,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
                 return format_view(resp.body)
             raise ViewUpdateError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def replace_view(self, name, properties):
+    def replace_view(self, name: str, properties: Json) -> Result[Json]:
         """Replace a view.
 
         :param name: View name.
@@ -2192,19 +2135,19 @@ class Database(APIWrapper):
         :raise arango.exceptions.ViewReplaceError: If replace fails.
         """
         request = Request(
-            method='put',
-            endpoint='/_api/view/{}/properties'.format(name),
-            data=properties
+            method="put",
+            endpoint=f"/_api/view/{name}/properties",
+            data=properties,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
                 return format_view(resp.body)
             raise ViewReplaceError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def delete_view(self, name, ignore_missing=False):
+    def delete_view(self, name: str, ignore_missing: bool = False) -> Result[bool]:
         """Delete a view.
 
         :param name: View name.
@@ -2216,12 +2159,9 @@ class Database(APIWrapper):
         :rtype: bool
         :raise arango.exceptions.ViewDeleteError: If delete fails.
         """
-        request = Request(
-            method='delete',
-            endpoint='/_api/view/{}'.format(name)
-        )
+        request = Request(method="delete", endpoint=f"/_api/view/{name}")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.error_code == 1203 and ignore_missing:
                 return False
             if resp.is_success:
@@ -2230,24 +2170,24 @@ class Database(APIWrapper):
 
         return self._execute(request, response_handler)
 
-    def rename_view(self, name, new_name):
+    def rename_view(self, name: str, new_name: str) -> Result[bool]:
         """Rename a view.
 
         :param name: View name.
         :type name: str
         :param new_name: New view name.
         :type new_name: str
-        :return: View details.
-        :rtype: dict
+        :return: True if view was renamed successfully.
+        :rtype: bool
         :raise arango.exceptions.ViewRenameError: If delete fails.
         """
         request = Request(
-            method='put',
-            endpoint='/_api/view/{}/rename'.format(name),
-            data={'name': new_name}
+            method="put",
+            endpoint=f"/_api/view/{name}/rename",
+            data={"name": new_name},
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.is_success:
                 return True
             raise ViewRenameError(resp, request)
@@ -2258,37 +2198,35 @@ class Database(APIWrapper):
     # ArangoSearch View Management #
     ################################
 
-    def create_arangosearch_view(self, name, properties=None):
+    def create_arangosearch_view(
+        self, name: str, properties: Optional[Json] = None
+    ) -> Result[Json]:
         """Create an ArangoSearch view.
 
         :param name: View name.
         :type name: str
         :param properties: View properties. For more information see
             https://www.arangodb.com/docs/stable/http/views-arangosearch.html
-        :type properties: dict
+        :type properties: dict | None
         :return: View details.
         :rtype: dict
         :raise arango.exceptions.ViewCreateError: If create fails.
         """
-        data = {'name': name, 'type': 'arangosearch'}
+        data: Json = {"name": name, "type": "arangosearch"}
 
         if properties is not None:
             data.update(properties)
 
-        request = Request(
-            method='post',
-            endpoint='/_api/view#ArangoSearch',
-            data=data
-        )
+        request = Request(method="post", endpoint="/_api/view#ArangoSearch", data=data)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
                 return format_view(resp.body)
             raise ViewCreateError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def update_arangosearch_view(self, name, properties):
+    def update_arangosearch_view(self, name: str, properties: Json) -> Result[Json]:
         """Update an ArangoSearch view.
 
         :param name: View name.
@@ -2301,19 +2239,19 @@ class Database(APIWrapper):
         :raise arango.exceptions.ViewUpdateError: If update fails.
         """
         request = Request(
-            method='patch',
-            endpoint='/_api/view/{}/properties#ArangoSearch'.format(name),
-            data=properties
+            method="patch",
+            endpoint=f"/_api/view/{name}/properties#ArangoSearch",
+            data=properties,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
                 return format_view(resp.body)
             raise ViewUpdateError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def replace_arangosearch_view(self, name, properties):
+    def replace_arangosearch_view(self, name: str, properties: Json) -> Result[Json]:
         """Replace an ArangoSearch view.
 
         :param name: View name.
@@ -2326,12 +2264,12 @@ class Database(APIWrapper):
         :raise arango.exceptions.ViewReplaceError: If replace fails.
         """
         request = Request(
-            method='put',
-            endpoint='/_api/view/{}/properties#ArangoSearch'.format(name),
-            data=properties
+            method="put",
+            endpoint=f"/_api/view/{name}/properties#ArangoSearch",
+            data=properties,
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
                 return format_view(resp.body)
             raise ViewReplaceError(resp, request)
@@ -2342,28 +2280,24 @@ class Database(APIWrapper):
     # Analyzer Management #
     #######################
 
-    def analyzers(self):
+    def analyzers(self) -> Result[Jsons]:
         """Return list of analyzers.
 
         :return: List of analyzers.
         :rtype: [dict]
         :raise arango.exceptions.AnalyzerListError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/analyzer'
-        )
+        request = Request(method="get", endpoint="/_api/analyzer")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Jsons:
             if resp.is_success:
-                resp.body.pop('error')
-                resp.body.pop('code')
-                return resp.body['result']
+                result: Jsons = resp.body["result"]
+                return result
             raise AnalyzerListError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def analyzer(self, name):
+    def analyzer(self, name: str) -> Result[Json]:
         """Return analyzer details.
 
         :param name: Analyzer name.
@@ -2372,25 +2306,22 @@ class Database(APIWrapper):
         :rtype: dict
         :raise arango.exceptions.AnalyzerGetError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/analyzer/{}'.format(name)
-        )
+        request = Request(method="get", endpoint=f"/_api/analyzer/{name}")
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
-                resp.body.pop('error')
-                resp.body.pop('code')
-                return resp.body
+                return format_body(resp.body)
             raise AnalyzerGetError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def create_analyzer(self,
-                        name,
-                        analyzer_type,
-                        properties=None,
-                        features=None):
+    def create_analyzer(
+        self,
+        name: str,
+        analyzer_type: str,
+        properties: Optional[Json] = None,
+        features: Optional[Sequence[str]] = None,
+    ) -> Result[Json]:
         """Create an analyzer.
 
         :param name: Analyzer name.
@@ -2398,35 +2329,34 @@ class Database(APIWrapper):
         :param analyzer_type: Analyzer type.
         :type analyzer_type: str
         :param properties: Analyzer properties.
-        :type properties: dict
+        :type properties: dict | None
         :param features: Analyzer features.
-        :type features: list
+        :type features: list | None
         :return: Analyzer details.
         :rtype: dict
         :raise arango.exceptions.AnalyzerCreateError: If create fails.
         """
-        data = {'name': name, 'type': analyzer_type}
+        data: Json = {"name": name, "type": analyzer_type}
 
         if properties is not None:
-            data['properties'] = properties
+            data["properties"] = properties
 
         if features is not None:
-            data['features'] = features
+            data["features"] = features
 
-        request = Request(
-            method='post',
-            endpoint='/_api/analyzer',
-            data=data
-        )
+        request = Request(method="post", endpoint="/_api/analyzer", data=data)
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> Json:
             if resp.is_success:
-                return resp.body
+                result: Json = resp.body
+                return result
             raise AnalyzerCreateError(resp, request)
 
         return self._execute(request, response_handler)
 
-    def delete_analyzer(self, name, force=False, ignore_missing=False):
+    def delete_analyzer(
+        self, name: str, force: bool = False, ignore_missing: bool = False
+    ) -> Result[bool]:
         """Delete an analyzer.
 
         :param name: Analyzer name.
@@ -2441,12 +2371,12 @@ class Database(APIWrapper):
         :raise arango.exceptions.AnalyzerDeleteError: If delete fails.
         """
         request = Request(
-            method='delete',
-            endpoint='/_api/analyzer/{}'.format(name),
-            params={'force': force}
+            method="delete",
+            endpoint=f"/_api/analyzer/{name}",
+            params={"force": force},
         )
 
-        def response_handler(resp):
+        def response_handler(resp: Response) -> bool:
             if resp.error_code in {1202, 404} and ignore_missing:
                 return False
             if resp.is_success:
@@ -2457,22 +2387,15 @@ class Database(APIWrapper):
 
 
 class StandardDatabase(Database):
-    """Standard database API wrapper.
+    """Standard database API wrapper."""
 
-    :param connection: HTTP connection.
-    :type connection: arango.connection.Connection
-    """
+    def __init__(self, connection: Connection) -> None:
+        super().__init__(connection=connection, executor=DefaultApiExecutor(connection))
 
-    def __init__(self, connection):
-        super(StandardDatabase, self).__init__(
-            connection=connection,
-            executor=DefaultExecutor(connection)
-        )
+    def __repr__(self) -> str:
+        return f"<StandardDatabase {self.name}>"
 
-    def __repr__(self):
-        return '<StandardDatabase {}>'.format(self.name)
-
-    def begin_async_execution(self, return_result=True):
+    def begin_async_execution(self, return_result: bool = True) -> "AsyncDatabase":
         """Begin async execution.
 
         :param return_result: If set to True, API executions return instances
@@ -2485,7 +2408,7 @@ class StandardDatabase(Database):
         """
         return AsyncDatabase(self._conn, return_result)
 
-    def begin_batch_execution(self, return_result=True):
+    def begin_batch_execution(self, return_result: bool = True) -> "BatchDatabase":
         """Begin batch execution.
 
         :param return_result: If set to True, API executions return instances
@@ -2498,36 +2421,38 @@ class StandardDatabase(Database):
         """
         return BatchDatabase(self._conn, return_result)
 
-    def begin_transaction(self,
-                          read=None,
-                          write=None,
-                          exclusive=None,
-                          sync=None,
-                          allow_implicit=None,
-                          lock_timeout=None,
-                          max_size=None):
+    def begin_transaction(
+        self,
+        read: Union[str, Sequence[str], None] = None,
+        write: Union[str, Sequence[str], None] = None,
+        exclusive: Union[str, Sequence[str], None] = None,
+        sync: Optional[bool] = None,
+        allow_implicit: Optional[bool] = None,
+        lock_timeout: Optional[int] = None,
+        max_size: Optional[int] = None,
+    ) -> "TransactionDatabase":
         """Begin a transaction.
 
         :param read: Name(s) of collections read during transaction. Read-only
             collections are added lazily but should be declared if possible to
             avoid deadlocks.
-        :type read: str | [str]
+        :type read: str | [str] | None
         :param write: Name(s) of collections written to during transaction with
             shared access.
-        :type write: str | [str]
+        :type write: str | [str] | None
         :param exclusive: Name(s) of collections written to during transaction
             with exclusive access.
-        :type exclusive: str | [str]
+        :type exclusive: str | [str] | None
         :param sync: Block until operation is synchronized to disk.
-        :type sync: bool
+        :type sync: bool | None
         :param allow_implicit: Allow reading from undeclared collections.
-        :type allow_implicit: bool
+        :type allow_implicit: bool | None
         :param lock_timeout: Timeout for waiting on collection locks. If not
             given, a default value is used. Setting it to 0 disables the
             timeout.
-        :type lock_timeout: int
+        :type lock_timeout: int | None
         :param max_size: Max transaction size in bytes.
-        :type max_size:
+        :type max_size: int | None
         :return: Database API wrapper object specifically for transactions.
         :rtype: arango.database.TransactionDatabase
         """
@@ -2539,7 +2464,7 @@ class StandardDatabase(Database):
             sync=sync,
             allow_implicit=allow_implicit,
             lock_timeout=lock_timeout,
-            max_size=max_size
+            max_size=max_size,
         )
 
 
@@ -2549,7 +2474,6 @@ class AsyncDatabase(Database):
     See :func:`arango.database.StandardDatabase.begin_async_execution`.
 
     :param connection: HTTP connection.
-    :type connection: arango.connection.Connection
     :param return_result: If set to True, API executions return instances of
         :class:`arango.job.AsyncJob`, which you can use to retrieve results
         from server once available. If set to False, API executions return None
@@ -2557,14 +2481,14 @@ class AsyncDatabase(Database):
     :type return_result: bool
     """
 
-    def __init__(self, connection, return_result):
-        super(AsyncDatabase, self).__init__(
-            connection=connection,
-            executor=AsyncExecutor(connection, return_result)
+    def __init__(self, connection: Connection, return_result: bool) -> None:
+        self._executor: AsyncApiExecutor
+        super().__init__(
+            connection=connection, executor=AsyncApiExecutor(connection, return_result)
         )
 
-    def __repr__(self):
-        return '<AsyncDatabase {}>'.format(self.name)
+    def __repr__(self) -> str:
+        return f"<AsyncDatabase {self.name}>"
 
 
 class BatchDatabase(Database):
@@ -2573,7 +2497,6 @@ class BatchDatabase(Database):
     See :func:`arango.database.StandardDatabase.begin_batch_execution`.
 
     :param connection: HTTP connection.
-    :type connection: arango.connection.Connection
     :param return_result: If set to True, API executions return instances of
         :class:`arango.job.BatchJob` that are populated with results on commit.
         If set to False, API executions return None and no results are tracked
@@ -2581,23 +2504,23 @@ class BatchDatabase(Database):
     :type return_result: bool
     """
 
-    def __init__(self, connection, return_result):
-        super(BatchDatabase, self).__init__(
-            connection=connection,
-            executor=BatchExecutor(connection, return_result)
+    def __init__(self, connection: Connection, return_result: bool) -> None:
+        self._executor: BatchApiExecutor
+        super().__init__(
+            connection=connection, executor=BatchApiExecutor(connection, return_result)
         )
 
-    def __repr__(self):
-        return '<BatchDatabase {}>'.format(self.name)
+    def __repr__(self) -> str:
+        return f"<BatchDatabase {self.name}>"
 
-    def __enter__(self):
+    def __enter__(self) -> "BatchDatabase":
         return self
 
-    def __exit__(self, exception, *_):
+    def __exit__(self, exception: Exception, *_: Any) -> None:
         if exception is None:
             self._executor.commit()
 
-    def queued_jobs(self):
+    def queued_jobs(self) -> Optional[Sequence[BatchJob[Any]]]:
         """Return the queued batch jobs.
 
         :return: Queued batch jobs or None if **return_result** parameter was
@@ -2606,7 +2529,7 @@ class BatchDatabase(Database):
         """
         return self._executor.jobs
 
-    def commit(self):
+    def commit(self) -> Optional[Sequence[BatchJob[Any]]]:
         """Execute the queued requests in a single batch API request.
 
         If **return_result** parameter was set to True during initialization,
@@ -2629,40 +2552,42 @@ class TransactionDatabase(Database):
     See :func:`arango.database.StandardDatabase.begin_transaction`.
 
     :param connection: HTTP connection.
-    :type connection: arango.connection.Connection
     :param read: Name(s) of collections read during transaction. Read-only
         collections are added lazily but should be declared if possible to
         avoid deadlocks.
-    :type read: str | [str]
+    :type read: str | [str] | None
     :param write: Name(s) of collections written to during transaction with
         shared access.
-    :type write: str | [str]
+    :type write: str | [str] | None
     :param exclusive: Name(s) of collections written to during transaction
         with exclusive access.
-    :type exclusive: str | [str]
+    :type exclusive: str | [str] | None
     :param sync: Block until operation is synchronized to disk.
-    :type sync: bool
+    :type sync: bool | None
     :param allow_implicit: Allow reading from undeclared collections.
-    :type allow_implicit: bool
+    :type allow_implicit: bool | None
     :param lock_timeout: Timeout for waiting on collection locks. If not given,
         a default value is used. Setting it to 0 disables the timeout.
-    :type lock_timeout: int
+    :type lock_timeout: int | None
     :param max_size: Max transaction size in bytes.
-    :type max_size: int
+    :type max_size: int | None
     """
 
-    def __init__(self,
-                 connection,
-                 read=None,
-                 write=None,
-                 exclusive=None,
-                 sync=None,
-                 allow_implicit=None,
-                 lock_timeout=None,
-                 max_size=None):
-        super(TransactionDatabase, self).__init__(
+    def __init__(
+        self,
+        connection: Connection,
+        read: Union[str, Sequence[str], None] = None,
+        write: Union[str, Sequence[str], None] = None,
+        exclusive: Union[str, Sequence[str], None] = None,
+        sync: Optional[bool] = None,
+        allow_implicit: Optional[bool] = None,
+        lock_timeout: Optional[int] = None,
+        max_size: Optional[int] = None,
+    ) -> None:
+        self._executor: TransactionApiExecutor
+        super().__init__(
             connection=connection,
-            executor=TransactionExecutor(
+            executor=TransactionApiExecutor(
                 connection=connection,
                 read=read,
                 write=write,
@@ -2670,15 +2595,15 @@ class TransactionDatabase(Database):
                 sync=sync,
                 allow_implicit=allow_implicit,
                 lock_timeout=lock_timeout,
-                max_size=max_size
-            )
+                max_size=max_size,
+            ),
         )
 
-    def __repr__(self):
-        return '<TransactionDatabase {}>'.format(self.name)
+    def __repr__(self) -> str:
+        return f"<TransactionDatabase {self.name}>"
 
     @property
-    def transaction_id(self):
+    def transaction_id(self) -> str:
         """Return the transaction ID.
 
         :return: Transaction ID.
@@ -2686,7 +2611,7 @@ class TransactionDatabase(Database):
         """
         return self._executor.id
 
-    def transaction_status(self):
+    def transaction_status(self) -> str:
         """Return the transaction status.
 
         :return: Transaction status.
@@ -2695,7 +2620,7 @@ class TransactionDatabase(Database):
         """
         return self._executor.status()
 
-    def commit_transaction(self):
+    def commit_transaction(self) -> bool:
         """Commit the transaction.
 
         :return: True if commit was successful.
@@ -2704,7 +2629,7 @@ class TransactionDatabase(Database):
         """
         return self._executor.commit()
 
-    def abort_transaction(self):
+    def abort_transaction(self) -> bool:
         """Abort the transaction.
 
         :return: True if the abort operation was successful.

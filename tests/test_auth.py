@@ -1,22 +1,13 @@
-from __future__ import absolute_import, unicode_literals
-
-from six import string_types
-from arango.connection import (
-    BasicConnection,
-    JWTConnection,
-    JWTSuperuserConnection
-)
-from arango.exceptions import (
+from arango.connection import BasicConnection, JwtConnection, JwtSuperuserConnection
+from arango.errno import FORBIDDEN, HTTP_UNAUTHORIZED
+from arango.exceptions import (  # JWTSecretListError,; JWTSecretReloadError,
     JWTAuthError,
-    # JWTSecretListError,
-    # JWTSecretReloadError,
     ServerEncryptionError,
     ServerTLSError,
     ServerTLSReloadError,
-    ServerVersionError
+    ServerVersionError,
 )
-from arango.errno import FORBIDDEN, HTTP_UNAUTHORIZED
-from tests.helpers import assert_raises, generate_string, generate_jwt
+from tests.helpers import assert_raises, generate_jwt, generate_string
 
 
 def test_auth_invalid_method(client, db_name, username, password):
@@ -26,9 +17,9 @@ def test_auth_invalid_method(client, db_name, username, password):
             username=username,
             password=password,
             verify=True,
-            auth_method='bad_method'
+            auth_method="bad_method",
         )
-    assert 'invalid auth_method' in str(err.value)
+    assert "invalid auth_method" in str(err.value)
 
 
 def test_auth_basic(client, db_name, username, password):
@@ -37,10 +28,10 @@ def test_auth_basic(client, db_name, username, password):
         username=username,
         password=password,
         verify=True,
-        auth_method='basic'
+        auth_method="basic",
     )
     assert isinstance(db.conn, BasicConnection)
-    assert isinstance(db.version(), string_types)
+    assert isinstance(db.version(), str)
     assert isinstance(db.properties(), dict)
 
 
@@ -50,25 +41,25 @@ def test_auth_jwt(client, db_name, username, password):
         username=username,
         password=password,
         verify=True,
-        auth_method='jwt'
+        auth_method="jwt",
     )
-    assert isinstance(db.conn, JWTConnection)
-    assert isinstance(db.version(), string_types)
+    assert isinstance(db.conn, JwtConnection)
+    assert isinstance(db.version(), str)
     assert isinstance(db.properties(), dict)
 
     bad_password = generate_string()
     with assert_raises(JWTAuthError) as err:
-        client.db(db_name, username, bad_password, auth_method='jwt')
+        client.db(db_name, username, bad_password, auth_method="jwt")
     assert err.value.error_code == HTTP_UNAUTHORIZED
 
 
 def test_auth_superuser_token(client, db_name, root_password, secret):
     token = generate_jwt(secret)
-    db = client.db('_system', superuser_token=token)
-    bad_db = client.db('_system', superuser_token='bad_token')
+    db = client.db("_system", superuser_token=token)
+    bad_db = client.db("_system", superuser_token="bad_token")
 
-    assert isinstance(db.conn, JWTSuperuserConnection)
-    assert isinstance(db.version(), string_types)
+    assert isinstance(db.conn, JwtSuperuserConnection)
+    assert isinstance(db.version(), str)
     assert isinstance(db.properties(), dict)
 
     # # Test get JWT secrets
@@ -121,14 +112,14 @@ def test_auth_superuser_token(client, db_name, root_password, secret):
 
 def test_auth_jwt_expiry(client, db_name, root_password, secret):
     # Test automatic token refresh on expired token.
-    db = client.db('_system', 'root', root_password, auth_method='jwt')
+    db = client.db("_system", "root", root_password, auth_method="jwt")
     expired_token = generate_jwt(secret, exp=0)
     db.conn._token = expired_token
-    db.conn._auth_header = 'bearer {}'.format(expired_token)
-    assert isinstance(db.version(), string_types)
+    db.conn._auth_header = f"bearer {expired_token}"
+    assert isinstance(db.version(), str)
 
     # Test correct error on token expiry.
-    db = client.db('_system', superuser_token=expired_token)
+    db = client.db("_system", superuser_token=expired_token)
     with assert_raises(ServerVersionError) as err:
         db.version()
     assert err.value.error_code == FORBIDDEN

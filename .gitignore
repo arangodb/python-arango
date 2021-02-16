@@ -114,3 +114,6 @@ localdata/
 
 # Node Modules
 node_modules/
+
+# setuptools_scm
+arango/version.py

@@ -1,73 +1,49 @@
-from __future__ import absolute_import, unicode_literals
+__all__ = ["AsyncJob", "BatchJob"]
 
+from typing import Callable, Generic, Optional, TypeVar
 from uuid import uuid4
 
+from arango.connection import Connection
 from arango.exceptions import (
     AsyncJobCancelError,
-    AsyncJobStatusError,
-    AsyncJobResultError,
     AsyncJobClearError,
-    BatchJobResultError
+    AsyncJobResultError,
+    AsyncJobStatusError,
+    BatchJobResultError,
 )
 from arango.request import Request
+from arango.response import Response
+
+T = TypeVar("T")
 
 
-class Job(object):  # pragma: no cover
-    """Base class for API execution jobs.
-
-    Jobs are used to track progress of API executions, and retrieve results.
-    """
-
-    @property
-    def id(self):
-        """Return the job ID.
-
-        :return: Job ID.
-        :rtype: str
-        """
-        raise NotImplementedError
-
-    def status(self):
-        """Return the job status.
-
-        :return: Job status.
-        :rtype: str
-        """
-        raise NotImplementedError
-
-    def result(self):
-        """Return the job result (if available).
-
-        :return: Job result.
-        :rtype: str | bool | int | list | dict
-        :raise arango.exceptions.ArangoError: If result was an error.
-        """
-        raise NotImplementedError
-
-
-class AsyncJob(Job):
-    """Job for tracking and retrieving result of an async execution.
+class AsyncJob(Generic[T]):
+    """Job for tracking and retrieving result of an async API execution.
 
     :param connection: HTTP connection.
-    :type connection: arango.connection.Connection
     :param job_id: Async job ID.
     :type job_id: str
     :param response_handler: HTTP response handler.
     :type response_handler: callable
     """
 
-    __slots__ = ['_conn', '_id', '_response_handler']
+    __slots__ = ["_conn", "_id", "_response_handler"]
 
-    def __init__(self, connection, job_id, response_handler):
+    def __init__(
+        self,
+        connection: Connection,
+        job_id: str,
+        response_handler: Callable[[Response], T],
+    ) -> None:
         self._conn = connection
         self._id = job_id
         self._response_handler = response_handler
 
-    def __repr__(self):
-        return '<AsyncJob {}>'.format(self._id)
+    def __repr__(self) -> str:
+        return f"<AsyncJob {self._id}>"
 
     @property
-    def id(self):
+    def id(self) -> str:
         """Return the async job ID.
 
         :return: Async job ID.
@@ -75,7 +51,7 @@ class AsyncJob(Job):
         """
         return self._id
 
-    def status(self):
+    def status(self) -> str:
         """Return the async job status from server.
 
         Once a job result is retrieved via func:`arango.job.AsyncJob.result`
@@ -88,22 +64,20 @@ class AsyncJob(Job):
         :rtype: str
         :raise arango.exceptions.AsyncJobStatusError: If retrieval fails.
         """
-        request = Request(
-            method='get',
-            endpoint='/_api/job/{}'.format(self._id)
-        )
+        request = Request(method="get", endpoint=f"/_api/job/{self._id}")
         resp = self._conn.send_request(request)
+
         if resp.status_code == 204:
-            return 'pending'
+            return "pending"
         elif resp.is_success:
-            return 'done'
+            return "done"
         elif resp.error_code == 404:
-            error_message = 'job {} not found'.format(self._id)
+            error_message = f"job {self._id} not found"
             raise AsyncJobStatusError(resp, request, error_message)
         else:
             raise AsyncJobStatusError(resp, request)
 
-    def result(self):
+    def result(self) -> T:
         """Return the async job result from server.
 
         If the job raised an exception, it is propagated up at this point.
@@ -112,28 +86,25 @@ class AsyncJob(Job):
         queries for result will fail.
 
         :return: Async job result.
-        :rtype: str | bool | int | list | dict
         :raise arango.exceptions.ArangoError: If the job raised an exception.
         :raise arango.exceptions.AsyncJobResultError: If retrieval fails.
         """
-        request = Request(
-            method='put',
-            endpoint='/_api/job/{}'.format(self._id)
-        )
+        request = Request(method="put", endpoint=f"/_api/job/{self._id}")
         resp = self._conn.send_request(request)
-        headers = resp.headers
-        if 'X-Arango-Async-Id' in headers or 'x-arango-async-id' in headers:
+
+        if "X-Arango-Async-Id" in resp.headers or "x-arango-async-id" in resp.headers:
             return self._response_handler(resp)
+
         if resp.status_code == 204:
-            error_message = 'job {} not done'.format(self._id)
+            error_message = f"job {self._id} not done"
             raise AsyncJobResultError(resp, request, error_message)
         elif resp.error_code == 404:
-            error_message = 'job {} not found'.format(self._id)
+            error_message = f"job {self._id} not found"
             raise AsyncJobResultError(resp, request, error_message)
         else:
             raise AsyncJobResultError(resp, request)
 
-    def cancel(self, ignore_missing=False):
+    def cancel(self, ignore_missing: bool = False) -> bool:
         """Cancel the async job.
 
         An async job cannot be cancelled once it is taken out of the queue.
@@ -145,22 +116,20 @@ class AsyncJob(Job):
         :rtype: bool
         :raise arango.exceptions.AsyncJobCancelError: If cancel fails.
         """
-        request = Request(
-            method='put',
-            endpoint='/_api/job/{}/cancel'.format(self._id)
-        )
+        request = Request(method="put", endpoint=f"/_api/job/{self._id}/cancel")
         resp = self._conn.send_request(request)
+
         if resp.status_code == 200:
             return True
         elif resp.error_code == 404:
             if ignore_missing:
                 return False
-            error_message = 'job {} not found'.format(self._id)
+            error_message = f"job {self._id} not found"
             raise AsyncJobCancelError(resp, request, error_message)
         else:
             raise AsyncJobCancelError(resp, request)
 
-    def clear(self, ignore_missing=False):
+    def clear(self, ignore_missing: bool = False) -> bool:
         """Delete the job result from the server.
 
         :param ignore_missing: Do not raise an exception on missing job.
@@ -170,42 +139,40 @@ class AsyncJob(Job):
         :rtype: bool
         :raise arango.exceptions.AsyncJobClearError: If delete fails.
         """
-        request = Request(
-            method='delete',
-            endpoint='/_api/job/{}'.format(self._id)
-        )
+        request = Request(method="delete", endpoint=f"/_api/job/{self._id}")
         resp = self._conn.send_request(request)
+
         if resp.is_success:
             return True
         elif resp.error_code == 404:
             if ignore_missing:
                 return False
-            error_message = 'job {} not found'.format(self._id)
+            error_message = f"job {self._id} not found"
             raise AsyncJobClearError(resp, request, error_message)
         else:
             raise AsyncJobClearError(resp, request)
 
 
-class BatchJob(Job):
-    """Job for tracking and retrieving result of batch execution.
+class BatchJob(Generic[T]):
+    """Job for tracking and retrieving result of batch API execution.
 
     :param response_handler: HTTP response handler.
     :type response_handler: callable
     """
 
-    __slots__ = ['_id', '_status', '_response', '_response_handler']
+    __slots__ = ["_id", "_status", "_response", "_response_handler"]
 
-    def __init__(self, response_handler):
+    def __init__(self, response_handler: Callable[[Response], T]) -> None:
         self._id = uuid4().hex
-        self._status = 'pending'
-        self._response = None
+        self._status = "pending"
+        self._response: Optional[Response] = None
         self._response_handler = response_handler
 
-    def __repr__(self):
-        return '<BatchJob {}>'.format(self._id)
+    def __repr__(self) -> str:
+        return f"<BatchJob {self._id}>"
 
     @property
-    def id(self):
+    def id(self) -> str:
         """Return the batch job ID.
 
         :return: Batch job ID.
@@ -213,7 +180,7 @@ class BatchJob(Job):
         """
         return self._id
 
-    def status(self):
+    def status(self) -> str:
         """Return the batch job status.
 
         :return: Batch job status. Possible values are "pending" (job is still
@@ -223,17 +190,17 @@ class BatchJob(Job):
         """
         return self._status
 
-    def result(self):
+    def result(self) -> T:
         """Return the batch job result.
 
         If the job raised an exception, it is propagated up at this point.
 
         :return: Batch job result.
-        :rtype: str | bool | int | list | dict
         :raise arango.exceptions.ArangoError: If the job raised an exception.
         :raise arango.exceptions.BatchJobResultError: If job result is not
             available (i.e. batch is not committed yet).
         """
-        if self._status == 'pending':
-            raise BatchJobResultError('result not available yet')
+        if self._status == "pending" or self._response is None:
+            raise BatchJobResultError("result not available yet")
+
         return self._response_handler(self._response)

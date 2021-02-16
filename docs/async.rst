@@ -75,7 +75,7 @@ the results can be retrieved once available via :ref:`AsyncJob` objects.
     try:
         job3.cancel()
     except AsyncJobCancelError as err:
-        assert err.message.endswith('job {} not found'.format(job3.id))
+        assert err.message.endswith(f'job {job3.id} not found')
 
     # Clear the result of a job from ArangoDB server to free up resources.
     # Result of job4 was removed from the server automatically upon retrieval,
@@ -83,7 +83,7 @@ the results can be retrieved once available via :ref:`AsyncJob` objects.
     try:
         job4.clear()
     except AsyncJobClearError as err:
-        assert err.message.endswith('job {} not found'.format(job4.id))
+        assert err.message.endswith(f'job {job4.id} not found')
 
     # List the IDs of the first 100 async jobs completed.
     db.async_jobs(status='done', count=100)

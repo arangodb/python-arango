@@ -1,9 +1,36 @@
-from __future__ import absolute_import, unicode_literals
+__all__ = ["Request"]
 
-__all__ = ['Request']
+from typing import Any, MutableMapping, Optional
+
+from arango.typings import Fields, Headers, Params
 
 
-class Request(object):
+def normalize_headers(headers: Optional[Headers]) -> Headers:
+    normalized_headers: Headers = {
+        "charset": "utf-8",
+        "content-type": "application/json",
+    }
+    if headers is not None:
+        for key, value in headers.items():
+            normalized_headers[key.lower()] = value
+
+    return normalized_headers
+
+
+def normalize_params(params: Optional[Params]) -> MutableMapping[str, str]:
+    normalized_params: MutableMapping[str, str] = {}
+
+    if params is not None:
+        for key, value in params.items():
+            if isinstance(value, bool):
+                value = int(value)
+
+            normalized_params[key] = str(value)
+
+    return normalized_params
+
+
+class Request:
     """HTTP request.
 
     :param method: HTTP method in lowercase (e.g. "post").
@@ -11,32 +38,32 @@ class Request(object):
     :param endpoint: API endpoint.
     :type endpoint: str
     :param headers: Request headers.
-    :type headers: dict
+    :type headers: dict | None
     :param params: URL parameters.
-    :type params: dict
+    :type params: dict | None
     :param data: Request payload.
-    :type data: str | bool | int | list | dict |
-        requests_toolbelt.MultipartEncoder
+    :type data: str | bool | int | float | list | dict | None | MultipartEncoder
     :param read: Names of collections read during transaction.
-    :type read: str | [str]
+    :type read: str | [str] | None
     :param write: Name(s) of collections written to during transaction with
         shared access.
-    :type write: str | [str]
+    :type write: str | [str] | None
     :param exclusive: Name(s) of collections written to during transaction
         with exclusive access.
-    :type exclusive: str | [str]
+    :type exclusive: str | [str] | None
     :param deserialize: Whether the response body can be deserialized.
     :type deserialize: bool
+
     :ivar method: HTTP method in lowercase (e.g. "post").
     :vartype method: str
     :ivar endpoint: API endpoint.
     :vartype endpoint: str
     :ivar headers: Request headers.
-    :vartype headers: dict
+    :vartype headers: dict | None
     :ivar params: URL (query) parameters.
-    :vartype params: dict
+    :vartype params: dict | None
     :ivar data: Request payload.
-    :vartype data: str | bool | int | list | dict
+    :vartype data: str | bool | int | float | list | dict | None
     :ivar read: Names of collections read during transaction.
     :vartype read: str | [str] | None
     :ivar write: Name(s) of collections written to during transaction with
@@ -50,45 +77,33 @@ class Request(object):
     """
 
     __slots__ = (
-        'method',
-        'endpoint',
-        'headers',
-        'params',
-        'data',
-        'read',
-        'write',
-        'exclusive',
-        'deserialize',
-        'files'
+        "method",
+        "endpoint",
+        "headers",
+        "params",
+        "data",
+        "read",
+        "write",
+        "exclusive",
+        "deserialize",
     )
 
-    def __init__(self,
-                 method,
-                 endpoint,
-                 headers=None,
-                 params=None,
-                 data=None,
-                 read=None,
-                 write=None,
-                 exclusive=None,
-                 deserialize=True):
+    def __init__(
+        self,
+        method: str,
+        endpoint: str,
+        headers: Optional[Headers] = None,
+        params: Optional[Params] = None,
+        data: Any = None,
+        read: Optional[Fields] = None,
+        write: Optional[Fields] = None,
+        exclusive: Optional[Fields] = None,
+        deserialize: bool = True,
+    ) -> None:
         self.method = method
         self.endpoint = endpoint
-        self.headers = {
-            'content-type': 'application/json',
-            'charset': 'utf-8'
-        }
-        if headers is not None:
-            for field in headers:
-                self.headers[field.lower()] = headers[field]
-
-        # Sanitize URL params.
-        if params is not None:
-            for key, val in params.items():
-                if isinstance(val, bool):
-                    params[key] = int(val)
-
-        self.params = params
+        self.headers: Headers = normalize_headers(headers)
+        self.params: MutableMapping[str, str] = normalize_params(params)
         self.data = data
         self.read = read
         self.write = write
