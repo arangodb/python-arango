@@ -31,6 +31,7 @@ Your ``CustomHTTPClient`` class might look something like this:
 
     from requests.adapters import HTTPAdapter
     from requests import Session
+    from requests.packages.urllib3.util.retry import Retry
 
     from arango.response import Response
     from arango.http import HTTPClient
@@ -50,8 +51,15 @@ Your ``CustomHTTPClient`` class might look something like this:
             session.headers.update({'x-my-header': 'true'})
 
             # Enable retries.
-            adapter = HTTPAdapter(max_retries=5)
+            retry_strategy = Retry(
+                total=3,
+                backoff_factor=1,
+                status_forcelist=[429, 500, 502, 503, 504],
+                method_whitelist=["HEAD", "GET", "OPTIONS"],
+            )
+            http_adapter = HTTPAdapter(max_retries=retry_strategy)
             session.mount('https://', adapter)
+            session.mount('http://', adapter)
 
             return session
 
@@ -74,7 +82,8 @@ Your ``CustomHTTPClient`` class might look something like this:
                 data=data,
                 headers=headers,
                 auth=auth,
-                verify=False  # Disable SSL verification
+                verify=False,  # Disable SSL verification
+                timeout=5      # Use timeout of 5 seconds
             )
             self._logger.debug(f'Got {response.status_code}')
 

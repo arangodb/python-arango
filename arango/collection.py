@@ -77,7 +77,7 @@ class Collection(ApiGroup):
     def __len__(self) -> Result[int]:
         return self.count()
 
-    def __contains__(self, document: Json) -> Result[bool]:
+    def __contains__(self, document: Union[str, Json]) -> Result[bool]:
         return self.has(document, check_rev=False)
 
     def _get_status_text(self, code: int) -> str:  # pragma: no cover
@@ -1350,6 +1350,653 @@ class Collection(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def insert_many(
+        self,
+        documents: Sequence[Json],
+        return_new: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+        overwrite: bool = False,
+        return_old: bool = False,
+    ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
+        """Insert multiple documents.
+
+        .. note::
+
+            If inserting a document fails, the exception is not raised but
+            returned as an object in the result list. It is up to you to
+            inspect the list to determine which documents were inserted
+            successfully (returns document metadata) and which were not
+            (returns exception object).
+
+        .. note::
+
+            In edge/vertex collections, this method does NOT provide the
+            transactional guarantees and validations that single insert
+            operation does for graphs. If these properties are required, see
+            :func:`arango.database.StandardDatabase.begin_batch_execution`
+            for an alternative approach.
+
+        :param documents: List of new documents to insert. If they contain the
+            "_key" or "_id" fields, the values are used as the keys of the new
+            documents (auto-generated otherwise). Any "_rev" field is ignored.
+        :type documents: [dict]
+        :param return_new: Include bodies of the new documents in the returned
+            metadata. Ignored if parameter **silent** is set to True
+        :type return_new: bool
+        :param sync: Block until operation is synchronized to disk.
+        :type sync: bool | None
+        :param silent: If set to True, no document metadata is returned. This
+            can be used to save resources.
+        :type silent: bool
+        :param overwrite: If set to True, operation does not fail on duplicate
+            keys and the existing documents are replaced.
+        :type overwrite: bool
+        :param return_old: Include body of the old documents if replaced.
+            Applies only when value of **overwrite** is set to True.
+        :type return_old: bool
+        :return: List of document metadata (e.g. document keys, revisions) and
+            any exception, or True if parameter **silent** was set to True.
+        :rtype: [dict | ArangoServerError] | bool
+        :raise arango.exceptions.DocumentInsertError: If insert fails.
+        """
+        documents = [self._ensure_key_from_id(doc) for doc in documents]
+
+        params: Params = {
+            "returnNew": return_new,
+            "silent": silent,
+            "overwrite": overwrite,
+            "returnOld": return_old,
+        }
+        if sync is not None:
+            params["waitForSync"] = sync
+
+        request = Request(
+            method="post",
+            endpoint=f"/_api/document/{self.name}",
+            data=documents,
+            params=params,
+        )
+
+        def response_handler(
+            resp: Response,
+        ) -> Union[bool, List[Union[Json, ArangoServerError]]]:
+            if not resp.is_success:
+                raise DocumentInsertError(resp, request)
+            if silent is True:
+                return True
+
+            results: List[Union[Json, ArangoServerError]] = []
+            for body in resp.body:
+                if "_id" in body:
+                    if "_oldRev" in body:
+                        body["_old_rev"] = body.pop("_oldRev")
+                    results.append(body)
+                else:
+                    sub_resp = self._conn.prep_bulk_err_response(resp, body)
+                    results.append(DocumentInsertError(sub_resp, request))
+
+            return results
+
+        return self._execute(request, response_handler)
+
+    def update_many(
+        self,
+        documents: Sequence[Json],
+        check_rev: bool = True,
+        merge: bool = True,
+        keep_none: bool = True,
+        return_new: bool = False,
+        return_old: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+    ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
+        """Update multiple documents.
+
+        .. note::
+
+            If updating a document fails, the exception is not raised but
+            returned as an object in the result list. It is up to you to
+            inspect the list to determine which documents were updated
+            successfully (returns document metadata) and which were not
+            (returns exception object).
+
+        .. note::
+
+            In edge/vertex collections, this method does NOT provide the
+            transactional guarantees and validations that single update
+            operation does for graphs. If these properties are required, see
+            :func:`arango.database.StandardDatabase.begin_batch_execution`
+            for an alternative approach.
+
+        :param documents: Partial or full documents with the updated values.
+            They must contain the "_id" or "_key" fields.
+        :type documents: [dict]
+        :param check_rev: If set to True, revisions of **documents** (if given)
+            are compared against the revisions of target documents.
+        :type check_rev: bool
+        :param merge: If set to True, sub-dictionaries are merged instead of
+            the new ones overwriting the old ones.
+        :type merge: bool | None
+        :param keep_none: If set to True, fields with value None are retained
+            in the document. Otherwise, they are removed completely.
+        :type keep_none: bool | None
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_new: bool
+        :param return_old: Include body of the old document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_old: bool
+        :param sync: Block until operation is synchronized to disk.
+        :type sync: bool | None
+        :param silent: If set to True, no document metadata is returned. This
+            can be used to save resources.
+        :type silent: bool
+        :return: List of document metadata (e.g. document keys, revisions) and
+            any exceptions, or True if parameter **silent** was set to True.
+        :rtype: [dict | ArangoError] | bool
+        :raise arango.exceptions.DocumentUpdateError: If update fails.
+        """
+        params: Params = {
+            "keepNull": keep_none,
+            "mergeObjects": merge,
+            "returnNew": return_new,
+            "returnOld": return_old,
+            "ignoreRevs": not check_rev,
+            "overwrite": not check_rev,
+            "silent": silent,
+        }
+        if sync is not None:
+            params["waitForSync"] = sync
+
+        documents = [self._ensure_key_in_body(doc) for doc in documents]
+
+        request = Request(
+            method="patch",
+            endpoint=f"/_api/document/{self.name}",
+            data=documents,
+            params=params,
+            write=self.name,
+        )
+
+        def response_handler(
+            resp: Response,
+        ) -> Union[bool, List[Union[Json, ArangoServerError]]]:
+            if not resp.is_success:
+                raise DocumentUpdateError(resp, request)
+            if silent is True:
+                return True
+
+            results = []
+            for body in resp.body:
+                if "_id" in body:
+                    body["_old_rev"] = body.pop("_oldRev")
+                    results.append(body)
+                else:
+                    sub_resp = self._conn.prep_bulk_err_response(resp, body)
+
+                    error: ArangoServerError
+                    if sub_resp.error_code == 1200:
+                        error = DocumentRevisionError(sub_resp, request)
+                    else:  # pragma: no cover
+                        error = DocumentUpdateError(sub_resp, request)
+
+                    results.append(error)
+
+            return results
+
+        return self._execute(request, response_handler)
+
+    def update_match(
+        self,
+        filters: Json,
+        body: Json,
+        limit: Optional[int] = None,
+        keep_none: bool = True,
+        sync: Optional[bool] = None,
+        merge: bool = True,
+    ) -> Result[int]:
+        """Update matching documents.
+
+        .. note::
+
+            In edge/vertex collections, this method does NOT provide the
+            transactional guarantees and validations that single update
+            operation does for graphs. If these properties are required, see
+            :func:`arango.database.StandardDatabase.begin_batch_execution`
+            for an alternative approach.
+
+        :param filters: Document filters.
+        :type filters: dict
+        :param body: Full or partial document body with the updates.
+        :type body: dict
+        :param limit: Max number of documents to update. If the limit is lower
+            than the number of matched documents, random documents are
+            chosen. This parameter is not supported on sharded collections.
+        :type limit: int | None
+        :param keep_none: If set to True, fields with value None are retained
+            in the document. Otherwise, they are removed completely.
+        :type keep_none: bool | None
+        :param sync: Block until operation is synchronized to disk.
+        :type sync: bool | None
+        :param merge: If set to True, sub-dictionaries are merged instead of
+            the new ones overwriting the old ones.
+        :type merge: bool | None
+        :return: Number of documents updated.
+        :rtype: int
+        :raise arango.exceptions.DocumentUpdateError: If update fails.
+        """
+        data: Json = {
+            "collection": self.name,
+            "example": filters,
+            "newValue": body,
+            "keepNull": keep_none,
+            "mergeObjects": merge,
+        }
+        if limit is not None:
+            data["limit"] = limit
+        if sync is not None:
+            data["waitForSync"] = sync
+
+        request = Request(
+            method="put",
+            endpoint="/_api/simple/update-by-example",
+            data=data,
+            write=self.name,
+        )
+
+        def response_handler(resp: Response) -> int:
+            if resp.is_success:
+                result: int = resp.body["updated"]
+                return result
+            raise DocumentUpdateError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def replace_many(
+        self,
+        documents: Sequence[Json],
+        check_rev: bool = True,
+        return_new: bool = False,
+        return_old: bool = False,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+    ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
+        """Replace multiple documents.
+
+        .. note::
+
+            If replacing a document fails, the exception is not raised but
+            returned as an object in the result list. It is up to you to
+            inspect the list to determine which documents were replaced
+            successfully (returns document metadata) and which were not
+            (returns exception object).
+
+        .. note::
+
+            In edge/vertex collections, this method does NOT provide the
+            transactional guarantees and validations that single replace
+            operation does for graphs. If these properties are required, see
+            :func:`arango.database.StandardDatabase.begin_batch_execution`
+            for an alternative approach.
+
+        :param documents: New documents to replace the old ones with. They must
+            contain the "_id" or "_key" fields. Edge documents must also have
+            "_from" and "_to" fields.
+        :type documents: [dict]
+        :param check_rev: If set to True, revisions of **documents** (if given)
+            are compared against the revisions of target documents.
+        :type check_rev: bool
+        :param return_new: Include body of the new document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_new: bool
+        :param return_old: Include body of the old document in the returned
+            metadata. Ignored if parameter **silent** is set to True.
+        :type return_old: bool
+        :param sync: Block until operation is synchronized to disk.
+        :type sync: bool | None
+        :param silent: If set to True, no document metadata is returned. This
+            can be used to save resources.
+        :type silent: bool
+        :return: List of document metadata (e.g. document keys, revisions) and
+            any exceptions, or True if parameter **silent** was set to True.
+        :rtype: [dict | ArangoServerError] | bool
+        :raise arango.exceptions.DocumentReplaceError: If replace fails.
+        """
+        params: Params = {
+            "returnNew": return_new,
+            "returnOld": return_old,
+            "ignoreRevs": not check_rev,
+            "overwrite": not check_rev,
+            "silent": silent,
+        }
+        if sync is not None:
+            params["waitForSync"] = sync
+
+        documents = [self._ensure_key_in_body(doc) for doc in documents]
+
+        request = Request(
+            method="put",
+            endpoint=f"/_api/document/{self.name}",
+            params=params,
+            data=documents,
+            write=self.name,
+        )
+
+        def response_handler(
+            resp: Response,
+        ) -> Union[bool, List[Union[Json, ArangoServerError]]]:
+            if not resp.is_success:
+                raise DocumentReplaceError(resp, request)
+            if silent is True:
+                return True
+
+            results: List[Union[Json, ArangoServerError]] = []
+            for body in resp.body:
+                if "_id" in body:
+                    body["_old_rev"] = body.pop("_oldRev")
+                    results.append(body)
+                else:
+                    sub_resp = self._conn.prep_bulk_err_response(resp, body)
+
+                    error: ArangoServerError
+                    if sub_resp.error_code == 1200:
+                        error = DocumentRevisionError(sub_resp, request)
+                    else:  # pragma: no cover
+                        error = DocumentReplaceError(sub_resp, request)
+
+                    results.append(error)
+
+            return results
+
+        return self._execute(request, response_handler)
+
+    def replace_match(
+        self,
+        filters: Json,
+        body: Json,
+        limit: Optional[int] = None,
+        sync: Optional[bool] = None,
+    ) -> Result[int]:
+        """Replace matching documents.
+
+        .. note::
+
+            In edge/vertex collections, this method does NOT provide the
+            transactional guarantees and validations that single replace
+            operation does for graphs. If these properties are required, see
+            :func:`arango.database.StandardDatabase.begin_batch_execution`
+            for an alternative approach.
+
+        :param filters: Document filters.
+        :type filters: dict
+        :param body: New document body.
+        :type body: dict
+        :param limit: Max number of documents to replace. If the limit is lower
+            than the number of matched documents, random documents are chosen.
+        :type limit: int | None
+        :param sync: Block until operation is synchronized to disk.
+        :type sync: bool | None
+        :return: Number of documents replaced.
+        :rtype: int
+        :raise arango.exceptions.DocumentReplaceError: If replace fails.
+        """
+        data: Json = {"collection": self.name, "example": filters, "newValue": body}
+        if limit is not None:
+            data["limit"] = limit
+        if sync is not None:
+            data["waitForSync"] = sync
+
+        request = Request(
+            method="put",
+            endpoint="/_api/simple/replace-by-example",
+            data=data,
+            write=self.name,
+        )
+
+        def response_handler(resp: Response) -> int:
+            if not resp.is_success:
+                raise DocumentReplaceError(resp, request)
+            result: int = resp.body["replaced"]
+            return result
+
+        return self._execute(request, response_handler)
+
+    def delete_many(
+        self,
+        documents: Sequence[Json],
+        return_old: bool = False,
+        check_rev: bool = True,
+        sync: Optional[bool] = None,
+        silent: bool = False,
+    ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
+        """Delete multiple documents.
+
+        .. note::
+
+            If deleting a document fails, the exception is not raised but
+            returned as an object in the result list. It is up to you to
+            inspect the list to determine which documents were deleted
+            successfully (returns document metadata) and which were not
+            (returns exception object).
+
+        .. note::
+
+            In edge/vertex collections, this method does NOT provide the
+            transactional guarantees and validations that single delete
+            operation does for graphs. If these properties are required, see
+            :func:`arango.database.StandardDatabase.begin_batch_execution`
+            for an alternative approach.
+
+        :param documents: Document IDs, keys or bodies. Document bodies must
+            contain the "_id" or "_key" fields.
+        :type documents: [str | dict]
+        :param return_old: Include bodies of the old documents in the result.
+        :type return_old: bool
+        :param check_rev: If set to True, revisions of **documents** (if given)
+            are compared against the revisions of target documents.
+        :type check_rev: bool
+        :param sync: Block until operation is synchronized to disk.
+        :type sync: bool | None
+        :param silent: If set to True, no document metadata is returned. This
+            can be used to save resources.
+        :type silent: bool
+        :return: List of document metadata (e.g. document keys, revisions) and
+            any exceptions, or True if parameter **silent** was set to True.
+        :rtype: [dict | ArangoServerError] | bool
+        :raise arango.exceptions.DocumentDeleteError: If delete fails.
+        """
+        params: Params = {
+            "returnOld": return_old,
+            "ignoreRevs": not check_rev,
+            "overwrite": not check_rev,
+            "silent": silent,
+        }
+        if sync is not None:
+            params["waitForSync"] = sync
+
+        documents = [
+            self._ensure_key_in_body(doc) if isinstance(doc, dict) else doc
+            for doc in documents
+        ]
+
+        request = Request(
+            method="delete",
+            endpoint=f"/_api/document/{self.name}",
+            params=params,
+            data=documents,
+            write=self.name,
+        )
+
+        def response_handler(
+            resp: Response,
+        ) -> Union[bool, List[Union[Json, ArangoServerError]]]:
+            if not resp.is_success:
+                raise DocumentDeleteError(resp, request)
+            if silent is True:
+                return True
+
+            results: List[Union[Json, ArangoServerError]] = []
+            for body in resp.body:
+                if "_id" in body:
+                    results.append(body)
+                else:
+                    sub_resp = self._conn.prep_bulk_err_response(resp, body)
+
+                    error: ArangoServerError
+                    if sub_resp.error_code == 1200:
+                        error = DocumentRevisionError(sub_resp, request)
+                    else:
+                        error = DocumentDeleteError(sub_resp, request)
+                    results.append(error)
+
+            return results
+
+        return self._execute(request, response_handler)
+
+    def delete_match(
+        self, filters: Json, limit: Optional[int] = None, sync: Optional[bool] = None
+    ) -> Result[int]:
+        """Delete matching documents.
+
+        .. note::
+
+            In edge/vertex collections, this method does NOT provide the
+            transactional guarantees and validations that single delete
+            operation does for graphs. If these properties are required, see
+            :func:`arango.database.StandardDatabase.begin_batch_execution`
+            for an alternative approach.
+
+        :param filters: Document filters.
+        :type filters: dict
+        :param limit: Max number of documents to delete. If the limit is lower
+            than the number of matched documents, random documents are chosen.
+        :type limit: int | None
+        :param sync: Block until operation is synchronized to disk.
+        :type sync: bool | None
+        :return: Number of documents deleted.
+        :rtype: int
+        :raise arango.exceptions.DocumentDeleteError: If delete fails.
+        """
+        data: Json = {"collection": self.name, "example": filters}
+        if sync is not None:
+            data["waitForSync"] = sync
+        if limit is not None and limit != 0:
+            data["limit"] = limit
+
+        request = Request(
+            method="put",
+            endpoint="/_api/simple/remove-by-example",
+            data=data,
+            write=self.name,
+        )
+
+        def response_handler(resp: Response) -> int:
+            if resp.is_success:
+                result: int = resp.body["deleted"]
+                return result
+            raise DocumentDeleteError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def import_bulk(
+        self,
+        documents: Sequence[Json],
+        halt_on_error: bool = True,
+        details: bool = True,
+        from_prefix: Optional[str] = None,
+        to_prefix: Optional[str] = None,
+        overwrite: Optional[bool] = None,
+        on_duplicate: Optional[str] = None,
+        sync: Optional[bool] = None,
+    ) -> Result[Json]:
+        """Insert multiple documents into the collection.
+
+        .. note::
+
+            This method is faster than :func:`arango.collection.Collection.insert_many`
+            but does not return as many details.
+
+        .. note::
+
+            In edge/vertex collections, this method does NOT provide the
+            transactional guarantees and validations that single insert
+            operation does for graphs. If these properties are required, see
+            :func:`arango.database.StandardDatabase.begin_batch_execution`
+            for an alternative approach.
+
+        :param documents: List of new documents to insert. If they contain the
+            "_key" or "_id" fields, the values are used as the keys of the new
+            documents (auto-generated otherwise). Any "_rev" field is ignored.
+        :type documents: [dict]
+        :param halt_on_error: Halt the entire import on an error.
+        :type halt_on_error: bool
+        :param details: If set to True, the returned result will include an
+            additional list of detailed error messages.
+        :type details: bool
+        :param from_prefix: String prefix prepended to the value of "_from"
+            field in each edge document inserted. For example, prefix "foo"
+            prepended to "_from": "bar" will result in "_from": "foo/bar".
+            Applies only to edge collections.
+        :type from_prefix: str
+        :param to_prefix: String prefix prepended to the value of "_to" field
+            in edge document inserted. For example, prefix "foo" prepended to
+            "_to": "bar" will result in "_to": "foo/bar". Applies only to edge
+            collections.
+        :type to_prefix: str
+        :param overwrite: If set to True, all existing documents are removed
+            prior to the import. Indexes are still preserved.
+        :type overwrite: bool
+        :param on_duplicate: Action to take on unique key constraint violations
+            (for documents with "_key" fields). Allowed values are "error" (do
+            not import the new documents and count them as errors), "update"
+            (update the existing documents while preserving any fields missing
+            in the new ones), "replace" (replace the existing documents with
+            new ones), and  "ignore" (do not import the new documents and count
+            them as ignored, as opposed to counting them as errors). Options
+            "update" and "replace" may fail on secondary unique key constraint
+            violations.
+        :type on_duplicate: str
+        :param sync: Block until operation is synchronized to disk.
+        :type sync: bool | None
+        :return: Result of the bulk import.
+        :rtype: dict
+        :raise arango.exceptions.DocumentInsertError: If import fails.
+        """
+        documents = [self._ensure_key_from_id(doc) for doc in documents]
+
+        params: Params = {"type": "array", "collection": self.name}
+        if halt_on_error is not None:
+            params["complete"] = halt_on_error
+        if details is not None:
+            params["details"] = details
+        if from_prefix is not None:  # pragma: no cover
+            params["fromPrefix"] = from_prefix
+        if to_prefix is not None:  # pragma: no cover
+            params["toPrefix"] = to_prefix
+        if overwrite is not None:
+            params["overwrite"] = overwrite
+        if on_duplicate is not None:
+            params["onDuplicate"] = on_duplicate
+        if sync is not None:
+            params["waitForSync"] = sync
+
+        request = Request(
+            method="post",
+            endpoint="/_api/import",
+            data=documents,
+            params=params,
+            write=self.name,
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body
+                return result
+            raise DocumentInsertError(resp, request)
+
+        return self._execute(request, response_handler)
+
 
 class StandardCollection(Collection):
     """Standard ArangoDB collection API wrapper."""
@@ -1493,88 +2140,6 @@ class StandardCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def insert_many(
-        self,
-        documents: Sequence[Json],
-        return_new: bool = False,
-        sync: Optional[bool] = None,
-        silent: bool = False,
-        overwrite: bool = False,
-        return_old: bool = False,
-    ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
-        """Insert multiple documents.
-
-        .. note::
-
-            If inserting a document fails, the exception is not raised but
-            returned as an object in the result list. It is up to you to
-            inspect the list to determine which documents were inserted
-            successfully (returns document metadata) and which were not
-            (returns exception object).
-
-        :param documents: List of new documents to insert. If they contain the
-            "_key" or "_id" fields, the values are used as the keys of the new
-            documents (auto-generated otherwise). Any "_rev" field is ignored.
-        :type documents: [dict]
-        :param return_new: Include bodies of the new documents in the returned
-            metadata. Ignored if parameter **silent** is set to True
-        :type return_new: bool
-        :param sync: Block until operation is synchronized to disk.
-        :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
-        :param overwrite: If set to True, operation does not fail on duplicate
-            keys and the existing documents are replaced.
-        :type overwrite: bool
-        :param return_old: Include body of the old documents if replaced.
-            Applies only when value of **overwrite** is set to True.
-        :type return_old: bool
-        :return: List of document metadata (e.g. document keys, revisions) and
-            any exception, or True if parameter **silent** was set to True.
-        :rtype: [dict | ArangoServerError] | bool
-        :raise arango.exceptions.DocumentInsertError: If insert fails.
-        """
-        documents = [self._ensure_key_from_id(doc) for doc in documents]
-
-        params: Params = {
-            "returnNew": return_new,
-            "silent": silent,
-            "overwrite": overwrite,
-            "returnOld": return_old,
-        }
-        if sync is not None:
-            params["waitForSync"] = sync
-
-        request = Request(
-            method="post",
-            endpoint=f"/_api/document/{self.name}",
-            data=documents,
-            params=params,
-        )
-
-        def response_handler(
-            resp: Response,
-        ) -> Union[bool, List[Union[Json, ArangoServerError]]]:
-            if not resp.is_success:
-                raise DocumentInsertError(resp, request)
-            if silent is True:
-                return True
-
-            results: List[Union[Json, ArangoServerError]] = []
-            for body in resp.body:
-                if "_id" in body:
-                    if "_oldRev" in body:
-                        body["_old_rev"] = body.pop("_oldRev")
-                    results.append(body)
-                else:
-                    sub_resp = self._conn.prep_bulk_err_response(resp, body)
-                    results.append(DocumentInsertError(sub_resp, request))
-
-            return results
-
-        return self._execute(request, response_handler)
-
     def update(
         self,
         document: Json,
@@ -1651,163 +2216,6 @@ class StandardCollection(Collection):
 
         return self._execute(request, response_handler)
 
-    def update_many(
-        self,
-        documents: Sequence[Json],
-        check_rev: bool = True,
-        merge: bool = True,
-        keep_none: bool = True,
-        return_new: bool = False,
-        return_old: bool = False,
-        sync: Optional[bool] = None,
-        silent: bool = False,
-    ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
-        """Update multiple documents.
-
-        .. note::
-
-            If updating a document fails, the exception is not raised but
-            returned as an object in the result list. It is up to you to
-            inspect the list to determine which documents were updated
-            successfully (returns document metadata) and which were not
-            (returns exception object).
-
-        :param documents: Partial or full documents with the updated values.
-            They must contain the "_id" or "_key" fields.
-        :type documents: [dict]
-        :param check_rev: If set to True, revisions of **documents** (if given)
-            are compared against the revisions of target documents.
-        :type check_rev: bool
-        :param merge: If set to True, sub-dictionaries are merged instead of
-            the new ones overwriting the old ones.
-        :type merge: bool | None
-        :param keep_none: If set to True, fields with value None are retained
-            in the document. Otherwise, they are removed completely.
-        :type keep_none: bool | None
-        :param return_new: Include body of the new document in the returned
-            metadata. Ignored if parameter **silent** is set to True.
-        :type return_new: bool
-        :param return_old: Include body of the old document in the returned
-            metadata. Ignored if parameter **silent** is set to True.
-        :type return_old: bool
-        :param sync: Block until operation is synchronized to disk.
-        :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
-        :return: List of document metadata (e.g. document keys, revisions) and
-            any exceptions, or True if parameter **silent** was set to True.
-        :rtype: [dict | ArangoError] | bool
-        :raise arango.exceptions.DocumentUpdateError: If update fails.
-        """
-        params: Params = {
-            "keepNull": keep_none,
-            "mergeObjects": merge,
-            "returnNew": return_new,
-            "returnOld": return_old,
-            "ignoreRevs": not check_rev,
-            "overwrite": not check_rev,
-            "silent": silent,
-        }
-        if sync is not None:
-            params["waitForSync"] = sync
-
-        documents = [self._ensure_key_in_body(doc) for doc in documents]
-
-        request = Request(
-            method="patch",
-            endpoint=f"/_api/document/{self.name}",
-            data=documents,
-            params=params,
-            write=self.name,
-        )
-
-        def response_handler(
-            resp: Response,
-        ) -> Union[bool, List[Union[Json, ArangoServerError]]]:
-            if not resp.is_success:
-                raise DocumentUpdateError(resp, request)
-            if silent is True:
-                return True
-
-            results = []
-            for body in resp.body:
-                if "_id" in body:
-                    body["_old_rev"] = body.pop("_oldRev")
-                    results.append(body)
-                else:
-                    sub_resp = self._conn.prep_bulk_err_response(resp, body)
-
-                    error: ArangoServerError
-                    if sub_resp.error_code == 1200:
-                        error = DocumentRevisionError(sub_resp, request)
-                    else:  # pragma: no cover
-                        error = DocumentUpdateError(sub_resp, request)
-
-                    results.append(error)
-
-            return results
-
-        return self._execute(request, response_handler)
-
-    def update_match(
-        self,
-        filters: Json,
-        body: Json,
-        limit: Optional[int] = None,
-        keep_none: bool = True,
-        sync: Optional[bool] = None,
-        merge: bool = True,
-    ) -> Result[int]:
-        """Update matching documents.
-
-        :param filters: Document filters.
-        :type filters: dict
-        :param body: Full or partial document body with the updates.
-        :type body: dict
-        :param limit: Max number of documents to update. If the limit is lower
-            than the number of matched documents, random documents are
-            chosen. This parameter is not supported on sharded collections.
-        :type limit: int | None
-        :param keep_none: If set to True, fields with value None are retained
-            in the document. Otherwise, they are removed completely.
-        :type keep_none: bool | None
-        :param sync: Block until operation is synchronized to disk.
-        :type sync: bool | None
-        :param merge: If set to True, sub-dictionaries are merged instead of
-            the new ones overwriting the old ones.
-        :type merge: bool | None
-        :return: Number of documents updated.
-        :rtype: int
-        :raise arango.exceptions.DocumentUpdateError: If update fails.
-        """
-        data: Json = {
-            "collection": self.name,
-            "example": filters,
-            "newValue": body,
-            "keepNull": keep_none,
-            "mergeObjects": merge,
-        }
-        if limit is not None:
-            data["limit"] = limit
-        if sync is not None:
-            data["waitForSync"] = sync
-
-        request = Request(
-            method="put",
-            endpoint="/_api/simple/update-by-example",
-            data=data,
-            write=self.name,
-        )
-
-        def response_handler(resp: Response) -> int:
-            if resp.is_success:
-                result: int = resp.body["updated"]
-                return result
-            raise DocumentUpdateError(resp, request)
-
-        return self._execute(request, response_handler)
-
     def replace(
         self,
         document: Json,
@@ -1873,139 +2281,6 @@ class StandardCollection(Collection):
             result: Json = resp.body
             if "_oldRev" in result:
                 result["_old_rev"] = result.pop("_oldRev")
-            return result
-
-        return self._execute(request, response_handler)
-
-    def replace_many(
-        self,
-        documents: Sequence[Json],
-        check_rev: bool = True,
-        return_new: bool = False,
-        return_old: bool = False,
-        sync: Optional[bool] = None,
-        silent: bool = False,
-    ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
-        """Replace multiple documents.
-
-        .. note::
-
-            If replacing a document fails, the exception is not raised but
-            returned as an object in the result list. It is up to you to
-            inspect the list to determine which documents were replaced
-            successfully (returns document metadata) and which were not
-            (returns exception object).
-
-        :param documents: New documents to replace the old ones with. They must
-            contain the "_id" or "_key" fields. Edge documents must also have
-            "_from" and "_to" fields.
-        :type documents: [dict]
-        :param check_rev: If set to True, revisions of **documents** (if given)
-            are compared against the revisions of target documents.
-        :type check_rev: bool
-        :param return_new: Include body of the new document in the returned
-            metadata. Ignored if parameter **silent** is set to True.
-        :type return_new: bool
-        :param return_old: Include body of the old document in the returned
-            metadata. Ignored if parameter **silent** is set to True.
-        :type return_old: bool
-        :param sync: Block until operation is synchronized to disk.
-        :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
-        :return: List of document metadata (e.g. document keys, revisions) and
-            any exceptions, or True if parameter **silent** was set to True.
-        :rtype: [dict | ArangoServerError] | bool
-        :raise arango.exceptions.DocumentReplaceError: If replace fails.
-        """
-        params: Params = {
-            "returnNew": return_new,
-            "returnOld": return_old,
-            "ignoreRevs": not check_rev,
-            "overwrite": not check_rev,
-            "silent": silent,
-        }
-        if sync is not None:
-            params["waitForSync"] = sync
-
-        documents = [self._ensure_key_in_body(doc) for doc in documents]
-
-        request = Request(
-            method="put",
-            endpoint=f"/_api/document/{self.name}",
-            params=params,
-            data=documents,
-            write=self.name,
-        )
-
-        def response_handler(
-            resp: Response,
-        ) -> Union[bool, List[Union[Json, ArangoServerError]]]:
-            if not resp.is_success:
-                raise DocumentReplaceError(resp, request)
-            if silent is True:
-                return True
-
-            results: List[Union[Json, ArangoServerError]] = []
-            for body in resp.body:
-                if "_id" in body:
-                    body["_old_rev"] = body.pop("_oldRev")
-                    results.append(body)
-                else:
-                    sub_resp = self._conn.prep_bulk_err_response(resp, body)
-
-                    error: ArangoServerError
-                    if sub_resp.error_code == 1200:
-                        error = DocumentRevisionError(sub_resp, request)
-                    else:  # pragma: no cover
-                        error = DocumentReplaceError(sub_resp, request)
-
-                    results.append(error)
-
-            return results
-
-        return self._execute(request, response_handler)
-
-    def replace_match(
-        self,
-        filters: Json,
-        body: Json,
-        limit: Optional[int] = None,
-        sync: Optional[bool] = None,
-    ) -> Result[int]:
-        """Replace matching documents.
-
-        :param filters: Document filters.
-        :type filters: dict
-        :param body: New document body.
-        :type body: dict
-        :param limit: Max number of documents to replace. If the limit is lower
-            than the number of matched documents, random documents are chosen.
-        :type limit: int | None
-        :param sync: Block until operation is synchronized to disk.
-        :type sync: bool | None
-        :return: Number of documents replaced.
-        :rtype: int
-        :raise arango.exceptions.DocumentReplaceError: If replace fails.
-        """
-        data: Json = {"collection": self.name, "example": filters, "newValue": body}
-        if limit is not None:
-            data["limit"] = limit
-        if sync is not None:
-            data["waitForSync"] = sync
-
-        request = Request(
-            method="put",
-            endpoint="/_api/simple/replace-by-example",
-            data=data,
-            write=self.name,
-        )
-
-        def response_handler(resp: Response) -> int:
-            if not resp.is_success:
-                raise DocumentReplaceError(resp, request)
-            result: int = resp.body["replaced"]
             return result
 
         return self._execute(request, response_handler)
@@ -2078,216 +2353,6 @@ class StandardCollection(Collection):
             if not resp.is_success:
                 raise DocumentDeleteError(resp, request)
             return True if silent else resp.body
-
-        return self._execute(request, response_handler)
-
-    def delete_many(
-        self,
-        documents: Sequence[Json],
-        return_old: bool = False,
-        check_rev: bool = True,
-        sync: Optional[bool] = None,
-        silent: bool = False,
-    ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
-        """Delete multiple documents.
-
-        .. note::
-
-            If deleting a document fails, the exception is not raised but
-            returned as an object in the result list. It is up to you to
-            inspect the list to determine which documents were deleted
-            successfully (returns document metadata) and which were not
-            (returns exception object).
-
-        :param documents: Document IDs, keys or bodies. Document bodies must
-            contain the "_id" or "_key" fields.
-        :type documents: [str | dict]
-        :param return_old: Include bodies of the old documents in the result.
-        :type return_old: bool
-        :param check_rev: If set to True, revisions of **documents** (if given)
-            are compared against the revisions of target documents.
-        :type check_rev: bool
-        :param sync: Block until operation is synchronized to disk.
-        :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
-        :return: List of document metadata (e.g. document keys, revisions) and
-            any exceptions, or True if parameter **silent** was set to True.
-        :rtype: [dict | ArangoServerError] | bool
-        :raise arango.exceptions.DocumentDeleteError: If delete fails.
-        """
-        params: Params = {
-            "returnOld": return_old,
-            "ignoreRevs": not check_rev,
-            "overwrite": not check_rev,
-            "silent": silent,
-        }
-        if sync is not None:
-            params["waitForSync"] = sync
-
-        documents = [
-            self._ensure_key_in_body(doc) if isinstance(doc, dict) else doc
-            for doc in documents
-        ]
-
-        request = Request(
-            method="delete",
-            endpoint=f"/_api/document/{self.name}",
-            params=params,
-            data=documents,
-            write=self.name,
-        )
-
-        def response_handler(
-            resp: Response,
-        ) -> Union[bool, List[Union[Json, ArangoServerError]]]:
-            if not resp.is_success:
-                raise DocumentDeleteError(resp, request)
-            if silent is True:
-                return True
-
-            results: List[Union[Json, ArangoServerError]] = []
-            for body in resp.body:
-                if "_id" in body:
-                    results.append(body)
-                else:
-                    sub_resp = self._conn.prep_bulk_err_response(resp, body)
-
-                    error: ArangoServerError
-                    if sub_resp.error_code == 1200:
-                        error = DocumentRevisionError(sub_resp, request)
-                    else:
-                        error = DocumentDeleteError(sub_resp, request)
-                    results.append(error)
-
-            return results
-
-        return self._execute(request, response_handler)
-
-    def delete_match(
-        self, filters: Json, limit: Optional[int] = None, sync: Optional[bool] = None
-    ) -> Result[int]:
-        """Delete matching documents.
-
-        :param filters: Document filters.
-        :type filters: dict
-        :param limit: Max number of documents to delete. If the limit is lower
-            than the number of matched documents, random documents are chosen.
-        :type limit: int | None
-        :param sync: Block until operation is synchronized to disk.
-        :type sync: bool | None
-        :return: Number of documents deleted.
-        :rtype: int
-        :raise arango.exceptions.DocumentDeleteError: If delete fails.
-        """
-        data: Json = {"collection": self.name, "example": filters}
-        if sync is not None:
-            data["waitForSync"] = sync
-        if limit is not None and limit != 0:
-            data["limit"] = limit
-
-        request = Request(
-            method="put",
-            endpoint="/_api/simple/remove-by-example",
-            data=data,
-            write=self.name,
-        )
-
-        def response_handler(resp: Response) -> int:
-            if resp.is_success:
-                result: int = resp.body["deleted"]
-                return result
-            raise DocumentDeleteError(resp, request)
-
-        return self._execute(request, response_handler)
-
-    def import_bulk(
-        self,
-        documents: Sequence[Json],
-        halt_on_error: bool = True,
-        details: bool = True,
-        from_prefix: Optional[str] = None,
-        to_prefix: Optional[str] = None,
-        overwrite: Optional[bool] = None,
-        on_duplicate: Optional[str] = None,
-        sync: Optional[bool] = None,
-    ) -> Result[Json]:
-        """Insert multiple documents into the collection.
-
-        This method is faster than
-        :func:`arango.collection.StandardCollection.insert_many` but does not
-        return as many details.
-
-        :param documents: List of new documents to insert. If they contain the
-            "_key" or "_id" fields, the values are used as the keys of the new
-            documents (auto-generated otherwise). Any "_rev" field is ignored.
-        :type documents: [dict]
-        :param halt_on_error: Halt the entire import on an error.
-        :type halt_on_error: bool
-        :param details: If set to True, the returned result will include an
-            additional list of detailed error messages.
-        :type details: bool
-        :param from_prefix: String prefix prepended to the value of "_from"
-            field in each edge document inserted. For example, prefix "foo"
-            prepended to "_from": "bar" will result in "_from": "foo/bar".
-            Applies only to edge collections.
-        :type from_prefix: str
-        :param to_prefix: String prefix prepended to the value of "_to" field
-            in edge document inserted. For example, prefix "foo" prepended to
-            "_to": "bar" will result in "_to": "foo/bar". Applies only to edge
-            collections.
-        :type to_prefix: str
-        :param overwrite: If set to True, all existing documents are removed
-            prior to the import. Indexes are still preserved.
-        :type overwrite: bool
-        :param on_duplicate: Action to take on unique key constraint violations
-            (for documents with "_key" fields). Allowed values are "error" (do
-            not import the new documents and count them as errors), "update"
-            (update the existing documents while preserving any fields missing
-            in the new ones), "replace" (replace the existing documents with
-            new ones), and  "ignore" (do not import the new documents and count
-            them as ignored, as opposed to counting them as errors). Options
-            "update" and "replace" may fail on secondary unique key constraint
-            violations.
-        :type on_duplicate: str
-        :param sync: Block until operation is synchronized to disk.
-        :type sync: bool | None
-        :return: Result of the bulk import.
-        :rtype: dict
-        :raise arango.exceptions.DocumentInsertError: If import fails.
-        """
-        documents = [self._ensure_key_from_id(doc) for doc in documents]
-
-        params: Params = {"type": "array", "collection": self.name}
-        if halt_on_error is not None:
-            params["complete"] = halt_on_error
-        if details is not None:
-            params["details"] = details
-        if from_prefix is not None:  # pragma: no cover
-            params["fromPrefix"] = from_prefix
-        if to_prefix is not None:  # pragma: no cover
-            params["toPrefix"] = to_prefix
-        if overwrite is not None:
-            params["overwrite"] = overwrite
-        if on_duplicate is not None:
-            params["onDuplicate"] = on_duplicate
-        if sync is not None:
-            params["waitForSync"] = sync
-
-        request = Request(
-            method="post",
-            endpoint="/_api/import",
-            data=documents,
-            params=params,
-            write=self.name,
-        )
-
-        def response_handler(resp: Response) -> Json:
-            if resp.is_success:
-                result: Json = resp.body
-                return result
-            raise DocumentInsertError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -2557,7 +2622,7 @@ class VertexCollection(Collection):
         sync: Optional[bool] = None,
         return_old: bool = False,
     ) -> Result[Union[bool, Json]]:
-        """Delete a vertex document.
+        """Delete a vertex document. All connected edges are also deleted.
 
         :param vertex: Vertex document ID, key or body. Document body must
             contain the "_id" or "_key" field.

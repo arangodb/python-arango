@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from typing import MutableMapping, Optional, Tuple, Union
 
 from requests import Session
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 from requests_toolbelt import MultipartEncoder
 
 from arango.response import Response
@@ -72,7 +74,19 @@ class DefaultHTTPClient(HTTPClient):
         :returns: requests session object
         :rtype: requests.Session
         """
-        return Session()
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+            method_whitelist=["HEAD", "GET", "OPTIONS"],
+        )
+        http_adapter = HTTPAdapter(max_retries=retry_strategy)
+
+        session = Session()
+        session.mount("https://", http_adapter)
+        session.mount("http://", http_adapter)
+
+        return session
 
     def send_request(
         self,
@@ -104,7 +118,13 @@ class DefaultHTTPClient(HTTPClient):
         :rtype: arango.response.Response
         """
         response = session.request(
-            method=method, url=url, params=params, data=data, headers=headers, auth=auth
+            method=method,
+            url=url,
+            params=params,
+            data=data,
+            headers=headers,
+            auth=auth,
+            timeout=5,
         )
         return Response(
             method=method,

@@ -155,7 +155,8 @@ def empty_collection(collection):
     """Empty all the documents in the collection.
 
     :param collection: Collection name
-    :type collection: arango.collection.StandardCollection
+    :type collection: arango.collection.StandardCollection |
+        arango.collection.VertexCollection | arango.collection.EdgeCollection
     """
     for doc_id in collection.ids():
         collection.delete(doc_id, sync=True)

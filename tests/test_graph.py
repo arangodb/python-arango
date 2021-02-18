@@ -596,6 +596,16 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     assert len(fvcol) == 1
     empty_collection(fvcol)
 
+    fvcol.import_bulk(fvdocs)
+    assert len(fvcol) == len(fvdocs)
+    empty_collection(fvcol)
+
+    fvcol.insert_many(fvdocs)
+    assert len(fvcol) == len(fvdocs)
+
+    fvcol.delete_many(fvdocs)
+    assert len(fvcol) == 0
+
 
 def test_vertex_management_via_graph(graph, fvcol):
     # Test insert vertex via graph object
@@ -918,6 +928,16 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     assert "old" in result
     assert edge not in ecol
     empty_collection(ecol)
+
+    ecol.import_bulk(edocs)
+    assert len(ecol) == len(edocs)
+    empty_collection(ecol)
+
+    ecol.insert_many(edocs)
+    assert len(ecol) == len(edocs)
+
+    ecol.delete_many(edocs)
+    assert len(ecol) == 1
 
 
 def test_vertex_edges(db, bad_db):
