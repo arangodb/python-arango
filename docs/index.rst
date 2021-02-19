@@ -1,9 +1,17 @@
+.. image:: /static/logo.png
+
+|
+
+Python-Arango
+-------------
+
 Welcome to the documentation for **python-arango**, a Python driver for ArangoDB_.
 
 Requirements
 =============
 
-Python 3.6+ and ArangoDB 3.7+
+- ArangoDB version 3.7+
+- Python version 3.6+
 
 Installation
 ============
