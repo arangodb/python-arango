@@ -1,7 +1,7 @@
-Batch Execution
----------------
+Batch API Execution
+-------------------
 
-In **batch execution**, requests to ArangoDB server are stored in client-side
+In **batch API executions**, requests to ArangoDB server are stored in client-side
 in-memory queue, and committed together in a single HTTP call. After the commit,
 results can be retrieved later from :ref:`BatchJob` objects.
 

@@ -1,7 +1,7 @@
-Asynchronous Execution
-----------------------
+Async API Execution
+-------------------
 
-In **asynchronous execution**, python-arango sends API requests to ArangoDB in
+In **asynchronous API executions**, python-arango sends API requests to ArangoDB in
 fire-and-forget style. The server processes the requests in the background, and
 the results can be retrieved once available via :ref:`AsyncJob` objects.
 

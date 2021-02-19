@@ -1,10 +1,21 @@
-# python-arango
+![Logo](docs/static/logo.png)
 
-Python driver for [ArangoDB](https://www.arangodb.com).
+[![Build](https://github.com/joowani/python-arango/actions/workflows/build.yaml/badge.svg)](https://github.com/joowani/python-arango/actions/workflows/build.yaml)
+[![CodeQL](https://github.com/joowani/python-arango/actions/workflows/codeql.yaml/badge.svg)](https://github.com/joowani/python-arango/actions/workflows/codeql.yaml)
+[![CodeCov](https://codecov.io/gh/joowani/python-arango/branch/main/graph/badge.svg?token=DXg0O4hxnx)](https://codecov.io/gh/joowani/python-arango)
+[![PyPI version](https://badge.fury.io/py/python-arango.svg)](https://badge.fury.io/py/python-arango)
+[![GitHub license](https://img.shields.io/badge/license-MIT-brightgreen)](https://github.com/joowani/python-arango/blob/main/LICENSE)
+![Python version](https://img.shields.io/badge/python-3.6%2B-blue)
+
+# Python-Arango
+
+Python driver for [ArangoDB](https://www.arangodb.com), a scalable multi-model
+database natively supporting documents, graphs and search.
 
 ## Requirements
 
-Python 3.6+ and ArangoDB 3.7+  
+- ArangoDB version 3.7+
+- Python version 3.6+
 
 ## Installation
 
@@ -47,7 +58,7 @@ cursor = db.aql.execute("FOR doc IN students RETURN doc")
 student_names = [document["name"] for document in cursor]
 ```
 
-Here is another example with graphs:
+Another example with [graphs](https://www.arangodb.com/docs/stable/graphs.html):
 
 ```python
 from arango import ArangoClient
@@ -66,7 +77,7 @@ students = graph.create_vertex_collection("students")
 lectures = graph.create_vertex_collection("lectures")
 
 # Create an edge definition (relation) for the graph.
-register = graph.create_edge_definition(
+edges = graph.create_edge_definition(
     edge_collection="register",
     from_vertex_collections=["students"],
     to_vertex_collections=["lectures"]
@@ -83,12 +94,12 @@ lectures.insert({"_key": "STA101", "title": "Statistics"})
 lectures.insert({"_key": "CSC101", "title": "Algorithms"})
 
 # Insert edge documents into "register" edge collection.
-register.insert({"_from": "students/01", "_to": "lectures/MAT101"})
-register.insert({"_from": "students/01", "_to": "lectures/STA101"})
-register.insert({"_from": "students/01", "_to": "lectures/CSC101"})
-register.insert({"_from": "students/02", "_to": "lectures/MAT101"})
-register.insert({"_from": "students/02", "_to": "lectures/STA101"})
-register.insert({"_from": "students/03", "_to": "lectures/CSC101"})
+edges.insert({"_from": "students/01", "_to": "lectures/MAT101"})
+edges.insert({"_from": "students/01", "_to": "lectures/STA101"})
+edges.insert({"_from": "students/01", "_to": "lectures/CSC101"})
+edges.insert({"_from": "students/02", "_to": "lectures/MAT101"})
+edges.insert({"_from": "students/02", "_to": "lectures/STA101"})
+edges.insert({"_from": "students/03", "_to": "lectures/CSC101"})
 
 # Traverse the graph in outbound direction, breadth-first.
 result = graph.traverse(
@@ -98,5 +109,5 @@ result = graph.traverse(
 )
 ```
 
-Please see [documentation](http://python-driver-for-arangodb.readthedocs.io/en/master/index.html) 
+Please see the [documentation](http://python-driver-for-arangodb.readthedocs.io/en/master/index.html)
 for more details.
