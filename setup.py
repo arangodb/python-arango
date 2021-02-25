@@ -1,12 +1,12 @@
 from setuptools import find_packages, setup
 
 with open("./README.md") as fp:
-    description = fp.read()
+    long_description = fp.read()
 
 setup(
     name="python-arango",
     description="Python Driver for ArangoDB",
-    long_description=description,
+    long_description=long_description,
     long_description_content_type="text/markdown",
     author="Joohwan Oh",
     author_email="joohwan.oh@outlook.com",
@@ -19,6 +19,7 @@ setup(
     use_scm_version=True,
     setup_requires=["setuptools_scm"],
     install_requires=[
+        "urllib3>=1.26.0",
         "dataclasses>=0.6; python_version < '3.7'",
         "requests",
         "requests_toolbelt",

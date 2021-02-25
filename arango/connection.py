@@ -7,9 +7,8 @@ __all__ = [
 ]
 
 import sys
+import time
 from abc import abstractmethod
-from calendar import timegm
-from datetime import datetime
 from typing import Any, Callable, Optional, Sequence, Union
 
 import jwt
@@ -317,7 +316,7 @@ class JwtConnection(BaseConnection):
         if resp.error_code != 11 or resp.status_code != 401:
             return resp
 
-        now = timegm(datetime.utcnow().utctimetuple())
+        now = int(time.time())
         if self._token_exp < now - self.exp_leeway:  # pragma: no cover
             return resp
 

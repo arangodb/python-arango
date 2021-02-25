@@ -177,6 +177,8 @@ def pytest_unconfigure(*_):  # pragma: no cover
         for backup_id in sys_db.backup.get()["list"].keys():
             sys_db.backup.delete(backup_id)
 
+    global_data.client.close()
+
 
 # noinspection PyProtectedMember
 def pytest_generate_tests(metafunc):

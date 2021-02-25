@@ -109,5 +109,4 @@ result = graph.traverse(
 )
 ```
 
-Please see the [documentation](http://python-driver-for-arangodb.readthedocs.io/en/master/index.html)
-for more details.
+Please see the [documentation](https://docs.python-arango.com) for more details.

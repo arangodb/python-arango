@@ -1,6 +1,5 @@
-from calendar import timegm
+import time
 from collections import deque
-from datetime import datetime
 from uuid import uuid4
 
 import jwt
@@ -119,7 +118,7 @@ def generate_jwt(secret, exp=3600):
     :return: JWT
     :rtype: str
     """
-    now = timegm(datetime.utcnow().utctimetuple())
+    now = int(time.time())
     return jwt.encode(
         payload={
             "iat": now,

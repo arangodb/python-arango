@@ -1,7 +1,9 @@
 from arango.connection import BasicConnection, JwtConnection, JwtSuperuserConnection
 from arango.errno import FORBIDDEN, HTTP_UNAUTHORIZED
-from arango.exceptions import (  # JWTSecretListError,; JWTSecretReloadError,
+from arango.exceptions import (
     JWTAuthError,
+    JWTSecretListError,
+    JWTSecretReloadError,
     ServerEncryptionError,
     ServerTLSError,
     ServerTLSReloadError,
@@ -53,6 +55,7 @@ def test_auth_jwt(client, db_name, username, password):
     assert err.value.error_code == HTTP_UNAUTHORIZED
 
 
+# TODO re-examine commented out code
 def test_auth_superuser_token(client, db_name, root_password, secret):
     token = generate_jwt(secret)
     db = client.db("_system", superuser_token=token)
@@ -66,21 +69,21 @@ def test_auth_superuser_token(client, db_name, root_password, secret):
     # secrets = db.jwt_secrets()
     # assert 'active' in secrets
     # assert 'passive' in secrets
-    #
-    # # Test get JWT secrets with bad database
-    # with assert_raises(JWTSecretListError) as err:
-    #     bad_db.jwt_secrets()
-    # assert err.value.error_code == FORBIDDEN
-    #
+
+    # Test get JWT secrets with bad database
+    with assert_raises(JWTSecretListError) as err:
+        bad_db.jwt_secrets()
+    assert err.value.error_code == FORBIDDEN
+
     # # Test reload JWT secrets
     # secrets = db.reload_jwt_secrets()
     # assert 'active' in secrets
     # assert 'passive' in secrets
-    #
-    # # Test reload JWT secrets with bad database
-    # with assert_raises(JWTSecretReloadError) as err:
-    #     bad_db.reload_jwt_secrets()
-    # assert err.value.error_code == FORBIDDEN
+
+    # Test reload JWT secrets with bad database
+    with assert_raises(JWTSecretReloadError) as err:
+        bad_db.reload_jwt_secrets()
+    assert err.value.error_code == FORBIDDEN
 
     # Test get TLS data
     result = db.tls()
@@ -100,7 +103,7 @@ def test_auth_superuser_token(client, db_name, root_password, secret):
         bad_db.reload_tls()
     assert err.value.error_code == FORBIDDEN
 
-    # # Test reload TLS
+    # # Test get encryption
     # result = db.encryption()
     # assert isinstance(result, dict)
 
@@ -113,7 +116,7 @@ def test_auth_superuser_token(client, db_name, root_password, secret):
 def test_auth_jwt_expiry(client, db_name, root_password, secret):
     # Test automatic token refresh on expired token.
     db = client.db("_system", "root", root_password, auth_method="jwt")
-    expired_token = generate_jwt(secret, exp=0)
+    expired_token = generate_jwt(secret, exp=-1000)
     db.conn._token = expired_token
     db.conn._auth_header = f"bearer {expired_token}"
     assert isinstance(db.version(), str)

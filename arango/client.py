@@ -75,6 +75,11 @@ class ArangoClient:
     def __repr__(self) -> str:
         return f"<ArangoClient {','.join(self._hosts)}>"
 
+    def close(self) -> None:  # pragma: no cover
+        """Close HTTP sessions."""
+        for session in self._sessions:
+            session.close()
+
     @property
     def hosts(self) -> Sequence[str]:
         """Return the list of ArangoDB host URLs.

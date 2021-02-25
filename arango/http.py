@@ -5,8 +5,8 @@ from typing import MutableMapping, Optional, Tuple, Union
 
 from requests import Session
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 from requests_toolbelt import MultipartEncoder
+from urllib3.util.retry import Retry
 
 from arango.response import Response
 from arango.typings import Headers
@@ -66,6 +66,10 @@ class HTTPClient(ABC):  # pragma: no cover
 class DefaultHTTPClient(HTTPClient):
     """Default HTTP client implementation."""
 
+    REQUEST_TIMEOUT = 60
+    RETRY_ATTEMPTS = 3
+    BACKOFF_FACTOR = 1
+
     def create_session(self, host: str) -> Session:
         """Create and return a new session/connection.
 
@@ -75,10 +79,10 @@ class DefaultHTTPClient(HTTPClient):
         :rtype: requests.Session
         """
         retry_strategy = Retry(
-            total=3,
-            backoff_factor=1,
+            total=self.RETRY_ATTEMPTS,
+            backoff_factor=self.BACKOFF_FACTOR,
             status_forcelist=[429, 500, 502, 503, 504],
-            method_whitelist=["HEAD", "GET", "OPTIONS"],
+            allowed_methods=["HEAD", "GET", "OPTIONS"],
         )
         http_adapter = HTTPAdapter(max_retries=retry_strategy)
 
@@ -124,7 +128,7 @@ class DefaultHTTPClient(HTTPClient):
             data=data,
             headers=headers,
             auth=auth,
-            timeout=5,
+            timeout=self.REQUEST_TIMEOUT,
         )
         return Response(
             method=method,
