@@ -1209,7 +1209,7 @@ class Database(ApiGroup):
                 'to_vertex_collections': ['lectures']
             }
         """
-        data: Json = {"name": name}
+        data: Json = {"name": name, "options": dict()}
         if edge_definitions is not None:
             data["edgeDefinitions"] = [
                 {
@@ -1224,9 +1224,9 @@ class Database(ApiGroup):
         if smart is not None:  # pragma: no cover
             data["isSmart"] = smart
         if smart_field is not None:  # pragma: no cover
-            data["smartGraphAttribute"] = smart_field
+            data["options"]["smartGraphAttribute"] = smart_field
         if shard_count is not None:  # pragma: no cover
-            data["numberOfShards"] = shard_count
+            data["options"]["numberOfShards"] = shard_count
 
         request = Request(method="post", endpoint="/_api/gharial", data=data)
 
