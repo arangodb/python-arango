@@ -171,6 +171,7 @@ class AQL(ApiGroup):
         all_plans: bool = False,
         max_plans: Optional[int] = None,
         opt_rules: Optional[Sequence[str]] = None,
+        bind_vars: Optional[MutableMapping[str, str]] = None,
     ) -> Result[Union[Json, Jsons]]:
         """Inspect the query and return its metadata without executing it.
 
@@ -184,6 +185,8 @@ class AQL(ApiGroup):
         :type max_plans: int
         :param opt_rules: List of optimizer rules.
         :type opt_rules: list
+        :param bind_vars: Bind variables for the query.
+        :type bind_vars: dict
         :return: Execution plan, or plans if **all_plans** was set to True.
         :rtype: dict | list
         :raise arango.exceptions.AQLQueryExplainError: If explain fails.
@@ -194,10 +197,14 @@ class AQL(ApiGroup):
         if opt_rules is not None:
             options["optimizer"] = {"rules": opt_rules}
 
+        data: Json = {"query": query, "options": options}
+        if bind_vars is not None:
+            data["bindVars"] = bind_vars
+
         request = Request(
             method="post",
             endpoint="/_api/explain",
-            data={"query": query, "options": options},
+            data=data,
         )
 
         def response_handler(resp: Response) -> Union[Json, Jsons]:
