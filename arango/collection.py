@@ -993,10 +993,8 @@ class Collection(ApiGroup):
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
         """
         handles = [self._extract_id(d) if isinstance(d, dict) else d for d in documents]
-        
-        params: Params = {
-            "onlyget": True
-        }
+
+        params: Params = {"onlyget": True}
 
         request = Request(
             method="put",
