@@ -993,19 +993,23 @@ class Collection(ApiGroup):
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
         """
         handles = [self._extract_id(d) if isinstance(d, dict) else d for d in documents]
+        
+        params: Params = {
+            "onlyget": True
+        }
 
         request = Request(
             method="put",
-            endpoint="/_api/simple/lookup-by-keys",
-            data={"collection": self.name, "keys": handles},
+            endpoint=f"/_api/document/{self.name}",
+            params=params,
+            data=handles,
             read=self.name,
         )
 
         def response_handler(resp: Response) -> List[Json]:
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
-            docs = resp.body["documents"]
-            return [doc for doc in docs if "_id" in doc]
+            return [doc for doc in resp.body if "_id" in doc]
 
         return self._execute(request, response_handler)
 
