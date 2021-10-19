@@ -42,6 +42,8 @@ class ArangoClient:
         the de-serialized object. If not given, ``json.loads`` is used by
         default.
     :type deserializer: callable
+    :param request_timeout: User-defined time in seconds for performing 
+        http requsts. 60s by default
     """
 
     def __init__(
@@ -51,6 +53,7 @@ class ArangoClient:
         http_client: Optional[HTTPClient] = None,
         serializer: Callable[..., str] = lambda x: dumps(x),
         deserializer: Callable[[str], Any] = lambda x: loads(x),
+        request_timeout: Optional[int] = 60
     ) -> None:
         if isinstance(hosts, str):
             self._hosts = [host.strip("/") for host in hosts.split(",")]
@@ -68,6 +71,7 @@ class ArangoClient:
             self._host_resolver = RoundRobinHostResolver(host_count)
 
         self._http = http_client or DefaultHTTPClient()
+        self._http.REQUEST_TIMEOUT = request_timeout
         self._serializer = serializer
         self._deserializer = deserializer
         self._sessions = [self._http.create_session(h) for h in self._hosts]
