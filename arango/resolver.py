@@ -53,7 +53,7 @@ class RoundRobinHostResolver(HostResolver):
     """Round-robin host resolver."""
 
     def __init__(self, host_count: int) -> None:
-        self._max_tries = host_count * 3
+        self.max_tries = host_count * 3
         self._index = -1
         self._count = host_count
 
