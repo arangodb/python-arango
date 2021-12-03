@@ -39,6 +39,8 @@ setup(
             "pytest-cov>=2.0.0",
             "sphinx",
             "sphinx_rtd_theme",
+            "types-pkg_resources",
+            "types-requests",
         ],
     },
     classifiers=[
