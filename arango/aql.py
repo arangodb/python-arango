@@ -263,6 +263,7 @@ class AQL(ApiGroup):
         stream: Optional[bool] = None,
         skip_inaccessible_cols: Optional[bool] = None,
         max_runtime: Optional[Number] = None,
+        fill_block_cache: Optional[bool] = None,
     ) -> Result[Cursor]:
         """Execute the query and return the result cursor.
 
@@ -345,6 +346,16 @@ class AQL(ApiGroup):
             it is killed. The value is specified in seconds. Default value
             is 0.0 (no timeout).
         :type max_runtime: int | float
+        :param fill_block_cache: If set to true or not specified, this will
+            make the query store the data it reads via the RocksDB storage
+            engine in the RocksDB block cache. This is usually the desired
+            behavior. The option can be set to false for queries that are
+            known to either read a lot of data which would thrash the block
+            cache, or for queries that read data which are known to be outside
+            of the hot set. By setting the option to false, data read by the
+            query will not make it into the RocksDB block cache if not already
+            in there, thus leaving more room for the actual hot set.
+        :type fill_block_cache: bool
         :return: Result cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.AQLQueryExecuteError: If execute fails.
@@ -364,6 +375,8 @@ class AQL(ApiGroup):
         options: Json = {}
         if full_count is not None:
             options["fullCount"] = full_count
+        if fill_block_cache is not None:
+            options["fillBlockCache"] = fill_block_cache
         if max_plans is not None:
             options["maxNumberOfPlans"] = max_plans
         if optimizer_rules is not None:
