@@ -10,7 +10,7 @@ setup(
     long_description_content_type="text/markdown",
     author="Joohwan Oh",
     author_email="joohwan.oh@outlook.com",
-    url="https://github.com/joowani/python-arango",
+    url="https://github.com/ArangoDB-Community/python-arango",
     keywords=["arangodb", "python", "driver"],
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
