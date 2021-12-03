@@ -9,10 +9,10 @@ __all__ = [
 import sys
 import time
 from abc import abstractmethod
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Tuple, Union
 
 import jwt
-from requests import Session
+from requests import ConnectionError, Session
 from requests_toolbelt import MultipartEncoder
 
 from arango.exceptions import JWTAuthError, ServerConnectionError
@@ -109,6 +109,42 @@ class BaseConnection:
         http_ok = 200 <= resp.status_code < 300
         resp.is_success = http_ok and resp.error_code is None
         return resp
+
+    def process_response(
+        self, host_index: int, request: Request, auth: Optional[Tuple[str, str]] = None
+    ) -> Response:
+        """Execute a request until a valid response has been returned.
+
+        :param host_index: The index of the first host to try
+        :type host_index: int
+        :param request: HTTP request.
+        :type request: arango.request.Request
+        :return: HTTP response.
+        :rtype: arango.response.Response
+        """
+        tries = 0
+        while tries < self._host_resolver.max_tries:
+            try:
+                resp = self._http.send_request(
+                    session=self._sessions[host_index],
+                    method=request.method,
+                    url=self._url_prefixes[host_index] + request.endpoint,
+                    params=request.params,
+                    data=self.normalize_data(request.data),
+                    headers=request.headers,
+                    auth=auth,
+                )
+
+                return self.prep_response(resp, request.deserialize)
+            except ConnectionError:
+                tries += 1
+                host_index = self._host_resolver.get_host_index(
+                    prev_host_index=host_index
+                )
+
+        raise ConnectionAbortedError(
+            "Unable to establish connection to host(s) within limit"
+        )
 
     def prep_bulk_err_response(self, parent_response: Response, body: Json) -> Response:
         """Build and return a bulk error response.
@@ -227,16 +263,7 @@ class BasicConnection(BaseConnection):
         :rtype: arango.response.Response
         """
         host_index = self._host_resolver.get_host_index()
-        resp = self._http.send_request(
-            session=self._sessions[host_index],
-            method=request.method,
-            url=self._url_prefixes[host_index] + request.endpoint,
-            params=request.params,
-            data=self.normalize_data(request.data),
-            headers=request.headers,
-            auth=self._auth,
-        )
-        return self.prep_response(resp, request.deserialize)
+        return self.process_response(host_index, request, auth=self._auth)
 
 
 class JwtConnection(BaseConnection):
@@ -302,15 +329,7 @@ class JwtConnection(BaseConnection):
         if self._auth_header is not None:
             request.headers["Authorization"] = self._auth_header
 
-        resp = self._http.send_request(
-            session=self._sessions[host_index],
-            method=request.method,
-            url=self._url_prefixes[host_index] + request.endpoint,
-            params=request.params,
-            data=self.normalize_data(request.data),
-            headers=request.headers,
-        )
-        resp = self.prep_response(resp, request.deserialize)
+        resp = self.process_response(host_index, request)
 
         # Refresh the token and retry on HTTP 401 and error code 11.
         if resp.error_code != 11 or resp.status_code != 401:
@@ -325,15 +344,7 @@ class JwtConnection(BaseConnection):
         if self._auth_header is not None:
             request.headers["Authorization"] = self._auth_header
 
-        resp = self._http.send_request(
-            session=self._sessions[host_index],
-            method=request.method,
-            url=self._url_prefixes[host_index] + request.endpoint,
-            params=request.params,
-            data=self.normalize_data(request.data),
-            headers=request.headers,
-        )
-        return self.prep_response(resp, request.deserialize)
+        return self.process_response(host_index, request)
 
     def refresh_token(self) -> None:
         """Get a new JWT token for the current user (cannot be a superuser).
@@ -349,13 +360,7 @@ class JwtConnection(BaseConnection):
 
         host_index = self._host_resolver.get_host_index()
 
-        resp = self._http.send_request(
-            session=self._sessions[host_index],
-            method=request.method,
-            url=self._url_prefixes[host_index] + request.endpoint,
-            data=self.normalize_data(request.data),
-        )
-        resp = self.prep_response(resp)
+        resp = self.process_response(host_index, request)
 
         if not resp.is_success:
             raise JWTAuthError(resp, request)
@@ -429,12 +434,4 @@ class JwtSuperuserConnection(BaseConnection):
         host_index = self._host_resolver.get_host_index()
         request.headers["Authorization"] = self._auth_header
 
-        resp = self._http.send_request(
-            session=self._sessions[host_index],
-            method=request.method,
-            url=self._url_prefixes[host_index] + request.endpoint,
-            params=request.params,
-            data=self.normalize_data(request.data),
-            headers=request.headers,
-        )
-        return self.prep_response(resp, request.deserialize)
+        return self.process_response(host_index, request)
