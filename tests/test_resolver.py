@@ -16,6 +16,18 @@ def test_resolver_random_host():
     for _ in range(20):
         assert 0 <= resolver.get_host_index() < 10
 
+    resolver = RandomHostResolver(2)
+    index_a = resolver.get_host_index()
+    index_b = resolver.get_host_index(prev_host_index=index_a)
+    index_c = resolver.get_host_index(prev_host_index=index_b)
+    assert index_c in [index_a, index_b]
+
+    resolver = RandomHostResolver(3)
+    index_a = resolver.get_host_index()
+    index_b = resolver.get_host_index(prev_host_index=index_a)
+    index_c = resolver.get_host_index(prev_host_index=index_b)
+    assert index_c not in [index_a, index_b]
+
 
 def test_resolver_round_robin():
     resolver = RoundRobinHostResolver(10)
