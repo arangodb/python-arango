@@ -37,7 +37,7 @@ class RandomHostResolver(HostResolver):
         self._prev_host_indexes: Set[int] = set()
 
     def get_host_index(self, prev_host_index: Optional[int] = None) -> int:
-        if prev_host_index:
+        if prev_host_index is not None:
             self._prev_host_indexes.add(prev_host_index)
             if len(self._prev_host_indexes) == self._count:
                 self._prev_host_indexes.clear()
