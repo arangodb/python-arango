@@ -123,7 +123,7 @@ class BaseConnection:
         :rtype: arango.response.Response
         """
         tries = 0
-        while tries < self._host_resolver.max_tries:
+        while tries < self._host_resolver._max_tries:
             try:
                 resp = self._http.send_request(
                     session=self._sessions[host_index],

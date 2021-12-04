@@ -14,7 +14,7 @@ class HostResolver(ABC):  # pragma: no cover
     """Abstract base class for host resolvers."""
 
     def __init__(self) -> None:
-        self.max_tries: int = 3
+        self._max_tries: int = 3
 
     @abstractmethod
     def get_host_index(self, prev_host_index: Optional[int] = None) -> int:
@@ -33,7 +33,7 @@ class RandomHostResolver(HostResolver):
 
     def __init__(self, host_count: int) -> None:
         self._max = host_count - 1
-        self.max_tries = host_count * 3
+        self._max_tries = host_count * 3
         self._prev_host_indexes: Set[int] = set()
 
     def get_host_index(self, prev_host_index: Optional[int] = None) -> int:
@@ -54,7 +54,7 @@ class RoundRobinHostResolver(HostResolver):
     """Round-robin host resolver."""
 
     def __init__(self, host_count: int) -> None:
-        self.max_tries = host_count * 3
+        self._max_tries = host_count * 3
         self._index = -1
         self._count = host_count
 
