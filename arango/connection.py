@@ -6,10 +6,11 @@ __all__ = [
     "JwtSuperuserConnection",
 ]
 
+# import logging
 import sys
 import time
 from abc import abstractmethod
-from typing import Any, Callable, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Optional, Sequence, Set, Tuple, Union
 
 import jwt
 from requests import ConnectionError, Session
@@ -110,7 +111,7 @@ class BaseConnection:
         resp.is_success = http_ok and resp.error_code is None
         return resp
 
-    def process_response(
+    def process_request(
         self, host_index: int, request: Request, auth: Optional[Tuple[str, str]] = None
     ) -> Response:
         """Execute a request until a valid response has been returned.
@@ -123,7 +124,8 @@ class BaseConnection:
         :rtype: arango.response.Response
         """
         tries = 0
-        while tries < self._host_resolver._max_tries:
+        indexes_to_filter: Set[int] = set()
+        while tries < self._host_resolver.max_tries:
             try:
                 resp = self._http.send_request(
                     session=self._sessions[host_index],
@@ -137,13 +139,17 @@ class BaseConnection:
 
                 return self.prep_response(resp, request.deserialize)
             except ConnectionError:
+                # logging.exception("TODO") # TODO
+
+                if len(indexes_to_filter) == self._host_resolver.host_count - 1:
+                    indexes_to_filter.clear()
+                indexes_to_filter.add(host_index)
+
+                host_index = self._host_resolver.get_host_index(indexes_to_filter)
                 tries += 1
-                host_index = self._host_resolver.get_host_index(
-                    prev_host_index=host_index
-                )
 
         raise ConnectionAbortedError(
-            "Unable to establish connection to host(s) within limit"
+            f"Can't connect to host(s) within limit ({self._host_resolver.max_tries})"
         )
 
     def prep_bulk_err_response(self, parent_response: Response, body: Json) -> Response:
@@ -263,7 +269,7 @@ class BasicConnection(BaseConnection):
         :rtype: arango.response.Response
         """
         host_index = self._host_resolver.get_host_index()
-        return self.process_response(host_index, request, auth=self._auth)
+        return self.process_request(host_index, request, auth=self._auth)
 
 
 class JwtConnection(BaseConnection):
@@ -329,7 +335,7 @@ class JwtConnection(BaseConnection):
         if self._auth_header is not None:
             request.headers["Authorization"] = self._auth_header
 
-        resp = self.process_response(host_index, request)
+        resp = self.process_request(host_index, request)
 
         # Refresh the token and retry on HTTP 401 and error code 11.
         if resp.error_code != 11 or resp.status_code != 401:
@@ -344,7 +350,7 @@ class JwtConnection(BaseConnection):
         if self._auth_header is not None:
             request.headers["Authorization"] = self._auth_header
 
-        return self.process_response(host_index, request)
+        return self.process_request(host_index, request)
 
     def refresh_token(self) -> None:
         """Get a new JWT token for the current user (cannot be a superuser).
@@ -360,7 +366,7 @@ class JwtConnection(BaseConnection):
 
         host_index = self._host_resolver.get_host_index()
 
-        resp = self.process_response(host_index, request)
+        resp = self.process_request(host_index, request)
 
         if not resp.is_success:
             raise JWTAuthError(resp, request)
@@ -434,4 +440,4 @@ class JwtSuperuserConnection(BaseConnection):
         host_index = self._host_resolver.get_host_index()
         request.headers["Authorization"] = self._auth_header
 
-        return self.process_response(host_index, request)
+        return self.process_request(host_index, request)

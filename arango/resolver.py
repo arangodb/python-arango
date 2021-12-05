@@ -13,39 +13,43 @@ from typing import Optional, Set
 class HostResolver(ABC):  # pragma: no cover
     """Abstract base class for host resolvers."""
 
-    def __init__(self) -> None:
-        self._max_tries: int = 3
+    def __init__(self, host_count: int = 1, max_tries: int = 3) -> None:
+        if max_tries < host_count:
+            raise ValueError("max_tries cannot be less than host_count")
+
+        self._host_count = host_count
+        self._max_tries = max_tries
 
     @abstractmethod
-    def get_host_index(self, prev_host_index: Optional[int] = None) -> int:
+    def get_host_index(self, indexes_to_filter: Set[int] = set()) -> int:
         raise NotImplementedError
+
+    @property
+    def host_count(self) -> int:
+        return self._host_count
+
+    @property
+    def max_tries(self) -> int:
+        return self._max_tries
 
 
 class SingleHostResolver(HostResolver):
     """Single host resolver."""
 
-    def get_host_index(self, prev_host_index: Optional[int] = None) -> int:
+    def get_host_index(self, indexes_to_filter: Set[int] = set()) -> int:
         return 0
 
 
 class RandomHostResolver(HostResolver):
     """Random host resolver."""
 
-    def __init__(self, host_count: int) -> None:
-        self._max = host_count - 1
-        self._max_tries = host_count * 3
-        self._prev_host_indexes: Set[int] = set()
+    def __init__(self, host_count: int, max_tries: Optional[int] = None) -> None:
+        super().__init__(host_count, max_tries or host_count * 3)
 
-    def get_host_index(self, prev_host_index: Optional[int] = None) -> int:
-        if prev_host_index is not None:
-            if len(self._prev_host_indexes) == self._max:
-                self._prev_host_indexes.clear()
-
-            self._prev_host_indexes.add(prev_host_index)
-
+    def get_host_index(self, indexes_to_filter: Set[int] = set()) -> int:
         host_index = None
-        while host_index is None or host_index in self._prev_host_indexes:
-            host_index = random.randint(0, self._max)
+        while host_index is None or host_index in indexes_to_filter:
+            host_index = random.randint(0, self.host_count - 1)
 
         return host_index
 
@@ -53,11 +57,10 @@ class RandomHostResolver(HostResolver):
 class RoundRobinHostResolver(HostResolver):
     """Round-robin host resolver."""
 
-    def __init__(self, host_count: int) -> None:
-        self._max_tries = host_count * 3
+    def __init__(self, host_count: int, max_tries: Optional[int] = None) -> None:
+        super().__init__(host_count, max_tries or host_count * 3)
         self._index = -1
-        self._count = host_count
 
-    def get_host_index(self, prev_host_index: Optional[int] = None) -> int:
-        self._index = (self._index + 1) % self._count
+    def get_host_index(self, indexes_to_filter: Set[int] = set()) -> int:
+        self._index = (self._index + 1) % self.host_count
         return self._index
