@@ -66,7 +66,7 @@ class ArangoClient:
         self._host_resolver: HostResolver
 
         if host_count == 1:
-            self._host_resolver = SingleHostResolver()
+            self._host_resolver = SingleHostResolver(1, resolver_max_tries)
         elif host_resolver == "random":
             self._host_resolver = RandomHostResolver(host_count, resolver_max_tries)
         else:
