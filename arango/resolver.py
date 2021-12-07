@@ -22,7 +22,7 @@ class HostResolver(ABC):  # pragma: no cover
         self._max_tries = max_tries
 
     @abstractmethod
-    def get_host_index(self, indexes_to_filter: Set[int] = set()) -> int:
+    def get_host_index(self, indexes_to_filter: Optional[Set[int]] = None) -> int:
         raise NotImplementedError
 
     @property
@@ -37,7 +37,7 @@ class HostResolver(ABC):  # pragma: no cover
 class SingleHostResolver(HostResolver):
     """Single host resolver."""
 
-    def get_host_index(self, indexes_to_filter: Set[int] = set()) -> int:
+    def get_host_index(self, indexes_to_filter: Optional[Set[int]] = None) -> int:
         return 0
 
 
@@ -47,8 +47,9 @@ class RandomHostResolver(HostResolver):
     def __init__(self, host_count: int, max_tries: Optional[int] = None) -> None:
         super().__init__(host_count, max_tries)
 
-    def get_host_index(self, indexes_to_filter: Set[int] = set()) -> int:
+    def get_host_index(self, indexes_to_filter: Optional[Set[int]] = None) -> int:
         host_index = None
+        indexes_to_filter = indexes_to_filter or set()
         while host_index is None or host_index in indexes_to_filter:
             host_index = random.randint(0, self.host_count - 1)
 
@@ -62,6 +63,6 @@ class RoundRobinHostResolver(HostResolver):
         super().__init__(host_count, max_tries)
         self._index = -1
 
-    def get_host_index(self, indexes_to_filter: Set[int] = set()) -> int:
+    def get_host_index(self, indexes_to_filter: Optional[Set[int]] = None) -> int:
         self._index = (self._index + 1) % self.host_count
         return self._index
