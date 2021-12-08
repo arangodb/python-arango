@@ -140,7 +140,7 @@ class BaseConnection:
                 return self.prep_response(resp, request.deserialize)
             except ConnectionError:
                 url = self._url_prefixes[host_index] + request.endpoint
-                logging.exception(f"ConnectionError: {url}")
+                logging.error(f"ConnectionError: {url}")
 
                 if len(indexes_to_filter) == self._host_resolver.host_count - 1:
                     indexes_to_filter.clear()
