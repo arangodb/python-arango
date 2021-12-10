@@ -31,6 +31,10 @@ class ArangoClient:
         multiple host URLs are provided). Accepted values are "roundrobin" and
         "random". Any other value defaults to round robin.
     :type host_resolver: str
+    :param resolver_max_tries: Number of attempts to process an HTTP request
+        before throwing a ConnectionAbortedError. Must not be lower than the
+        number of hosts.
+    :type resolver_max_tries: int
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
     :param serializer: User-defined JSON serializer. Must be a callable
@@ -48,6 +52,7 @@ class ArangoClient:
         self,
         hosts: Union[str, Sequence[str]] = "http://127.0.0.1:8529",
         host_resolver: str = "roundrobin",
+        resolver_max_tries: Optional[int] = None,
         http_client: Optional[HTTPClient] = None,
         serializer: Callable[..., str] = lambda x: dumps(x),
         deserializer: Callable[[str], Any] = lambda x: loads(x),
@@ -61,11 +66,11 @@ class ArangoClient:
         self._host_resolver: HostResolver
 
         if host_count == 1:
-            self._host_resolver = SingleHostResolver()
+            self._host_resolver = SingleHostResolver(1, resolver_max_tries)
         elif host_resolver == "random":
-            self._host_resolver = RandomHostResolver(host_count)
+            self._host_resolver = RandomHostResolver(host_count, resolver_max_tries)
         else:
-            self._host_resolver = RoundRobinHostResolver(host_count)
+            self._host_resolver = RoundRobinHostResolver(host_count, resolver_max_tries)
 
         self._http = http_client or DefaultHTTPClient()
         self._serializer = serializer
