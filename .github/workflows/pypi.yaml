@@ -1,7 +1,7 @@
 name: Upload to PyPI
 on:
   release:
-    types: [created]
+    types: [published]
 jobs:
   upload:
     runs-on: ubuntu-latest
