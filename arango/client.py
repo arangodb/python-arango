@@ -35,6 +35,10 @@ class ArangoClient:
         before throwing a ConnectionAbortedError. Must not be lower than the
         number of hosts.
     :type resolver_max_tries: int
+    :param resolver_timeout: How many seconds given to verify that a
+        host is alive before throwing a requests.exceptions.ConnectTimeout.
+        See requests.get() for more info.
+    :type resolver_timeout: float
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
     :param serializer: User-defined JSON serializer. Must be a callable
@@ -53,6 +57,7 @@ class ArangoClient:
         hosts: Union[str, Sequence[str]] = "http://127.0.0.1:8529",
         host_resolver: str = "roundrobin",
         resolver_max_tries: Optional[int] = None,
+        resolver_timeout: Optional[float] = None,
         http_client: Optional[HTTPClient] = None,
         serializer: Callable[..., str] = lambda x: dumps(x),
         deserializer: Callable[[str], Any] = lambda x: loads(x),
@@ -66,11 +71,17 @@ class ArangoClient:
         self._host_resolver: HostResolver
 
         if host_count == 1:
-            self._host_resolver = SingleHostResolver(1, resolver_max_tries)
+            self._host_resolver = SingleHostResolver(
+                1, resolver_max_tries, resolver_timeout
+            )
         elif host_resolver == "random":
-            self._host_resolver = RandomHostResolver(host_count, resolver_max_tries)
+            self._host_resolver = RandomHostResolver(
+                host_count, resolver_max_tries, resolver_timeout
+            )
         else:
-            self._host_resolver = RoundRobinHostResolver(host_count, resolver_max_tries)
+            self._host_resolver = RoundRobinHostResolver(
+                host_count, resolver_max_tries, resolver_timeout
+            )
 
         self._http = http_client or DefaultHTTPClient()
         self._serializer = serializer

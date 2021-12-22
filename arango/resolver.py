@@ -13,13 +13,19 @@ from typing import Optional, Set
 class HostResolver(ABC):  # pragma: no cover
     """Abstract base class for host resolvers."""
 
-    def __init__(self, host_count: int = 1, max_tries: Optional[int] = None) -> None:
+    def __init__(
+        self,
+        host_count: int = 1,
+        max_tries: Optional[int] = None,
+        timeout: Optional[float] = None,
+    ) -> None:
         max_tries = max_tries or host_count * 3
         if max_tries < host_count:
             raise ValueError("max_tries cannot be less than host_count")
 
         self._host_count = host_count
         self._max_tries = max_tries
+        self._timeout = timeout or 5.0
 
     @abstractmethod
     def get_host_index(self, indexes_to_filter: Optional[Set[int]] = None) -> int:
@@ -33,6 +39,10 @@ class HostResolver(ABC):  # pragma: no cover
     def max_tries(self) -> int:
         return self._max_tries
 
+    @property
+    def timeout(self) -> float:
+        return self._timeout
+
 
 class SingleHostResolver(HostResolver):
     """Single host resolver."""
@@ -43,9 +53,6 @@ class SingleHostResolver(HostResolver):
 
 class RandomHostResolver(HostResolver):
     """Random host resolver."""
-
-    def __init__(self, host_count: int, max_tries: Optional[int] = None) -> None:
-        super().__init__(host_count, max_tries)
 
     def get_host_index(self, indexes_to_filter: Optional[Set[int]] = None) -> int:
         host_index = None
@@ -59,8 +66,13 @@ class RandomHostResolver(HostResolver):
 class RoundRobinHostResolver(HostResolver):
     """Round-robin host resolver."""
 
-    def __init__(self, host_count: int, max_tries: Optional[int] = None) -> None:
-        super().__init__(host_count, max_tries)
+    def __init__(
+        self,
+        host_count: int,
+        max_tries: Optional[int] = None,
+        timeout: Optional[float] = None,
+    ) -> None:
+        super().__init__(host_count, max_tries, timeout)
         self._index = -1
 
     def get_host_index(self, indexes_to_filter: Optional[Set[int]] = None) -> int:

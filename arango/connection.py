@@ -13,7 +13,9 @@ from abc import abstractmethod
 from typing import Any, Callable, Optional, Sequence, Set, Tuple, Union
 
 import jwt
-from requests import ConnectionError, Session
+from requests import Session
+from requests import get as requests_get
+from requests.exceptions import ConnectTimeout
 from requests_toolbelt import MultipartEncoder
 
 from arango.exceptions import JWTAuthError, ServerConnectionError
@@ -126,21 +128,12 @@ class BaseConnection:
         tries = 0
         indexes_to_filter: Set[int] = set()
         while tries < self._host_resolver.max_tries:
+            url_prefix = self._url_prefixes[host_index]
             try:
-                resp = self._http.send_request(
-                    session=self._sessions[host_index],
-                    method=request.method,
-                    url=self._url_prefixes[host_index] + request.endpoint,
-                    params=request.params,
-                    data=self.normalize_data(request.data),
-                    headers=request.headers,
-                    auth=auth,
-                )
+                requests_get(url_prefix, timeout=self._host_resolver.timeout)
 
-                return self.prep_response(resp, request.deserialize)
-            except ConnectionError:
-                url = self._url_prefixes[host_index] + request.endpoint
-                logging.debug(f"ConnectionError: {url}")
+            except ConnectTimeout:
+                logging.debug(f"ConnectTimeout: {url_prefix}")
 
                 if len(indexes_to_filter) == self._host_resolver.host_count - 1:
                     indexes_to_filter.clear()
@@ -148,6 +141,19 @@ class BaseConnection:
 
                 host_index = self._host_resolver.get_host_index(indexes_to_filter)
                 tries += 1
+
+            else:
+                resp = self._http.send_request(
+                    session=self._sessions[host_index],
+                    method=request.method,
+                    url=url_prefix + request.endpoint,
+                    params=request.params,
+                    data=self.normalize_data(request.data),
+                    headers=request.headers,
+                    auth=auth,
+                )
+
+                return self.prep_response(resp, request.deserialize)
 
         raise ConnectionAbortedError(
             f"Can't connect to host(s) within limit ({self._host_resolver.max_tries})"
