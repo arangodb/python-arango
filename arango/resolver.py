@@ -25,7 +25,7 @@ class HostResolver(ABC):  # pragma: no cover
 
         self._host_count = host_count
         self._max_tries = max_tries
-        self._timeout = timeout or 5.0
+        self._timeout = timeout or 3.0
 
     @abstractmethod
     def get_host_index(self, indexes_to_filter: Optional[Set[int]] = None) -> int:
