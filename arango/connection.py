@@ -104,6 +104,8 @@ class BaseConnection:
             if isinstance(resp.body, dict):
                 resp.error_code = resp.body.get("errorNum")
                 resp.error_message = resp.body.get("errorMessage")
+                if resp.status_code == resp.error_code == 503:
+                    raise ConnectionError  # Fallback to another host
         else:
             resp.body = resp.raw_body
 
