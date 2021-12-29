@@ -10,7 +10,8 @@ import logging
 import sys
 import time
 from abc import abstractmethod
-from typing import Any, Callable, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Callable, Optional, Sequence, Set, Text, Tuple, Union
+import typing
 
 import jwt
 from requests import ConnectionError, Session
@@ -22,6 +23,8 @@ from arango.request import Request
 from arango.resolver import HostResolver
 from arango.response import Response
 from arango.typings import Fields, Json
+
+from .ca_certificate import CA_Certificate
 
 Connection = Union["BasicConnection", "JwtConnection", "JwtSuperuserConnection"]
 
@@ -38,6 +41,8 @@ class BaseConnection:
         http_client: HTTPClient,
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
+        cert: Optional[Union[Text, typing.Tuple[Text, Text]]] = None
+
     ) -> None:
         self._url_prefixes = [f"{host}/_db/{db_name}" for host in hosts]
         self._host_resolver = host_resolver
@@ -47,6 +52,8 @@ class BaseConnection:
         self._serializer = serializer
         self._deserializer = deserializer
         self._username: Optional[str] = None
+        self.cert: Optional[Union[Text, typing.Tuple[Text, Text]]] = None
+
 
     @property
     def db_name(self) -> str:
@@ -112,7 +119,7 @@ class BaseConnection:
         return resp
 
     def process_request(
-        self, host_index: int, request: Request, auth: Optional[Tuple[str, str]] = None
+        self, host_index: int, request: Request, auth: Optional[Tuple[str, str]] = None, cert: Optional[Union[Text, typing.Tuple[Text, Text]]] = None
     ) -> Response:
         """Execute a request until a valid response has been returned.
 
@@ -124,6 +131,9 @@ class BaseConnection:
         :rtype: arango.response.Response
         """
         tries = 0
+        if cert is not None:
+            cert=cert.get_file_path()
+            
         indexes_to_filter: Set[int] = set()
         while tries < self._host_resolver.max_tries:
             try:
@@ -135,6 +145,7 @@ class BaseConnection:
                     data=self.normalize_data(request.data),
                     headers=request.headers,
                     auth=auth,
+                    cert=cert
                 )
 
                 return self.prep_response(resp, request.deserialize)
@@ -248,6 +259,7 @@ class BasicConnection(BaseConnection):
         http_client: HTTPClient,
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
+        cert: Optional[Union[Text, typing.Tuple[Text, Text]]]
     ) -> None:
         super().__init__(
             hosts,
@@ -257,9 +269,11 @@ class BasicConnection(BaseConnection):
             http_client,
             serializer,
             deserializer,
+            cert
         )
         self._username = username
         self._auth = (username, password)
+        self._cert = cert
 
     def send_request(self, request: Request) -> Response:
         """Send an HTTP request to ArangoDB server.
@@ -270,7 +284,7 @@ class BasicConnection(BaseConnection):
         :rtype: arango.response.Response
         """
         host_index = self._host_resolver.get_host_index()
-        return self.process_request(host_index, request, auth=self._auth)
+        return self.process_request(host_index, request, auth=self._auth, cert=self._cert)
 
 
 class JwtConnection(BaseConnection):
@@ -303,6 +317,8 @@ class JwtConnection(BaseConnection):
         http_client: HTTPClient,
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
+        cert: Optional[Union[Text, typing.Tuple[Text, Text]]]
+
     ) -> None:
         super().__init__(
             hosts,
@@ -312,6 +328,7 @@ class JwtConnection(BaseConnection):
             http_client,
             serializer,
             deserializer,
+            cert
         )
         self._username = username
         self._password = password

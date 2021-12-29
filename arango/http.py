@@ -1,7 +1,8 @@
 __all__ = ["HTTPClient", "DefaultHTTPClient"]
 
 from abc import ABC, abstractmethod
-from typing import MutableMapping, Optional, Tuple, Union
+from typing import MutableMapping, Optional, Text, Tuple, Union
+import typing
 
 from requests import Session
 from requests.adapters import HTTPAdapter
@@ -16,7 +17,8 @@ class HTTPClient(ABC):  # pragma: no cover
     """Abstract base class for HTTP clients."""
 
     @abstractmethod
-    def create_session(self, host: str) -> Session:
+    def create_session(self, host: str, cert: Optional[Union[Text, typing.Tuple[Text, Text]]]
+) -> Session:
         """Return a new requests session given the host URL.
 
         This method must be overridden by the user.
@@ -24,6 +26,8 @@ class HTTPClient(ABC):  # pragma: no cover
         :param host: ArangoDB host URL.
         :type host: str
         :returns: Requests session object.
+        :param cert: Cert file location
+        :type Optional[Union[Text, tuple[Text, Text]]]
         :rtype: requests.Session
         """
         raise NotImplementedError
@@ -38,6 +42,7 @@ class HTTPClient(ABC):  # pragma: no cover
         params: Optional[MutableMapping[str, str]] = None,
         data: Union[str, MultipartEncoder, None] = None,
         auth: Optional[Tuple[str, str]] = None,
+        cert: Optional[Union[Text, typing.Tuple[Text, Text]]] = None
     ) -> Response:
         """Send an HTTP request.
 
@@ -70,7 +75,7 @@ class DefaultHTTPClient(HTTPClient):
     RETRY_ATTEMPTS = 3
     BACKOFF_FACTOR = 1
 
-    def create_session(self, host: str) -> Session:
+    def create_session(self, host: str, cert: Optional[Union[Text, typing.Tuple[Text, Text]]]) -> Session:
         """Create and return a new session/connection.
 
         :param host: ArangoDB host URL.
@@ -101,6 +106,7 @@ class DefaultHTTPClient(HTTPClient):
         params: Optional[MutableMapping[str, str]] = None,
         data: Union[str, MultipartEncoder, None] = None,
         auth: Optional[Tuple[str, str]] = None,
+        cert: Optional[Union[Text, typing.Tuple[Text, Text]]] = None
     ) -> Response:
         """Send an HTTP request.
 
@@ -129,6 +135,7 @@ class DefaultHTTPClient(HTTPClient):
             headers=headers,
             auth=auth,
             timeout=self.REQUEST_TIMEOUT,
+            cert=cert
         )
         return Response(
             method=method,

@@ -1,7 +1,8 @@
 __all__ = ["ArangoClient"]
 
 from json import dumps, loads
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Any, Callable, Optional, Sequence, Text, Union
+import typing
 
 from pkg_resources import get_distribution
 
@@ -56,6 +57,7 @@ class ArangoClient:
         http_client: Optional[HTTPClient] = None,
         serializer: Callable[..., str] = lambda x: dumps(x),
         deserializer: Callable[[str], Any] = lambda x: loads(x),
+        cert: Optional[Union[Text, typing.Tuple[Text, Text]]] = None
     ) -> None:
         if isinstance(hosts, str):
             self._hosts = [host.strip("/") for host in hosts.split(",")]
@@ -75,7 +77,7 @@ class ArangoClient:
         self._http = http_client or DefaultHTTPClient()
         self._serializer = serializer
         self._deserializer = deserializer
-        self._sessions = [self._http.create_session(h) for h in self._hosts]
+        self._sessions = [self._http.create_session(h, cert) for h in self._hosts]
 
     def __repr__(self) -> str:
         return f"<ArangoClient {','.join(self._hosts)}>"
@@ -111,6 +113,7 @@ class ArangoClient:
         verify: bool = False,
         auth_method: str = "basic",
         superuser_token: Optional[str] = None,
+        cert: Optional[Union[Text, typing.Tuple[Text, Text]]] = None
     ) -> StandardDatabase:
         """Connect to an ArangoDB database and return the database API wrapper.
 
@@ -160,6 +163,7 @@ class ArangoClient:
                 http_client=self._http,
                 serializer=self._serializer,
                 deserializer=self._deserializer,
+                cert=cert                
             )
         elif auth_method.lower() == "jwt":
             connection = JwtConnection(
@@ -172,6 +176,7 @@ class ArangoClient:
                 http_client=self._http,
                 serializer=self._serializer,
                 deserializer=self._deserializer,
+                cert=cert
             )
         else:
             raise ValueError(f"invalid auth_method: {auth_method}")
