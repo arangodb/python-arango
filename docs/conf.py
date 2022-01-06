@@ -1,5 +1,5 @@
 project = "python-arango"
-copyright = "2016-2021, Joohwan Oh"
+copyright = "2016-2022, Joohwan Oh"
 author = "Joohwan Oh"
 extensions = [
     "sphinx_rtd_theme",
