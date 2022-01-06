@@ -58,8 +58,8 @@ Your ``CustomHTTPClient`` class might look something like this:
                 method_whitelist=["HEAD", "GET", "OPTIONS"],
             )
             http_adapter = HTTPAdapter(max_retries=retry_strategy)
-            session.mount('https://', adapter)
-            session.mount('http://', adapter)
+            session.mount('https://', http_adapter)
+            session.mount('http://', http_adapter)
 
             return session
 
