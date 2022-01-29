@@ -1,10 +1,9 @@
 ![Logo](https://user-images.githubusercontent.com/2701938/108583516-c3576680-72ee-11eb-883f-2d9b52e74e45.png)
 
-[![Build](https://github.com/joowani/python-arango/actions/workflows/build.yaml/badge.svg)](https://github.com/joowani/python-arango/actions/workflows/build.yaml)
-[![CodeQL](https://github.com/joowani/python-arango/actions/workflows/codeql.yaml/badge.svg)](https://github.com/joowani/python-arango/actions/workflows/codeql.yaml)
-[![CodeCov](https://codecov.io/gh/joowani/python-arango/branch/main/graph/badge.svg?token=DXg0O4hxnx)](https://codecov.io/gh/joowani/python-arango)
+[![Build](https://github.com/ArangoDB-Community/python-arango/actions/workflows/build.yaml/badge.svg)](https://github.com/ArangoDB-Community/python-arango/actions/workflows/build.yaml)
+[![CodeQL](https://github.com/ArangoDB-Community/python-arango/actions/workflows/codeql.yaml/badge.svg)](https://github.com/ArangoDB-Community/python-arango/actions/workflows/codeql.yaml)
 [![PyPI version](https://badge.fury.io/py/python-arango.svg)](https://badge.fury.io/py/python-arango)
-[![GitHub license](https://img.shields.io/badge/license-MIT-brightgreen)](https://github.com/joowani/python-arango/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/github/license/ArangoDB-Community/python-arango?color=brightgreen)](https://github.com/ArangoDB-Community/python-arango/blob/main/LICENSE)
 ![Python version](https://img.shields.io/badge/python-3.6%2B-blue)
 
 # Python-Arango
