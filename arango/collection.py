@@ -301,7 +301,11 @@ class Collection(ApiGroup):
         return self._execute(request, response_handler)
 
     def configure(
-        self, sync: Optional[bool] = None, schema: Optional[Json] = None
+        self,
+        sync: Optional[bool] = None,
+        schema: Optional[Json] = None,
+        replication_factor: Optional[int] = None,
+        write_concern: Optional[int] = None
     ) -> Result[Json]:
         """Configure collection properties.
 
@@ -309,6 +313,21 @@ class Collection(ApiGroup):
         :type sync: bool | None
         :param schema: document schema for validation of objects.
         :type schema: dict
+        :param replication_factor: Number of copies of each shard on different
+            servers in a cluster. Allowed values are 1 (only one copy is kept
+            and no synchronous replication), and n (n-1 replicas are kept and
+            any two copies are replicated across servers synchronously, meaning
+            every write to the master is copied to all slaves before operation
+            is reported successful).
+        :type replication_factor: int
+        :param write_concern: Write concern for the collection. Determines how
+            many copies of each shard are required to be in sync on different
+            DBServers. If there are less than these many copies in the cluster
+            a shard will refuse to write. Writes to shards with enough
+            up-to-date copies will succeed at the same time. The value of this
+            parameter cannot be larger than that of **replication_factor**.
+            Default value is 1. Used for clusters only.
+        :type write_concern: int
         :return: New collection properties.
         :rtype: dict
         :raise arango.exceptions.CollectionConfigureError: If operation fails.
@@ -318,6 +337,10 @@ class Collection(ApiGroup):
             data["waitForSync"] = sync
         if schema is not None:
             data["schema"] = schema
+        if replication_factor is not None:
+            data["replicationFactor"] = replication_factor
+        if write_concern is not None:
+            data["writeConcern"] = write_concern
 
         request = Request(
             method="put",
