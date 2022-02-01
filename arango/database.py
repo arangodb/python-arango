@@ -1165,8 +1165,11 @@ class Database(ApiGroup):
         edge_definitions: Optional[Sequence[Json]] = None,
         orphan_collections: Optional[Sequence[str]] = None,
         smart: Optional[bool] = None,
+        disjoint: Optional[bool] = None,
         smart_field: Optional[str] = None,
         shard_count: Optional[int] = None,
+        replication_factor: Optional[int] = None,
+        write_concern: Optional[int] = None,
     ) -> Result[Graph]:
         """Create a new graph.
 
@@ -1184,6 +1187,10 @@ class Database(ApiGroup):
             **smart_field** below). Applies only to enterprise version of
             ArangoDB.
         :type smart: bool | None
+        :param disjoint: If set to True, create a disjoint SmartGraph instead
+            of a regular SmartGraph. Applies only to enterprise version of
+            ArangoDB.
+        :type disjoint: bool | None
         :param smart_field: Document field used to shard the vertices of the
             graph. To use this, parameter **smart** must be set to True and
             every vertex in the graph must have the smart field. Applies only
@@ -1195,6 +1202,21 @@ class Database(ApiGroup):
             cannot be modified later once set. Applies only to enterprise
             version of ArangoDB.
         :type shard_count: int | None
+        :param replication_factor: Number of copies of each shard on different
+            servers in a cluster. Allowed values are 1 (only one copy is kept
+            and no synchronous replication), and n (n-1 replicas are kept and
+            any two copies are replicated across servers synchronously, meaning
+            every write to the master is copied to all slaves before operation
+            is reported successful).
+        :type replication_factor: int
+        :param write_concern: Write concern for the collection. Determines how
+            many copies of each shard are required to be in sync on different
+            DBServers. If there are less than these many copies in the cluster
+            a shard will refuse to write. Writes to shards with enough
+            up-to-date copies will succeed at the same time. The value of this
+            parameter cannot be larger than that of **replication_factor**.
+            Default value is 1. Used for clusters only.
+        :type write_concern: int
         :return: Graph API wrapper.
         :rtype: arango.graph.Graph
         :raise arango.exceptions.GraphCreateError: If create fails.
@@ -1223,10 +1245,16 @@ class Database(ApiGroup):
             data["orphanCollections"] = orphan_collections
         if smart is not None:  # pragma: no cover
             data["isSmart"] = smart
+        if disjoint is not None:  # pragma: no cover
+            data["isDisjoint"] = disjoint
         if smart_field is not None:  # pragma: no cover
             data["options"]["smartGraphAttribute"] = smart_field
         if shard_count is not None:  # pragma: no cover
             data["options"]["numberOfShards"] = shard_count
+        if replication_factor is not None:  # pragma: no cover
+            data["options"]["replicationFactor"] = replication_factor
+        if write_concern is not None:  # pragma: no cover
+            data["options"]["writeConcern"] = write_concern
 
         request = Request(method="post", endpoint="/_api/gharial", data=data)
 
