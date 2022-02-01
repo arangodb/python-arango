@@ -305,7 +305,7 @@ class Collection(ApiGroup):
         sync: Optional[bool] = None,
         schema: Optional[Json] = None,
         replication_factor: Optional[int] = None,
-        write_concern: Optional[int] = None
+        write_concern: Optional[int] = None,
     ) -> Result[Json]:
         """Configure collection properties.
 
