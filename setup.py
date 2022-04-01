@@ -3,21 +3,24 @@ from setuptools import find_packages, setup
 with open("./README.md") as fp:
     long_description = fp.read()
 
+version = {}
+with open("./arango/version.py") as fp:
+    exec(fp.read(), version)
+
 setup(
     name="python-arango",
     description="Python Driver for ArangoDB",
     long_description=long_description,
     long_description_content_type="text/markdown",
+    version=version["version"],
     author="Joohwan Oh",
     author_email="joohwan.oh@outlook.com",
     url="https://github.com/ArangoDB-Community/python-arango",
     keywords=["arangodb", "python", "driver"],
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     license="MIT",
-    use_scm_version=True,
-    setup_requires=["setuptools_scm"],
     install_requires=[
         "urllib3>=1.26.0",
         "dataclasses>=0.6; python_version < '3.7'",
@@ -25,18 +28,17 @@ setup(
         "requests_toolbelt",
         "PyJWT",
         "setuptools>=42",
-        "setuptools_scm[toml]>=3.4",
     ],
     extras_require={
         "dev": [
-            "black",
-            "flake8>=3.8.4",
-            "isort>=5.0.0",
-            "mypy>=0.790",
+            "black>=22.3.0",
+            "flake8>=4.0.1",
+            "isort>=5.10.1",
+            "mypy>=0.942",
             "mock",
-            "pre-commit>=2.9.3",
-            "pytest>=6.0.0",
-            "pytest-cov>=2.0.0",
+            "pre-commit>=2.17.0",
+            "pytest>=7.1.1",
+            "pytest-cov>=3.0.0",
             "sphinx",
             "sphinx_rtd_theme",
             "types-pkg_resources",

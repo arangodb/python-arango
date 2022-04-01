@@ -11,14 +11,14 @@ Requirements
 =============
 
 - ArangoDB version 3.7+
-- Python version 3.6+
+- Python version 3.7+
 
 Installation
 ============
 
 .. code-block:: bash
 
-    ~$ pip install python-arango
+    ~$ pip install python-arango --upgrade
 
 Contents
 ========
