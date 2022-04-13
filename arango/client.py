@@ -20,7 +20,6 @@ from arango.resolver import (
 )
 from arango.version import version
 
-
 class ArangoClient:
     """ArangoDB client.
 
@@ -45,6 +44,8 @@ class ArangoClient:
         the de-serialized object. If not given, ``json.loads`` is used by
         default.
     :type deserializer: callable
+    :param verify_certificate: Verify TLS certificates.
+    :type verify_certificate: bool
     """
 
     def __init__(
@@ -55,6 +56,7 @@ class ArangoClient:
         http_client: Optional[HTTPClient] = None,
         serializer: Callable[..., str] = lambda x: dumps(x),
         deserializer: Callable[[str], Any] = lambda x: loads(x),
+        verify_certificate: bool = True,
     ) -> None:
         if isinstance(hosts, str):
             self._hosts = [host.strip("/") for host in hosts.split(",")]
@@ -75,6 +77,10 @@ class ArangoClient:
         self._serializer = serializer
         self._deserializer = deserializer
         self._sessions = [self._http.create_session(h) for h in self._hosts]
+       
+        # set flag for SSL/TLS certificate verification
+        for session in self._sessions:
+            session.verify = verify_certificate
 
     def __repr__(self) -> str:
         return f"<ArangoClient {','.join(self._hosts)}>"
@@ -110,6 +116,7 @@ class ArangoClient:
         verify: bool = False,
         auth_method: str = "basic",
         superuser_token: Optional[str] = None,
+        verify_certificate: bool = True,
     ) -> StandardDatabase:
         """Connect to an ArangoDB database and return the database API wrapper.
 
@@ -130,6 +137,8 @@ class ArangoClient:
             If set, parameters **username**, **password** and **auth_method**
             are ignored. This token is not refreshed automatically.
         :type superuser_token: str
+        :param verify_certificate: Verify TLS certificates.
+        :type verify_certificate: bool
         :return: Standard database API wrapper.
         :rtype: arango.database.StandardDatabase
         :raise arango.exceptions.ServerConnectionError: If **verify** was set
