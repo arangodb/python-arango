@@ -20,6 +20,7 @@ from arango.resolver import (
 )
 from arango.version import version
 
+
 class ArangoClient:
     """ArangoDB client.
 
@@ -77,7 +78,7 @@ class ArangoClient:
         self._serializer = serializer
         self._deserializer = deserializer
         self._sessions = [self._http.create_session(h) for h in self._hosts]
-       
+
         # set flag for SSL/TLS certificate verification
         for session in self._sessions:
             session.verify = verify_certificate
