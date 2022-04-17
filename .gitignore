@@ -114,3 +114,7 @@ localdata/
 
 # Node Modules
 node_modules/
+
+# direnv
+.envrc
+.direnv/
