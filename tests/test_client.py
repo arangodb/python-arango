@@ -1,7 +1,9 @@
 import json
+from typing import Union
 
 import pytest
 from pkg_resources import get_distribution
+from requests import Session
 
 from arango.client import ArangoClient
 from arango.database import StandardDatabase
@@ -108,3 +110,54 @@ def test_client_custom_http_client(db, username, password):
     # Set verify to True to send a test API call on initialization.
     client.db(db.name, username, password, verify=True)
     assert http_client.counter == 1
+
+
+def test_client_override_validate() -> None:
+    # custom http client that manipulates the underlying session
+    class MyHTTPClient(DefaultHTTPClient):
+        def __init__(self, verify: Union[None, bool, str]) -> None:
+            super().__init__()
+            self.verify = verify
+
+        def create_session(self, host: str) -> Session:
+            session = super().create_session(host)
+            session.verify = self.verify
+            return session
+
+    def assert_verify(
+        http_client_verify: Union[None, str, bool],
+        arango_override: Union[None, str, bool],
+        expected_result: Union[None, str, bool],
+    ) -> None:
+        http_client = MyHTTPClient(verify=http_client_verify)
+        client = ArangoClient(
+            hosts="http://127.0.0.1:8529",
+            http_client=http_client,
+            verify_override=arango_override,
+        )
+        # make sure there is at least 1 session
+        assert len(client._sessions) > 0
+        for session in client._sessions:
+            # make sure the final session.verify has expected value
+            assert session.verify == expected_result
+
+    assert_verify(None, None, None)
+    assert_verify(None, True, True)
+    assert_verify(None, False, False)
+    assert_verify(None, "test", "test")
+
+    assert_verify(True, None, True)
+    assert_verify(True, True, True)
+    assert_verify(True, "test", "test")
+    assert_verify(True, False, False)
+
+    assert_verify(False, None, False)
+    assert_verify(False, True, True)
+    assert_verify(False, "test", "test")
+    assert_verify(False, False, False)
+
+    assert_verify("test", None, "test")
+    assert_verify("test", True, True)
+    assert_verify("test", False, False)
+    assert_verify("test", False, False)
+    assert_verify("test", "foo", "foo")
