@@ -45,8 +45,13 @@ class ArangoClient:
         the de-serialized object. If not given, ``json.loads`` is used by
         default.
     :type deserializer: callable
-    :param verify_certificate: Verify TLS certificates.
-    :type verify_certificate: bool
+    :param verify_override: Override TLS certificate verification. This will
+       override the verify method of the underlying HTTP client.
+       None: Do not change the verification behavior of the underlying HTTP client.
+       True: Verify TLS certificate using the system CA certificates.
+       False: Do not verify TLS certificate.
+       str: Path to a custom CA bundle file or directory.
+    :type verify_override: Union[bool, str, None]
     """
 
     def __init__(
@@ -57,7 +62,7 @@ class ArangoClient:
         http_client: Optional[HTTPClient] = None,
         serializer: Callable[..., str] = lambda x: dumps(x),
         deserializer: Callable[[str], Any] = lambda x: loads(x),
-        verify_certificate: bool = True,
+        verify_override: Union[bool, str, None] = None,
     ) -> None:
         if isinstance(hosts, str):
             self._hosts = [host.strip("/") for host in hosts.split(",")]
@@ -79,9 +84,10 @@ class ArangoClient:
         self._deserializer = deserializer
         self._sessions = [self._http.create_session(h) for h in self._hosts]
 
-        # set flag for SSL/TLS certificate verification
-        for session in self._sessions:
-            session.verify = verify_certificate
+        # override SSL/TLS certificate verification if provided
+        if verify_override is not None:
+            for session in self._sessions:
+                session.verify = verify_override
 
     def __repr__(self) -> str:
         return f"<ArangoClient {','.join(self._hosts)}>"
