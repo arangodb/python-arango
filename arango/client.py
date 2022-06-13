@@ -113,7 +113,8 @@ class ArangoClient:
         :return: Client version.
         :rtype: str
         """
-        return version("python-arango")
+        v: str = version("python-arango")
+        return v
 
     def db(
         self,
