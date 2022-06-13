@@ -118,3 +118,6 @@ node_modules/
 # direnv
 .envrc
 .direnv/
+
+# setuptools_scm
+arango/version.py

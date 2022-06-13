@@ -3,16 +3,11 @@ from setuptools import find_packages, setup
 with open("./README.md") as fp:
     long_description = fp.read()
 
-version = {}
-with open("./arango/version.py") as fp:
-    exec(fp.read(), version)
-
 setup(
     name="python-arango",
     description="Python Driver for ArangoDB",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version=version["version"],
     author="Joohwan Oh",
     author_email="joohwan.oh@outlook.com",
     url="https://github.com/ArangoDB-Community/python-arango",

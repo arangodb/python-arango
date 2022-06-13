@@ -1,5 +1,6 @@
 __all__ = ["ArangoClient"]
 
+from importlib.metadata import version
 from json import dumps, loads
 from typing import Any, Callable, Optional, Sequence, Union
 
@@ -18,7 +19,6 @@ from arango.resolver import (
     RoundRobinHostResolver,
     SingleHostResolver,
 )
-from arango.version import version
 
 
 class ArangoClient:
@@ -113,7 +113,7 @@ class ArangoClient:
         :return: Client version.
         :rtype: str
         """
-        return version
+        return version("python-arango")
 
     def db(
         self,
