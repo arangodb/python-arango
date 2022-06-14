@@ -72,8 +72,11 @@ def test_graph_provision(graph, db):
             "to_vertex_collections": ["numbers"],
         }
     ]
+
+    name = "divisibility-graph"
+    db.delete_graph(name, drop_collections=True, ignore_missing=True)
     graph = db.create_graph(
-        name="DivisibilityGraph",
+        name=name,
         edge_definitions=e_d,
         collections={
             "numbers": {"docs": vertices, "options": {"batch_size": 5}},
