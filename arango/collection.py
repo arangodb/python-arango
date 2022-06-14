@@ -189,7 +189,7 @@ class Collection(ApiGroup):
             body = body.copy()
             body["_key"] = doc_id[len(self._id_prefix) :]
             return body
-        elif index:
+        elif index is not None:
             body = body.copy()
             body["_key"] = str(index)
             return body
