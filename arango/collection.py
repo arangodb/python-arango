@@ -169,14 +169,18 @@ class Collection(ApiGroup):
             else:
                 return doc_id, doc_id, {"If-Match": rev}
 
-    def _ensure_key_in_body(self, body: Json) -> Json:
-        """Return the document body with "_key" field populated.
+    def _ensure_key_in_body(self, body: Json, index: Optional[int] = None) -> Json:
+        """Return the document body with "_key" field populated. If
+            neither "_key" or "_id" exist, set "_key" value to **index**,
+            where **index** is the document's position in the sequence.
 
         :param body: Document body.
         :type body: dict
+        :param index: Document index value in the original list of documents.
+        :param index: int | None
         :return: Document body with "_key" field.
         :rtype: dict
-        :raise arango.exceptions.DocumentParseError: On missing ID and key.
+        :raise arango.exceptions.DocumentParseError: On missing _key, _id, & index.
         """
         if "_key" in body:
             return body
@@ -185,17 +189,17 @@ class Collection(ApiGroup):
             body = body.copy()
             body["_key"] = doc_id[len(self._id_prefix) :]
             return body
+        elif index:
+            body = body.copy()
+            body["_key"] = str(index)
+            return body
+
         raise DocumentParseError('field "_key" or "_id" required')
 
-    def _ensure_key_from_id(self, body: Json, index: Optional[int] = None) -> Json:
+    def _ensure_key_from_id(self, body: Json) -> Json:
         """Return the body with "_key" field if it has "_id" field.
-            If it has neither, set the "_key" value to i, where i
-            is the document's index position in the sequence.
-
         :param body: Document body.
         :type body: dict
-        :param index: Document index value in the original list of documents.
-        :param index: int | None
         :return: Document body with "_key" field if it has "_id" field.
         :rtype: dict
         """
@@ -203,11 +207,6 @@ class Collection(ApiGroup):
             doc_id = self._validate_id(body["_id"])
             body = body.copy()
             body["_key"] = doc_id[len(self._id_prefix) :]
-
-        if "_id" not in body and "_key" not in body:
-            body = body.copy()
-            body["_key"] = str(index)
-
         return body
 
     @property
@@ -2002,7 +2001,7 @@ class Collection(ApiGroup):
         :raise arango.exceptions.DocumentInsertError: If import fails.
         """
         documents = [
-            self._ensure_key_from_id(doc, i) for i, doc in enumerate(documents, 1)
+            self._ensure_key_in_body(doc, i) for i, doc in enumerate(documents, 1)
         ]
 
         params: Params = {"type": "array", "collection": self.name}
