@@ -1832,6 +1832,14 @@ def test_document_import_bulk(col, bad_col, docs):
         assert col[doc_key]["loc"] == doc["loc"]
     empty_collection(col)
 
+    # Test import bulk with batch_size
+    results = col.import_bulk(docs, batch_size=len(docs) // 2)
+    assert type(results) is list
+    assert len(results) == 2
+
+    result = col.import_bulk(docs, batch_size=len(docs) * 2)
+    assert type(result) is dict
+
     # Test import bulk on_duplicate actions
     doc = docs[0]
     doc_key = doc["_key"]

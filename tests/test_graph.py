@@ -57,6 +57,34 @@ def test_graph_properties(graph, bad_graph, db):
     assert isinstance(properties["revision"], str)
 
 
+def test_graph_provision(graph, db):
+    vertices = [{"foo": i} for i in range(1, 101)]
+    edges = [
+        {"_from": f"numbers/{j}", "_to": f"numbers/{i}", "result": j / i}
+        for i in range(1, 101)
+        for j in range(1, 101)
+        if j % i == 0
+    ]
+    e_d = [
+        {
+            "edge_collection": "is_divisible_by",
+            "from_vertex_collections": ["numbers"],
+            "to_vertex_collections": ["numbers"],
+        }
+    ]
+    graph = db.create_graph(
+        name="DivisibilityGraph",
+        edge_definitions=e_d,
+        collections={
+            "numbers": {"docs": vertices, "options": {"batch_size": 5}},
+            "is_divisible_by": {"docs": edges, "options": {"sync": True}},
+        },
+    )
+
+    assert graph.vertex_collection("numbers").count() == len(vertices)
+    assert graph.edge_collection("is_divisible_by").count() == len(edges)
+
+
 def test_graph_management(db, bad_db):
     # Test create graph
     graph_name = generate_graph_name()
