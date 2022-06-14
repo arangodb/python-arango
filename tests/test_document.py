@@ -1836,9 +1836,11 @@ def test_document_import_bulk(col, bad_col, docs):
     results = col.import_bulk(docs, batch_size=len(docs) // 2)
     assert type(results) is list
     assert len(results) == 2
+    empty_collection(col)
 
     result = col.import_bulk(docs, batch_size=len(docs) * 2)
     assert type(result) is dict
+    empty_collection(col)
 
     # Test import bulk on_duplicate actions
     doc = docs[0]
