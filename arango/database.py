@@ -1170,6 +1170,7 @@ class Database(ApiGroup):
         shard_count: Optional[int] = None,
         replication_factor: Optional[int] = None,
         write_concern: Optional[int] = None,
+        collections: Optional[Json] = None,
     ) -> Result[Graph]:
         """Create a new graph.
 
@@ -1217,6 +1218,9 @@ class Database(ApiGroup):
             parameter cannot be larger than that of **replication_factor**.
             Default value is 1. Used for clusters only.
         :type write_concern: int
+        :param collections: A list collection data objects to provision
+            the graph with. See below for example.
+        :type collections: dict | None
         :return: Graph API wrapper.
         :rtype: arango.graph.Graph
         :raise arango.exceptions.GraphCreateError: If create fails.
@@ -1225,10 +1229,38 @@ class Database(ApiGroup):
 
         .. code-block:: python
 
+            [
+                {
+                    'edge_collection': 'teach',
+                    'from_vertex_collections': ['teachers'],
+                    'to_vertex_collections': ['lectures']
+                }
+            ]
+
+        Here is an example entry for parameter **collections**:
+        TODO: Rework **collections** data structure?
+        .. code-block:: python
+
             {
-                'edge_collection': 'teach',
-                'from_vertex_collections': ['teachers'],
-                'to_vertex_collections': ['lectures']
+                'teachers': {
+                    'docs': teacher_vertices_to_insert
+                    'options': {
+                        'overwrite' = True,
+                        'sync' = True,
+                        'batch_size' = 50
+                    }
+                },
+                'lectures': {
+                    'docs': lecture_vertices_to_insert
+                    'options': {
+                        'overwrite' = False,
+                        'sync' = False,
+                        'batch_size' = 4
+                    }
+                },
+                'teach': {
+                    'docs': teach_edges_to_insert
+                }
             }
         """
         data: Json = {"name": name, "options": dict()}
@@ -1263,7 +1295,15 @@ class Database(ApiGroup):
                 return Graph(self._conn, self._executor, name)
             raise GraphCreateError(resp, request)
 
-        return self._execute(request, response_handler)
+        graph = self._execute(request, response_handler)
+
+        if collections is not None:
+            for name, data in collections.items():
+                self.collection(name).import_bulk(
+                    data["docs"], **data.get("options", {})
+                )
+
+        return graph
 
     def delete_graph(
         self,

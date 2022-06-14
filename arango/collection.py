@@ -42,7 +42,7 @@ from arango.request import Request
 from arango.response import Response
 from arango.result import Result
 from arango.typings import Fields, Headers, Json, Params
-from arango.utils import get_doc_id, is_none_or_int, is_none_or_str
+from arango.utils import get_batches, get_doc_id, is_none_or_int, is_none_or_str
 
 
 class Collection(ApiGroup):
@@ -187,11 +187,15 @@ class Collection(ApiGroup):
             return body
         raise DocumentParseError('field "_key" or "_id" required')
 
-    def _ensure_key_from_id(self, body: Json) -> Json:
+    def _ensure_key_from_id(self, body: Json, index: Optional[int] = None) -> Json:
         """Return the body with "_key" field if it has "_id" field.
+            If it has neither, set the "_key" value to i, where i
+            is the document's index position in the sequence.
 
         :param body: Document body.
         :type body: dict
+        :param index: Document index value in the original list of documents.
+        :param index: int | None
         :return: Document body with "_key" field if it has "_id" field.
         :rtype: dict
         """
@@ -199,6 +203,11 @@ class Collection(ApiGroup):
             doc_id = self._validate_id(body["_id"])
             body = body.copy()
             body["_key"] = doc_id[len(self._id_prefix) :]
+
+        if "_id" not in body and "_key" not in body:
+            body = body.copy()
+            body["_key"] = str(index)
+
         return body
 
     @property
@@ -1934,7 +1943,8 @@ class Collection(ApiGroup):
         overwrite: Optional[bool] = None,
         on_duplicate: Optional[str] = None,
         sync: Optional[bool] = None,
-    ) -> Result[Json]:
+        batch_size: Optional[int] = None,
+    ) -> Union[Result[Json], List[Result[Json]]]:
         """Insert multiple documents into the collection.
 
         .. note::
@@ -1984,11 +1994,16 @@ class Collection(ApiGroup):
         :type on_duplicate: str
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
+        :param batch_size: Max number of documents to import at once. If
+            unspecified, will import all documents at once.
+        :type batch_size: int | None
         :return: Result of the bulk import.
         :rtype: dict
         :raise arango.exceptions.DocumentInsertError: If import fails.
         """
-        documents = [self._ensure_key_from_id(doc) for doc in documents]
+        documents = [
+            self._ensure_key_from_id(doc, i) for i, doc in enumerate(documents, 1)
+        ]
 
         params: Params = {"type": "array", "collection": self.name}
         if halt_on_error is not None:
@@ -2006,21 +2021,25 @@ class Collection(ApiGroup):
         if sync is not None:
             params["waitForSync"] = sync
 
-        request = Request(
-            method="post",
-            endpoint="/_api/import",
-            data=documents,
-            params=params,
-            write=self.name,
-        )
-
         def response_handler(resp: Response) -> Json:
             if resp.is_success:
                 result: Json = resp.body
                 return result
             raise DocumentInsertError(resp, request)
 
-        return self._execute(request, response_handler)
+        result = []
+        for batch in get_batches(documents, batch_size):
+            request = Request(
+                method="post",
+                endpoint="/_api/import",
+                data=batch,
+                params=params,
+                write=self.name,
+            )
+
+            result.append(self._execute(request, response_handler))
+
+        return result[0] if len(result) == 1 else result
 
 
 class StandardCollection(Collection):
