@@ -1,6 +1,12 @@
 __all__ = ["ArangoClient"]
 
-from importlib.metadata import version
+import sys
+
+if sys.version_info < (3, 8):
+    from importlib_metadata import version
+else:
+    from importlib.metadata import version
+
 from json import dumps, loads
 from typing import Any, Callable, Optional, Sequence, Union
 
