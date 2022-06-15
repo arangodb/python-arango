@@ -198,6 +198,7 @@ class Collection(ApiGroup):
 
     def _ensure_key_from_id(self, body: Json) -> Json:
         """Return the body with "_key" field if it has "_id" field.
+
         :param body: Document body.
         :type body: dict
         :return: Document body with "_key" field if it has "_id" field.
