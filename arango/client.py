@@ -1,14 +1,9 @@
 __all__ = ["ArangoClient"]
 
-import sys
-
-if sys.version_info < (3, 8):
-    from importlib_metadata import version
-else:
-    from importlib.metadata import version
-
 from json import dumps, loads
 from typing import Any, Callable, Optional, Sequence, Union
+
+from pkg_resources import get_distribution  # type: ignore
 
 from arango.connection import (
     BasicConnection,
@@ -119,7 +114,8 @@ class ArangoClient:
         :return: Client version.
         :rtype: str
         """
-        return version("python-arango")  # type: ignore
+        version: str = get_distribution("python-arango").version
+        return version
 
     def db(
         self,

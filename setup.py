@@ -38,6 +38,7 @@ setup(
             "sphinx_rtd_theme",
             "types-pkg_resources",
             "types-requests",
+            "types-setuptools",
         ],
     },
     classifiers=[
