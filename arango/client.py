@@ -3,7 +3,7 @@ __all__ = ["ArangoClient"]
 from json import dumps, loads
 from typing import Any, Callable, Optional, Sequence, Union
 
-from pkg_resources import get_distribution  # type: ignore
+from pkg_resources import get_distribution
 
 from arango.connection import (
     BasicConnection,
