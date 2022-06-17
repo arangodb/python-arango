@@ -3,6 +3,8 @@ __all__ = ["ArangoClient"]
 from json import dumps, loads
 from typing import Any, Callable, Optional, Sequence, Union
 
+from pkg_resources import get_distribution
+
 from arango.connection import (
     BasicConnection,
     Connection,
@@ -18,7 +20,6 @@ from arango.resolver import (
     RoundRobinHostResolver,
     SingleHostResolver,
 )
-from arango.version import version
 
 
 class ArangoClient:
@@ -113,6 +114,7 @@ class ArangoClient:
         :return: Client version.
         :rtype: str
         """
+        version: str = get_distribution("python-arango").version
         return version
 
     def db(
