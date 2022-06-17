@@ -2027,7 +2027,7 @@ class Collection(ApiGroup):
                 return result
             raise DocumentInsertError(resp, request)
 
-        result = []
+        results = []
         for batch in get_batches(documents, batch_size):
             request = Request(
                 method="post",
@@ -2037,9 +2037,9 @@ class Collection(ApiGroup):
                 write=self.name,
             )
 
-            result.append(self._execute(request, response_handler))
+            results.append(self._execute(request, response_handler))
 
-        return result[0] if len(result) == 1 else result
+        return results[0] if len(results) == 1 else results
 
 
 class StandardCollection(Collection):
