@@ -1,4 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import setup
 
 with open("./README.md") as fp:
     long_description = fp.read()
@@ -12,8 +12,8 @@ setup(
     author_email="joohwan.oh@outlook.com",
     url="https://github.com/ArangoDB-Community/python-arango",
     keywords=["arangodb", "python", "driver"],
-    packages=find_packages(exclude=["tests"]),
     package_data={"arango": ["py.typed"]},
+    packages=["arango"],
     include_package_data=True,
     python_requires=">=3.7",
     license="MIT",
