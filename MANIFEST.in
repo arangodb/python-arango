@@ -1,2 +1,3 @@
 include README.md LICENSE
 prune tests
+global-include *.typed

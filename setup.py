@@ -13,6 +13,7 @@ setup(
     url="https://github.com/ArangoDB-Community/python-arango",
     keywords=["arangodb", "python", "driver"],
     packages=find_packages(exclude=["tests"]),
+    package_data={"arango": ["py.typed"]},
     include_package_data=True,
     python_requires=">=3.7",
     license="MIT",
