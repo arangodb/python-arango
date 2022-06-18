@@ -171,6 +171,7 @@ class Collection(ApiGroup):
 
     def _ensure_key_in_body(self, body: Json) -> Json:
         """Return the document body with "_key" field populated.
+
         :param body: Document body.
         :type body: dict
         :return: Document body with "_key" field.
