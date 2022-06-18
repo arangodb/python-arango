@@ -58,7 +58,7 @@ def test_graph_properties(graph, bad_graph, db):
 
 
 def test_graph_provision(graph, db):
-    vertices = [{"foo": i} for i in range(1, 101)]
+    vertices = [{"_key": str(i)} for i in range(1, 101)]
     edges = [
         {"_from": f"numbers/{j}", "_to": f"numbers/{i}", "result": j / i}
         for i in range(1, 101)
