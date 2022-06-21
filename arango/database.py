@@ -1217,9 +1217,6 @@ class Database(ApiGroup):
             parameter cannot be larger than that of **replication_factor**.
             Default value is 1. Used for clusters only.
         :type write_concern: int
-        :param collections: A list collection data objects to provision
-            the graph with. See below for example.
-        :type collections: dict | None
         :return: Graph API wrapper.
         :rtype: arango.graph.Graph
         :raise arango.exceptions.GraphCreateError: If create fails.
