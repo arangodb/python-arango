@@ -1986,10 +1986,11 @@ class Collection(ApiGroup):
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
         :param batch_size: Max number of documents to import at once. If
-            unspecified, will import all documents at once.
+            unspecified, will import all documents at once. Note that the
+            output type changes to list[dict] if **batch_size** is specified.
         :type batch_size: int | None
         :return: Result of the bulk import.
-        :rtype: dict
+        :rtype: dict | list[dict]
         :raise arango.exceptions.DocumentInsertError: If import fails.
         """
         documents = [self._ensure_key_from_id(doc) for doc in documents]
