@@ -1170,7 +1170,6 @@ class Database(ApiGroup):
         shard_count: Optional[int] = None,
         replication_factor: Optional[int] = None,
         write_concern: Optional[int] = None,
-        collections: Optional[Json] = None,
     ) -> Result[Graph]:
         """Create a new graph.
 
@@ -1236,32 +1235,6 @@ class Database(ApiGroup):
                     'to_vertex_collections': ['lectures']
                 }
             ]
-
-        Here is an example entry for parameter **collections**:
-        TODO: Rework **collections** data structure?
-        .. code-block:: python
-
-            {
-                'teachers': {
-                    'docs': teacher_vertices_to_insert
-                    'options': {
-                        'overwrite' = True,
-                        'sync' = True,
-                        'batch_size' = 50
-                    }
-                },
-                'lectures': {
-                    'docs': lecture_vertices_to_insert
-                    'options': {
-                        'overwrite' = False,
-                        'sync' = False,
-                        'batch_size' = 4
-                    }
-                },
-                'teach': {
-                    'docs': teach_edges_to_insert
-                }
-            }
         """
         data: Json = {"name": name, "options": dict()}
         if edge_definitions is not None:
@@ -1295,15 +1268,7 @@ class Database(ApiGroup):
                 return Graph(self._conn, self._executor, name)
             raise GraphCreateError(resp, request)
 
-        graph = self._execute(request, response_handler)
-
-        if collections is not None:
-            for name, data in collections.items():
-                self.collection(name).import_bulk(
-                    data["docs"], **data.get("options", {})
-                )
-
-        return graph
+        return self._execute(request, response_handler)
 
     def delete_graph(
         self,
