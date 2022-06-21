@@ -2017,7 +2017,7 @@ class Collection(ApiGroup):
             raise DocumentInsertError(resp, request)
 
         results = []
-        for batch in get_batches(documents, batch_size):
+        for batch in get_batches(documents, batch_size or len(documents)):
             request = Request(
                 method="post",
                 endpoint="/_api/import",
