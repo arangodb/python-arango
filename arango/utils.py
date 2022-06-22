@@ -90,7 +90,7 @@ def get_batches(elements: Sequence[Json], batch_size: int) -> Iterator[Sequence[
 
     :param elements: The list of elements.
     :type elements: Sequence[Json]
-    :param batch_size: Number of elements per batch.
+    :param batch_size: Max number of elements per batch.
     :type batch_size: int
     """
     for index in range(0, len(elements), batch_size):

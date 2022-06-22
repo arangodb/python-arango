@@ -1985,10 +1985,15 @@ class Collection(ApiGroup):
         :type on_duplicate: str
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param batch_size: Max number of documents to import at once. If
-            unspecified, will import all documents at once. Note that the
-            output type changes to list[dict] if **batch_size** is specified.
-        :type batch_size: int | None
+        :param batch_size: Split up **documents** into batches of max length
+            **batch_size** and import them in a loop on the client side. If
+            **batch_size** is specified, the return type of this method
+            changes from a result object to a list of result objects.
+            IMPORTANT NOTE: this parameter may go through breaking changes
+            in the future where the return type may not be a list of result
+            objects anymore. Use it at your own risk, and avoid
+            depending on the return value if possible.
+        :type batch_size: int
         :return: Result of the bulk import.
         :rtype: dict | list[dict]
         :raise arango.exceptions.DocumentInsertError: If import fails.
