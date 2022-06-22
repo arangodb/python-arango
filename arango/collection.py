@@ -2034,7 +2034,7 @@ class Collection(ApiGroup):
 
             results.append(self._execute(request, response_handler))
 
-        return results[0] if len(results) == 1 else results
+        return results[0] if batch_size is None else results
 
 
 class StandardCollection(Collection):
