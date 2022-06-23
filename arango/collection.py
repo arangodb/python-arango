@@ -2022,19 +2022,29 @@ class Collection(ApiGroup):
                 return result
             raise DocumentInsertError(resp, request)
 
-        results = []
-        for batch in get_batches(documents, batch_size or len(documents)):
+        if batch_size is None:
             request = Request(
                 method="post",
                 endpoint="/_api/import",
-                data=batch,
+                data=documents,
                 params=params,
                 write=self.name,
             )
 
-            results.append(self._execute(request, response_handler))
+            return self._execute(request, response_handler)
+        else:
+            results = []
+            for batch in get_batches(documents, batch_size):
+                request = Request(
+                    method="post",
+                    endpoint="/_api/import",
+                    data=batch,
+                    params=params,
+                    write=self.name,
+                )
+                results.append(self._execute(request, response_handler))
 
-        return results[0] if batch_size is None else results
+            return results
 
 
 class StandardCollection(Collection):
