@@ -1225,11 +1225,13 @@ class Database(ApiGroup):
 
         .. code-block:: python
 
-            {
-                'edge_collection': 'teach',
-                'from_vertex_collections': ['teachers'],
-                'to_vertex_collections': ['lectures']
-            }
+            [
+                {
+                    'edge_collection': 'teach',
+                    'from_vertex_collections': ['teachers'],
+                    'to_vertex_collections': ['lectures']
+                }
+            ]
         """
         data: Json = {"name": name, "options": dict()}
         if edge_definitions is not None:

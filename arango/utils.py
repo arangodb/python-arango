@@ -8,7 +8,7 @@ __all__ = [
 
 import logging
 from contextlib import contextmanager
-from typing import Any, Iterator, Union
+from typing import Any, Iterator, Sequence, Union
 
 from arango.exceptions import DocumentParseError
 from arango.typings import Json
@@ -82,3 +82,16 @@ def is_none_or_str(obj: Any) -> bool:
     :rtype: bool
     """
     return obj is None or isinstance(obj, str)
+
+
+def get_batches(elements: Sequence[Json], batch_size: int) -> Iterator[Sequence[Json]]:
+    """Generator to split a list in batches
+        of (maximum) **batch_size** elements each.
+
+    :param elements: The list of elements.
+    :type elements: Sequence[Json]
+    :param batch_size: Max number of elements per batch.
+    :type batch_size: int
+    """
+    for index in range(0, len(elements), batch_size):
+        yield elements[index : index + batch_size]

@@ -42,7 +42,7 @@ from arango.request import Request
 from arango.response import Response
 from arango.result import Result
 from arango.typings import Fields, Headers, Json, Params
-from arango.utils import get_doc_id, is_none_or_int, is_none_or_str
+from arango.utils import get_batches, get_doc_id, is_none_or_int, is_none_or_str
 
 
 class Collection(ApiGroup):
@@ -1934,7 +1934,8 @@ class Collection(ApiGroup):
         overwrite: Optional[bool] = None,
         on_duplicate: Optional[str] = None,
         sync: Optional[bool] = None,
-    ) -> Result[Json]:
+        batch_size: Optional[int] = None,
+    ) -> Union[Result[Json], List[Result[Json]]]:
         """Insert multiple documents into the collection.
 
         .. note::
@@ -1984,8 +1985,17 @@ class Collection(ApiGroup):
         :type on_duplicate: str
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
+        :param batch_size: Split up **documents** into batches of max length
+            **batch_size** and import them in a loop on the client side. If
+            **batch_size** is specified, the return type of this method
+            changes from a result object to a list of result objects.
+            IMPORTANT NOTE: this parameter may go through breaking changes
+            in the future where the return type may not be a list of result
+            objects anymore. Use it at your own risk, and avoid
+            depending on the return value if possible.
+        :type batch_size: int
         :return: Result of the bulk import.
-        :rtype: dict
+        :rtype: dict | list[dict]
         :raise arango.exceptions.DocumentInsertError: If import fails.
         """
         documents = [self._ensure_key_from_id(doc) for doc in documents]
@@ -2006,21 +2016,35 @@ class Collection(ApiGroup):
         if sync is not None:
             params["waitForSync"] = sync
 
-        request = Request(
-            method="post",
-            endpoint="/_api/import",
-            data=documents,
-            params=params,
-            write=self.name,
-        )
-
         def response_handler(resp: Response) -> Json:
             if resp.is_success:
                 result: Json = resp.body
                 return result
             raise DocumentInsertError(resp, request)
 
-        return self._execute(request, response_handler)
+        if batch_size is None:
+            request = Request(
+                method="post",
+                endpoint="/_api/import",
+                data=documents,
+                params=params,
+                write=self.name,
+            )
+
+            return self._execute(request, response_handler)
+        else:
+            results = []
+            for batch in get_batches(documents, batch_size):
+                request = Request(
+                    method="post",
+                    endpoint="/_api/import",
+                    data=batch,
+                    params=params,
+                    write=self.name,
+                )
+                results.append(self._execute(request, response_handler))
+
+            return results
 
 
 class StandardCollection(Collection):
