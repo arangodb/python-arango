@@ -1992,12 +1992,16 @@ class Collection(ApiGroup):
             IMPORTANT NOTE: this parameter may go through breaking changes
             in the future where the return type may not be a list of result
             objects anymore. Use it at your own risk, and avoid
-            depending on the return value if possible.
+            depending on the return value if possible. Should not be used
+            if **overwrite** is set to true.
         :type batch_size: int
         :return: Result of the bulk import.
         :rtype: dict | list[dict]
         :raise arango.exceptions.DocumentInsertError: If import fails.
         """
+        if overwrite and batch_size:
+            raise ValueError("Cannot set **batch_size** if **overwrite** is true")
+
         documents = [self._ensure_key_from_id(doc) for doc in documents]
 
         params: Params = {"type": "array", "collection": self.name}
