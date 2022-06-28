@@ -1842,6 +1842,10 @@ def test_document_import_bulk(col, bad_col, docs):
     assert type(result) is list
     assert len(result) == 1
     empty_collection(col)
+    
+    # Test import bulk with overwrite and batch_size
+    with pytest.raises(ValueError):
+        col.import_bulk(docs, overwrite=True, batch_size=1)
 
     # Test import bulk on_duplicate actions
     doc = docs[0]
