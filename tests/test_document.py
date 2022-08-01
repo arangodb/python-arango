@@ -1,8 +1,6 @@
 import pytest
 
 from arango.exceptions import (
-    CursorCloseError,
-    CursorNextError,
     DocumentCountError,
     DocumentDeleteError,
     DocumentGetError,
