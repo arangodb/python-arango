@@ -48,7 +48,6 @@ Here is an example of using ArangoDB's **simply queries**:
 Here are all simple query (and other utility) methods available:
 
 * :func:`arango.collection.Collection.all`
-* :func:`arango.collection.Collection.export`
 * :func:`arango.collection.Collection.find`
 * :func:`arango.collection.Collection.find_near`
 * :func:`arango.collection.Collection.find_in_range`
