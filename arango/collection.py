@@ -2,6 +2,7 @@ __all__ = ["StandardCollection", "VertexCollection", "EdgeCollection"]
 
 from numbers import Number
 from typing import List, Optional, Sequence, Tuple, Union
+import warnings
 
 from arango.api import ApiGroup
 from arango.connection import Connection
@@ -659,6 +660,13 @@ class Collection(ApiGroup):
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If export fails.
         """
+        
+        deprec_msg = """
+            This method is obsolete and will be removed in the next version.
+            Create a cursor for your query.
+        """
+        warnings.warn(message=deprec_msg, category=DeprecationWarning)
+
         data: Json = {"count": count, "flush": flush}
         if flush_wait is not None:
             data["flushWait"] = flush_wait
