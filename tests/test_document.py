@@ -1675,6 +1675,7 @@ def test_document_keys(col, bad_col, docs):
         bad_col.keys()
     assert err.value.error_code in {11, 1228}
 
+
 def test_document_random(col, bad_col, docs):
     # Set up test documents
     col.import_bulk(docs)
