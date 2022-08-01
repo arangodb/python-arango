@@ -2,7 +2,6 @@ __all__ = ["StandardCollection", "VertexCollection", "EdgeCollection"]
 
 from numbers import Number
 from typing import List, Optional, Sequence, Tuple, Union
-import warnings
 
 from arango.api import ApiGroup
 from arango.connection import Connection
