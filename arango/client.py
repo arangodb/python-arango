@@ -59,7 +59,7 @@ class ArangoClient:
        request timeout set in the http client.
        None: No timeout.
        int: Timeout value in seconds.
-    :type request_timeout: Optional[int]
+    :type request_timeout: Any
     """
 
     def __init__(
