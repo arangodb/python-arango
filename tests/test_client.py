@@ -52,7 +52,12 @@ def test_client_attributes():
     assert client.hosts == client_hosts
     assert repr(client) == client_repr
     assert isinstance(client._host_resolver, RandomHostResolver)
-
+    
+    client = ArangoClient(
+        hosts=client_hosts,
+        request_timeout=120
+    )
+    assert client.request_timeout == client._http.REQUEST_TIMEOUT == 120
 
 def test_client_good_connection(db, username, password):
     client = ArangoClient(hosts="http://127.0.0.1:8529")
