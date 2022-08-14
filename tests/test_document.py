@@ -234,6 +234,63 @@ def test_document_insert_many(col, bad_col, docs):
         bad_col.insert_many(docs)
     assert err.value.error_code in {11, 1228}
 
+    # test overwrite_mode: replace
+    extra_docs = [
+        {"_key": docs[0]["_key"], "foo": {"qux": 2}},
+        {"_key": "20", "foo": "t"},
+    ]
+    results = col.insert_many(
+        documents=extra_docs,
+        return_old=True,
+        return_new=True,
+        overwrite_mode="replace",
+        keep_none=False,
+        merge=True,
+    )
+
+    assert "old" in results[0]
+    assert "new" in results[0]
+    assert "old" not in results[1]
+    assert "new" in results[1]
+
+    # test overwrite_mode: update
+    extra_docs = [
+        {"_key": docs[0]["_key"], "foo": {"t": 1}},
+        {"_key": "20", "foo": None},
+    ]
+    results = col.insert_many(
+        documents=extra_docs,
+        return_old=True,
+        return_new=True,
+        overwrite_mode="update",
+        keep_none=False,
+        merge=True,
+    )
+    assert "old" in results[0]
+    assert "new" in results[0]
+    assert results[0]["new"]["foo"] == {"qux": 2, "t": 1}
+    assert "old" in results[1]
+    assert "new" in results[1]
+    assert "foo" not in results[1]["new"]
+
+    extra_docs = [
+        {"_key": docs[0]["_key"], "foo": {"t": 1}},
+        {"_key": "21", "foo": None},
+    ]
+
+    # Test insert conflict
+    results = col.insert_many(
+        documents=extra_docs,
+        return_old=True,
+        return_new=True,
+        overwrite_mode="conflict",
+        keep_none=True,
+        merge=True,
+    )
+    assert isinstance(results[0], DocumentInsertError)
+    assert results[0].error_code == 1210
+    assert "new" in results[1]
+
 
 def test_document_update(col, docs):
     doc = docs[0]

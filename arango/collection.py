@@ -1322,6 +1322,9 @@ class Collection(ApiGroup):
         silent: bool = False,
         overwrite: bool = False,
         return_old: bool = False,
+        overwrite_mode: Optional[str] = None,
+        keep_none: Optional[bool] = None,
+        merge: Optional[bool] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Insert multiple documents.
 
@@ -1359,6 +1362,21 @@ class Collection(ApiGroup):
         :param return_old: Include body of the old documents if replaced.
             Applies only when value of **overwrite** is set to True.
         :type return_old: bool
+        :param overwrite_mode: Overwrite behavior used when the document key
+            exists already. Allowed values are "replace" (replace-insert),
+            "update" (update-insert), "ignore" or "conflict".
+            Implicitly sets the value of parameter **overwrite**.
+        :type overwrite_mode: str | None
+        :param keep_none: If set to True, fields with value None are retained
+            in the document. Otherwise, they are removed completely. Applies
+            only when **overwrite_mode** is set to "update" (update-insert).
+        :type keep_none: bool | None
+        :param merge: If set to True (default), sub-dictionaries are merged
+            instead of the new one overwriting the old one. Applies only when
+            **overwrite_mode** is set to "update" (update-insert).
+        :type merge: bool | None
+        :return: Document metadata (e.g. document key, revision) or True if
+            parameter **silent** was set to True.
         :return: List of document metadata (e.g. document keys, revisions) and
             any exception, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoServerError] | bool
@@ -1374,6 +1392,13 @@ class Collection(ApiGroup):
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        if overwrite_mode is not None:
+            params["overwriteMode"] = overwrite_mode
+        if keep_none is not None:
+            params["keepNull"] = keep_none
+        if merge is not None:
+            params["mergeObjects"] = merge
 
         request = Request(
             method="post",
