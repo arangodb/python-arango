@@ -54,9 +54,8 @@ class ArangoClient:
        str: Path to a custom CA bundle file or directory.
     :type verify_override: Union[bool, str, None]
     :param request_timeout: This is the default request timeout (in seconds)
-       for http requests issued by the client. The default value is -1.
-       Setting this parameter to any other value, will overwrite your
-       request timeout set in the http client.
+       for http requests issued by the client if the parameter http_client is
+       not secified. The default value is 60.
        None: No timeout.
        int: Timeout value in seconds.
     :type request_timeout: Any
@@ -71,7 +70,7 @@ class ArangoClient:
         serializer: Callable[..., str] = lambda x: dumps(x),
         deserializer: Callable[[str], Any] = lambda x: loads(x),
         verify_override: Union[bool, str, None] = None,
-        request_timeout: Any = -1,
+        request_timeout: Any = 60,
     ) -> None:
         if isinstance(hosts, str):
             self._hosts = [host.strip("/") for host in hosts.split(",")]
@@ -92,7 +91,7 @@ class ArangoClient:
         self._http = http_client or DefaultHTTPClient()
         # Sets the request timeout.
         # This call can only happen AFTER initializing the http client.
-        if request_timeout != -1:
+        if http_client is None:
             self.request_timeout = request_timeout
 
         self._serializer = serializer
