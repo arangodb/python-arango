@@ -1213,7 +1213,7 @@ class Collection(ApiGroup):
         sparse: Optional[bool] = None,
         name: Optional[str] = None,
         in_background: Optional[bool] = None,
-        storedValues: list[str] = [],
+        storedValues: Sequence[str] = [],
         cacheEnabled: Optional[bool] = None,
     ) -> Result[Json]:
         """Create a new persistent index.
