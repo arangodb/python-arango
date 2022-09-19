@@ -19,10 +19,10 @@ from arango.exceptions import (
     AQLQueryExplainError,
     AQLQueryKillError,
     AQLQueryListError,
+    AQLQueryRulesGetError,
     AQLQueryTrackingGetError,
     AQLQueryTrackingSetError,
     AQLQueryValidateError,
-    AQLQueryRulesGetError,
 )
 from arango.executor import ApiExecutor
 from arango.formatter import (
