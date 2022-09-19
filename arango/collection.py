@@ -1137,6 +1137,7 @@ class Collection(ApiGroup):
         ordered: Optional[bool] = None,
         name: Optional[str] = None,
         in_background: Optional[bool] = None,
+        legacyPolygons: Optional[bool] = False,
     ) -> Result[Json]:
         """Create a new geo-spatial index.
 
@@ -1151,6 +1152,9 @@ class Collection(ApiGroup):
         :type name: str | None
         :param in_background: Do not hold the collection lock.
         :type in_background: bool | None
+        :param legacyPolygons: Whether or not to use use the old, pre-3.10 rules
+            for the parsing GeoJSON polygons
+        :type legacyPolygons: bool | None
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
@@ -1163,6 +1167,8 @@ class Collection(ApiGroup):
             data["name"] = name
         if in_background is not None:
             data["inBackground"] = in_background
+        if legacyPolygons is not None:
+            data["legacyPolygons"] = legacyPolygons
 
         return self._add_index(data)
 
@@ -1173,7 +1179,9 @@ class Collection(ApiGroup):
         name: Optional[str] = None,
         in_background: Optional[bool] = None,
     ) -> Result[Json]:
-        """Create a new fulltext index.
+        """Create a new fulltext index. This method is deprecated
+            in ArangoDB 3.10 and will be removed in a future version
+            of the driver.
 
         :param fields: Document fields to index.
         :type fields: [str]
@@ -1205,6 +1213,8 @@ class Collection(ApiGroup):
         sparse: Optional[bool] = None,
         name: Optional[str] = None,
         in_background: Optional[bool] = None,
+        storedValues: Sequence[str] = None,
+        cacheEnabled: Optional[bool] = None,
     ) -> Result[Json]:
         """Create a new persistent index.
 
@@ -1223,6 +1233,16 @@ class Collection(ApiGroup):
         :type name: str | None
         :param in_background: Do not hold the collection lock.
         :type in_background: bool | None
+        :param storedValues: Additional attributes to include in a persistent 
+            index. These additional attributes cannot be used for index 
+            lookups or sorts, but they can be used for projections. Must be 
+            an array of index attribute paths. There must be no overlap of 
+            attribute paths between fields and storedValues. The maximum 
+            number of values is 32.
+        :type storedValues: [str]
+        :param cacheEnabled: Enable an in-memory cache for index values for 
+            persistent indexes.
+        :type cacheEnabled: bool | None
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
@@ -1237,6 +1257,10 @@ class Collection(ApiGroup):
             data["name"] = name
         if in_background is not None:
             data["inBackground"] = in_background
+        if storedValues is not None:
+            data["storedValues"] = storedValues
+        if cacheEnabled is not None:
+            data["cacheEnabled"] = cacheEnabled
 
         return self._add_index(data)
 
