@@ -153,6 +153,10 @@ class AQLFunctionDeleteError(ArangoServerError):
     """Failed to delete AQL user function."""
 
 
+class AQLQueryRulesGetError(ArangoServerError):
+    """Failed to retrieve AQL query rules."""
+
+
 ##############################
 # Async Execution Exceptions #
 ##############################

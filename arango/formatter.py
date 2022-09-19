@@ -1141,3 +1141,47 @@ def format_query_cache_entry(body: Json) -> Json:
         result["data_sources"] = body["dataSources"]
 
     return verify_format(body, result)
+
+
+def format_query_rule_item(body: Json) -> Json:
+    """Format AQL query rule item.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    result = {}
+
+    if "name" in body:
+        result["name"] = body["name"]
+    if "flags" in body:
+        result["flags"] = format_query_rule_item_flags(body["flags"])
+
+    return verify_format(body, result)
+
+
+def format_query_rule_item_flags(body: Json) -> Json:
+    """Format AQL query rule item flags.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    result = {}
+
+    if "hidden" in body:
+        result["hidden"] = body["hidden"]
+    if "clusterOnly" in body:
+        result["clusterOnly"] = body["clusterOnly"]
+    if "canBeDisabled" in body:
+        result["canBeDisabled"] = body["canBeDisabled"]
+    if "canCreateAdditionalPlans" in body:
+        result["canCreateAdditionalPlans"] = body["canCreateAdditionalPlans"]
+    if "disabledByDefault" in body:
+        result["disabledByDefault"] = body["disabledByDefault"]
+    if "enterpriseOnly" in body:
+        result["enterpriseOnly"] = body["enterpriseOnly"]
+
+    return verify_format(body, result)
