@@ -1213,7 +1213,7 @@ class Collection(ApiGroup):
         sparse: Optional[bool] = None,
         name: Optional[str] = None,
         in_background: Optional[bool] = None,
-        storedValues: Sequence[str] = None,
+        storedValues: list[str] = [],
         cacheEnabled: Optional[bool] = None,
     ) -> Result[Json]:
         """Create a new persistent index.
@@ -1233,14 +1233,14 @@ class Collection(ApiGroup):
         :type name: str | None
         :param in_background: Do not hold the collection lock.
         :type in_background: bool | None
-        :param storedValues: Additional attributes to include in a persistent 
-            index. These additional attributes cannot be used for index 
-            lookups or sorts, but they can be used for projections. Must be 
-            an array of index attribute paths. There must be no overlap of 
-            attribute paths between fields and storedValues. The maximum 
+        :param storedValues: Additional attributes to include in a persistent
+            index. These additional attributes cannot be used for index
+            lookups or sorts, but they can be used for projections. Must be
+            an array of index attribute paths. There must be no overlap of
+            attribute paths between fields and storedValues. The maximum
             number of values is 32.
         :type storedValues: [str]
-        :param cacheEnabled: Enable an in-memory cache for index values for 
+        :param cacheEnabled: Enable an in-memory cache for index values for
             persistent indexes.
         :type cacheEnabled: bool | None
         :return: New index details.
