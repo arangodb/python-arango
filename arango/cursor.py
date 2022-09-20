@@ -130,6 +130,14 @@ class Cursor:
                     stats["execution_time"] = stats.pop("executionTime")
                 if "httpRequests" in stats:
                     stats["http_requests"] = stats.pop("httpRequests")
+                if "cursorsCreated" in stats:
+                    stats["cursorsCreated"] = stats.pop("cursorsCreated")
+                if "cursorsRearmed" in stats:
+                    stats["cursorsRearmed"] = stats.pop("cursorsRearmed")
+                if "cacheHits" in stats:
+                    stats["cacheHits"] = stats.pop("cacheHits")
+                if "cacheMisses" in stats:
+                    stats["cacheMisses"] = stats.pop("cacheMisses")
                 self._stats = stats
                 result["statistics"] = stats
 
