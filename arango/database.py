@@ -1012,9 +1012,9 @@ class Database(ApiGroup):
             document schema validation.
         :type schema: dict
         :param computedValues: Array of computed values for the new collection
-            enabling default values to new documents or the maintenance of 
-            auxiliary attributes for search queries. Available in ArangoDB 
-            version 3.10 or greater. See ArangoDB documentation for more 
+            enabling default values to new documents or the maintenance of
+            auxiliary attributes for search queries. Available in ArangoDB
+            version 3.10 or greater. See ArangoDB documentation for more
             information on computed values.
         :type computedValues: list
         :return: Standard collection API wrapper.
