@@ -1,6 +1,6 @@
 from typing import Any
 
-from arango.typings import Headers, Json
+from arango.typings import Headers, Json, Jsons
 
 
 def verify_format(_: Any, res: Json) -> Json:
@@ -207,6 +207,52 @@ def format_collection(body: Json) -> Json:
         result["min_revision"] = body["minRevision"]
     if "schema" in body:
         result["schema"] = body["schema"]
+
+    # New in 3.10
+    if "computedValues" in body:
+        result["computedValues"] = format_collection_computed_values(body["computedValues"])
+
+    return verify_format(body, result)
+
+
+def format_collection_computed_values(body: Jsons) -> Jsons:
+    """Format collection computed values data.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    result: Jsons = []
+
+    for item in body:
+        result.append(format_collection_computed_value_item(item))
+
+    return verify_format(body, result)
+
+
+def format_collection_computed_value_item(body: Json) -> Json:
+    """Format a computed value item for a collection.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    result: Json = {}
+
+    if "name" in body:
+        result["name"] = body["name"]
+    if "expression" in body:
+        result["expression"] = body["expression"]
+    if "overwrite" in body:
+        result["overwrite"] = body["overwrite"]
+    if "computedOn" in body:
+        result["computedOn"] = body["computedOn"]
+    if "keepNull" in body:
+        result["keepNull"] = body["keepNull"]
+    if "failOnWarning" in body:
+        result["failOnWarning"] = body["failOnWarning"]
 
     return verify_format(body, result)
 
