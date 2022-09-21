@@ -933,6 +933,7 @@ class Database(ApiGroup):
         smart_join_attribute: Optional[str] = None,
         write_concern: Optional[int] = None,
         schema: Optional[Json] = None,
+        computedValues: Optional[Jsons] = None,
     ) -> Result[StandardCollection]:
         """Create a new collection.
 
@@ -1010,6 +1011,12 @@ class Database(ApiGroup):
             for documents. See ArangoDB documentation for more information on
             document schema validation.
         :type schema: dict
+        :param computedValues: Array of computed values for the new collection
+            enabling default values to new documents or the maintenance of
+            auxiliary attributes for search queries. Available in ArangoDB
+            version 3.10 or greater. See ArangoDB documentation for more
+            information on computed values.
+        :type computedValues: list
         :return: Standard collection API wrapper.
         :rtype: arango.collection.StandardCollection
         :raise arango.exceptions.CollectionCreateError: If create fails.
@@ -1043,6 +1050,8 @@ class Database(ApiGroup):
             data["writeConcern"] = write_concern
         if schema is not None:
             data["schema"] = schema
+        if computedValues is not None:
+            data["computedValues"] = computedValues
 
         params: Params = {}
         if sync_replication is not None:

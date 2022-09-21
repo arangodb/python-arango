@@ -214,6 +214,20 @@ def format_collection(body: Json) -> Json:
     if "schema" in body:
         result["schema"] = body["schema"]
 
+    # New in 3.10
+    if "computedValues" in body:
+        result["computedValues"] = [
+            {
+                "name": cv["name"],
+                "expression": cv["expression"],
+                "overwrite": cv["overwrite"],
+                "computedOn": cv["computedOn"],
+                "keepNull": cv["keepNull"],
+                "failOnWarning": cv["failOnWarning"],
+            }
+            for cv in body["computedValues"]
+        ]
+
     return verify_format(body, result)
 
 
