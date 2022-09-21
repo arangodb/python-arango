@@ -59,6 +59,12 @@ def format_index(body: Json) -> Json:
         result["worst_indexed_level"] = body["worstIndexedLevel"]
     if "maxNumCoverCells" in body:
         result["max_num_cover_cells"] = body["maxNumCoverCells"]
+    if "storedValues" in body:
+        result["storedValues"] = body["storedValues"]
+    if "cacheEnabled" in body:
+        result["cacheEnabled"] = body["cacheEnabled"]
+    if "legacyPolygons" in body:
+        result["legacyPolygons"] = body["legacyPolygons"]
 
     return verify_format(body, result)
 
