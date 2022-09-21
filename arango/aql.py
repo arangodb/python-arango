@@ -19,6 +19,7 @@ from arango.exceptions import (
     AQLQueryExplainError,
     AQLQueryKillError,
     AQLQueryListError,
+    AQLQueryRulesGetError,
     AQLQueryTrackingGetError,
     AQLQueryTrackingSetError,
     AQLQueryValidateError,
@@ -30,6 +31,7 @@ from arango.formatter import (
     format_aql_tracking,
     format_body,
     format_query_cache_entry,
+    format_query_rule_item,
 )
 from arango.request import Request
 from arango.response import Response
@@ -630,5 +632,26 @@ class AQL(ApiGroup):
             if not resp.is_success:
                 raise AQLFunctionDeleteError(resp, request)
             return {"deleted": resp.body["deletedCount"]}
+
+        return self._execute(request, response_handler)
+
+    def query_rules(self) -> Result[Jsons]:
+        """Return the available optimizer rules for AQL queries
+
+        :return: The available optimizer rules for AQL queries
+        :rtype: dict
+        :raise arango.exceptions.AQLQueryRulesGetError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_api/query/rules")
+
+        def response_handler(resp: Response) -> Jsons:
+            if not resp.is_success:
+                raise AQLQueryRulesGetError(resp, request)
+
+            rules: Jsons = resp.body
+            items: Jsons = []
+            for rule in rules:
+                items.append(format_query_rule_item(rule))
+            return items
 
         return self._execute(request, response_handler)
