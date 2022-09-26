@@ -1,6 +1,6 @@
 __all__ = ["Pregel"]
 
-from typing import Optional
+from typing import Optional, Sequence
 
 from arango.api import ApiGroup
 from arango.exceptions import (
@@ -8,7 +8,7 @@ from arango.exceptions import (
     PregelJobDeleteError,
     PregelJobGetError,
 )
-from arango.formatter import format_pregel_job_data
+from arango.formatter import format_pregel_job_data, format_pregel_job_list
 from arango.request import Request
 from arango.response import Response
 from arango.result import Result
@@ -49,6 +49,8 @@ class Pregel(ApiGroup):
         async_mode: Optional[bool] = None,
         result_field: Optional[str] = None,
         algorithm_params: Optional[Json] = None,
+        vertexCollections: Optional[Sequence[str]] = None,
+        edgeCollections: Optional[Sequence[str]] = None,
     ) -> Result[int]:
         """Start a new Pregel job.
 
@@ -74,11 +76,20 @@ class Pregel(ApiGroup):
         :type result_field: str | None
         :param algorithm_params: Additional algorithm parameters.
         :type algorithm_params: dict | None
+        :param vertexCollections: List of vertex collection names.
+        :type vertexCollections: Sequence[str] | None
+        :param edgeCollections: List of edge collection names.
+        :type edgeCollections: Sequence[str] | None
         :return: Pregel job ID.
         :rtype: int
         :raise arango.exceptions.PregelJobCreateError: If create fails.
         """
         data: Json = {"algorithm": algorithm, "graphName": graph}
+
+        if vertexCollections is not None:
+            data["vertexCollections"] = vertexCollections
+        if edgeCollections is not None:
+            data["edgeCollections"] = edgeCollections
 
         if algorithm_params is None:
             algorithm_params = {}
@@ -120,5 +131,22 @@ class Pregel(ApiGroup):
             if resp.is_success:
                 return True
             raise PregelJobDeleteError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def jobs(self) -> Result[Json]:
+        """Returns a list of currently running and recently
+            finished Pregel jobs without retrieving their results.
+
+        :return: Details of each running or recently finished Pregel job.
+        :rtype: dict
+        :raise arango.exceptions.PregelJobGetError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_api/control_pregel")
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_pregel_job_list(resp.body)
+            raise PregelJobGetError(resp, request)
 
         return self._execute(request, response_handler)

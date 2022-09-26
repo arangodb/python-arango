@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Sequence
 
 from arango.typings import Headers, Json
 
@@ -1072,26 +1072,61 @@ def format_pregel_job_data(body: Json) -> Json:
     """
     result: Json = {}
 
-    if "aggregators" in body:
-        result["aggregators"] = body["aggregators"]
-    if "computationTime" in body:
-        result["computation_time"] = body["computationTime"]
-    if "edgeCount" in body:
-        result["edge_count"] = body["edgeCount"]
+    if "id" in body:
+        result["id"] = body["id"]
+    if "algorithm" in body:
+        result["algorithm"] = body["algorithm"]
+    if "created" in body:
+        result["created"] = body["created"]
+    if "expires" in body:
+        result["expires"] = body["expires"]
+    if "ttl" in body:
+        result["ttl"] = body["ttl"]
+    if "algorithm" in body:
+        result["algorithm"] = body["algorithm"]
+    if "state" in body:
+        result["state"] = body["state"]
     if "gss" in body:
         result["gss"] = body["gss"]
+    if "totalRuntime" in body:
+        result["total_runtime"] = body["totalRuntime"]
+    if "startupTime" in body:
+        result["startup_time"] = body["startupTime"]
+    if "computationTime" in body:
+        result["computation_time"] = body["computationTime"]
+    if "storageTime" in body:
+        result["storageTime"] = body["storageTime"]
+    if "gssTimes" in body:
+        result["gssTimes"] = body["gssTimes"]
+    if "reports" in body:
+        result["reports"] = body["reports"]
+    if "vertexCount" in body:
+        result["vertex_count"] = body["vertexCount"]
+    if "edgeCount" in body:
+        result["edge_count"] = body["edgeCount"]
+    if "aggregators" in body:
+        result["aggregators"] = body["aggregators"]
     if "receivedCount" in body:
         result["received_count"] = body["receivedCount"]
     if "sendCount" in body:
         result["send_count"] = body["sendCount"]
-    if "startupTime" in body:
-        result["startup_time"] = body["startupTime"]
-    if "state" in body:
-        result["state"] = body["state"]
-    if "totalRuntime" in body:
-        result["total_runtime"] = body["totalRuntime"]
-    if "vertexCount" in body:
-        result["vertex_count"] = body["vertexCount"]
+
+    # The detail element was introduced in 3.10
+    if "detail" in body:
+        result["detail"] = body["detail"]
+
+    return verify_format(body, result)
+
+
+def format_pregel_job_list(body: Sequence[Json]) -> Json:
+    """Format Pregel job list data.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    result: Json = {"jobs": [format_pregel_job_data(j) for j in body]}
 
     return verify_format(body, result)
 
