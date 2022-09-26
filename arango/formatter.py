@@ -1107,50 +1107,7 @@ def format_pregel_job_data(body: Json) -> Json:
 
     # The detail element was introduced in 3.10
     if "detail" in body:
-        d: Json = {}
-        detail = body["detail"]
-        if "workerStatus" in detail:
-            d["workerStatus"] = detail["workerStatus"]
-        if "aggregatedStatus" in detail:
-            aggregatedStatus = detail["aggregatedStatus"]
-            aStat: Json = {}
-            if "timeStamp" in aggregatedStatus:
-                aStat["timeStamp"] = aggregatedStatus["timeStamp"]
-            if "graphStoreStatus" in aggregatedStatus:
-                graphStoreStatus = aggregatedStatus["graphStoreStatus"]
-                gsStat: Json = {}
-                if "verticesLoaded" in graphStoreStatus:
-                    gsStat["verticesLoaded"] = graphStoreStatus["verticesLoaded"]
-                if "edgesLoaded" in graphStoreStatus:
-                    gsStat["edgesLoaded"] = graphStoreStatus["edgesLoaded"]
-                if "memoryBytesUsed" in graphStoreStatus:
-                    gsStat["memoryBytesUsed"] = graphStoreStatus["memoryBytesUsed"]
-                if "verticesStored" in graphStoreStatus:
-                    gsStat["verticesStored"] = graphStoreStatus["verticesStored"]
-                aStat["graphStoreStatus"] = gsStat
-            if "allGssStatus" in aggregatedStatus:
-                allGssStatus = aggregatedStatus["allGssStatus"]
-                agStat: Json = {}
-                if "items" in allGssStatus:
-                    items = allGssStatus["items"]
-                    itemList: List[Json] = []
-                    for i in items:
-                        ri: Json = {}
-                        if "verticesProcessed" in i:
-                            ri["verticesProcessed"] = i["verticesProcessed"]
-                        if "messagesSent" in i:
-                            ri["messagesSent"] = i["messagesSent"]
-                        if "messagesReceived" in i:
-                            ri["messagesReceived"] = i["messagesReceived"]
-                        if "memoryBytesUsedForMessages" in i:
-                            ri["memoryBytesUsedForMessages"] = i[
-                                "memoryBytesUsedForMessages"
-                            ]
-                        itemList.append(ri)
-                    agStat["items"] = itemList
-                aStat["allGssStatus"] = agStat
-            d[aggregatedStatus] = aStat
-        result["detail"] = d
+        result["detail"] = body["detail"]
 
     if "aggregators" in body:
         result["aggregators"] = body["aggregators"]
