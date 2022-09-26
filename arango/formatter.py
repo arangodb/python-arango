@@ -1,4 +1,4 @@
-from typing import Any, List, Sequence
+from typing import Any, Sequence
 
 from arango.typings import Headers, Json
 
@@ -1104,17 +1104,16 @@ def format_pregel_job_data(body: Json) -> Json:
         result["vertex_count"] = body["vertexCount"]
     if "edgeCount" in body:
         result["edge_count"] = body["edgeCount"]
-
-    # The detail element was introduced in 3.10
-    if "detail" in body:
-        result["detail"] = body["detail"]
-
     if "aggregators" in body:
         result["aggregators"] = body["aggregators"]
     if "receivedCount" in body:
         result["received_count"] = body["receivedCount"]
     if "sendCount" in body:
         result["send_count"] = body["sendCount"]
+
+    # The detail element was introduced in 3.10
+    if "detail" in body:
+        result["detail"] = body["detail"]
 
     return verify_format(body, result)
 
