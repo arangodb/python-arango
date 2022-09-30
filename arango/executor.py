@@ -293,6 +293,8 @@ class TransactionApiExecutor:
     :type lock_timeout: int
     :param max_size: Max transaction size in bytes.
     :type max_size: int
+    :param allow_dirty_read: Allow reads from followers in a cluster.
+    :type allow_dirty_read: bool | None
     """
 
     def __init__(
@@ -305,6 +307,7 @@ class TransactionApiExecutor:
         allow_implicit: Optional[bool] = None,
         lock_timeout: Optional[int] = None,
         max_size: Optional[int] = None,
+        allow_dirty_read: Optional[bool] = None,
     ) -> None:
         self._conn = connection
 
@@ -326,7 +329,12 @@ class TransactionApiExecutor:
         if max_size is not None:
             data["maxTransactionSize"] = max_size
 
-        request = Request(method="post", endpoint="/_api/transaction/begin", data=data)
+        request = Request(
+            method="post",
+            endpoint="/_api/transaction/begin",
+            data=data,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None
+            )
         resp = self._conn.send_request(request)
 
         if not resp.is_success:
@@ -348,16 +356,23 @@ class TransactionApiExecutor:
         """
         return self._id
 
-    def execute(self, request: Request, response_handler: Callable[[Response], T]) -> T:
+    def execute(self,
+                request: Request,
+                response_handler: Callable[[Response], T],
+                allow_dirty_read: Optional[bool] = None) -> T:
         """Execute API request in a transaction and return the result.
 
         :param request: HTTP request.
         :type request: arango.request.Request
         :param response_handler: HTTP response handler.
         :type response_handler: callable
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool | None
         :return: API execution result.
         """
         request.headers["x-arango-trx-id"] = self._id
+        if allow_dirty_read:
+            request.headers["x-arango-allow-dirty-read"] = "true"
         resp = self._conn.send_request(request)
         return response_handler(resp)
 

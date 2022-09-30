@@ -511,6 +511,7 @@ class Collection(ApiGroup):
         document: Union[str, Json],
         rev: Optional[str] = None,
         check_rev: bool = True,
+        allow_dirty_read: Optional[bool] = None,
     ) -> Result[bool]:
         """Check if a document exists in the collection.
 
@@ -523,12 +524,17 @@ class Collection(ApiGroup):
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool | None
         :return: True if document exists, False otherwise.
         :rtype: bool
         :raise arango.exceptions.DocumentInError: If check fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
         handle, body, headers = self._prep_from_doc(document, rev, check_rev)
+
+        if allow_dirty_read:
+            headers["x-arango-allow-dirty-read"] = "true"
 
         request = Request(
             method="get",
@@ -662,7 +668,11 @@ class Collection(ApiGroup):
         return self._execute(request, response_handler)
 
     def find_near(
-        self, latitude: Number, longitude: Number, limit: Optional[int] = None
+        self,
+        latitude: Number,
+        longitude: Number,
+        limit: Optional[int] = None,
+        allow_dirty_read: Optional[bool] = None,
     ) -> Result[Cursor]:
         """Return documents near a given coordinate.
 
@@ -677,6 +687,8 @@ class Collection(ApiGroup):
         :type longitude: int | float
         :param limit: Max number of documents returned.
         :type limit: int | None
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool | None
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
@@ -705,6 +717,7 @@ class Collection(ApiGroup):
             endpoint="/_api/cursor",
             data={"query": query, "bindVars": bind_vars, "count": True},
             read=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> Cursor:
@@ -721,6 +734,7 @@ class Collection(ApiGroup):
         upper: int,
         skip: Optional[int] = None,
         limit: Optional[int] = None,
+        allow_dirty_read: Optional[bool] = None,
     ) -> Result[Cursor]:
         """Return documents within a given range in a random order.
 
@@ -736,6 +750,8 @@ class Collection(ApiGroup):
         :type skip: int | None
         :param limit: Max number of documents returned.
         :type limit: int | None
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool | None
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
@@ -764,6 +780,7 @@ class Collection(ApiGroup):
             endpoint="/_api/cursor",
             data={"query": query, "bindVars": bind_vars, "count": True},
             read=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> Cursor:
@@ -779,6 +796,7 @@ class Collection(ApiGroup):
         longitude: Number,
         radius: Number,
         distance_field: Optional[str] = None,
+        allow_dirty_read: Optional[bool] = None,
     ) -> Result[Cursor]:
         """Return documents within a given radius around a coordinate.
 
@@ -793,6 +811,8 @@ class Collection(ApiGroup):
         :param distance_field: Document field used to indicate the distance to
             the given coordinate. This parameter is ignored in transactions.
         :type distance_field: str
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool | None
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
@@ -823,6 +843,7 @@ class Collection(ApiGroup):
             endpoint="/_api/cursor",
             data={"query": query, "bindVars": bind_vars, "count": True},
             read=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> Cursor:
@@ -899,7 +920,11 @@ class Collection(ApiGroup):
         return self._execute(request, response_handler)
 
     def find_by_text(
-        self, field: str, query: str, limit: Optional[int] = None
+        self,
+        field: str,
+        query: str,
+        limit: Optional[int] = None,
+        allow_dirty_read: Optional[bool] = None,
     ) -> Result[Cursor]:
         """Return documents that match the given fulltext query.
 
@@ -909,6 +934,8 @@ class Collection(ApiGroup):
         :type query: str
         :param limit: Max number of documents returned.
         :type limit: int | None
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool | None
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
@@ -935,6 +962,7 @@ class Collection(ApiGroup):
             endpoint="/_api/cursor",
             data={"query": aql, "bindVars": bind_vars, "count": True},
             read=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> Cursor:
@@ -944,12 +972,18 @@ class Collection(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def get_many(self, documents: Sequence[Union[str, Json]]) -> Result[List[Json]]:
+    def get_many(
+        self,
+        documents: Sequence[Union[str, Json]],
+        allow_dirty_read: Optional[bool] = None,
+    ) -> Result[List[Json]]:
         """Return multiple documents ignoring any missing ones.
 
         :param documents: List of document keys, IDs or bodies. Document bodies
             must contain the "_id" or "_key" fields.
         :type documents: [str | dict]
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool | None
         :return: Documents. Missing ones are not included.
         :rtype: [dict]
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
@@ -964,6 +998,7 @@ class Collection(ApiGroup):
             params=params,
             data=handles,
             read=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> List[Json]:
@@ -2054,6 +2089,7 @@ class StandardCollection(Collection):
         document: Union[str, Json],
         rev: Optional[str] = None,
         check_rev: bool = True,
+        allow_dirty_read: Optional[bool] = None,
     ) -> Result[Optional[Json]]:
         """Return a document.
 
@@ -2066,12 +2102,17 @@ class StandardCollection(Collection):
         :param check_rev: If set to True, revision of **document** (if given)
             is compared against the revision of target document.
         :type check_rev: bool
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool | None
         :return: Document, or None if not found.
         :rtype: dict | None
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
         handle, body, headers = self._prep_from_doc(document, rev, check_rev)
+
+        if allow_dirty_read:
+            headers["x-arango-allow-dirty-read"] = "true"
 
         request = Request(
             method="get",
@@ -3075,7 +3116,10 @@ class EdgeCollection(Collection):
         return self.insert(edge, sync=sync, silent=silent, return_new=return_new)
 
     def edges(
-        self, vertex: Union[str, Json], direction: Optional[str] = None
+        self,
+        vertex: Union[str, Json],
+        direction: Optional[str] = None,
+        allow_dirty_read: Optional[bool] = None,
     ) -> Result[Json]:
         """Return the edge documents coming in and/or out of the vertex.
 
@@ -3084,6 +3128,8 @@ class EdgeCollection(Collection):
         :param direction: The direction of the edges. Allowed values are "in"
             and "out". If not set, edges in both directions are returned.
         :type direction: str
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool | None
         :return: List of edges and statistics.
         :rtype: dict
         :raise arango.exceptions.EdgeListError: If retrieval fails.
@@ -3097,6 +3143,7 @@ class EdgeCollection(Collection):
             endpoint=f"/_api/edges/{self.name}",
             params=params,
             read=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> Json:
