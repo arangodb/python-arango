@@ -798,6 +798,23 @@ def format_view_link(body: Json) -> Json:
     return verify_format(body, result)
 
 
+def format_view_index(body: Json) -> Json:
+    """Format view index data.
+
+    :param body: Input body.
+    :type body: dict
+    :return: Formatted body.
+    :rtype: dict
+    """
+    result: Json = {}
+    if "collection" in body:
+        result["collection"] = body["collection"]
+    if "index" in body:
+        result["index"] = body["index"]
+
+    return verify_format(body, result)
+
+
 def format_view_consolidation_policy(body: Json) -> Json:
     """Format view consolidation policy data.
 
@@ -867,6 +884,10 @@ def format_view(body: Json) -> Json:
     if "links" in body:
         result["links"] = {
             name: format_view_link(link) for name, link in body["links"].items()
+        }
+    if "indexes" in body:
+        result["indexes"] = {
+            name: format_view_index(idx) for name, idx in body["indexes"].items()
         }
 
     return verify_format(body, result)
