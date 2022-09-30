@@ -333,8 +333,8 @@ class TransactionApiExecutor:
             method="post",
             endpoint="/_api/transaction/begin",
             data=data,
-            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None
-            )
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
+        )
         resp = self._conn.send_request(request)
 
         if not resp.is_success:
@@ -356,10 +356,12 @@ class TransactionApiExecutor:
         """
         return self._id
 
-    def execute(self,
-                request: Request,
-                response_handler: Callable[[Response], T],
-                allow_dirty_read: Optional[bool] = None) -> T:
+    def execute(
+        self,
+        request: Request,
+        response_handler: Callable[[Response], T],
+        allow_dirty_read: Optional[bool] = None,
+    ) -> T:
         """Execute API request in a transaction and return the result.
 
         :param request: HTTP request.

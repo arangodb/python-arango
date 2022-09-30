@@ -290,7 +290,7 @@ class Database(ApiGroup):
             endpoint="/_api/transaction",
             data=data,
             headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
-            )
+        )
 
         def response_handler(resp: Response) -> Any:
             if not resp.is_success:
