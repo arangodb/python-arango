@@ -2113,7 +2113,7 @@ class Database(ApiGroup):
 
         :param name: View name.
         :type name: str
-        :param view_type: View type (e.g. "arangosearch").
+        :param view_type: View type (e.g. "arangosearch" or "search-alias").
         :type view_type: str
         :param properties: View properties. For more information see
             https://www.arangodb.com/docs/stable/http/views-arangosearch.html

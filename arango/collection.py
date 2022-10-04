@@ -1294,6 +1294,75 @@ class Collection(ApiGroup):
 
         return self._add_index(data)
 
+    def add_inverted_index(
+        self,
+        fields: Json,
+        name: Optional[str] = None,
+        inBackground: Optional[bool] = None,
+        parallelism: Optional[int] = None,
+        primarySort: Optional[Json] = None,
+        storedValues: Optional[Sequence[Json]] = None,
+        analyzer: Optional[str] = None,
+        features: Optional[Sequence[str]] = None,
+        includeAllFields: Optional[bool] = None,
+        trackListPositions: Optional[bool] = None,
+        searchField: Optional[bool] = None,
+    ) -> Result[Json]:
+        """Create a new inverted index, introduced in version 3.10.
+
+        :param fields: Document fields to index.
+        :type fields: Json
+        :param name: Optional name for the index.
+        :type name: str | None
+        :param inBackground: Do not hold the collection lock.
+        :type inBackground: bool | None
+        :param parallelism:
+        :type parallelism: int | None
+        :param primarySort:
+        :type primarySort: Json | None
+        :param storedValues:
+        :type storedValues: Sequence[Json] | None
+        :param analyzer:
+        :type analyzer: str | None
+        :param features:
+        :type features: Sequence[str] | None
+        :param includeAllFields:
+        :type includeAllFields: bool | None
+        :param trackListPositions:
+        :type trackListPositions: bool | None
+        :param searchField:
+        :type searchField: bool | None
+        :return: New index details.
+        :rtype: dict
+        :raise arango.exceptions.IndexCreateError: If create fails.
+        """
+        data: Json = {"type": "inverted", "fields": fields}
+
+        if name is not None:
+            data["name"] = name
+        if inBackground is not None:
+            data["inBackground"] = inBackground
+        if parallelism is not None:
+            data["parallelism"] = parallelism
+        if primarySort is not None:
+            data["primarySort"] = primarySort
+        if storedValues is not None:
+            data["storedValues"] = storedValues
+        if analyzer is not None:
+            data["analyzer"] = analyzer
+        if features is not None:
+            data["features"] = features
+        if includeAllFields is not None:
+            data["includeAllFields"] = includeAllFields
+        if trackListPositions is not None:
+            data["trackListPositions"] = trackListPositions
+        if searchField is not None:
+            data["searchField"] = searchField
+        if fields is not None:
+            data["fields"] = fields
+
+        return self._add_index(data)
+
     def delete_index(self, index_id: str, ignore_missing: bool = False) -> Result[bool]:
         """Delete an index.
 
