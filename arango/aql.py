@@ -266,6 +266,7 @@ class AQL(ApiGroup):
         skip_inaccessible_cols: Optional[bool] = None,
         max_runtime: Optional[Number] = None,
         fill_block_cache: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Cursor]:
         """Execute the query and return the result cursor.
 
@@ -358,6 +359,8 @@ class AQL(ApiGroup):
             query will not make it into the RocksDB block cache if not already
             in there, thus leaving more room for the actual hot set.
         :type fill_block_cache: bool
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool | None
         :return: Result cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.AQLQueryExecuteError: If execute fails.
@@ -408,7 +411,12 @@ class AQL(ApiGroup):
             data["options"] = options
         data.update(options)
 
-        request = Request(method="post", endpoint="/_api/cursor", data=data)
+        request = Request(
+            method="post",
+            endpoint="/_api/cursor",
+            data=data,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
+        )
 
         def response_handler(resp: Response) -> Cursor:
             if not resp.is_success:

@@ -224,6 +224,7 @@ class Database(ApiGroup):
         allow_implicit: Optional[bool] = None,
         intermediate_commit_count: Optional[int] = None,
         intermediate_commit_size: Optional[int] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Any]:
         """Execute raw Javascript command in transaction.
 
@@ -256,6 +257,8 @@ class Database(ApiGroup):
         :param intermediate_commit_size: Max size of operations in bytes after
             which an intermediate commit is performed automatically.
         :type intermediate_commit_size: int | None
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool | None
         :return: Return value of **command**.
         :rtype: Any
         :raise arango.exceptions.TransactionExecuteError: If execution fails.
@@ -282,7 +285,12 @@ class Database(ApiGroup):
         if intermediate_commit_size is not None:
             data["intermediateCommitSize"] = intermediate_commit_size
 
-        request = Request(method="post", endpoint="/_api/transaction", data=data)
+        request = Request(
+            method="post",
+            endpoint="/_api/transaction",
+            data=data,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
+        )
 
         def response_handler(resp: Response) -> Any:
             if not resp.is_success:
