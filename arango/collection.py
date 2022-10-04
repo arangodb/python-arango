@@ -511,7 +511,7 @@ class Collection(ApiGroup):
         document: Union[str, Json],
         rev: Optional[str] = None,
         check_rev: bool = True,
-        allow_dirty_read: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[bool]:
         """Check if a document exists in the collection.
 
@@ -672,7 +672,7 @@ class Collection(ApiGroup):
         latitude: Number,
         longitude: Number,
         limit: Optional[int] = None,
-        allow_dirty_read: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Cursor]:
         """Return documents near a given coordinate.
 
@@ -734,7 +734,7 @@ class Collection(ApiGroup):
         upper: int,
         skip: Optional[int] = None,
         limit: Optional[int] = None,
-        allow_dirty_read: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Cursor]:
         """Return documents within a given range in a random order.
 
@@ -796,7 +796,7 @@ class Collection(ApiGroup):
         longitude: Number,
         radius: Number,
         distance_field: Optional[str] = None,
-        allow_dirty_read: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Cursor]:
         """Return documents within a given radius around a coordinate.
 
@@ -924,7 +924,7 @@ class Collection(ApiGroup):
         field: str,
         query: str,
         limit: Optional[int] = None,
-        allow_dirty_read: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Cursor]:
         """Return documents that match the given fulltext query.
 
@@ -975,7 +975,7 @@ class Collection(ApiGroup):
     def get_many(
         self,
         documents: Sequence[Union[str, Json]],
-        allow_dirty_read: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[List[Json]]:
         """Return multiple documents ignoring any missing ones.
 
@@ -2089,7 +2089,7 @@ class StandardCollection(Collection):
         document: Union[str, Json],
         rev: Optional[str] = None,
         check_rev: bool = True,
-        allow_dirty_read: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Optional[Json]]:
         """Return a document.
 
@@ -3119,7 +3119,7 @@ class EdgeCollection(Collection):
         self,
         vertex: Union[str, Json],
         direction: Optional[str] = None,
-        allow_dirty_read: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Json]:
         """Return the edge documents coming in and/or out of the vertex.
 

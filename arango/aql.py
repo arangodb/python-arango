@@ -266,7 +266,7 @@ class AQL(ApiGroup):
         skip_inaccessible_cols: Optional[bool] = None,
         max_runtime: Optional[Number] = None,
         fill_block_cache: Optional[bool] = None,
-        allow_dirty_read: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Cursor]:
         """Execute the query and return the result cursor.
 

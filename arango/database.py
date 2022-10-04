@@ -224,7 +224,7 @@ class Database(ApiGroup):
         allow_implicit: Optional[bool] = None,
         intermediate_commit_count: Optional[int] = None,
         intermediate_commit_size: Optional[int] = None,
-        allow_dirty_read: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Any]:
         """Execute raw Javascript command in transaction.
 

@@ -307,7 +307,7 @@ class TransactionApiExecutor:
         allow_implicit: Optional[bool] = None,
         lock_timeout: Optional[int] = None,
         max_size: Optional[int] = None,
-        allow_dirty_read: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> None:
         self._conn = connection
 
@@ -360,7 +360,7 @@ class TransactionApiExecutor:
         self,
         request: Request,
         response_handler: Callable[[Response], T],
-        allow_dirty_read: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> T:
         """Execute API request in a transaction and return the result.
 
