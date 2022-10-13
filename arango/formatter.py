@@ -215,7 +215,7 @@ def format_collection(body: Json) -> Json:
         result["schema"] = body["schema"]
 
     # New in 3.10
-    if "computedValues" in body:
+    if body.get("computedValues") is not None:
         result["computedValues"] = [
             {
                 "name": cv["name"],
