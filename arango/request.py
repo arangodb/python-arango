@@ -4,11 +4,14 @@ from typing import Any, MutableMapping, Optional
 
 from arango.typings import Fields, Headers, Params, DriverFlags
 
-def normalize_headers(headers: Optional[Headers], driverFlags: Optional[DriverFlags] = None) -> Headers:
+
+def normalize_headers(
+    headers: Optional[Headers], driverFlags: Optional[DriverFlags] = None
+) -> Headers:
     flags = ""
     if driverFlags is not None:
         for flag in driverFlags:
-            flags = flags + flag + ";";
+            flags = flags + flag + ";"
     driverInfo = "python-arango/7.5.2 (" + flags + ")"
     normalized_headers: Headers = {
         "charset": "utf-8",
@@ -104,7 +107,7 @@ class Request:
         write: Optional[Fields] = None,
         exclusive: Optional[Fields] = None,
         deserialize: bool = True,
-        driverFlags: Optional[DriverFlags] = None
+        driverFlags: Optional[DriverFlags] = None,
     ) -> None:
         self.method = method
         self.endpoint = endpoint
