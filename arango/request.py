@@ -61,6 +61,8 @@ class Request:
     :type exclusive: str | [str] | None
     :param deserialize: Whether the response body can be deserialized.
     :type deserialize: bool
+    :param driverFlags: List of flags for the driver
+    :type driverFlags: list
 
     :ivar method: HTTP method in lowercase (e.g. "post").
     :vartype method: str
@@ -82,6 +84,8 @@ class Request:
     :vartype exclusive: str | [str] | None
     :ivar deserialize: Whether the response body can be deserialized.
     :vartype deserialize: bool
+    :ivar driverFlags: List of flags for the driver
+    :vartype driverFlags: list
     """
 
     __slots__ = (
@@ -94,6 +98,7 @@ class Request:
         "write",
         "exclusive",
         "deserialize",
+        "driverFlags",
     )
 
     def __init__(
