@@ -2,13 +2,18 @@ __all__ = ["Request"]
 
 from typing import Any, MutableMapping, Optional
 
-from arango.typings import Fields, Headers, Params
+from arango.typings import Fields, Headers, Params, DriverFlags
 
-
-def normalize_headers(headers: Optional[Headers]) -> Headers:
+def normalize_headers(headers: Optional[Headers], driverFlags: Optional[DriverFlags] = None) -> Headers:
+    flags = ""
+    if driverFlags is not None:
+        for flag in driverFlags:
+            flags = flags + flag + ";";
+    driverInfo = "python-arango/7.5.2 (" + flags + ")"
     normalized_headers: Headers = {
         "charset": "utf-8",
         "content-type": "application/json",
+        "x-arango-driver": driverInfo,
     }
     if headers is not None:
         for key, value in headers.items():
@@ -99,13 +104,15 @@ class Request:
         write: Optional[Fields] = None,
         exclusive: Optional[Fields] = None,
         deserialize: bool = True,
+        driverFlags: Optional[DriverFlags] = None
     ) -> None:
         self.method = method
         self.endpoint = endpoint
-        self.headers: Headers = normalize_headers(headers)
+        self.headers: Headers = normalize_headers(headers, driverFlags)
         self.params: MutableMapping[str, str] = normalize_params(params)
         self.data = data
         self.read = read
         self.write = write
         self.exclusive = exclusive
         self.deserialize = deserialize
+        self.driverFlags = driverFlags
