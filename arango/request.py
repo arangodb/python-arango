@@ -2,7 +2,7 @@ __all__ = ["Request"]
 
 from typing import Any, MutableMapping, Optional
 
-from arango.typings import Fields, Headers, Params, DriverFlags
+from arango.typings import DriverFlags, Fields, Headers, Params
 
 
 def normalize_headers(
