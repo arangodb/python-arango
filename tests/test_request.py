@@ -49,11 +49,9 @@ def test_request_json_data() -> None:
     assert request.method == "post"
     assert request.endpoint == "/_api/test"
     assert request.params == {"bool": "1"}
-    # assert request.headers == {
-    #     "charset": "utf-8",
-    #     "content-type": "application/json",
-    #     "foo": "bar",
-    # }
+    assert request.headers["charset"] == "utf-8"
+    assert request.headers["content-type"] == "application/json"
+    assert request.headers["foo"] == "bar"
     assert request.data == {"baz": "qux"}
 
 
