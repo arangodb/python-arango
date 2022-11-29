@@ -2,13 +2,22 @@ __all__ = ["Request"]
 
 from typing import Any, MutableMapping, Optional
 
-from arango.typings import Fields, Headers, Params
+from arango.typings import DriverFlags, Fields, Headers, Params
+from arango.version import __version__
 
 
-def normalize_headers(headers: Optional[Headers]) -> Headers:
+def normalize_headers(
+    headers: Optional[Headers], driver_flags: Optional[DriverFlags] = None
+) -> Headers:
+    flags = ""
+    if driver_flags is not None:
+        for flag in driver_flags:
+            flags = flags + flag + ";"
+    driver_header = "python-arango/" + __version__ + " (" + flags + ")"
     normalized_headers: Headers = {
         "charset": "utf-8",
         "content-type": "application/json",
+        "x-arango-driver": driver_header,
     }
     if headers is not None:
         for key, value in headers.items():
@@ -53,6 +62,8 @@ class Request:
     :type exclusive: str | [str] | None
     :param deserialize: Whether the response body can be deserialized.
     :type deserialize: bool
+    :param driver_flags: List of flags for the driver
+    :type driver_flags: list
 
     :ivar method: HTTP method in lowercase (e.g. "post").
     :vartype method: str
@@ -74,6 +85,8 @@ class Request:
     :vartype exclusive: str | [str] | None
     :ivar deserialize: Whether the response body can be deserialized.
     :vartype deserialize: bool
+    :ivar driver_flags: List of flags for the driver
+    :vartype driver_flags: list
     """
 
     __slots__ = (
@@ -86,6 +99,7 @@ class Request:
         "write",
         "exclusive",
         "deserialize",
+        "driver_flags",
     )
 
     def __init__(
@@ -99,13 +113,15 @@ class Request:
         write: Optional[Fields] = None,
         exclusive: Optional[Fields] = None,
         deserialize: bool = True,
+        driver_flags: Optional[DriverFlags] = None,
     ) -> None:
         self.method = method
         self.endpoint = endpoint
-        self.headers: Headers = normalize_headers(headers)
+        self.headers: Headers = normalize_headers(headers, driver_flags)
         self.params: MutableMapping[str, str] = normalize_params(params)
         self.data = data
         self.read = read
         self.write = write
         self.exclusive = exclusive
         self.deserialize = deserialize
+        self.driver_flags = driver_flags
