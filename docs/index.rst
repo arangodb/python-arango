@@ -48,6 +48,7 @@ Contents
     view
     analyzer
     threading
+    certificates
     errors
     logging
     auth
