@@ -62,8 +62,8 @@ class Request:
     :type exclusive: str | [str] | None
     :param deserialize: Whether the response body can be deserialized.
     :type deserialize: bool
-    :param driverFlags: List of flags for the driver
-    :type driverFlags: list
+    :param driver_flags: List of flags for the driver
+    :type driver_flags: list
 
     :ivar method: HTTP method in lowercase (e.g. "post").
     :vartype method: str
@@ -85,8 +85,8 @@ class Request:
     :vartype exclusive: str | [str] | None
     :ivar deserialize: Whether the response body can be deserialized.
     :vartype deserialize: bool
-    :ivar driverFlags: List of flags for the driver
-    :vartype driverFlags: list
+    :ivar driver_flags: List of flags for the driver
+    :vartype driver_flags: list
     """
 
     __slots__ = (
@@ -99,7 +99,7 @@ class Request:
         "write",
         "exclusive",
         "deserialize",
-        "driverFlags",
+        "driver_flags",
     )
 
     def __init__(
@@ -113,15 +113,15 @@ class Request:
         write: Optional[Fields] = None,
         exclusive: Optional[Fields] = None,
         deserialize: bool = True,
-        driverFlags: Optional[DriverFlags] = None,
+        driver_flags: Optional[DriverFlags] = None,
     ) -> None:
         self.method = method
         self.endpoint = endpoint
-        self.headers: Headers = normalize_headers(headers, driverFlags)
+        self.headers: Headers = normalize_headers(headers, driver_flags)
         self.params: MutableMapping[str, str] = normalize_params(params)
         self.data = data
         self.read = read
         self.write = write
         self.exclusive = exclusive
         self.deserialize = deserialize
-        self.driverFlags = driverFlags
+        self.driver_flags = driver_flags
