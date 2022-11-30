@@ -1,9 +1,9 @@
 __all__ = ["Request"]
 
+from importlib.metadata import version
 from typing import Any, MutableMapping, Optional
 
 from arango.typings import DriverFlags, Fields, Headers, Params
-from importlib.metadata import version
 
 
 def normalize_headers(
