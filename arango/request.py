@@ -3,17 +3,13 @@ __all__ = ["Request"]
 from typing import Any, MutableMapping, Optional
 
 from arango.typings import DriverFlags, Fields, Headers, Params
+from importlib.metadata import version
 
 
 def normalize_headers(
     headers: Optional[Headers], driver_flags: Optional[DriverFlags] = None
 ) -> Headers:
-    flags = ""
-    if driver_flags is not None:
-        for flag in driver_flags:
-            flags = flags + flag + ";"
-    driver_version = "7.5.3"
-    driver_header = "python-arango/" + driver_version + " (" + flags + ")"
+    driver_header = generate_driver_header(driver_flags)
     normalized_headers: Headers = {
         "charset": "utf-8",
         "content-type": "application/json",
@@ -24,6 +20,18 @@ def normalize_headers(
             normalized_headers[key.lower()] = value
 
     return normalized_headers
+
+
+def generate_driver_header(driver_flags: Optional[DriverFlags] = None) -> str:
+    flags: str = ""
+    if driver_flags is not None:
+        for flag in driver_flags:
+            flags = flags + flag + ";"
+    name: str = "python-arango"
+    driver_version: str = version(name)
+    driver_header: str = name + "/" + driver_version + " (" + flags + ")"
+
+    return driver_header
 
 
 def normalize_params(params: Optional[Params]) -> MutableMapping[str, str]:
