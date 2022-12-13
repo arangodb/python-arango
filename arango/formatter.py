@@ -794,6 +794,10 @@ def format_view_link(body: Json) -> Json:
         result["track_list_positions"] = body["trackListPositions"]
     if "storeValues" in body:
         result["store_values"] = body["storeValues"]
+    if "primaryKeyCache" in body:
+        result["primaryKeyCache"] = body["primaryKeyCache"]
+    if "companies" in body:
+        result["companies"] = body["companies"]
 
     return verify_format(body, result)
 
@@ -882,9 +886,7 @@ def format_view(body: Json) -> Json:
     if "writebufferSizeMax" in body:
         result["writebuffer_max_size"] = body["writebufferSizeMax"]
     if "links" in body:
-        result["links"] = {
-            name: format_view_link(link) for name, link in body["links"].items()
-        }
+        result["links"] = body["links"]
     if "indexes" in body:
         result["indexes"] = {
             name: format_view_index(idx) for name, idx in body["indexes"].items()
