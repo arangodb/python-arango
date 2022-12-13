@@ -428,3 +428,35 @@ class TransactionApiExecutor:
         if resp.is_success:
             return True
         raise TransactionAbortError(resp, request)
+
+
+
+class QueueTimeApiExecutor:
+    """API executor that handles queue time.
+
+    :param connection: HTTP connection.
+    :type connection: arango.connection.BasicConnection |
+        arango.connection.JwtConnection | arango.connection.JwtSuperuserConnection
+    """
+
+    def __init__(self, connection: Connection) -> None:
+        self._conn = connection
+
+    @property
+    def context(self) -> str:
+        return "queue-time"
+
+    def execute(self, request: Request, response_handler: Callable[[Response], T], max_queue_time_seconds: int) -> T:
+        """Execute an API request and return the result.
+
+        :param request: HTTP request.
+        :type request: arango.request.Request
+        :param response_handler: HTTP response handler.
+        :type response_handler: callable
+        :return: API execution result.
+        """        
+        request.headers["x-arango-max-queue-time-seconds"] = max_queue_time_seconds
+        resp = self._conn.send_request(request)
+        
+        queue_time_seconds = resp.headers["x-arango-queue-time-seconds"]
+        return response_handler(resp, queue_time_seconds)
