@@ -4,6 +4,7 @@ __all__ = [
     "AsyncApiExecutor",
     "BatchApiExecutor",
     "TransactionApiExecutor",
+    "QueueTimeApiExecutor",
 ]
 
 from collections import OrderedDict
@@ -32,6 +33,7 @@ ApiExecutor = Union[
     "AsyncApiExecutor",
     "BatchApiExecutor",
     "TransactionApiExecutor",
+    "QueueTimeApiExecutor",
 ]
 
 T = TypeVar("T")
@@ -430,7 +432,6 @@ class TransactionApiExecutor:
         raise TransactionAbortError(resp, request)
 
 
-
 class QueueTimeApiExecutor:
     """API executor that handles queue time.
 
@@ -446,7 +447,12 @@ class QueueTimeApiExecutor:
     def context(self) -> str:
         return "queue-time"
 
-    def execute(self, request: Request, response_handler: Callable[[Response], T], max_queue_time_seconds: int) -> T:
+    def execute(
+        self,
+        request: Request,
+        response_handler: Callable[[Response], T],
+        max_queue_time_seconds: int,
+    ) -> T:
         """Execute an API request and return the result.
 
         :param request: HTTP request.
@@ -454,9 +460,9 @@ class QueueTimeApiExecutor:
         :param response_handler: HTTP response handler.
         :type response_handler: callable
         :return: API execution result.
-        """        
+        """
         request.headers["x-arango-max-queue-time-seconds"] = max_queue_time_seconds
         resp = self._conn.send_request(request)
-        
+
         queue_time_seconds = resp.headers["x-arango-queue-time-seconds"]
         return response_handler(resp, queue_time_seconds)
