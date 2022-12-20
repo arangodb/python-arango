@@ -121,3 +121,6 @@ node_modules/
 
 # setuptools_scm
 arango/version.py
+/.vs/python-arango/FileContentIndex
+/.vs/python-arango/v17
+/.vs
