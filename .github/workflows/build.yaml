@@ -1,14 +1,13 @@
 name: Build
+
 on:
-  push:
-    branches: [ main, dev ]
   pull_request:
-    branches: [ main, dev ]
+    branches: [main, dev]
   workflow_dispatch:
     inputs:
       debug_enabled:
         type: boolean
-        description: Run the build with tmate debugging
+        description: Debug with tmate
         required: false
         default: false
 
@@ -18,13 +17,13 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [ "3.7", "3.8", "3.9", "3.10" ]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11.1"]
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Fetch complete history for all tags and branches
+      - name: Fetch all tags and branches
         run: git fetch --prune --unshallow
 
       - name: Create ArangoDB Docker container
@@ -41,19 +40,19 @@ jobs:
       - name: Start ArangoDB Docker container
         run: docker start arango
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Start tmate session
+      - name: Debug with tmate
         uses: mxschmitt/action-tmate@v3
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
       - name: Run pre-commit checks
         uses: pre-commit/action@v3.0.0
 
-      - name: Install package
+      - name: Install dependencies
         run: pip install .[dev]
 
       - name: Run unit tests
@@ -67,7 +66,7 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
-        if: matrix.python-version == '3.8'
+        if: matrix.python-version == '3.10'
         with:
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
