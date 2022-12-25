@@ -1,9 +1,8 @@
 name: CodeQL
+
 on:
-  push:
-    branches: [ main, dev ]
   pull_request:
-    branches: [ main, dev ]
+    branches: [main, dev]
   schedule:
     - cron: '21 2 * * 3'
 
@@ -11,12 +10,16 @@ jobs:
   analyze:
     name: Analyze
     runs-on: ubuntu-latest
+
+    permissions:
+      security-events: write
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
-      with:
-        languages: 'python'
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
