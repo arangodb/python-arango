@@ -104,6 +104,12 @@ INCOMPATIBLE_VERSION = 35
 # Requested resource disabled.
 DISABLED = 36
 
+# JSON string could not be parsed.
+MALFORMED_JSON = 37
+
+# Call cannot succeed because the server startup phase is still in progress.
+STARTING_UP = 38
+
 ###########################
 # HTTP Error Status Codes #
 ###########################
@@ -126,11 +132,23 @@ HTTP_METHOD_NOT_ALLOWED = 405
 # HTTP content type not supported.
 HTTP_NOT_ACCEPTABLE = 406
 
+# Timeout occurred.
+HTTP_REQUEST_TIMEOUT = 408
+
+# Conflict occurred in an HTTP operation.
+HTTP_CONFLICT = 409
+
+# Requested content has been permanently deleted.
+HTTP_GONE = 410
+
 # Precondition not met.
 HTTP_PRECONDITION_FAILED = 412
 
 # Internal server error occurred.
 HTTP_SERVER_ERROR = 500
+
+# API is not implemented.
+HTTP_NOT_IMPLEMENTED = 501
 
 # Service temporarily unavailable.
 HTTP_SERVICE_UNAVAILABLE = 503
@@ -378,6 +396,9 @@ REPLICATION_INVALID_APPLIER_STATE = 1407
 # Found unexpected transaction ID.
 REPLICATION_UNEXPECTED_TRANSACTION = 1408
 
+# Synchronization of a shard takes longer than the configured timeout.
+REPLICATION_SHARD_SYNC_ATTEMPT_TIMEOUT_EXCEEDED = 1409
+
 # Invalid replication applier configuration.
 REPLICATION_INVALID_APPLIER_CONFIGURATION = 1410
 
@@ -399,12 +420,56 @@ REPLICATION_WRONG_CHECKSUM = 1416
 # Shard is not empty and follower tries a shortcut.
 REPLICATION_SHARD_NONEMPTY = 1417
 
+# Specific replicated log is not found
+REPLICATION_REPLICATED_LOG_NOT_FOUND = 1418
+
+# Participant of a replicated log is ordered to do something only the leader can do.
+REPLICATION_REPLICATED_LOG_NOT_THE_LEADER = 1419
+
+# Participant of a replicated log is ordered to do something only a follower can do.
+REPLICATION_REPLICATED_LOG_NOT_A_FOLLOWER = 1420
+
+# Follower of a replicated log rejects an append-entries request.
+REPLICATION_REPLICATED_LOG_APPEND_ENTRIES_REJECTED = 1421
+
+# Leader instance of a replicated log rejects a request because it just resigned.
+# This can also happen if the term changes (due to a configuration change).
+REPLICATION_REPLICATED_LOG_LEADER_RESIGNED = 1422
+
+# Follower instance of a replicated log rejects a request because it just resigned.
+# This can also happen if the term changes (due to a configuration change).
+REPLICATION_REPLICATED_LOG_FOLLOWER_RESIGNED = 1423
+
+# Participant instance of a replicated log is no longer available.
+REPLICATION_REPLICATED_LOG_PARTICIPANT_GONE = 1424
+
+# Participant tries to change its term but found an invalid new term.
+REPLICATION_REPLICATED_LOG_INVALID_TERM = 1425
+
+# Participant is currently unconfigured.
+REPLICATION_REPLICATED_LOG_UNCONFIGURED = 1426
+
+# Specific replicated state was not found.
+REPLICATION_REPLICATED_STATE_NOT_FOUND = 1427
+
 ###########################
 # ArangoDB Cluster Errors #
 ###########################
 
+# Operation is sent to a non-following server.
+CLUSTER_NOT_FOLLOWER = 1446
+
+# Follower transaction already performed an intermediate commit and must be rolled back.
+CLUSTER_FOLLOWER_TRANSACTION_COMMIT_PERFORMED = 1447
+
+# Updating the plan on collection creation failed.
+CLUSTER_CREATE_COLLECTION_PRECONDITION_FAILED = 1448
+
 # Raised on some occasions when one server gets a request from another.
 CLUSTER_SERVER_UNKNOWN = 1449
+
+# Number of shards for a collection is higher than allowed.
+CLUSTER_TOO_MANY_SHARDS = 1450
 
 # Coordinator cannot create a collection as the collection ID already exists.
 CLUSTER_COLLECTION_ID_EXISTS = 1453
@@ -571,6 +636,9 @@ QUERY_TOO_MANY_COLLECTIONS = 1522
 # Document attribute redeclared.
 QUERY_DOCUMENT_ATTRIBUTE_REDECLARED = 1530
 
+# Unknown attribute is used inside an OPTIONS clause.
+QUERY_INVALID_OPTIONS_ATTRIBUTE = 1539
+
 # Undefined function called.
 QUERY_FUNCTION_NAME_UNKNOWN = 1540
 
@@ -604,8 +672,11 @@ QUERY_INVALID_ARITHMETIC_VALUE = 1561
 # Divide by zero.
 QUERY_DIVISION_BY_ZERO = 1562
 
-# Non-list operand used when expecting an list operand.
+# Non-list operand used when expecting a list operand.
 QUERY_ARRAY_EXPECTED = 1563
+
+# Collection is used as an operand in an AQL expression
+QUERY_COLLECTION_USED_IN_EXPRESSION = 1568
 
 # Function "FAIL()" called inside a query.
 QUERY_FAIL_CALLED = 1569
@@ -671,6 +742,9 @@ QUERY_USER_ASSERT = 1593
 
 # User provided expression does not evaluate to true.
 QUERY_USER_WARN = 1594
+
+# Window node is created after a data-modification operation.
+QUERY_WINDOW_AFTER_MODIFICATION = 1595
 
 ##########################
 # ArangoDB Cursor Errors #
@@ -821,7 +895,7 @@ GRAPH_TOO_MANY_ITERATIONS = 1909
 # Invalid filter result returned in graph traversal.
 GRAPH_INVALID_FILTER_RESULT = 1910
 
-# Edge collection may only be used once in a edge definition.
+# Edge collection may only be used once in an edge definition.
 GRAPH_COLLECTION_MULTI_USE = 1920
 
 # Collection already used by another graph in a different edge definition.
@@ -892,6 +966,26 @@ GRAPH_CREATE_MALFORMED_ORPHAN_LIST = 1943
 
 # Collection used as a relation exists.
 GRAPH_EDGE_DEFINITION_IS_DOCUMENT = 1944
+
+# The collection is used as the initial collection of this graph and is not allowed to
+# be removed manually.
+GRAPH_COLLECTION_IS_INITIAL = 1945
+
+# During the graph creation process no collection could be selected as the needed
+# initial collection. Happens if a distributeShardsLike or replicationFactor mismatch
+# was found.
+GRAPH_NO_INITIAL_COLLECTION = 1946
+
+# The _from or _to collection specified for the edge refers to a vertex collection which
+# is not used in any edge definition of the graph.
+GRAPH_REFERENCED_VERTEX_COLLECTION_NOT_USED = 1947
+
+# Negative edge weight found during a weighted graph traversal or shortest path query.
+GRAPH_NEGATIVE_EDGE_WEIGHT = 1948
+
+##################
+# Session Errors #
+##################
 
 # Invalid/unknown session ID passed to the server.
 SESSION_UNKNOWN = 1950
@@ -1046,6 +1140,13 @@ NO_SMART_JOIN_ATTRIBUTE = 4008
 # Cannot update the value of the smart join attribute.
 CLUSTER_MUST_NOT_CHANGE_SMART_JOIN_ATTRIBUTE = 4009
 
+# There was an attempt to create an edge between separated graph components.
+INVALID_DISJOINT_SMART_EDGE = 4010
+
+# Switching back and forth between Satellite and Smart in Disjoint SmartGraph is not
+# supported within a single AQL statement. Split into multiple statements.
+UNSUPPORTED_CHANGE_IN_SMART_TO_SATELLITE_DISJOINT_EDGE_DIRECTION = 4011
+
 #########################
 # Cluster Repair Errors #
 #########################
@@ -1089,6 +1190,12 @@ CLUSTER_REPAIRS_OPERATION_FAILED = 5010
 # Agency Errors #
 #################
 
+# Malformed gossip message.
+AGENCY_MALFORMED_GOSSIP_MESSAGE = 20001
+
+# Malformed inquire request.
+AGENCY_MALFORMED_INQUIRE_REQUEST = 20002
+
 # Inform message must be an object.
 AGENCY_INFORM_MUST_BE_OBJECT = 20011
 
@@ -1116,6 +1223,9 @@ AGENCY_INFORM_MUST_CONTAIN_TIMEOUT_MULT = 20018
 # Cannot rebuild readDB or the spearHead from replicated log.
 AGENCY_CANNOT_REBUILD_DBS = 20021
 
+# Malformed agency transaction.
+AGENCY_MALFORMED_TRANSACTION = 20030
+
 ######################
 # Supervision Errors #
 ######################
@@ -1123,12 +1233,15 @@ AGENCY_CANNOT_REBUILD_DBS = 20021
 # General supervision failure.
 SUPERVISION_GENERAL_FAILURE = 20501
 
-#####################
-# Dispatcher Errors #
-#####################
+####################
+# Scheduler Errors #
+####################
 
 # Queue is full.
 QUEUE_FULL = 21003
+
+# Request with a queue time requirement is set and cannot be fulfilled.
+QUEUE_TIME_REQUIREMENT_VIOLATED = 21004
 
 ######################
 # Maintenance Errors #
@@ -1171,10 +1284,10 @@ NO_SUCH_HOT_BACKUP = 7007
 # Invalid remote repository configuration.
 REMOTE_REPOSITORY_CONFIG_BAD = 7008
 
-# Some of the db servers cannot be reached for transaction locks.
+# Some DB servers cannot be reached for transaction locks.
 LOCAL_LOCK_FAILED = 7009
 
-# Some of the db servers cannot be reached for transaction locks.
+# Some DB servers cannot be reached for transaction locks.
 LOCAL_LOCK_RETRY = 7010
 
 # Conflict of multiple hot backup processes.
@@ -1182,3 +1295,45 @@ HOT_BACKUP_CONFLICT = 7011
 
 # One or more db servers could not be reached for hot backup inquiry.
 HOT_BACKUP_DBSERVERS_AWOL = 7012
+
+########################
+# Plan Analyzer Errors #
+########################
+
+# Plan could not be modified while creating or deleting Analyzers revision.
+ERROR_CLUSTER_COULD_NOT_MODIFY_ANALYZERS_IN_PLAN = 7021
+
+##############
+# AIR Errors #
+##############
+
+# During the execution of an AIR program an error occurred.
+AIR_EXECUTION_ERROR = 8001
+
+#############
+# Licensing #
+#############
+
+# The license has expired or is invalid.
+LICENSE_EXPIRED_OR_INVALID = 9001
+
+# Verification of license failed.
+LICENSE_SIGNATURE_VERIFICATION = 9002
+
+# The ID of the license does not match the ID of this instance.
+LICENSE_NON_MATCHING_ID = 9003
+
+# The installed license does not cover this feature.
+LICENSE_FEATURE_NOT_ENABLED = 9004
+
+# The installed license does not cover a higher number of this resource.
+LICENSE_RESOURCE_EXHAUSTED = 9005
+
+# The license does not hold features of an ArangoDB license.
+LICENSE_INVALID = 9006
+
+# The license has one or more inferior features.
+LICENSE_CONFLICT = 9007
+
+# Could not verify the license’s signature.
+LICENSE_VALIDATION_FAILED = 9008

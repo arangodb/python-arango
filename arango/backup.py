@@ -29,7 +29,7 @@ class Backup(ApiGroup):  # pragma: no cover
         """Return backup details.
 
         :param backup_id: If set, details on only the specified backup is
-            returned. Otherwise details on all backups are returned.
+            returned. Otherwise, details on all backups are returned.
         :type backup_id: str
         :return: Backup details.
         :rtype: dict
