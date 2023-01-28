@@ -888,9 +888,7 @@ def format_view(body: Json) -> Json:
     if "links" in body:
         result["links"] = body["links"]
     if "indexes" in body:
-        result["indexes"] = {
-            name: format_view_index(idx) for name, idx in body["indexes"].items()
-        }
+        result["indexes"] = body["indexes"]
 
     return verify_format(body, result)
 
