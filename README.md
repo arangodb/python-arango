@@ -5,7 +5,7 @@
 [![codecov](https://codecov.io/gh/ArangoDB-Community/python-arango/branch/main/graph/badge.svg?token=M8zrjrzsUY)](https://codecov.io/gh/ArangoDB-Community/python-arango)
 [![PyPI version](https://badge.fury.io/py/python-arango.svg)](https://badge.fury.io/py/python-arango)
 [![GitHub license](https://img.shields.io/github/license/ArangoDB-Community/python-arango?color=brightgreen)](https://github.com/ArangoDB-Community/python-arango/blob/main/LICENSE)
-![Python version](https://img.shields.io/badge/python-3.7%2B-blue)
+![Python version](https://img.shields.io/badge/python-3.8%2B-blue)
 
 # Python-Arango
 
