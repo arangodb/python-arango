@@ -20,6 +20,7 @@ setup(
     install_requires=[
         "urllib3>=1.26.0",
         "dataclasses>=0.6; python_version < '3.7'",
+        "importlib-metadata; python_version < '3.8'",
         "requests",
         "requests_toolbelt",
         "PyJWT",
