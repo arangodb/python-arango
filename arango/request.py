@@ -28,7 +28,7 @@ def generate_driver_header(driver_flags: Optional[DriverFlags] = None) -> str:
         for flag in driver_flags:
             flags = flags + flag + ";"
     name: str = "python-arango"
-    driver_version: str = version(name)
+    driver_version: str = ".".join(version(name).split(".")[:3])  # Only keep semver
     driver_header: str = name + "/" + driver_version + " (" + flags + ")"
 
     return driver_header
