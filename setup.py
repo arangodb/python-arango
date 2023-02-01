@@ -15,12 +15,10 @@ setup(
     packages=find_packages(exclude=["tests"]),
     package_data={"arango": ["py.typed"]},
     include_package_data=True,
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     license="MIT",
     install_requires=[
         "urllib3>=1.26.0",
-        "dataclasses>=0.6; python_version < '3.7'",
-        "importlib-metadata; python_version < '3.8'",
         "requests",
         "requests_toolbelt",
         "PyJWT",
