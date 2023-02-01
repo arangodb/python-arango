@@ -30,7 +30,6 @@ class TestBatchExecutor(BatchApiExecutor):
 
 
 class TestTransactionApiExecutor(TransactionApiExecutor):
-
     # noinspection PyMissingConstructor
     def __init__(self, connection) -> None:
         self._conn = connection

@@ -93,7 +93,6 @@ def test_client_bad_connection(db, username, password, cluster):
 
 
 def test_client_custom_http_client(db, username, password):
-
     # Define custom HTTP client which increments the counter on any API call.
     class MyHTTPClient(DefaultHTTPClient):
         def __init__(self) -> None:
