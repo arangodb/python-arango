@@ -72,6 +72,11 @@ db = client.db("test", username="root", password="passwd")
 # Create a new graph named "school".
 graph = db.create_graph("school")
 
+# Create a new EnterpriseGraph [Enterprise Edition]
+eegraph = db.create_graph(
+    name="school",
+    smart=True)
+
 # Create vertex collections for the graph.
 students = graph.create_vertex_collection("students")
 lectures = graph.create_vertex_collection("lectures")
