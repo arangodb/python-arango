@@ -1,6 +1,6 @@
 import pytest
 
-from arango.errno import DATABASE_NOT_FOUND, FILE_NOT_FOUND, FORBIDDEN
+from arango.errno import DATABASE_NOT_FOUND, FILE_NOT_FOUND, FORBIDDEN, HTTP_NOT_FOUND
 from arango.exceptions import (
     BackupCreateError,
     BackupDeleteError,
@@ -12,7 +12,7 @@ from arango.exceptions import (
 from tests.helpers import assert_raises
 
 
-def test_backup_management(sys_db, bad_db, enterprise):
+def test_backup_management(sys_db, bad_db, enterprise, cluster):
     if not enterprise:
         pytest.skip("Only for ArangoDB enterprise edition")
 
@@ -59,8 +59,9 @@ def test_backup_management(sys_db, bad_db, enterprise):
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
 
     # Test upload backup.
+    backup_id = backup_id_foo if cluster else backup_id_bar
     result = sys_db.backup.upload(
-        backup_id=backup_id_foo,
+        backup_id=backup_id,
         repository="local://tmp/backups",
         config={"local": {"type": "local"}},
     )
@@ -79,7 +80,7 @@ def test_backup_management(sys_db, bad_db, enterprise):
 
     # Test download backup.
     result = sys_db.backup.download(
-        backup_id=backup_id_bar,
+        backup_id=backup_id_foo,
         repository="local://tmp/backups",
         config={"local": {"type": "local"}},
     )
@@ -112,4 +113,7 @@ def test_backup_management(sys_db, bad_db, enterprise):
     # Test delete missing backup.
     with assert_raises(BackupDeleteError) as err:
         sys_db.backup.delete(backup_id_foo)
-    assert err.value.error_code == FILE_NOT_FOUND
+    if cluster:
+        assert err.value.error_code == HTTP_NOT_FOUND
+    else:
+        assert err.value.error_code == FILE_NOT_FOUND

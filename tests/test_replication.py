@@ -150,9 +150,12 @@ def test_replication_applier(sys_db, bad_db, url, cluster):
         bad_db.replication.stop_applier()
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
 
+    # We need a tcp endpoint
+    tcp_endpoint = url.replace("http", "tcp")
+
     # Test replication set applier config
     result = sys_db.replication.set_applier_config(
-        endpoint=url,
+        endpoint=tcp_endpoint,
         database="_system",
         username="root",
         password="passwd",
@@ -174,7 +177,7 @@ def test_replication_applier(sys_db, bad_db, url, cluster):
         restrict_type="exclude",
         restrict_collections=["students"],
     )
-    assert result["endpoint"] == url
+    assert result["endpoint"] == tcp_endpoint
     assert result["database"] == "_system"
     assert result["username"] == "root"
     assert result["max_connect_retries"] == 120
@@ -196,7 +199,7 @@ def test_replication_applier(sys_db, bad_db, url, cluster):
     assert result["restrict_collections"] == ["students"]
 
     with assert_raises(ReplicationApplierConfigSetError) as err:
-        bad_db.replication.set_applier_config(url)
+        bad_db.replication.set_applier_config(tcp_endpoint)
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
 
     # Test replication start applier
