@@ -5,11 +5,7 @@ import pytest
 from arango import ArangoClient, formatter
 from arango.database import StandardDatabase
 from arango.typings import Json
-from tests.executors import (
-    TestAsyncApiExecutor,
-    TestBatchExecutor,
-    TestTransactionApiExecutor,
-)
+from tests.executors import TestAsyncApiExecutor, TestTransactionApiExecutor
 from tests.helpers import (
     empty_collection,
     generate_col_name,
@@ -210,13 +206,15 @@ def pytest_generate_tests(metafunc):
             bad_async_db._executor = TestAsyncApiExecutor(bad_conn)
             bad_dbs.append(bad_async_db)
 
-            # Add test batch databases
+            # Skip test batch databases, as they are deprecated.
+            """
             tst_batch_db = StandardDatabase(tst_conn)
             tst_batch_db._executor = TestBatchExecutor(tst_conn)
             tst_dbs.append(tst_batch_db)
             bad_batch_bdb = StandardDatabase(bad_conn)
             bad_batch_bdb._executor = TestBatchExecutor(bad_conn)
             bad_dbs.append(bad_batch_bdb)
+            """
 
     if "db" in metafunc.fixturenames and "bad_db" in metafunc.fixturenames:
         metafunc.parametrize("db,bad_db", zip(tst_dbs, bad_dbs))
