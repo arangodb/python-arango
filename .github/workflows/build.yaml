@@ -13,11 +13,11 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11.1"]
+        python-version: ["3.8", "3.10"]
 
     steps:
       - name: Checkout repository
@@ -28,14 +28,8 @@ jobs:
 
       - name: Create ArangoDB Docker container
         run: >
-          docker create --name arango -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd
-          arangodb/arangodb:3.7.7 --server.jwt-secret-keyfile=/tmp/keyfile
-
-      - name: Copy Foxx service zip into ArangoDB Docker container
-        run: docker cp tests/static/service.zip arango:/tmp/service.zip
-
-      - name: Copy keyfile into ArangoDB Docker container
-        run: docker cp tests/static/keyfile arango:/tmp/keyfile
+          docker create --name arango -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd -v "$(pwd)/tests/static/":/tests/static
+          arangodb/arangodb:3.10.6 --server.jwt-secret-keyfile=/tests/static/keyfile
 
       - name: Start ArangoDB Docker container
         run: docker start arango
