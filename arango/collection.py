@@ -863,7 +863,7 @@ class Collection(ApiGroup):
         limit: Optional[int] = None,
         index: Optional[str] = None,
     ) -> Result[Cursor]:
-        """Return all documents in an rectangular area.
+        """Return all documents in a rectangular area.
 
         :param latitude1: First latitude.
         :type latitude1: int | float
