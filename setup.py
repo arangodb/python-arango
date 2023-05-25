@@ -23,6 +23,7 @@ setup(
         "requests_toolbelt",
         "PyJWT",
         "setuptools>=42",
+        "importlib_metadata>=4.7.1",
     ],
     extras_require={
         "dev": [
