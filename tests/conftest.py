@@ -232,6 +232,12 @@ def mock_formatters(monkeypatch):
         body.pop("error", None)
         body.pop("code", None)
         result.pop("edge", None)
+
+        # Remove all None values
+        # Sometimes they are expected to be excluded from the body (see computedValues)
+        result = {k: v for k, v in result.items() if v is not None}
+        body = {k: v for k, v in body.items() if v is not None}
+
         if len(body) != len(result):
             before = sorted(body, key=lambda x: x.strip("_"))
             after = sorted(result, key=lambda x: x.strip("_"))

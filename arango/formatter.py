@@ -217,22 +217,18 @@ def format_collection(body: Json) -> Json:
         result["schema"] = body["schema"]
 
     # New in 3.10
-    if "computedValues" in body:
-        result["computedValues"] = (
-            [
-                {
-                    "name": cv["name"],
-                    "expression": cv["expression"],
-                    "overwrite": cv["overwrite"],
-                    "computedOn": cv["computedOn"],
-                    "keepNull": cv["keepNull"],
-                    "failOnWarning": cv["failOnWarning"],
-                }
-                for cv in body["computedValues"]
-            ]
-            if body.get("computedValues") is not None
-            else None
-        )
+    if body.get("computedValues") is not None:
+        result["computedValues"] = [
+            {
+                "name": cv["name"],
+                "expression": cv["expression"],
+                "overwrite": cv["overwrite"],
+                "computedOn": cv["computedOn"],
+                "keepNull": cv["keepNull"],
+                "failOnWarning": cv["failOnWarning"],
+            }
+            for cv in body["computedValues"]
+        ]
     if "internalValidatorType" in body:
         result["internal_validator_type"] = body["internalValidatorType"]
 
