@@ -79,7 +79,7 @@ def test_user_management(sys_db, bad_db):
     )
     assert new_user["username"] == username
     assert new_user["active"] is False
-    assert new_user["extra"] == {"bar": "baz"}
+    assert new_user["extra"] == {"foo": "bar", "bar": "baz"}
     assert sys_db.user(username) == new_user
 
     # Update missing user
