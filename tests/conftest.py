@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 import pytest
+from packaging import version
 
 from arango import ArangoClient, formatter
 from arango.database import StandardDatabase
@@ -40,6 +41,7 @@ class GlobalData:
     enterprise: bool = None
     secret: str = None
     root_password: str = None
+    db_version: version = version.parse("0.0.0")
 
 
 global_data = GlobalData()
@@ -66,7 +68,7 @@ def pytest_configure(config):
         password=config.getoption("passwd"),
         superuser_token=generate_jwt(secret),
     )
-    sys_db.version()
+    db_version = sys_db.version()
 
     # Create a user and non-system database for testing.
     username = generate_username()
@@ -118,6 +120,7 @@ def pytest_configure(config):
     global_data.username = username
     global_data.password = password
     global_data.db_name = tst_db_name
+    global_data.db_version = version.parse(db_version)
     global_data.sys_db = sys_db
     global_data.tst_db = tst_db
     global_data.bad_db = bad_db
@@ -245,6 +248,11 @@ def mock_formatters(monkeypatch):
         return result
 
     monkeypatch.setattr(formatter, "verify_format", mock_verify_format)
+
+
+@pytest.fixture(autouse=False)
+def db_version():
+    return global_data.db_version
 
 
 @pytest.fixture(autouse=False)
