@@ -33,6 +33,7 @@ def test_aql_query_management(db, bad_db, col, docs):
         "rules",
         "variables",
         "collections",
+        "stats",
     ]
     # Test explain invalid query
     with assert_raises(AQLQueryExplainError) as err:
