@@ -21,7 +21,10 @@ if [[ "$tests" != "all" && "$tests" != "community" && "$tests" != "enterprise" ]
     exit 1
 fi
 
-version="${3:-3.10.6}"
+# 3.11.0
+# 3.10.6
+# 3.9.9
+version="${3:-3.11.0}"
 
 if [[ -n "$4" && "$4" != "notest" ]]; then
     echo "Invalid argument. Use 'notest' to only start the docker container, without running the tests."
