@@ -1,3 +1,5 @@
+from packaging import version
+
 from arango.exceptions import (
     AQLCacheClearError,
     AQLCacheConfigureError,
@@ -26,7 +28,7 @@ def test_aql_attributes(db, username):
     assert repr(db.aql.cache) == f"<AQLQueryCache in {db.name}>"
 
 
-def test_aql_query_management(db, bad_db, col, docs):
+def test_aql_query_management(db_version, db, bad_db, col, docs):
     plan_fields = [
         "estimatedNrItems",
         "estimatedCost",
@@ -162,7 +164,7 @@ def test_aql_query_management(db, bad_db, col, docs):
     assert new_tracking["track_bind_vars"] is True
     assert new_tracking["track_slow_queries"] is True
 
-    # Kick off some long lasting queries in the background
+    # Kick off some long-lasting queries in the background
     db.begin_async_execution().aql.execute("RETURN SLEEP(100)")
     db.begin_async_execution().aql.execute("RETURN SLEEP(50)")
 
@@ -175,6 +177,8 @@ def test_aql_query_management(db, bad_db, col, docs):
         assert "state" in query
         assert "bind_vars" in query
         assert "runtime" in query
+        if db_version >= version.parse("3.11"):
+            assert "peak_memory_usage" in query
     assert len(queries) == 2
 
     # Test list queries with bad database
