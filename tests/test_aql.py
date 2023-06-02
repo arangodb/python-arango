@@ -29,7 +29,7 @@ def test_aql_attributes(db, username):
 
 
 def test_aql_query_management(db_version, db, bad_db, col, docs):
-    plan_fields = [
+    explain_fields = [
         "estimatedNrItems",
         "estimatedCost",
         "rules",
@@ -37,29 +37,51 @@ def test_aql_query_management(db_version, db, bad_db, col, docs):
         "collections",
         "stats",
     ]
+    stats_fields = {
+        "0.0.0": [
+            "rulesExecuted",
+            "rulesSkipped",
+            "plansCreated",
+        ],
+        "3.10.4": [
+            "peakMemoryUsage",
+            "executionTime",
+        ],
+    }
+
     # Test explain invalid query
     with assert_raises(AQLQueryExplainError) as err:
         db.aql.explain("INVALID QUERY")
     assert err.value.error_code == 1501
 
     # Test explain valid query with all_plans set to False
-    plan = db.aql.explain(
+    explain = db.aql.explain(
         f"FOR d IN {col.name} RETURN d",
         all_plans=False,
         opt_rules=["-all", "+use-index-range"],
     )
-    assert all(field in plan for field in plan_fields)
+    assert all(field in explain for field in explain_fields)
+    for v, fields in stats_fields.items():
+        if db_version >= version.parse(v):
+            assert all(field in explain["stats"] for field in fields)
+        else:
+            assert all(field not in explain["stats"] for field in fields)
 
     # Test explain valid query with all_plans set to True
-    plans = db.aql.explain(
+    explanations = db.aql.explain(
         f"FOR d IN {col.name} RETURN d",
         all_plans=True,
         opt_rules=["-all", "+use-index-range"],
         max_plans=10,
     )
-    for plan in plans:
-        assert all(field in plan for field in plan_fields)
-    assert len(plans) < 10
+    for explain in explanations:
+        assert all(field in explain for field in explain_fields)
+        for v, fields in stats_fields.items():
+            if db_version >= version.parse(v):
+                assert all(field in explain["stats"] for field in fields)
+            else:
+                assert all(field not in explain["stats"] for field in fields)
+    assert len(explanations) < 10
 
     # Test validate invalid query
     with assert_raises(AQLQueryValidateError) as err:
