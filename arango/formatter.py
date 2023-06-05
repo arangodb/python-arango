@@ -322,6 +322,10 @@ def format_aql_query(body: Json) -> Json:
         result["stream"] = body["stream"]
     if "user" in body:
         result["user"] = body["user"]
+
+    # New in 3.11
+    if "peakMemoryUsage" in body:
+        result["peak_memory_usage"] = body["peakMemoryUsage"]
     return verify_format(body, result)
 
 

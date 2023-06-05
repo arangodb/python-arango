@@ -1,3 +1,5 @@
+from packaging import version
+
 from arango.exceptions import (
     AQLCacheClearError,
     AQLCacheConfigureError,
@@ -26,37 +28,60 @@ def test_aql_attributes(db, username):
     assert repr(db.aql.cache) == f"<AQLQueryCache in {db.name}>"
 
 
-def test_aql_query_management(db, bad_db, col, docs):
-    plan_fields = [
+def test_aql_query_management(db_version, db, bad_db, col, docs):
+    explain_fields = [
         "estimatedNrItems",
         "estimatedCost",
         "rules",
         "variables",
         "collections",
+        "stats",
     ]
+    stats_fields = {
+        "0.0.0": [
+            "rulesExecuted",
+            "rulesSkipped",
+            "plansCreated",
+        ],
+        "3.10.4": [
+            "peakMemoryUsage",
+            "executionTime",
+        ],
+    }
+
     # Test explain invalid query
     with assert_raises(AQLQueryExplainError) as err:
         db.aql.explain("INVALID QUERY")
     assert err.value.error_code == 1501
 
     # Test explain valid query with all_plans set to False
-    plan = db.aql.explain(
+    explain = db.aql.explain(
         f"FOR d IN {col.name} RETURN d",
         all_plans=False,
         opt_rules=["-all", "+use-index-range"],
     )
-    assert all(field in plan for field in plan_fields)
+    assert all(field in explain for field in explain_fields)
+    for v, fields in stats_fields.items():
+        if db_version >= version.parse(v):
+            assert all(field in explain["stats"] for field in fields)
+        else:
+            assert all(field not in explain["stats"] for field in fields)
 
     # Test explain valid query with all_plans set to True
-    plans = db.aql.explain(
+    explanations = db.aql.explain(
         f"FOR d IN {col.name} RETURN d",
         all_plans=True,
         opt_rules=["-all", "+use-index-range"],
         max_plans=10,
     )
-    for plan in plans:
-        assert all(field in plan for field in plan_fields)
-    assert len(plans) < 10
+    for explain in explanations:
+        assert all(field in explain for field in explain_fields)
+        for v, fields in stats_fields.items():
+            if db_version >= version.parse(v):
+                assert all(field in explain["stats"] for field in fields)
+            else:
+                assert all(field not in explain["stats"] for field in fields)
+    assert len(explanations) < 10
 
     # Test validate invalid query
     with assert_raises(AQLQueryValidateError) as err:
@@ -161,7 +186,7 @@ def test_aql_query_management(db, bad_db, col, docs):
     assert new_tracking["track_bind_vars"] is True
     assert new_tracking["track_slow_queries"] is True
 
-    # Kick off some long lasting queries in the background
+    # Kick off some long-lasting queries in the background
     db.begin_async_execution().aql.execute("RETURN SLEEP(100)")
     db.begin_async_execution().aql.execute("RETURN SLEEP(50)")
 
@@ -174,6 +199,8 @@ def test_aql_query_management(db, bad_db, col, docs):
         assert "state" in query
         assert "bind_vars" in query
         assert "runtime" in query
+        if db_version >= version.parse("3.11"):
+            assert "peak_memory_usage" in query
     assert len(queries) == 2
 
     # Test list queries with bad database
