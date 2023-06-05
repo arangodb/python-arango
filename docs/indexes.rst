@@ -44,7 +44,7 @@ on fields ``_from`` and ``_to``. For more information on indexes, refer to
     index = cities.add_persistent_index(fields=['currency'], sparse=True)
 
     # Add a new TTL (time-to-live) index on field 'currency'.
-    index = cities.add_ttl_index(fields=['ttl'], expiry_time=200)
+    index = cities.add_ttl_index(fields=['currency'], expiry_time=200)
 
     # Indexes may be added with a name that can be referred to in AQL queries.
     index = cities.add_hash_index(fields=['country'], name='my_hash_index')

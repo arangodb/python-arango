@@ -1,8 +1,8 @@
 import json
 from typing import Union
 
+import importlib_metadata
 import pytest
-from pkg_resources import get_distribution
 from requests import Session
 
 from arango.client import ArangoClient
@@ -21,7 +21,7 @@ def test_client_attributes():
     http_client = DefaultHTTPClient()
 
     client = ArangoClient(hosts="http://127.0.0.1:8529", http_client=http_client)
-    assert client.version == get_distribution("python-arango").version
+    assert client.version == importlib_metadata.version("python-arango")
     assert client.hosts == ["http://127.0.0.1:8529"]
 
     assert repr(client) == "<ArangoClient http://127.0.0.1:8529>"
@@ -36,7 +36,7 @@ def test_client_attributes():
         serializer=json.dumps,
         deserializer=json.loads,
     )
-    assert client.version == get_distribution("python-arango").version
+    assert client.version == importlib_metadata.version("python-arango")
     assert client.hosts == client_hosts
     assert repr(client) == client_repr
     assert isinstance(client._host_resolver, RoundRobinHostResolver)
@@ -48,7 +48,7 @@ def test_client_attributes():
         serializer=json.dumps,
         deserializer=json.loads,
     )
-    assert client.version == get_distribution("python-arango").version
+    assert client.version == importlib_metadata.version("python-arango")
     assert client.hosts == client_hosts
     assert repr(client) == client_repr
     assert isinstance(client._host_resolver, RandomHostResolver)

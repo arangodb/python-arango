@@ -13,6 +13,12 @@ Run unit tests with coverage:
 py.test --cov=arango --cov-report=html  # Open htmlcov/index.html in your browser
 ```
 
+For a more comprehensive test suite, run:
+
+```shell
+./tester.sh  # Requires docker
+```
+
 Build and test documentation:
 
 ```shell

@@ -213,11 +213,19 @@ class AQL(ApiGroup):
             if not resp.is_success:
                 raise AQLQueryExplainError(resp, request)
             if "plan" in resp.body:
-                plan: Json = resp.body["plan"]
-                return plan
+                result: Json = resp.body["plan"]
+                if "stats" in resp.body:
+                    result["stats"] = resp.body["stats"]
+                return result
             else:
-                plans: Jsons = resp.body["plans"]
-                return plans
+                results: Jsons = resp.body["plans"]
+                if "stats" in resp.body:
+                    # Although "plans" contains an array, "stats" is a single object.
+                    # We need to duplicate "stats" for each plan in order to preserve
+                    # the original structure.
+                    for plan in results:
+                        plan["stats"] = resp.body["stats"]
+                return results
 
         return self._execute(request, response_handler)
 

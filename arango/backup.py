@@ -38,7 +38,7 @@ class Backup(ApiGroup):  # pragma: no cover
         request = Request(
             method="post",
             endpoint="/_admin/backup/list",
-            data={} if backup_id is None else {"id": backup_id},
+            data=None if backup_id is None else {"id": backup_id},
         )
 
         def response_handler(resp: Response) -> Json:

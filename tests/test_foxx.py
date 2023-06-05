@@ -29,7 +29,7 @@ from arango.exceptions import (
 from arango.foxx import Foxx
 from tests.helpers import assert_raises, extract, generate_service_mount
 
-service_file = "/tmp/service.zip"
+service_file = "/tests/static/service.zip"
 service_name = "test"
 
 
