@@ -854,44 +854,17 @@ def format_view(body: Json) -> Json:
     :return: Formatted body.
     :rtype: dict
     """
-    result: Json = {}
+    # Remove only unnecessary keys
+    if "error" in body:
+        body.pop("error")
+    if "code" in body:
+        body.pop("code")
     if "globallyUniqueId" in body:
-        result["global_id"] = body["globallyUniqueId"]
-    if "id" in body:
-        result["id"] = body["id"]
-    if "name" in body:
-        result["name"] = body["name"]
-    if "type" in body:
-        result["type"] = body["type"]
-    if "cleanupIntervalStep" in body:
-        result["cleanup_interval_step"] = body["cleanupIntervalStep"]
-    if "commitIntervalMsec" in body:
-        result["commit_interval_msec"] = body["commitIntervalMsec"]
-    if "consolidationIntervalMsec" in body:
-        result["consolidation_interval_msec"] = body["consolidationIntervalMsec"]
-    if "consolidationPolicy" in body:
-        result["consolidation_policy"] = format_view_consolidation_policy(
-            body["consolidationPolicy"]
-        )
-    if "primarySort" in body:
-        result["primary_sort"] = body["primarySort"]
-    if "primarySortCompression" in body:
-        result["primary_sort_compression"] = body["primarySortCompression"]
-    if "storedValues" in body:
-        result["stored_values"] = body["storedValues"]
-    if "writebufferIdle" in body:
-        result["writebuffer_idle"] = body["writebufferIdle"]
-    if "writebufferActive" in body:
-        result["writebuffer_active"] = body["writebufferActive"]
-    if "writebufferSizeMax" in body:
-        result["writebuffer_max_size"] = body["writebufferSizeMax"]
-    if "links" in body:
-        result["links"] = body["links"]
-    if "indexes" in body:
-        result["indexes"] = body["indexes"]
-
-    return verify_format(body, result)
-
+        global_id = body["globallyUniqueId"]
+        body.pop("globallyUniqueId")
+        body["global_id"] = global_id
+    
+    return body
 
 def format_vertex(body: Json) -> Json:
     """Format vertex data.
