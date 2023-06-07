@@ -4,7 +4,7 @@ __all__ = [
     "AsyncApiExecutor",
     "BatchApiExecutor",
     "TransactionApiExecutor",
-    "QueueTimeApiExecutor",
+    "QueueBoundedApiExecutor",
 ]
 
 from collections import OrderedDict
@@ -17,6 +17,7 @@ from arango.exceptions import (
     AsyncExecuteError,
     BatchExecuteError,
     BatchStateError,
+    QueueBoundedExecutorError,
     TransactionAbortError,
     TransactionCommitError,
     TransactionInitError,
@@ -33,7 +34,7 @@ ApiExecutor = Union[
     "AsyncApiExecutor",
     "BatchApiExecutor",
     "TransactionApiExecutor",
-    "QueueTimeApiExecutor",
+    "QueueBoundedApiExecutor",
 ]
 
 T = TypeVar("T")
@@ -432,26 +433,57 @@ class TransactionApiExecutor:
         raise TransactionAbortError(resp, request)
 
 
-class QueueTimeApiExecutor:
-    """API executor that handles queue time.
+class QueueBoundedApiExecutor:
+    """Allows setting the maximum acceptable server-side queuing time
+        for client requests.
 
     :param connection: HTTP connection.
     :type connection: arango.connection.BasicConnection |
         arango.connection.JwtConnection | arango.connection.JwtSuperuserConnection
+    :param max_queue_time_seconds: Maximum server-side queuing time in seconds.
+    :type max_queue_time_seconds: float
     """
 
-    def __init__(self, connection: Connection) -> None:
+    def __init__(self, connection: Connection, max_queue_time_seconds: float) -> None:
         self._conn = connection
+        self._max_queue_time_seconds = max_queue_time_seconds
+        self._queue_time_seconds = 0.0
 
     @property
     def context(self) -> str:
-        return "queue-time"
+        return "queue-bounded"
+
+    @property
+    def queue_time_seconds(self) -> float:
+        """Return the most recent request queuing/de-queuing time.
+
+        :return: Server-side queuing time in seconds.
+        :rtype: float
+        """
+        return self._queue_time_seconds
+
+    @property
+    def max_queue_time_seconds(self) -> float:
+        """Return the maximum server-side queuing time.
+
+        :return: Maximum server-side queuing time in seconds.
+        :rtype: float
+        """
+        return self._max_queue_time_seconds
+
+    @max_queue_time_seconds.setter
+    def max_queue_time_seconds(self, value: float) -> None:
+        """Set the maximum server-side queuing time.
+
+        :param value: Maximum server-side queuing time in seconds.
+        :type value: float
+        """
+        self._max_queue_time_seconds = value
 
     def execute(
         self,
         request: Request,
         response_handler: Callable[[Response], T],
-        max_queue_time_seconds: int,
     ) -> T:
         """Execute an API request and return the result.
 
@@ -461,8 +493,17 @@ class QueueTimeApiExecutor:
         :type response_handler: callable
         :return: API execution result.
         """
-        request.headers["x-arango-max-queue-time-seconds"] = max_queue_time_seconds
+        request.headers["x-arango-queue-time-seconds"] = str(
+            self._max_queue_time_seconds
+        )
         resp = self._conn.send_request(request)
 
-        queue_time_seconds = resp.headers["x-arango-queue-time-seconds"]
-        return response_handler(resp, queue_time_seconds)
+        if not resp.is_success:
+            raise QueueBoundedExecutorError(resp, request)
+
+        if "X-Arango-Queue-Time-Seconds" in resp.headers:
+            self._queue_time_seconds = float(
+                resp.headers["X-Arango-Queue-Time-Seconds"]
+            )
+
+        return response_handler(resp)

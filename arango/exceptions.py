@@ -232,6 +232,15 @@ class BatchExecuteError(ArangoServerError):
     """Failed to execute batch API request."""
 
 
+######################################
+# Queue Bounded Execution Exceptions #
+######################################
+
+
+class QueueBoundedExecutorError(ArangoServerError):
+    """Failed to execute queue-bounded API request."""
+
+
 #########################
 # Collection Exceptions #
 #########################

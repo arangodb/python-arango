@@ -1,4 +1,10 @@
-__all__ = ["StandardDatabase", "AsyncDatabase", "BatchDatabase", "TransactionDatabase"]
+__all__ = [
+    "StandardDatabase",
+    "AsyncDatabase",
+    "BatchDatabase",
+    "QueueBoundedDatabase",
+    "TransactionDatabase",
+]
 
 from datetime import datetime
 from numbers import Number
@@ -75,6 +81,7 @@ from arango.executor import (
     AsyncApiExecutor,
     BatchApiExecutor,
     DefaultApiExecutor,
+    QueueBoundedApiExecutor,
     TransactionApiExecutor,
 )
 from arango.formatter import (
@@ -2514,6 +2521,19 @@ class StandardDatabase(Database):
             max_size=max_size,
         )
 
+    def begin_queue_bounded_execution(
+        self, max_queue_time_seconds: float = 0.0
+    ) -> "QueueBoundedDatabase":
+        """Begin queue bounded execution.
+
+        :param max_queue_time_seconds: Maximum time in seconds a request can be queued
+            on the server-side. If set to 0, the server ignores this setting.
+        :type max_queue_time_seconds: float
+        :return: Database API wrapper object specifically for queue bounded execution.
+        :rtype: arango.database.QueueBoundedDatabase
+        """
+        return QueueBoundedDatabase(self._conn, max_queue_time_seconds)
+
 
 class AsyncDatabase(Database):
     """Database API wrapper tailored specifically for async execution.
@@ -2684,3 +2704,44 @@ class TransactionDatabase(Database):
         :raise arango.exceptions.TransactionAbortError: If abort fails.
         """
         return self._executor.abort()
+
+
+class QueueBoundedDatabase(Database):
+    """Database API wrapper tailored specifically to hande time-bound requests.
+
+    See :func:`arango.database.StandardDatabase.begin_queue_bounded_execution`.
+
+    :param connection: HTTP connection.
+    :param max_queue_time_seconds: Maximum server-side queuing time in seconds.
+        If the server-side queuing time exceeds the client's specified limit,
+        the request will be rejected.
+    :type max_queue_time_seconds: float
+    """
+
+    def __init__(self, connection: Connection, max_queue_time_seconds: float) -> None:
+        self._executor: QueueBoundedApiExecutor
+        super().__init__(
+            connection=connection,
+            executor=QueueBoundedApiExecutor(connection, max_queue_time_seconds),
+        )
+
+    def __repr__(self) -> str:
+        return f"<QueueBoundedDatabase {self.name}>"
+
+    @property
+    def last_queue_time(self) -> float:
+        """Return the most recently recorded server-side queuing time in seconds.
+
+        :return: Server-side queuing time in seconds.
+        :rtype: float
+        """
+        return self._executor.queue_time_seconds
+
+    def adjust_max_queue_time(self, max_queue_time_seconds: float) -> None:
+        """Adjust the maximum server-side queuing time in seconds.
+
+        :param max_queue_time_seconds: New maximum server-side queuing time
+            in seconds.
+        :type max_queue_time_seconds: float
+        """
+        self._executor.max_queue_time_seconds = max_queue_time_seconds
