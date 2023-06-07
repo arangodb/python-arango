@@ -901,10 +901,13 @@ def format_view(body: Json) -> Json:
         result["links"] = body["links"]
     if "indexes" in body:
         result["indexes"] = body["indexes"]
+
+    # Introduced in 3.12 EE
     if "optimizeTopK" in body:
         result["optimizeTopK"] = body["optimizeTopK"]
 
     return verify_format(body, result)
+
 
 def format_vertex(body: Json) -> Json:
     """Format vertex data.
