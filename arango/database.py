@@ -2725,7 +2725,7 @@ class QueueBoundedDatabase(Database):
             executor=QueueBoundedApiExecutor(connection, max_queue_time_seconds),
         )
 
-    def __repr__(self) -> str:
+    def __repr__(self) -> str:  # pragma: no cover
         return f"<QueueBoundedDatabase {self.name}>"
 
     @property
@@ -2736,6 +2736,15 @@ class QueueBoundedDatabase(Database):
         :rtype: float
         """
         return self._executor.queue_time_seconds
+
+    @property
+    def max_queue_time(self) -> float:
+        """Return the maximum server-side queuing time in seconds.
+
+        :return: Maximum server-side queuing time in seconds.
+        :rtype: float
+        """
+        return self._executor.max_queue_time_seconds
 
     def adjust_max_queue_time(self, max_queue_time_seconds: float) -> None:
         """Adjust the maximum server-side queuing time in seconds.

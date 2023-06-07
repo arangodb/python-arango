@@ -450,7 +450,7 @@ class QueueBoundedApiExecutor:
         self._queue_time_seconds = 0.0
 
     @property
-    def context(self) -> str:
+    def context(self) -> str:  # pragma: no cover
         return "queue-bounded"
 
     @property
