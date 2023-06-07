@@ -65,6 +65,8 @@ def format_index(body: Json) -> Json:
         result["cacheEnabled"] = body["cacheEnabled"]
     if "legacyPolygons" in body:
         result["legacyPolygons"] = body["legacyPolygons"]
+    if "estimates" in body:
+        result["estimates"] = body["estimates"]
 
     return verify_format(body, result)
 
@@ -227,6 +229,8 @@ def format_collection(body: Json) -> Json:
             }
             for cv in body["computedValues"]
         ]
+    if "internalValidatorType" in body:
+        result["internal_validator_type"] = body["internalValidatorType"]
 
     return verify_format(body, result)
 
@@ -318,6 +322,10 @@ def format_aql_query(body: Json) -> Json:
         result["stream"] = body["stream"]
     if "user" in body:
         result["user"] = body["user"]
+
+    # New in 3.11
+    if "peakMemoryUsage" in body:
+        result["peak_memory_usage"] = body["peakMemoryUsage"]
     return verify_format(body, result)
 
 
@@ -393,6 +401,10 @@ def format_server_status(body: Json) -> Json:
     """
     result: Json = {}
 
+    if "agency" in body:
+        result["agency"] = body["agency"]
+    if "coordinator" in body:
+        result["coordinator"] = body["coordinator"]
     if "foxxApi" in body:
         result["foxx_api"] = body["foxxApi"]
     if "host" in body:
@@ -986,6 +998,9 @@ def format_backup(body: Json) -> Json:
     if "nrPiecesPresent" in body:
         result["pieces_present"] = body["nrPiecesPresent"]
 
+    if "countIncludesFilesOnly" in body:
+        result["count_includes_files_only"] = body["countIncludesFilesOnly"]
+
     return verify_format(body, result)
 
 
@@ -1136,6 +1151,14 @@ def format_pregel_job_data(body: Json) -> Json:
     # The detail element was introduced in 3.10
     if "detail" in body:
         result["detail"] = body["detail"]
+    if "database" in body:
+        result["database"] = body["database"]
+    if "masterContext" in body:
+        result["master_context"] = body["masterContext"]
+    if "parallelism" in body:
+        result["parallelism"] = body["parallelism"]
+    if "useMemoryMaps" in body:
+        result["use_memory_maps"] = body["useMemoryMaps"]
 
     return verify_format(body, result)
 
@@ -1178,12 +1201,18 @@ def format_graph_properties(body: Json) -> Json:
     }
     if "isSmart" in body:
         result["smart"] = body["isSmart"]
+    if "isSatellite" in body:
+        result["is_satellite"] = body["isSatellite"]
     if "smartGraphAttribute" in body:
         result["smart_field"] = body["smartGraphAttribute"]
     if "numberOfShards" in body:
         result["shard_count"] = body["numberOfShards"]
     if "replicationFactor" in body:
         result["replication_factor"] = body["replicationFactor"]
+    if "minReplicationFactor" in body:
+        result["min_replication_factor"] = body["minReplicationFactor"]
+    if "writeConcern" in body:
+        result["write_concern"] = body["writeConcern"]
 
     return verify_format(body, result)
 

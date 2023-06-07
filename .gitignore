@@ -121,3 +121,6 @@ node_modules/
 
 # setuptools_scm
 arango/version.py
+
+# test results
+*_results.txt

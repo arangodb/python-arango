@@ -31,7 +31,7 @@ information, refer to `ArangoDB manual`_.
     # Create a service using source on server.
     foxx.create_service(
         mount=service_mount,
-        source='/tmp/service.zip',
+        source='/tests/static/service.zip',
         config={},
         dependencies={},
         development=True,
@@ -42,7 +42,7 @@ information, refer to `ArangoDB manual`_.
     # Update (upgrade) a service.
     service = db.foxx.update_service(
         mount=service_mount,
-        source='/tmp/service.zip',
+        source='/tests/static/service.zip',
         config={},
         dependencies={},
         teardown=True,
@@ -53,7 +53,7 @@ information, refer to `ArangoDB manual`_.
     # Replace (overwrite) a service.
     service = db.foxx.replace_service(
         mount=service_mount,
-        source='/tmp/service.zip',
+        source='/tests/static/service.zip',
         config={},
         dependencies={},
         teardown=True,

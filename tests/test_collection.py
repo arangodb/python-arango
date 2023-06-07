@@ -133,12 +133,13 @@ def test_collection_management(db, bad_db, cluster):
         "rule": {
             "type": "object",
             "properties": {
-                "test_attr": {"type": "string"},
+                "test_attr:": {"type": "string"},
             },
             "required": ["test_attr"],
         },
         "level": "moderate",
         "message": "Schema Validation Failed.",
+        "type": "json",
     }
 
     col = db.create_collection(
@@ -151,13 +152,13 @@ def test_collection_management(db, bad_db, cluster):
         key_offset=100,
         edge=True,
         shard_count=2,
-        shard_fields=["test_attr"],
+        shard_fields=["test_attr:"],
         replication_factor=1,
         shard_like="",
         sync_replication=False,
         enforce_replication_factor=False,
         sharding_strategy="community-compat",
-        smart_join_attribute="test",
+        smart_join_attribute="test_attr",
         write_concern=1,
         schema=schema,
     )

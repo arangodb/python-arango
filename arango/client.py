@@ -3,7 +3,7 @@ __all__ = ["ArangoClient"]
 from json import dumps, loads
 from typing import Any, Callable, Optional, Sequence, Union
 
-from pkg_resources import get_distribution
+import importlib_metadata
 
 from arango.connection import (
     BasicConnection,
@@ -127,7 +127,7 @@ class ArangoClient:
         :return: Client version.
         :rtype: str
         """
-        version: str = get_distribution("python-arango").version
+        version: str = importlib_metadata.version("python-arango")
         return version
 
     @property
