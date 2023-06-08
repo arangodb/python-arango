@@ -10,7 +10,7 @@ Welcome to the documentation for **python-arango**, a Python driver for ArangoDB
 Requirements
 =============
 
-- ArangoDB version 3.7+
+- ArangoDB version 3.9+
 - Python version 3.8+
 
 Installation
@@ -38,6 +38,7 @@ Contents
     cursor
     async
     batch
+    overload
     transaction
     admin
     user

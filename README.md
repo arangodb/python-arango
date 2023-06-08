@@ -14,7 +14,7 @@ database natively supporting documents, graphs and search.
 
 ## Requirements
 
-- ArangoDB version 3.7+
+- ArangoDB version 3.9+
 - Python version 3.8+
 
 ## Installation

@@ -40,7 +40,7 @@ To ensure PEP8_ compliance, run flake8_:
 .. code-block:: bash
 
     ~$ pip install flake8
-    ~$ git clone https://github.com/joowani/python-arango.git
+    ~$ git clone https://github.com/ArangoDB-Community/python-arango.git
     ~$ cd python-arango
     ~$ flake8
 
@@ -57,7 +57,7 @@ To run the test suite (use your own host, port and root password):
 .. code-block:: bash
 
     ~$ pip install pytest
-    ~$ git clone https://github.com/joowani/python-arango.git
+    ~$ git clone https://github.com/ArangoDB-Community/python-arango.git
     ~$ cd python-arango
     ~$ py.test --complete --host=127.0.0.1 --port=8529 --passwd=passwd
 
@@ -66,7 +66,7 @@ To run the test suite with coverage report:
 .. code-block:: bash
 
     ~$ pip install coverage pytest pytest-cov
-    ~$ git clone https://github.com/joowani/python-arango.git
+    ~$ git clone https://github.com/ArangoDB-Community/python-arango.git
     ~$ cd python-arango
     ~$ py.test --complete --host=127.0.0.1 --port=8529 --passwd=passwd --cov=kq
 
@@ -82,9 +82,9 @@ Sphinx_. To build an HTML version on your local machine:
 .. code-block:: bash
 
     ~$ pip install sphinx sphinx_rtd_theme
-    ~$ git clone https://github.com/joowani/python-arango.git
-    ~$ cd python-arango/docs
-    ~$ sphinx-build . build  # Open build/index.html in a browser
+    ~$ git clone https://github.com/ArangoDB-Community/python-arango.git
+    ~$ cd python-arango
+    ~$ python -m sphinx -b html -W docs docs/_build/  # Open build/index.html in a browser
 
 As always, thank you for your contribution!
 

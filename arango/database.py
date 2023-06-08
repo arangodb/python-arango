@@ -1,4 +1,10 @@
-__all__ = ["StandardDatabase", "AsyncDatabase", "BatchDatabase", "TransactionDatabase"]
+__all__ = [
+    "StandardDatabase",
+    "AsyncDatabase",
+    "BatchDatabase",
+    "OverloadControlDatabase",
+    "TransactionDatabase",
+]
 
 from datetime import datetime
 from numbers import Number
@@ -75,6 +81,7 @@ from arango.executor import (
     AsyncApiExecutor,
     BatchApiExecutor,
     DefaultApiExecutor,
+    OverloadControlApiExecutor,
     TransactionApiExecutor,
 )
 from arango.formatter import (
@@ -2518,6 +2525,19 @@ class StandardDatabase(Database):
             max_size=max_size,
         )
 
+    def begin_controlled_execution(
+        self, max_queue_time_seconds: Optional[float] = None
+    ) -> "OverloadControlDatabase":
+        """Begin a controlled connection, with options to handle server-side overload.
+
+        :param max_queue_time_seconds: Maximum time in seconds a request can be queued
+            on the server-side. If set to 0 or None, the server ignores this setting.
+        :type max_queue_time_seconds: Optional[float]
+        :return: Database API wrapper object specifically for queue bounded execution.
+        :rtype: arango.database.OverloadControlDatabase
+        """
+        return OverloadControlDatabase(self._conn, max_queue_time_seconds)
+
 
 class AsyncDatabase(Database):
     """Database API wrapper tailored specifically for async execution.
@@ -2688,3 +2708,55 @@ class TransactionDatabase(Database):
         :raise arango.exceptions.TransactionAbortError: If abort fails.
         """
         return self._executor.abort()
+
+
+class OverloadControlDatabase(Database):
+    """Database API wrapper tailored to gracefully handle server overload scenarios.
+
+    See :func:`arango.database.StandardDatabase.begin_controlled_execution`.
+
+    :param connection: HTTP connection.
+    :param max_queue_time_seconds: Maximum server-side queuing time in seconds.
+        If the server-side queuing time exceeds the client's specified limit,
+        the request will be rejected.
+    :type max_queue_time_seconds: Optional[float]
+    """
+
+    def __init__(
+        self, connection: Connection, max_queue_time_seconds: Optional[float] = None
+    ) -> None:
+        self._executor: OverloadControlApiExecutor
+        super().__init__(
+            connection=connection,
+            executor=OverloadControlApiExecutor(connection, max_queue_time_seconds),
+        )
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return f"<OverloadControlDatabase {self.name}>"
+
+    @property
+    def last_queue_time(self) -> float:
+        """Return the most recently recorded server-side queuing time in seconds.
+
+        :return: Server-side queuing time in seconds.
+        :rtype: float
+        """
+        return self._executor.queue_time_seconds
+
+    @property
+    def max_queue_time(self) -> Optional[float]:
+        """Return the maximum server-side queuing time in seconds.
+
+        :return: Maximum server-side queuing time in seconds.
+        :rtype: Optional[float]
+        """
+        return self._executor.max_queue_time_seconds
+
+    def adjust_max_queue_time(self, max_queue_time_seconds: Optional[float]) -> None:
+        """Adjust the maximum server-side queuing time in seconds.
+
+        :param max_queue_time_seconds: New maximum server-side queuing time
+            in seconds. Setting it to None disables the limit.
+        :type max_queue_time_seconds: Optional[float]
+        """
+        self._executor.max_queue_time_seconds = max_queue_time_seconds

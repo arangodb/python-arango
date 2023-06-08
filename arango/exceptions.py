@@ -232,6 +232,15 @@ class BatchExecuteError(ArangoServerError):
     """Failed to execute batch API request."""
 
 
+#########################################
+# Overload Control Execution Exceptions #
+#########################################
+
+
+class OverloadControlExecutorError(ArangoServerError):
+    """Failed to execute overload controlled API request."""
+
+
 #########################
 # Collection Exceptions #
 #########################

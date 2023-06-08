@@ -1,6 +1,8 @@
 main
 ----
 
+* Added OverloadControlDatabase, enabling the client to react effectively to potential server overloads.
+
 * The db.version() now has a new optional parameter "details" that can be used to return additional information about
   the server version. The default is still false, so the old behavior is preserved.
 

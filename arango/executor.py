@@ -4,6 +4,7 @@ __all__ = [
     "AsyncApiExecutor",
     "BatchApiExecutor",
     "TransactionApiExecutor",
+    "OverloadControlApiExecutor",
 ]
 
 from collections import OrderedDict
@@ -16,6 +17,7 @@ from arango.exceptions import (
     AsyncExecuteError,
     BatchExecuteError,
     BatchStateError,
+    OverloadControlExecutorError,
     TransactionAbortError,
     TransactionCommitError,
     TransactionInitError,
@@ -32,6 +34,7 @@ ApiExecutor = Union[
     "AsyncApiExecutor",
     "BatchApiExecutor",
     "TransactionApiExecutor",
+    "OverloadControlApiExecutor",
 ]
 
 T = TypeVar("T")
@@ -428,3 +431,84 @@ class TransactionApiExecutor:
         if resp.is_success:
             return True
         raise TransactionAbortError(resp, request)
+
+
+class OverloadControlApiExecutor:
+    """Allows setting the maximum acceptable server-side queuing time
+        for client requests.
+
+    :param connection: HTTP connection.
+    :type connection: arango.connection.BasicConnection |
+        arango.connection.JwtConnection | arango.connection.JwtSuperuserConnection
+    :param max_queue_time_seconds: Maximum server-side queuing time in seconds.
+    :type max_queue_time_seconds: float
+    """
+
+    def __init__(
+        self, connection: Connection, max_queue_time_seconds: Optional[float] = None
+    ) -> None:
+        self._conn = connection
+        self._max_queue_time_seconds = max_queue_time_seconds
+        self._queue_time_seconds = 0.0
+
+    @property
+    def context(self) -> str:  # pragma: no cover
+        return "overload-control"
+
+    @property
+    def queue_time_seconds(self) -> float:
+        """Return the most recent request queuing/de-queuing time.
+            Defaults to 0 if no request has been sent.
+
+        :return: Server-side queuing time in seconds.
+        :rtype: float
+        """
+        return self._queue_time_seconds
+
+    @property
+    def max_queue_time_seconds(self) -> Optional[float]:
+        """Return the maximum server-side queuing time.
+
+        :return: Maximum server-side queuing time in seconds.
+        :rtype: Optional[float]
+        """
+        return self._max_queue_time_seconds
+
+    @max_queue_time_seconds.setter
+    def max_queue_time_seconds(self, value: Optional[float]) -> None:
+        """Set the maximum server-side queuing time.
+            Setting it to None disables the feature.
+
+        :param value: Maximum server-side queuing time in seconds.
+        :type value: Optional[float]
+        """
+        self._max_queue_time_seconds = value
+
+    def execute(
+        self,
+        request: Request,
+        response_handler: Callable[[Response], T],
+    ) -> T:
+        """Execute an API request and return the result.
+
+        :param request: HTTP request.
+        :type request: arango.request.Request
+        :param response_handler: HTTP response handler.
+        :type response_handler: callable
+        :return: API execution result.
+        """
+        if self._max_queue_time_seconds is not None:
+            request.headers["x-arango-queue-time-seconds"] = str(
+                self._max_queue_time_seconds
+            )
+        resp = self._conn.send_request(request)
+
+        if not resp.is_success:
+            raise OverloadControlExecutorError(resp, request)
+
+        if "X-Arango-Queue-Time-Seconds" in resp.headers:
+            self._queue_time_seconds = float(
+                resp.headers["X-Arango-Queue-Time-Seconds"]
+            )
+
+        return response_handler(resp)
