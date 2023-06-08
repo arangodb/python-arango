@@ -135,6 +135,15 @@ HTTPClient
 .. autoclass:: arango.http.HTTPClient
     :members:
 
+.. _OverloadControlDatabase:
+
+OverloadControlDatabase
+=======================
+
+.. autoclass:: arango.database.OverloadControlDatabase
+    :inherited-members:
+    :members:
+
 .. _Pregel:
 
 Pregel
