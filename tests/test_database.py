@@ -68,6 +68,7 @@ def test_database_misc_methods(sys_db, db, bad_db):
 
     # Test get server version
     assert isinstance(db.version(), str)
+    assert isinstance(db.version(details=True), dict)
 
     # Test get server version with bad database
     with assert_raises(ServerVersionError) as err:

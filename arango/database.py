@@ -307,21 +307,25 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def version(self) -> Result[str]:
+    def version(self, details: bool = False) -> Result[Any]:
         """Return ArangoDB server version.
-
+        :param details: Return more detailed version output
+        :type details: bool | None
         :return: Server version.
         :rtype: str
         :raise arango.exceptions.ServerVersionError: If retrieval fails.
         """
         request = Request(
-            method="get", endpoint="/_api/version", params={"details": False}
+            method="get", endpoint="/_api/version", params={"details": details}
         )
 
-        def response_handler(resp: Response) -> str:
+        def response_handler(resp: Response) -> Any:
             if not resp.is_success:
                 raise ServerVersionError(resp, request)
-            return str(resp.body["version"])
+            if not details:
+                return str(resp.body["version"])
+            else:
+                return resp.body
 
         return self._execute(request, response_handler)
 
