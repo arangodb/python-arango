@@ -33,7 +33,8 @@ number of items in the result set may or may not be known in advance.
         'FOR doc IN students FILTER doc.age > @val RETURN doc',
         bind_vars={'val': 17},
         batch_size=2,
-        count=True
+        count=True,
+        allow_retry=True
     )
 
     # Get the cursor ID.
@@ -72,10 +73,11 @@ number of items in the result set may or may not be known in advance.
     cursor.pop()
 
     # Fetch the next batch and add them to the cursor object.
-    cursor.fetch()
-
-    # Retry fetching the next batch from the cursor.
-    cursor.retry()
+    try:
+        cursor.fetch()
+    except CursorNextError:
+        # Retry fetching the latest batch from the cursor.
+        cursor.retry()
 
     # Delete the cursor from the server.
     cursor.close()
@@ -110,20 +112,12 @@ instead.
 
     # If you iterate over the cursor or call cursor.next(), batches are
     # fetched automatically from the server just-in-time style.
-    cursor = db.aql.execute(
-        'FOR doc IN students RETURN doc',
-        batch_size=1,
-        allow_retry=True
-    )
+    cursor = db.aql.execute('FOR doc IN students RETURN doc', batch_size=1)
     result = [doc for doc in cursor]
 
     # Alternatively, you can manually fetch and pop for finer control.
     cursor = db.aql.execute('FOR doc IN students RETURN doc', batch_size=1)
     while cursor.has_more(): # Fetch until nothing is left on the server.
-        try:
-            cursor.fetch()
-        except CursorNextError:
-            # If allow_retry is enabled, you can retry fetching the latest batch
-            cursor.retry()
+        cursor.fetch()
     while not cursor.empty(): # Pop until nothing is left on the cursor.
         cursor.pop()
