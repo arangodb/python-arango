@@ -40,6 +40,7 @@ class Cursor:
         "_warnings",
         "_has_more",
         "_batch",
+        "_next_batch_id",
     ]
 
     def __init__(
@@ -57,6 +58,7 @@ class Cursor:
         self._stats = None
         self._profile = None
         self._warnings = None
+        self._next_batch_id: Optional[str] = None
         self._update(init_data)
 
     def __iter__(self) -> "Cursor":
@@ -99,6 +101,11 @@ class Cursor:
             self._cached = data["cached"]
             result["cached"] = data["cached"]
 
+        # New in 3.11
+        if "nextBatchId" in data:
+            self._next_batch_id = data["nextBatchId"]
+            result["next_batch_id"] = data["nextBatchId"]
+
         self._has_more = bool(data["hasMore"])
         result["has_more"] = data["hasMore"]
 
@@ -138,6 +145,11 @@ class Cursor:
                     stats["cacheHits"] = stats.pop("cacheHits")
                 if "cacheMisses" in stats:
                     stats["cacheMisses"] = stats.pop("cacheMisses")
+
+                # New in 3.11
+                if "peakMemoryUsage" in stats:
+                    stats["peak_memory_usage"] = stats.pop("peakMemoryUsage")
+
                 self._stats = stats
                 result["statistics"] = stats
 
@@ -268,7 +280,33 @@ class Cursor:
         """
         if self._id is None:
             raise CursorStateError("cursor ID not set")
-        request = Request(method="put", endpoint=f"/_api/{self._type}/{self._id}")
+        request = Request(method="post", endpoint=f"/_api/{self._type}/{self._id}")
+        resp = self._conn.send_request(request)
+
+        if not resp.is_success:
+            raise CursorNextError(resp, request)
+
+        return self._update(resp.body)
+
+    def retry(self) -> Json:
+        """Retry fetching the next batch from server and update the cursor.
+
+        Available only if the ``allowRetry`` query options is enabled.
+        Introduced in 3.11.
+
+        :return: New batch details.
+        :rtype: dict
+        :raise arango.exceptions.CursorNextError: If batch retrieval fails.
+        :raise arango.exceptions.CursorStateError: If cursor ID is not set.
+        """
+        if self._id is None:
+            raise CursorStateError("cursor ID not set")
+        if self._id is None:
+            raise CursorStateError("nextBatchId not set")
+        request = Request(
+            method="post",
+            endpoint=f"/_api/{self._type}/{self._id}/{self._next_batch_id}",
+        )
         resp = self._conn.send_request(request)
 
         if not resp.is_success:

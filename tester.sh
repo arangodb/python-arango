@@ -7,7 +7,7 @@
 # 4. Runs all python-arango tests, including enterprise tests.
 
 # Usage:
-#   ./start.sh [all|single|cluster] [all|community|enterprise] [version] ["notest"]
+#   ./tester.sh [all|single|cluster] [all|community|enterprise] [version] ["notest"]
 
 setup="${1:-all}"
 if [[ "$setup" != "all" && "$setup" != "single" && "$setup" != "cluster" ]]; then
@@ -21,10 +21,10 @@ if [[ "$tests" != "all" && "$tests" != "community" && "$tests" != "enterprise" ]
     exit 1
 fi
 
-# 3.11.0
-# 3.10.6
+# 3.11.1
+# 3.10.9
 # 3.9.9
-version="${3:-3.11.0}"
+version="${3:-3.11.1}"
 
 if [[ -n "$4" && "$4" != "notest" ]]; then
     echo "Invalid argument. Use 'notest' to only start the docker container, without running the tests."
