@@ -323,7 +323,8 @@ def test_cursor_retry(db, col, docs, db_version):
     for batch in range(2, 5):
         result = cursor.fetch()
         assert result["id"] == cursor.id
-        assert result["next_batch_id"] == str(batch + 2)
+        if db_version >= version.parse("3.11.0"):
+            assert result["next_batch_id"] == str(batch + 2)
         doc = cursor.pop()
         assert clean_doc(doc) == docs[batch]
 
@@ -334,7 +335,11 @@ def test_cursor_retry(db, col, docs, db_version):
     doc = cursor.pop()
     assert clean_doc(doc) == docs[-1]
 
-    assert cursor.close()
+    if db_version >= version.parse("3.11.0"):
+        assert cursor.close()
+    else:
+        with pytest.raises(CursorCloseError):
+            cursor.close()
 
 
 def test_cursor_no_count(db, col):
