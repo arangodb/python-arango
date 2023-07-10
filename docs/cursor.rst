@@ -74,6 +74,9 @@ number of items in the result set may or may not be known in advance.
     # Fetch the next batch and add them to the cursor object.
     cursor.fetch()
 
+    # Retry fetching the next batch from the cursor.
+    cursor.retry()
+
     # Delete the cursor from the server.
     cursor.close()
 
@@ -107,12 +110,20 @@ instead.
 
     # If you iterate over the cursor or call cursor.next(), batches are
     # fetched automatically from the server just-in-time style.
-    cursor = db.aql.execute('FOR doc IN students RETURN doc', batch_size=1)
+    cursor = db.aql.execute(
+        'FOR doc IN students RETURN doc',
+        batch_size=1,
+        allow_retry=True
+    )
     result = [doc for doc in cursor]
 
     # Alternatively, you can manually fetch and pop for finer control.
     cursor = db.aql.execute('FOR doc IN students RETURN doc', batch_size=1)
     while cursor.has_more(): # Fetch until nothing is left on the server.
-        cursor.fetch()
+        try:
+            cursor.fetch()
+        except CursorNextError:
+            # If allow_retry is enabled, you can retry fetching the latest batch
+            cursor.retry()
     while not cursor.empty(): # Pop until nothing is left on the cursor.
         cursor.pop()
