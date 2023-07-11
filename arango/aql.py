@@ -313,7 +313,7 @@ class AQL(ApiGroup):
             development to catch issues early. If set to False, warnings are
             returned with the query result. There is a server configuration
             option "--query.fail-on-warning" for setting the default value for
-            this behaviour so it does not need to be set per-query.
+            this behaviour, so it does not need to be set per-query.
         :type fail_on_warning: bool
         :param profile: Return additional profiling details in the cursor,
             unless the query cache is used.
@@ -437,7 +437,7 @@ class AQL(ApiGroup):
         def response_handler(resp: Response) -> Cursor:
             if not resp.is_success:
                 raise AQLQueryExecuteError(resp, request)
-            return Cursor(self._conn, resp.body)
+            return Cursor(self._conn, resp.body, allow_retry=allow_retry)
 
         return self._execute(request, response_handler)
 

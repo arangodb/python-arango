@@ -33,8 +33,7 @@ number of items in the result set may or may not be known in advance.
         'FOR doc IN students FILTER doc.age > @val RETURN doc',
         bind_vars={'val': 17},
         batch_size=2,
-        count=True,
-        allow_retry=True
+        count=True
     )
 
     # Get the cursor ID.
@@ -73,11 +72,7 @@ number of items in the result set may or may not be known in advance.
     cursor.pop()
 
     # Fetch the next batch and add them to the cursor object.
-    try:
-        cursor.fetch()
-    except CursorNextError:
-        # Retry fetching the latest batch from the cursor.
-        cursor.retry()
+    cursor.fetch()
 
     # Delete the cursor from the server.
     cursor.close()
@@ -121,3 +116,54 @@ instead.
         cursor.fetch()
     while not cursor.empty(): # Pop until nothing is left on the cursor.
         cursor.pop()
+
+With ArangoDB 3.11.0 or higher, you can also use the `allow_retry`
+parameter of :func:`arango.aql.AQL.execute` to automatically retry
+the request if the cursor encountered any issues during the previous
+fetch operation. Note that this feature causes the server to cache the
+last batch. To allow re-fetching of the very last batch of the query,
+the server cannot automatically delete the cursor. Once you have successfully
+received the last batch, you should call :func:`arango.cursor.Cursor.close`.
+
+**Example:**
+
+.. code-block:: python
+
+    from arango import ArangoClient
+
+    # Initialize the ArangoDB client.
+    client = ArangoClient()
+
+    # Connect to "test" database as root user.
+    db = client.db('test', username='root', password='passwd')
+
+    # Set up some test data to query against.
+    db.collection('students').insert_many([
+        {'_key': 'Abby', 'age': 22},
+        {'_key': 'John', 'age': 18},
+        {'_key': 'Mary', 'age': 21},
+        {'_key': 'Suzy', 'age': 23},
+        {'_key': 'Dave', 'age': 20}
+    ])
+
+    # Execute an AQL query which returns a cursor object.
+    cursor = db.aql.execute(
+        'FOR doc IN students FILTER doc.age > @val RETURN doc',
+        bind_vars={'val': 17},
+        batch_size=2,
+        count=True,
+        allow_retry=True
+    )
+
+    while cursor.has_more():
+        try:
+            cursor.fetch()
+        except ConnectionError:
+            # Retry the request.
+            continue
+
+    while not cursor.empty():
+        cursor.pop()
+
+    # Delete the cursor from the server.
+    cursor.close()
