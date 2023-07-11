@@ -1,6 +1,8 @@
 main
 ----
 
+* Added allow_retry query parameter, making it possible to retry fetching the latest batch from a cursor.
+
 * Added OverloadControlDatabase, enabling the client to react effectively to potential server overloads.
 
 * The db.version() now has a new optional parameter "details" that can be used to return additional information about

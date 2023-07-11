@@ -29,7 +29,7 @@ jobs:
       - name: Create ArangoDB Docker container
         run: >
           docker create --name arango -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd -v "$(pwd)/tests/static/":/tests/static
-          arangodb/arangodb:3.10.6 --server.jwt-secret-keyfile=/tests/static/keyfile
+          arangodb/arangodb:3.10.9 --server.jwt-secret-keyfile=/tests/static/keyfile
 
       - name: Start ArangoDB Docker container
         run: docker start arango

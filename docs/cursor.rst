@@ -33,7 +33,8 @@ number of items in the result set may or may not be known in advance.
         'FOR doc IN students FILTER doc.age > @val RETURN doc',
         bind_vars={'val': 17},
         batch_size=2,
-        count=True
+        count=True,
+        allow_retry=True
     )
 
     # Get the cursor ID.
@@ -72,7 +73,11 @@ number of items in the result set may or may not be known in advance.
     cursor.pop()
 
     # Fetch the next batch and add them to the cursor object.
-    cursor.fetch()
+    try:
+        cursor.fetch()
+    except CursorNextError:
+        # Retry fetching the latest batch from the cursor.
+        cursor.retry()
 
     # Delete the cursor from the server.
     cursor.close()

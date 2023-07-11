@@ -275,6 +275,7 @@ class AQL(ApiGroup):
         max_runtime: Optional[Number] = None,
         fill_block_cache: Optional[bool] = None,
         allow_dirty_read: bool = False,
+        allow_retry: bool = False,
     ) -> Result[Cursor]:
         """Execute the query and return the result cursor.
 
@@ -369,6 +370,9 @@ class AQL(ApiGroup):
         :type fill_block_cache: bool
         :param allow_dirty_read: Allow reads from followers in a cluster.
         :type allow_dirty_read: bool | None
+        :param allow_retry: Make it possible to retry fetching the latest batch
+            from a cursor.
+        :type allow_retry: bool
         :return: Result cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.AQLQueryExecuteError: If execute fails.
@@ -414,6 +418,10 @@ class AQL(ApiGroup):
             options["skipInaccessibleCollections"] = skip_inaccessible_cols
         if max_runtime is not None:
             options["maxRuntime"] = max_runtime
+
+        # New in 3.11
+        if allow_retry is not None:
+            options["allowRetry"] = allow_retry
 
         if options:
             data["options"] = options
