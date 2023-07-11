@@ -290,7 +290,7 @@ class Cursor:
 
         endpoint = f"/_api/{self._type}/{self._id}"
         if self._allow_retry and self._next_batch_id is not None:
-            endpoint += f"/{self._next_batch_id}"
+            endpoint += f"/{self._next_batch_id}"  # pragma: no cover
 
         request = Request(method="post", endpoint=endpoint)
         resp = self._conn.send_request(request)
