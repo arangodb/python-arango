@@ -27,6 +27,10 @@ class Cursor:
     :type init_data: dict
     :param cursor_type: Cursor type ("cursor" or "export").
     :type cursor_type: str
+    :param allow_retry: If set to True, the cursor will always attempt to fetch
+            the latest batch from server even if the previous attempt failed.
+            This option is only available for server versions 3.11 and above.
+    :type allow_retry: bool
     """
 
     __slots__ = [
@@ -41,6 +45,7 @@ class Cursor:
         "_has_more",
         "_batch",
         "_next_batch_id",
+        "_allow_retry",
     ]
 
     def __init__(
@@ -48,9 +53,11 @@ class Cursor:
         connection: BaseConnection,
         init_data: Json,
         cursor_type: str = "cursor",
+        allow_retry: bool = False,
     ) -> None:
         self._conn = connection
         self._type = cursor_type
+        self._allow_retry = allow_retry
         self._batch: Deque[Any] = deque()
         self._id = None
         self._count: Optional[int] = None
@@ -280,33 +287,12 @@ class Cursor:
         """
         if self._id is None:
             raise CursorStateError("cursor ID not set")
-        request = Request(method="post", endpoint=f"/_api/{self._type}/{self._id}")
-        resp = self._conn.send_request(request)
 
-        if not resp.is_success:
-            raise CursorNextError(resp, request)
+        endpoint = f"/_api/{self._type}/{self._id}"
+        if self._allow_retry and self._next_batch_id is not None:
+            endpoint += f"/{self._next_batch_id}"
 
-        return self._update(resp.body)
-
-    def retry(self) -> Json:
-        """Retry fetching the next batch from server and update the cursor.
-
-        Available only if the ``allowRetry`` query options is enabled.
-        Introduced in 3.11.
-
-        :return: New batch details.
-        :rtype: dict
-        :raise arango.exceptions.CursorNextError: If batch retrieval fails.
-        :raise arango.exceptions.CursorStateError: If cursor ID is not set.
-        """
-        if self._id is None:
-            raise CursorStateError("cursor ID not set")
-        if self._id is None:
-            raise CursorStateError("nextBatchId not set")
-        request = Request(
-            method="post",
-            endpoint=f"/_api/{self._type}/{self._id}/{self._next_batch_id}",
-        )
+        request = Request(method="post", endpoint=endpoint)
         resp = self._conn.send_request(request)
 
         if not resp.is_success:

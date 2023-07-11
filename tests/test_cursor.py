@@ -263,7 +263,7 @@ def test_cursor_manual_fetch_and_pop(db, col, docs):
     assert err.value.message == "current batch is empty"
 
 
-def test_cursor_retry_disabled(db, col, db_version):
+def test_cursor_retry_disabled(db, col, docs, db_version):
     cursor = db.aql.execute(
         f"FOR d IN {col.name} SORT d._key RETURN d",
         count=True,
@@ -275,12 +275,17 @@ def test_cursor_retry_disabled(db, col, db_version):
     )
     result = cursor.fetch()
     assert result["id"] == cursor.id
-    cursor._next_batch_id = "2"
 
-    if db_version >= version.parse("3.11.0"):
-        with pytest.raises(CursorNextError) as err:
-            cursor.retry()
-            assert err.value.message == "batch id not found"
+    while not cursor.empty():
+        cursor.pop()
+
+    # The next batch ID should have no effect
+    cursor._next_batch_id = "2"
+    result = cursor.fetch()
+    if db_version >= version.parse("3.11.1"):
+        assert result["next_batch_id"] == "4"
+    doc = cursor.pop()
+    assert clean_doc(doc) == docs[2]
 
     assert cursor.close(ignore_missing=True)
 
@@ -312,7 +317,7 @@ def test_cursor_retry(db, col, docs, db_version):
     # Decrease the next batch ID as if the previous fetch failed
     if db_version >= version.parse("3.11.0"):
         cursor._next_batch_id = "2"
-        result = cursor.retry()
+        result = cursor.fetch()
         assert result["id"] == cursor.id
         assert result["next_batch_id"] == "3"
         doc = cursor.pop()
@@ -334,6 +339,12 @@ def test_cursor_retry(db, col, docs, db_version):
     assert "next_batch_id" not in result
     doc = cursor.pop()
     assert clean_doc(doc) == docs[-1]
+
+    if db_version >= version.parse("3.11.0"):
+        # We should be able to fetch the last batch again
+        cursor.fetch()
+        doc = cursor.pop()
+        assert clean_doc(doc) == docs[-1]
 
     if db_version >= version.parse("3.11.0"):
         assert cursor.close()
