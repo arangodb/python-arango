@@ -110,8 +110,10 @@ class Cursor:
 
         # New in 3.11
         if "nextBatchId" in data:
-            self._next_batch_id = data["nextBatchId"]
-            result["next_batch_id"] = data["nextBatchId"]
+            # This is only available for server versions 3.11 and above.
+            # Currently, we are testing against 3.10.9
+            self._next_batch_id = data["nextBatchId"]  # pragma: no cover
+            result["next_batch_id"] = data["nextBatchId"]  # pragma: no cover
 
         self._has_more = bool(data["hasMore"])
         result["has_more"] = data["hasMore"]
