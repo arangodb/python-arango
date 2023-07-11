@@ -1,3 +1,5 @@
+from packaging import version
+
 from arango.exceptions import (
     ViewCreateError,
     ViewDeleteError,
@@ -166,3 +168,37 @@ def test_arangosearch_view_management(db, bad_db, cluster):
 
     # Test delete arangosearch view
     assert db.delete_view(view_name, ignore_missing=False) is True
+
+
+def test_arangosearch_view_properties(db, col, enterprise, db_version):
+    view_name = generate_view_name()
+    params = {"consolidationIntervalMsec": 50000}
+
+    if enterprise:
+        params.update(
+            {
+                "links": {
+                    col.name: {
+                        "fields": {
+                            "value": {
+                                "nested": {"nested_1": {"nested": {"nested_2": {}}}}
+                            }
+                        }
+                    }
+                }
+            }
+        )
+
+        if db_version >= version.parse("3.10.3"):
+            params.update({"storedValues": ["attr1", "attr2"]})
+
+    result = db.create_arangosearch_view(view_name, properties=params)
+    assert "id" in result
+    assert result["name"] == view_name
+    assert result["type"].lower() == "arangosearch"
+
+    if enterprise:
+        assert "links" in result
+        assert col.name in result["links"]
+
+    assert db.delete_view(view_name) is True
