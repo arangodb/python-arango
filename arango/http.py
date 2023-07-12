@@ -1,11 +1,18 @@
 __all__ = ["HTTPClient", "DefaultHTTPClient"]
 
+import typing
 from abc import ABC, abstractmethod
-from typing import MutableMapping, Optional, Tuple, Union
+from typing import Any, MutableMapping, Optional, Tuple, Union
 
 from requests import Session
-from requests.adapters import HTTPAdapter
+from requests.adapters import (
+    DEFAULT_POOL_TIMEOUT,
+    DEFAULT_POOLBLOCK,
+    DEFAULT_POOLSIZE,
+    HTTPAdapter,
+)
 from requests_toolbelt import MultipartEncoder
+from urllib3.poolmanager import PoolManager
 from urllib3.util.retry import Retry
 
 from arango.response import Response
@@ -63,12 +70,77 @@ class HTTPClient(ABC):  # pragma: no cover
         raise NotImplementedError
 
 
-class DefaultHTTPClient(HTTPClient):
-    """Default HTTP client implementation."""
+class DefaultHTTPAdapter(HTTPAdapter):
+    """Default transport adapter implementation
 
-    REQUEST_TIMEOUT = 60
-    RETRY_ATTEMPTS = 3
-    BACKOFF_FACTOR = 1
+    :param pool_connections: The number of urllib3 connection pools to cache.
+    :type pool_connections: int
+    :param pool_maxsize: The maximum number of connections to save in the pool.
+    :type pool_maxsize: int
+    :param pool_timeout: Socket timeout in seconds for each individual connection.
+    :type pool_timeout: int | float | None
+    :param kwargs: Additional keyword arguments passed to the HTTPAdapter constructor.
+    :type kwargs: Any
+    """
+
+    def __init__(
+        self,
+        pool_connections: int = DEFAULT_POOLSIZE,
+        pool_maxsize: int = DEFAULT_POOLSIZE,
+        pool_timeout: Union[int, float, None] = DEFAULT_POOL_TIMEOUT,
+        **kwargs: Any
+    ) -> None:
+        self._pool_timeout = pool_timeout
+        super().__init__(
+            pool_connections=pool_connections, pool_maxsize=pool_maxsize, **kwargs
+        )
+
+    @typing.no_type_check
+    def init_poolmanager(
+        self, connections, maxsize, block=DEFAULT_POOLBLOCK, **pool_kwargs
+    ) -> None:
+        self.poolmanager = PoolManager(
+            num_pools=connections,
+            maxsize=maxsize,
+            block=block,
+            strict=True,
+            timeout=self._pool_timeout,
+            **pool_kwargs
+        )
+
+
+class DefaultHTTPClient(HTTPClient):
+    """Default HTTP client implementation.
+
+    :param request_timeout: Default request timeout in seconds.
+    :type request_timeout: int
+    :param retry_attempts: Number of retry attempts.
+    :type retry_attempts: int
+    :param backoff_factor: Backoff factor for retry attempts.
+    :type backoff_factor: int
+    :param pool_connections: The number of urllib3 connection pools to cache.
+    :type pool_connections: int
+    :param pool_maxsize: The maximum number of connections to save in the pool.
+    :type pool_maxsize: int
+    :param pool_timeout: Socket timeout in seconds for each individual connection.
+    :type pool_timeout: int | float
+    """
+
+    def __init__(
+        self,
+        request_timeout: int = 60,
+        retry_attempts: int = 3,
+        backoff_factor: int = 1,
+        pool_connections: int = 10,
+        pool_maxsize: int = 10,
+        pool_timeout: Union[int, float] = 120,
+    ) -> None:
+        self._request_timeout = request_timeout
+        self._retry_attempts = retry_attempts
+        self._backoff_factor = backoff_factor
+        self._pool_connections = pool_connections
+        self._pool_maxsize = pool_maxsize
+        self._pool_timeout = pool_timeout
 
     def create_session(self, host: str) -> Session:
         """Create and return a new session/connection.
@@ -79,12 +151,17 @@ class DefaultHTTPClient(HTTPClient):
         :rtype: requests.Session
         """
         retry_strategy = Retry(
-            total=self.RETRY_ATTEMPTS,
-            backoff_factor=self.BACKOFF_FACTOR,
+            total=self._retry_attempts,
+            backoff_factor=self._backoff_factor,
             status_forcelist=[429, 500, 502, 503, 504],
             allowed_methods=["HEAD", "GET", "OPTIONS"],
         )
-        http_adapter = HTTPAdapter(max_retries=retry_strategy)
+        http_adapter = DefaultHTTPAdapter(
+            pool_connections=self._pool_connections,
+            pool_maxsize=self._pool_maxsize,
+            pool_timeout=self._pool_timeout,
+            max_retries=retry_strategy,
+        )
 
         session = Session()
         session.mount("https://", http_adapter)
@@ -128,7 +205,7 @@ class DefaultHTTPClient(HTTPClient):
             data=data,
             headers=headers,
             auth=auth,
-            timeout=self.REQUEST_TIMEOUT,
+            timeout=self._request_timeout,
         )
         return Response(
             method=method,
