@@ -106,6 +106,7 @@ def test_client_http_client_attributes(db, username, password):
     )
     client.db(db.name, username, password, verify=True)
     assert http_client.request_timeout == 80
+    assert client.request_timeout == http_client.request_timeout
 
 
 def test_client_custom_http_client(db, username, password):
