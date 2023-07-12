@@ -54,7 +54,7 @@ def test_client_attributes():
     assert isinstance(client._host_resolver, RandomHostResolver)
 
     client = ArangoClient(hosts=client_hosts, request_timeout=120)
-    assert client.request_timeout == client._http.REQUEST_TIMEOUT == 120
+    assert client.request_timeout == client._http.request_timeout == 120
 
 
 def test_client_good_connection(db, username, password):
@@ -90,6 +90,22 @@ def test_client_bad_connection(db, username, password, cluster):
     with pytest.raises(ServerConnectionError) as err:
         client.db(db.name, username, password, verify=True)
     assert "bad connection" in str(err.value)
+
+
+def test_client_http_client_attributes(db, username, password):
+    http_client = DefaultHTTPClient(
+        request_timeout=80,
+        retry_attempts=5,
+        backoff_factor=1.0,
+        pool_connections=16,
+        pool_maxsize=12,
+        pool_timeout=120,
+    )
+    client = ArangoClient(
+        hosts="http://127.0.0.1:8529", http_client=http_client, request_timeout=30
+    )
+    client.db(db.name, username, password, verify=True)
+    assert http_client.request_timeout == 80
 
 
 def test_client_custom_http_client(db, username, password):

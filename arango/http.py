@@ -117,7 +117,7 @@ class DefaultHTTPClient(HTTPClient):
     :param retry_attempts: Number of retry attempts.
     :type retry_attempts: int
     :param backoff_factor: Backoff factor for retry attempts.
-    :type backoff_factor: int
+    :type backoff_factor: float
     :param pool_connections: The number of urllib3 connection pools to cache.
     :type pool_connections: int
     :param pool_maxsize: The maximum number of connections to save in the pool.
@@ -130,12 +130,12 @@ class DefaultHTTPClient(HTTPClient):
         self,
         request_timeout: int = 60,
         retry_attempts: int = 3,
-        backoff_factor: int = 1,
+        backoff_factor: float = 1.0,
         pool_connections: int = 10,
         pool_maxsize: int = 10,
         pool_timeout: Union[int, float, None] = DEFAULT_POOL_TIMEOUT,
     ) -> None:
-        self._request_timeout = request_timeout
+        self.request_timeout = request_timeout
         self._retry_attempts = retry_attempts
         self._backoff_factor = backoff_factor
         self._pool_connections = pool_connections
@@ -205,7 +205,7 @@ class DefaultHTTPClient(HTTPClient):
             data=data,
             headers=headers,
             auth=auth,
-            timeout=self._request_timeout,
+            timeout=self.request_timeout,
         )
         return Response(
             method=method,
