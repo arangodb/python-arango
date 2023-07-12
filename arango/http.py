@@ -133,7 +133,7 @@ class DefaultHTTPClient(HTTPClient):
         backoff_factor: int = 1,
         pool_connections: int = 10,
         pool_maxsize: int = 10,
-        pool_timeout: Union[int, float] = 120,
+        pool_timeout: Union[int, float, None] = DEFAULT_POOL_TIMEOUT,
     ) -> None:
         self._request_timeout = request_timeout
         self._retry_attempts = retry_attempts
