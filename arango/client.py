@@ -13,7 +13,7 @@ from arango.connection import (
 )
 from arango.database import StandardDatabase
 from arango.exceptions import ServerConnectionError
-from arango.http import DefaultHTTPClient, HTTPClient
+from arango.http import DEFAULT_REQUEST_TIMEOUT, DefaultHTTPClient, HTTPClient
 from arango.resolver import (
     HostResolver,
     RandomHostResolver,
@@ -58,7 +58,7 @@ class ArangoClient:
        not specified. The default value is 60.
        None: No timeout.
        int: Timeout value in seconds.
-    :type request_timeout: Any
+    :type request_timeout: int | float
     """
 
     def __init__(
@@ -70,7 +70,7 @@ class ArangoClient:
         serializer: Callable[..., str] = lambda x: dumps(x),
         deserializer: Callable[[str], Any] = lambda x: loads(x),
         verify_override: Union[bool, str, None] = None,
-        request_timeout: Any = 60,
+        request_timeout: Union[int, float] = DEFAULT_REQUEST_TIMEOUT,
     ) -> None:
         if isinstance(hosts, str):
             self._hosts = [host.strip("/") for host in hosts.split(",")]

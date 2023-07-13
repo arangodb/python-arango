@@ -1,22 +1,19 @@
-__all__ = ["HTTPClient", "DefaultHTTPClient"]
+__all__ = ["HTTPClient", "DefaultHTTPClient", "DEFAULT_REQUEST_TIMEOUT"]
 
 import typing
 from abc import ABC, abstractmethod
 from typing import Any, MutableMapping, Optional, Tuple, Union
 
 from requests import Session
-from requests.adapters import (
-    DEFAULT_POOL_TIMEOUT,
-    DEFAULT_POOLBLOCK,
-    DEFAULT_POOLSIZE,
-    HTTPAdapter,
-)
+from requests.adapters import DEFAULT_POOLBLOCK, DEFAULT_POOLSIZE, HTTPAdapter
 from requests_toolbelt import MultipartEncoder
 from urllib3.poolmanager import PoolManager
 from urllib3.util.retry import Retry
 
 from arango.response import Response
 from arango.typings import Headers
+
+DEFAULT_REQUEST_TIMEOUT = 60
 
 
 class HTTPClient(ABC):  # pragma: no cover
@@ -73,11 +70,15 @@ class HTTPClient(ABC):  # pragma: no cover
 class DefaultHTTPAdapter(HTTPAdapter):
     """Default transport adapter implementation
 
+    :param connection_timeout: Socket timeout in seconds for each individual connection.
+    :type connection_timeout: int | float
     :param pool_connections: The number of urllib3 connection pools to cache.
     :type pool_connections: int
     :param pool_maxsize: The maximum number of connections to save in the pool.
     :type pool_maxsize: int
-    :param pool_timeout: Socket timeout in seconds for each individual connection.
+    :param pool_timeout: If set, then the pool will be set to block=True,
+        and requests will block for pool_timeout seconds and raise
+        EmptyPoolError if no connection is available within the time period.
     :type pool_timeout: int | float | None
     :param kwargs: Additional keyword arguments passed to the HTTPAdapter constructor.
     :type kwargs: Any
@@ -85,11 +86,13 @@ class DefaultHTTPAdapter(HTTPAdapter):
 
     def __init__(
         self,
+        connection_timeout: Union[int, float] = DEFAULT_REQUEST_TIMEOUT,
         pool_connections: int = DEFAULT_POOLSIZE,
         pool_maxsize: int = DEFAULT_POOLSIZE,
-        pool_timeout: Union[int, float, None] = DEFAULT_POOL_TIMEOUT,
+        pool_timeout: Union[int, float, None] = None,
         **kwargs: Any
     ) -> None:
+        self._connection_timeout = connection_timeout
         self._pool_timeout = pool_timeout
         super().__init__(
             pool_connections=pool_connections, pool_maxsize=pool_maxsize, **kwargs
@@ -99,21 +102,28 @@ class DefaultHTTPAdapter(HTTPAdapter):
     def init_poolmanager(
         self, connections, maxsize, block=DEFAULT_POOLBLOCK, **pool_kwargs
     ) -> None:
-        self.poolmanager = PoolManager(
-            num_pools=connections,
-            maxsize=maxsize,
-            block=block,
-            strict=True,
-            timeout=self._pool_timeout,
-            **pool_kwargs
+        kwargs = pool_kwargs
+        kwargs.update(
+            dict(
+                num_pools=connections,
+                maxsize=maxsize,
+                strict=True,
+                timeout=self._connection_timeout,
+            )
         )
+        if self._pool_timeout is not None:
+            kwargs["block"] = True
+            kwargs["timeout"] = self._pool_timeout
+        else:
+            kwargs["block"] = False
+        self.poolmanager = PoolManager(**kwargs)
 
 
 class DefaultHTTPClient(HTTPClient):
     """Default HTTP client implementation.
 
-    :param request_timeout: Default request timeout in seconds.
-    :type request_timeout: int
+    :param request_timeout: Timeout in seconds for each individual connection.
+    :type request_timeout: int | float
     :param retry_attempts: Number of retry attempts.
     :type retry_attempts: int
     :param backoff_factor: Backoff factor for retry attempts.
@@ -122,18 +132,20 @@ class DefaultHTTPClient(HTTPClient):
     :type pool_connections: int
     :param pool_maxsize: The maximum number of connections to save in the pool.
     :type pool_maxsize: int
-    :param pool_timeout: Socket timeout in seconds for each individual connection.
-    :type pool_timeout: int | float
+    :param pool_timeout: If set, then the pool will be set to block=True,
+        and requests will block for pool_timeout seconds and raise
+        EmptyPoolError if no connection is available within the time period.
+    :type pool_timeout: int | float | None
     """
 
     def __init__(
         self,
-        request_timeout: int = 60,
+        request_timeout: Union[int, float] = DEFAULT_REQUEST_TIMEOUT,
         retry_attempts: int = 3,
         backoff_factor: float = 1.0,
         pool_connections: int = 10,
         pool_maxsize: int = 10,
-        pool_timeout: Union[int, float, None] = DEFAULT_POOL_TIMEOUT,
+        pool_timeout: Union[int, float, None] = None,
     ) -> None:
         self.request_timeout = request_timeout
         self._retry_attempts = retry_attempts
@@ -157,6 +169,7 @@ class DefaultHTTPClient(HTTPClient):
             allowed_methods=["HEAD", "GET", "OPTIONS"],
         )
         http_adapter = DefaultHTTPAdapter(
+            connection_timeout=self.request_timeout,
             pool_connections=self._pool_connections,
             pool_maxsize=self._pool_maxsize,
             pool_timeout=self._pool_timeout,
