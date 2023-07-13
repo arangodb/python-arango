@@ -902,6 +902,12 @@ def format_view(body: Json) -> Json:
     if "indexes" in body:
         result["indexes"] = body["indexes"]
 
+    # Introduced in 3.9.6 EE
+    if "primaryKeyCache" in body:
+        result["primaryKeyCache"] = body["primaryKeyCache"]
+    if "primarySortCache" in body:
+        result["primarySortCache"] = body["primarySortCache"]
+
     # Introduced in 3.12 EE
     if "optimizeTopK" in body:
         result["optimizeTopK"] = body["optimizeTopK"]
