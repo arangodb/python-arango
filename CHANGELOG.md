@@ -1,6 +1,8 @@
 main
 ----
 
+* Added cache and primaryKeyCache parameters to the inverted index API.
+
 * Added allow_retry query parameter, making it possible to retry fetching the latest batch from a cursor.
 
 * Added OverloadControlDatabase, enabling the client to react effectively to potential server overloads.

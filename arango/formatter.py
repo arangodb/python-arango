@@ -67,6 +67,40 @@ def format_index(body: Json) -> Json:
         result["legacyPolygons"] = body["legacyPolygons"]
     if "estimates" in body:
         result["estimates"] = body["estimates"]
+    if "analyzer" in body:
+        result["analyzer"] = body["analyzer"]
+    if "cleanupIntervalStep" in body:
+        result["cleanup_interval_step"] = body["cleanupIntervalStep"]
+        if "commitIntervalMsec" in body:
+            result["commit_interval_msec"] = body["commitIntervalMsec"]
+    if "consolidationIntervalMsec" in body:
+        result["consolidation_interval_msec"] = body["consolidationIntervalMsec"]
+    if "consolidationPolicy" in body:
+        result["consolidation_policy"] = format_view_consolidation_policy(
+            body["consolidationPolicy"]
+        )
+    if "features" in body:
+        result["features"] = body["features"]
+    if "includeAllFields" in body:
+        result["include_all_fields"] = body["includeAllFields"]
+    if "primarySort" in body:
+        result["primary_sort"] = body["primarySort"]
+    if "searchField" in body:
+        result["search_field"] = body["searchField"]
+    if "trackListPositions" in body:
+        result["track_list_positions"] = body["trackListPositions"]
+    if "version" in body:
+        result["version"] = body["version"]
+    if "cache" in body:
+        result["cache"] = body["cache"]
+    if "primaryKeyCache" in body:
+        result["primaryKeyCache"] = body["primaryKeyCache"]
+    if "writebufferIdle" in body:
+        result["writebuffer_idle"] = body["writebufferIdle"]
+    if "writebufferActive" in body:
+        result["writebuffer_active"] = body["writebufferActive"]
+    if "writebufferSizeMax" in body:
+        result["writebuffer_max_size"] = body["writebufferSizeMax"]
 
     return verify_format(body, result)
 

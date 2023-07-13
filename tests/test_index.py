@@ -1,3 +1,6 @@
+import pytest
+from packaging import version
+
 from arango.exceptions import (
     IndexCreateError,
     IndexDeleteError,
@@ -194,6 +197,34 @@ def test_add_ttl_index(icol):
     assert result["id"] in extract("id", icol.indexes())
 
     # Clean up the index
+    icol.delete_index(result["id"])
+
+
+def test_add_inverted_index(icol, enterprise, db_version):
+    if db_version < version.parse("3.10.0"):
+        pytest.skip("Inverted indexes are not supported before 3.10.0")
+
+    parameters = dict(
+        fields=[{"name": "attr1", "cache": True}],
+        name="c0_cached",
+        storedValues=[{"fields": ["a"], "compression": "lz4", "cache": True}],
+        includeAllFields=True,
+        analyzer="identity",
+        primarySort={"cache": True, "fields": [{"field": "a", "direction": "asc"}]},
+    )
+    expected_keys = ["primary_sort", "analyzer", "include_all_fields", "search_field"]
+
+    if enterprise and db_version >= version.parse("3.10.2"):
+        parameters["cache"] = True
+        parameters["primaryKeyCache"] = True
+        expected_keys.extend(["cache", "primaryKeyCache"])
+
+    result = icol.add_inverted_index(**parameters)
+    assert result["id"] in extract("id", icol.indexes())
+
+    for key in expected_keys:
+        assert key in result
+
     icol.delete_index(result["id"])
 
 
