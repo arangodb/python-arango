@@ -1,3 +1,6 @@
+import pytest
+from packaging import version
+
 from arango.collection import StandardCollection
 from arango.exceptions import (
     CollectionChecksumError,
@@ -228,3 +231,28 @@ def test_collection_management(db, bad_db, cluster):
         with assert_raises(CollectionRenameError) as err:
             bad_db.collection(new_name).rename(new_name)
         assert err.value.error_code in {11, 1228}
+
+
+@pytest.fixture
+def special_collection_names(db):
+    names = ["abc123", "maçã", "mötör", "😀", "ﻚﻠﺑ ﻞﻄﻴﻓ", "かわいい犬"]
+
+    yield names
+
+    for name in names:
+        try:
+            db.delete_collection(name)
+        except CollectionDeleteError:
+            pass
+
+
+def test_collection_utf8(db, db_version, special_collection_names):
+    if db_version < version.parse("3.11.0"):
+        pytest.skip("UTF8 collection names require ArangoDB 3.11+")
+
+    for name in special_collection_names:
+        col = db.create_collection(name)
+        assert col.name == name
+        assert db.has_collection(name) is True
+        assert db.delete_collection(name) is True
+        assert db.has_collection(name) is False

@@ -1,5 +1,8 @@
 from datetime import datetime
 
+import pytest
+from packaging import version
+
 from arango.aql import AQL
 from arango.backup import Backup
 from arango.cluster import Cluster
@@ -281,3 +284,26 @@ def test_database_management(db, sys_db, bad_db):
         sys_db.delete_database(db_name)
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
     assert sys_db.delete_database(db_name, ignore_missing=True) is False
+
+
+@pytest.fixture
+def special_db_names(sys_db):
+    names = ["abc123", "maçã", "mötör", "😀", "ﻚﻠﺑ ﻞﻄﻴﻓ", "かわいい犬"]
+
+    yield names
+
+    for name in names:
+        try:
+            sys_db.delete_database(name)
+        except DatabaseDeleteError:
+            pass
+
+
+def test_database_utf8(sys_db, db_version, special_db_names):
+    if db_version < version.parse("3.11.0"):
+        pytest.skip("UTF8 collection names require ArangoDB 3.11+")
+
+    for name in special_db_names:
+        assert sys_db.create_database(name)
+        assert sys_db.has_database(name)
+        assert sys_db.delete_database(name)
