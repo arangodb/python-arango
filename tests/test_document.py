@@ -140,6 +140,13 @@ def test_document_insert(col, docs):
         )
     assert err.value.error_code == 1210
 
+    # Test insert with cache refilling
+    empty_collection(col)
+    doc = docs[0]
+    assert col.insert(doc, refill_index_caches=True)
+    assert col[doc["_key"]]["_key"] == doc["_key"]
+    assert col[doc["_key"]]["val"] == doc["val"]
+
 
 def test_document_insert_many(col, bad_col, docs):
     # Test insert_many with default options
@@ -291,6 +298,13 @@ def test_document_insert_many(col, bad_col, docs):
     assert results[0].error_code == 1210
     assert "new" in results[1]
 
+    # Test insert with cache refilling
+    empty_collection(col)
+    assert col.insert_many(docs, refill_index_caches=True)
+    for doc in docs:
+        assert col[doc["_key"]]["_key"] == doc["_key"]
+        assert col[doc["_key"]]["val"] == doc["val"]
+
 
 def test_document_update(col, docs):
     doc = docs[0]
@@ -421,6 +435,11 @@ def test_document_update(col, docs):
     doc["val"] = 8
     assert col.update(doc, silent=True) is True
     assert col[doc["_key"]]["val"] == 8
+
+    # Test update with cache refilling
+    doc["val"] = 9
+    assert col.update(doc, refill_index_caches=True, check_rev=False)
+    assert col[doc["_key"]]["val"] == 9
 
 
 def test_document_update_many(col, bad_col, docs):
@@ -600,6 +619,13 @@ def test_document_update_many(col, bad_col, docs):
     for doc in docs:
         assert col[doc["_key"]]["val"] == 8
 
+    # Test update_many with cache refilling
+    for doc in docs:
+        doc["val"] = 9
+    assert col.update_many(docs, refill_index_caches=True, check_rev=False)
+    for doc in docs:
+        assert col[doc["_key"]]["val"] == 9
+
     # Test update_many with bad documents
     with assert_raises(DocumentParseError) as err:
         bad_col.update_many([{}])
@@ -734,6 +760,11 @@ def test_document_replace(col, docs):
     assert col.replace(doc, silent=True) is True
     assert col[doc["_key"]]["val"] == 8
 
+    # Test replace with cache refilling
+    doc["val"] = 9
+    assert col.replace(doc, refill_index_caches=True, check_rev=False)
+    assert col[doc["_key"]]["val"] == 9
+
 
 def test_document_replace_many(col, bad_col, docs):
     col.insert_many(docs)
@@ -817,8 +848,8 @@ def test_document_replace_many(col, bad_col, docs):
         assert "foo" not in doc
         assert doc["baz"] == 4
 
-    # Test replace_many with check_rev set to False
-    results = col.replace_many(docs, check_rev=False)
+    # Test replace_many with check_rev set to False and cache refilling
+    results = col.replace_many(docs, check_rev=False, refill_index_caches=True)
     for result, doc in zip(results, docs):
         doc_key = doc["_key"]
         assert result["_id"] == f"{col.name}/{doc_key}"
@@ -965,9 +996,9 @@ def test_document_delete(col, docs):
     if col.context != "transaction":
         assert col.delete(bad_key, ignore_missing=True) is False
 
-    # Test delete (document) with silent set to True
+    # Test delete (document) with silent set to True and cache refilling
     doc = docs[5]
-    assert col.delete(doc, silent=True) is True
+    assert col.delete(doc, silent=True, refill_index_caches=True) is True
     assert doc["_key"] not in col
     assert len(col) == 1
 
@@ -1029,9 +1060,9 @@ def test_document_delete_many(col, bad_col, docs):
         old_revs[doc_key] = result["_rev"]
     assert len(col) == 0
 
-    # Test delete_many with silent set to True
+    # Test delete_many with silent set to True and cache refilling
     col.import_bulk(docs)
-    assert col.delete_many(docs, silent=True) is True
+    assert col.delete_many(docs, silent=True, refill_index_caches=True) is True
     assert len(col) == 0
 
     # Test delete_many (documents) with check_rev set to True
