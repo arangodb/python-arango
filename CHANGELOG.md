@@ -1,6 +1,25 @@
 main
 ----
 
+* Added new per-operation option `refillIndexCache` to write operations:
+
+  - single-document write operations (insert, replace, update, delete)
+  - multi-document write operations (insert_many, replace_many, update_many, delete_many)
+
+  If the option is set to `True`, new entries are added to in-memory index caches if
+  document operations affect the edge index or cache-enabled persistent indexes. Every
+  currently running transaction will keep track of which in-memory index cache entries
+  were invalidated by the transaction, and will try to (re-)fill them later.
+
+  Example:
+  ```python
+  collection.insert({"foo": "bar"}, refillIndexCaches=True)
+  db.aql.execute("INSERT {foo: bar} INTO collection OPTIONS { refillIndexCaches: true }")
+  ```
+
+7.5.9
+-----
+
 * Added cache and primaryKeyCache parameters to the inverted index API.
 
 * Added allow_retry query parameter, making it possible to retry fetching the latest batch from a cursor.
