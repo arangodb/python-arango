@@ -13,7 +13,7 @@ from arango.connection import (
 )
 from arango.database import StandardDatabase
 from arango.exceptions import ServerConnectionError
-from arango.http import DefaultHTTPClient, HTTPClient
+from arango.http import DEFAULT_REQUEST_TIMEOUT, DefaultHTTPClient, HTTPClient
 from arango.resolver import (
     HostResolver,
     RandomHostResolver,
@@ -55,10 +55,10 @@ class ArangoClient:
     :type verify_override: Union[bool, str, None]
     :param request_timeout: This is the default request timeout (in seconds)
        for http requests issued by the client if the parameter http_client is
-       not secified. The default value is 60.
+       not specified. The default value is 60.
        None: No timeout.
        int: Timeout value in seconds.
-    :type request_timeout: Any
+    :type request_timeout: int | float
     """
 
     def __init__(
@@ -70,7 +70,7 @@ class ArangoClient:
         serializer: Callable[..., str] = lambda x: dumps(x),
         deserializer: Callable[[str], Any] = lambda x: loads(x),
         verify_override: Union[bool, str, None] = None,
-        request_timeout: Any = 60,
+        request_timeout: Union[int, float] = DEFAULT_REQUEST_TIMEOUT,
     ) -> None:
         if isinstance(hosts, str):
             self._hosts = [host.strip("/") for host in hosts.split(",")]
@@ -88,11 +88,7 @@ class ArangoClient:
             self._host_resolver = RoundRobinHostResolver(host_count, resolver_max_tries)
 
         # Initializes the http client
-        self._http = http_client or DefaultHTTPClient()
-        # Sets the request timeout.
-        # This call can only happen AFTER initializing the http client.
-        if http_client is None:
-            self.request_timeout = request_timeout
+        self._http = http_client or DefaultHTTPClient(request_timeout=request_timeout)
 
         self._serializer = serializer
         self._deserializer = deserializer
@@ -137,12 +133,12 @@ class ArangoClient:
         :return: Request timeout.
         :rtype: Any
         """
-        return self._http.REQUEST_TIMEOUT  # type: ignore
+        return self._http.request_timeout  # type: ignore
 
     # Setter for request_timeout
     @request_timeout.setter
     def request_timeout(self, value: Any) -> None:
-        self._http.REQUEST_TIMEOUT = value  # type: ignore
+        self._http.request_timeout = value  # type: ignore
 
     def db(
         self,
