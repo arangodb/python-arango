@@ -189,6 +189,8 @@ def test_arangosearch_view_properties(db, col, enterprise, db_version):
             }
         )
 
+        if db_version >= version.parse("3.9.6"):
+            params.update({"primarySortCache": True, "primaryKeyCache": True})
         if db_version >= version.parse("3.10.3"):
             params.update({"storedValues": ["attr1", "attr2"]})
 

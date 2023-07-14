@@ -1342,6 +1342,8 @@ class Collection(ApiGroup):
         includeAllFields: Optional[bool] = None,
         trackListPositions: Optional[bool] = None,
         searchField: Optional[bool] = None,
+        primaryKeyCache: Optional[bool] = None,
+        cache: Optional[bool] = None,
     ) -> Result[Json]:
         """Create a new inverted index, introduced in version 3.10.
 
@@ -1351,22 +1353,31 @@ class Collection(ApiGroup):
         :type name: str | None
         :param inBackground: Do not hold the collection lock.
         :type inBackground: bool | None
-        :param parallelism:
+        :param parallelism: The number of threads to use for indexing the fields.
         :type parallelism: int | None
-        :param primarySort:
-        :type primarySort: Json | None
-        :param storedValues:
+        :param primarySort: Primary sort order to enable an AQL optimization.
+        :type primarySort: Optional[Json]
+        :param storedValues: An array of objects with paths to additional
+            attributes to store in the index.
         :type storedValues: Sequence[Json] | None
-        :param analyzer:
-        :type analyzer: str | None
-        :param features:
+        :param analyzer: Analyzer to use by default.
+        :type analyzer: Optional[str]
+        :param features: List of Analyzer features.
         :type features: Sequence[str] | None
-        :param includeAllFields:
+        :param includeAllFields: This option only applies if you use the
+            inverted index in search-alias views.
         :type includeAllFields: bool | None
-        :param trackListPositions:
+        :param trackListPositions: This option only applies if you use the
+            inverted index in search-alias views, and searchField is true.
         :type trackListPositions: bool | None
-        :param searchField:
+        :param searchField: This option only applies if you use the inverted
+            index in search-alias views
         :type searchField: bool | None
+        :param primaryKeyCache: Always cache the primary key column in memory.
+        :type primaryKeyCache: bool | None
+        :param cache: Always cache the field normalization values in memory
+            for all fields by default.
+        :type cache: bool | None
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
@@ -1395,6 +1406,10 @@ class Collection(ApiGroup):
             data["searchField"] = searchField
         if fields is not None:
             data["fields"] = fields
+        if primaryKeyCache is not None:
+            data["primaryKeyCache"] = primaryKeyCache
+        if cache is not None:
+            data["cache"] = cache
 
         return self._add_index(data)
 
