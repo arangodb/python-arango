@@ -1546,7 +1546,7 @@ class Collection(ApiGroup):
         if merge is not None:
             params["mergeObjects"] = merge
 
-        # New in 3.9.6 and 3.10.2
+        # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
             params["refillIndexCaches"] = refill_index_caches
 
@@ -1653,7 +1653,7 @@ class Collection(ApiGroup):
         if sync is not None:
             params["waitForSync"] = sync
 
-        # New in 3.9.6 and 3.10.2
+        # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
             params["refillIndexCaches"] = refill_index_caches
 
@@ -1826,7 +1826,7 @@ class Collection(ApiGroup):
         if sync is not None:
             params["waitForSync"] = sync
 
-        # New in 3.9.6 and 3.10.2
+        # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
             params["refillIndexCaches"] = refill_index_caches
 
@@ -1977,7 +1977,7 @@ class Collection(ApiGroup):
         if sync is not None:
             params["waitForSync"] = sync
 
-        # New in 3.9.6 and 3.10.2
+        # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
             params["refillCaches"] = refill_index_caches
 
@@ -2324,7 +2324,7 @@ class StandardCollection(Collection):
         if merge is not None:
             params["mergeObjects"] = merge
 
-        # New in 3.9.6 and 3.10.2
+        # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
             params["refillIndexCaches"] = refill_index_caches
 
@@ -2409,7 +2409,7 @@ class StandardCollection(Collection):
         if sync is not None:
             params["waitForSync"] = sync
 
-        # New in 3.9.6 and 3.10.2
+        # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
             params["refillIndexCaches"] = refill_index_caches
 
@@ -2485,7 +2485,7 @@ class StandardCollection(Collection):
         if sync is not None:
             params["waitForSync"] = sync
 
-        # New in 3.9.6 and 3.10.2
+        # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
             params["refillIndexCaches"] = refill_index_caches
 
@@ -2570,7 +2570,7 @@ class StandardCollection(Collection):
         if sync is not None:
             params["waitForSync"] = sync
 
-        # New in 3.9.6 and 3.10.2
+        # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
             params["refillIndexCaches"] = refill_index_caches
 
