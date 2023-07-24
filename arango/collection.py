@@ -1468,6 +1468,7 @@ class Collection(ApiGroup):
         overwrite_mode: Optional[str] = None,
         keep_none: Optional[bool] = None,
         merge: Optional[bool] = None,
+        refill_index_caches: Optional[bool] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Insert multiple documents.
 
@@ -1518,8 +1519,10 @@ class Collection(ApiGroup):
             instead of the new one overwriting the old one. Applies only when
             **overwrite_mode** is set to "update" (update-insert).
         :type merge: bool | None
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
+        :param refill_index_caches: Whether to add new entries to in-memory
+            index caches if document insertions affect the edge index or
+            cache-enabled persistent indexes.
+        :type refill_index_caches: bool | None
         :return: List of document metadata (e.g. document keys, revisions) and
             any exception, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoServerError] | bool
@@ -1542,6 +1545,10 @@ class Collection(ApiGroup):
             params["keepNull"] = keep_none
         if merge is not None:
             params["mergeObjects"] = merge
+
+        # New in ArangoDB 3.9.6 and 3.10.2
+        if refill_index_caches is not None:
+            params["refillIndexCaches"] = refill_index_caches
 
         request = Request(
             method="post",
@@ -1582,6 +1589,7 @@ class Collection(ApiGroup):
         return_old: bool = False,
         sync: Optional[bool] = None,
         silent: bool = False,
+        refill_index_caches: Optional[bool] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Update multiple documents.
 
@@ -1624,6 +1632,10 @@ class Collection(ApiGroup):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param refill_index_caches: Whether to add new entries to in-memory
+            index caches if document operations affect the edge index or
+            cache-enabled persistent indexes.
+        :type refill_index_caches: bool | None
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoError] | bool
@@ -1640,6 +1652,10 @@ class Collection(ApiGroup):
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        # New in ArangoDB 3.9.6 and 3.10.2
+        if refill_index_caches is not None:
+            params["refillIndexCaches"] = refill_index_caches
 
         documents = [self._ensure_key_in_body(doc) for doc in documents]
 
@@ -1753,6 +1769,7 @@ class Collection(ApiGroup):
         return_old: bool = False,
         sync: Optional[bool] = None,
         silent: bool = False,
+        refill_index_caches: Optional[bool] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Replace multiple documents.
 
@@ -1790,6 +1807,10 @@ class Collection(ApiGroup):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param refill_index_caches: Whether to add new entries to in-memory
+            index caches if document operations affect the edge index or
+            cache-enabled persistent indexes.
+        :type refill_index_caches: bool | None
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoServerError] | bool
@@ -1804,6 +1825,10 @@ class Collection(ApiGroup):
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        # New in ArangoDB 3.9.6 and 3.10.2
+        if refill_index_caches is not None:
+            params["refillIndexCaches"] = refill_index_caches
 
         documents = [self._ensure_key_in_body(doc) for doc in documents]
 
@@ -1901,6 +1926,7 @@ class Collection(ApiGroup):
         check_rev: bool = True,
         sync: Optional[bool] = None,
         silent: bool = False,
+        refill_index_caches: Optional[bool] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Delete multiple documents.
 
@@ -1933,6 +1959,10 @@ class Collection(ApiGroup):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param refill_index_caches: Whether to add new entries to in-memory
+            index caches if document operations affect the edge index or
+            cache-enabled persistent indexes.
+        :type refill_index_caches: bool | None
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoServerError] | bool
@@ -1946,6 +1976,10 @@ class Collection(ApiGroup):
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        # New in ArangoDB 3.9.6 and 3.10.2
+        if refill_index_caches is not None:
+            params["refillCaches"] = refill_index_caches
 
         documents = [
             self._ensure_key_in_body(doc) if isinstance(doc, dict) else doc
@@ -2229,6 +2263,7 @@ class StandardCollection(Collection):
         overwrite_mode: Optional[str] = None,
         keep_none: Optional[bool] = None,
         merge: Optional[bool] = None,
+        refill_index_caches: Optional[bool] = None,
     ) -> Result[Union[bool, Json]]:
         """Insert a new document.
 
@@ -2263,6 +2298,10 @@ class StandardCollection(Collection):
             instead of the new one overwriting the old one. Applies only when
             **overwrite_mode** is set to "update" (update-insert).
         :type merge: bool | None
+        :param refill_index_caches: Whether to add new entries to in-memory
+            index caches if document insertions affect the edge index or
+            cache-enabled persistent indexes.
+        :type refill_index_caches: bool | None
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2284,6 +2323,10 @@ class StandardCollection(Collection):
             params["keepNull"] = keep_none
         if merge is not None:
             params["mergeObjects"] = merge
+
+        # New in ArangoDB 3.9.6 and 3.10.2
+        if refill_index_caches is not None:
+            params["refillIndexCaches"] = refill_index_caches
 
         request = Request(
             method="post",
@@ -2317,6 +2360,7 @@ class StandardCollection(Collection):
         return_old: bool = False,
         sync: Optional[bool] = None,
         silent: bool = False,
+        refill_index_caches: Optional[bool] = None,
     ) -> Result[Union[bool, Json]]:
         """Update a document.
 
@@ -2343,6 +2387,10 @@ class StandardCollection(Collection):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param refill_index_caches: Whether to add new entries to in-memory
+            index caches if document insertions affect the edge index or
+            cache-enabled persistent indexes.
+        :type refill_index_caches: bool | None
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2360,6 +2408,10 @@ class StandardCollection(Collection):
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        # New in ArangoDB 3.9.6 and 3.10.2
+        if refill_index_caches is not None:
+            params["refillIndexCaches"] = refill_index_caches
 
         request = Request(
             method="patch",
@@ -2391,6 +2443,7 @@ class StandardCollection(Collection):
         return_old: bool = False,
         sync: Optional[bool] = None,
         silent: bool = False,
+        refill_index_caches: Optional[bool] = None,
     ) -> Result[Union[bool, Json]]:
         """Replace a document.
 
@@ -2412,6 +2465,10 @@ class StandardCollection(Collection):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param refill_index_caches: Whether to add new entries to in-memory
+            index caches if document insertions affect the edge index or
+            cache-enabled persistent indexes.
+        :type refill_index_caches: bool | None
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2427,6 +2484,10 @@ class StandardCollection(Collection):
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        # New in ArangoDB 3.9.6 and 3.10.2
+        if refill_index_caches is not None:
+            params["refillIndexCaches"] = refill_index_caches
 
         request = Request(
             method="put",
@@ -2461,6 +2522,7 @@ class StandardCollection(Collection):
         return_old: bool = False,
         sync: Optional[bool] = None,
         silent: bool = False,
+        refill_index_caches: Optional[bool] = None,
     ) -> Result[Union[bool, Json]]:
         """Delete a document.
 
@@ -2485,6 +2547,10 @@ class StandardCollection(Collection):
         :param silent: If set to True, no document metadata is returned. This
             can be used to save resources.
         :type silent: bool
+        :param refill_index_caches: Whether to add new entries to in-memory
+            index caches if document operations affect the edge index or
+            cache-enabled persistent indexes.
+        :type refill_index_caches: bool | None
         :return: Document metadata (e.g. document key, revision), or True if
             parameter **silent** was set to True, or False if document was not
             found and **ignore_missing** was set to True (does not apply in
@@ -2503,6 +2569,10 @@ class StandardCollection(Collection):
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        # New in ArangoDB 3.9.6 and 3.10.2
+        if refill_index_caches is not None:
+            params["refillIndexCaches"] = refill_index_caches
 
         request = Request(
             method="delete",
