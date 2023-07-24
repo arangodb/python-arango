@@ -254,5 +254,7 @@ def test_collection_utf8(db, db_version, special_collection_names):
         col = db.create_collection(name)
         assert col.name == name
         assert db.has_collection(name) is True
+        index_id = col.add_hash_index(fields=['foo'])['name']
+        assert index_id == col.indexes()[-1]['name']
         assert db.delete_collection(name) is True
         assert db.has_collection(name) is False
