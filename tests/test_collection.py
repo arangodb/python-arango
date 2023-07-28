@@ -1,3 +1,7 @@
+import pytest
+from packaging import version
+
+from arango.client import ArangoClient
 from arango.collection import StandardCollection
 from arango.exceptions import (
     CollectionChecksumError,
@@ -13,8 +17,15 @@ from arango.exceptions import (
     CollectionStatisticsError,
     CollectionTruncateError,
     CollectionUnloadError,
+    DatabaseDeleteError,
 )
-from tests.helpers import assert_raises, extract, generate_col_name
+from tests.helpers import (
+    assert_raises,
+    extract,
+    generate_col_name,
+    generate_string,
+    generate_username,
+)
 
 
 def test_collection_attributes(db, col, username):
@@ -228,3 +239,84 @@ def test_collection_management(db, bad_db, cluster):
         with assert_raises(CollectionRenameError) as err:
             bad_db.collection(new_name).rename(new_name)
         assert err.value.error_code in {11, 1228}
+
+
+@pytest.fixture
+def special_collection_names(db):
+    names = ["abc123", "maçã", "mötör", "😀", "ﻚﻠﺑ ﻞﻄﻴﻓ", "かわいい犬"]
+
+    yield names
+
+    for name in names:
+        try:
+            db.delete_collection(name)
+        except CollectionDeleteError:
+            pass
+
+
+# Code duplication from `test_database.py`...
+@pytest.fixture
+def special_db_names(sys_db):
+    names = ["abc123", "maçã", "mötör", "😀", "ﻚﻠﺑ ﻞﻄﻴﻓ", "かわいい犬"]
+
+    yield names
+
+    for name in names:
+        try:
+            sys_db.delete_database(name)
+        except DatabaseDeleteError:
+            pass
+
+
+def test_collection_utf8(db, db_version, special_collection_names):
+    if db_version < version.parse("3.11.0"):
+        pytest.skip("UTF8 collection names require ArangoDB 3.11+")
+
+    for name in special_collection_names:
+        create_and_delete_collection(db, name)
+
+
+# Not sure if this belongs in here or in `test_database.py`...
+def test_database_and_collection_utf8(
+    sys_db, db_version, special_collection_names, special_db_names
+):
+    if db_version < version.parse("3.11.0"):
+        pytest.skip("UTF8 collection names require ArangoDB 3.11+")
+
+    client = ArangoClient(hosts="http://127.0.0.1:8529")
+    for db_name in special_db_names:
+        username = generate_username()
+        password = generate_string()
+
+        assert sys_db.create_database(
+            name=db_name,
+            users=[
+                {
+                    "active": True,
+                    "username": username,
+                    "password": password,
+                }
+            ],
+        )
+
+        assert sys_db.has_database(db_name)
+
+        db = client.db(db_name, username, password, verify=True)
+
+        for col_name in special_collection_names:
+            create_and_delete_collection(db, col_name)
+
+        assert sys_db.delete_database(db_name)
+
+
+def create_and_delete_collection(db, name):
+    col = db.create_collection(name)
+    assert col.name == name
+    assert db.has_collection(name) is True
+
+    index_id = col.add_hash_index(fields=["foo"])["name"]
+    assert index_id == col.indexes()[-1]["name"]
+    assert col.delete_index(index_id) is True
+
+    assert db.delete_collection(name) is True
+    assert db.has_collection(name) is False
