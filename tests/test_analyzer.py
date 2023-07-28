@@ -1,3 +1,5 @@
+from packaging import version
+
 from arango.exceptions import (
     AnalyzerCreateError,
     AnalyzerDeleteError,
@@ -7,7 +9,7 @@ from arango.exceptions import (
 from tests.helpers import assert_raises, generate_analyzer_name
 
 
-def test_analyzer_management(db, bad_db, cluster):
+def test_analyzer_management(db, bad_db, cluster, enterprise, db_version):
     analyzer_name = generate_analyzer_name()
     full_analyzer_name = db.name + "::" + analyzer_name
     bad_analyzer_name = generate_analyzer_name()
@@ -56,3 +58,11 @@ def test_analyzer_management(db, bad_db, cluster):
 
     # Test delete missing analyzer with ignore_missing set to True
     assert db.delete_analyzer(analyzer_name, ignore_missing=True) is False
+
+    # Test create geo_s2 analyzer (EE only)
+    if enterprise and db_version >= version.parse("3.10.5"):
+        analyzer_name = generate_analyzer_name()
+        result = db.create_analyzer(analyzer_name, "geo_s2", {})
+        assert result["type"] == "geo_s2"
+        assert result["properties"]["format"] == "latLngDouble"
+        assert db.delete_analyzer(analyzer_name)
