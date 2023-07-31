@@ -63,6 +63,7 @@ def test_analyzer_management(db, bad_db, cluster, enterprise, db_version):
     if enterprise and db_version >= version.parse("3.10.5"):
         analyzer_name = generate_analyzer_name()
         result = db.create_analyzer(analyzer_name, "geo_s2", {})
+        assert result["type"] == "geo_s2"
         assert result["features"] == []
         assert result["properties"] == {
             "options": {"maxCells": 20, "minLevel": 4, "maxLevel": 23},
