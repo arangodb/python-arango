@@ -22,6 +22,30 @@ from arango.resolver import (
 )
 
 
+def default_serializer(x: Any) -> str:
+    """
+    Default JSON serializer
+
+    :param x: A JSON data type object to serialize
+    :type x: Any
+    :return: The object serialized as a JSON string
+    :rtype: str
+    """
+    return dumps(x)
+
+
+def default_deserializer(x: str) -> Any:
+    """
+    Default JSON de-serializer
+
+    :param x: A JSON string to deserialize
+    :type x: str
+    :return: The de-serialized JSON object
+    :rtype: Any
+    """
+    return loads(x)
+
+
 class ArangoClient:
     """ArangoDB client.
 
@@ -67,8 +91,8 @@ class ArangoClient:
         host_resolver: str = "roundrobin",
         resolver_max_tries: Optional[int] = None,
         http_client: Optional[HTTPClient] = None,
-        serializer: Callable[..., str] = lambda x: dumps(x),
-        deserializer: Callable[[str], Any] = lambda x: loads(x),
+        serializer: Callable[..., str] = default_serializer,
+        deserializer: Callable[[str], Any] = default_deserializer,
         verify_override: Union[bool, str, None] = None,
         request_timeout: Union[int, float] = DEFAULT_REQUEST_TIMEOUT,
     ) -> None:

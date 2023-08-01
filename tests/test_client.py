@@ -1,4 +1,5 @@
 import json
+import pickle
 from typing import Union
 
 import importlib_metadata
@@ -180,3 +181,10 @@ def test_client_override_validate() -> None:
     assert_verify("test", False, False)
     assert_verify("test", False, False)
     assert_verify("test", "foo", "foo")
+
+
+def test_can_serialize_deserialize_client() -> None:
+    client = ArangoClient(hosts="http://127.0.0.1:8529")
+    client_pstr = pickle.dumps(client)
+    client2 = pickle.loads(client_pstr)
+    assert len(client2._sessions) > 0

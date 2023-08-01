@@ -84,6 +84,16 @@ class DefaultHTTPAdapter(HTTPAdapter):
     :type kwargs: Any
     """
 
+    __attrs__ = [
+        "max_retries",
+        "config",
+        "_connection_timeout",
+        "_pool_connections",
+        "_pool_maxsize",
+        "_pool_timeout",
+        "_pool_block",
+    ]
+
     def __init__(
         self,
         connection_timeout: Union[int, float] = DEFAULT_REQUEST_TIMEOUT,
