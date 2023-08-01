@@ -94,7 +94,7 @@ class ArangoClient:
         serializer: Callable[..., str] = default_serializer,
         deserializer: Callable[[str], Any] = default_deserializer,
         verify_override: Union[bool, str, None] = None,
-        request_timeout: Union[int, float] = DEFAULT_REQUEST_TIMEOUT,
+        request_timeout: Union[int, float, None] = DEFAULT_REQUEST_TIMEOUT,
     ) -> None:
         if isinstance(hosts, str):
             self._hosts = [host.strip("/") for host in hosts.split(",")]
