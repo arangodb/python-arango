@@ -1,5 +1,17 @@
-main
+7.6.0
 ----
+
+* [DE-562] Index Cache Refilling by @apetenchea in https://github.com/ArangoDB-Community/python-arango/pull/259
+
+* [DE-554] `serverId` query param (GET/PUT `/_admin/log/level`) by @aMahanna in https://github.com/ArangoDB-Community/python-arango/pull/262
+
+* [DE-545] UTF-8 names by @apetenchea in https://github.com/ArangoDB-Community/python-arango/pull/260
+
+* [DE-566] geo_s2 analyzer test case by @aMahanna in https://github.com/ArangoDB-Community/python-arango/pull/263
+
+* Fix python-arango Client (de)serialization by @geenen124 in https://github.com/ArangoDB-Community/python-arango/pull/264
+
+* Fix `request_timeout` typing by @aMahanna in https://github.com/ArangoDB-Community/python-arango/pull/265
 
 * Added new per-operation option `refillIndexCache` to write operations:
 
