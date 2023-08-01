@@ -96,7 +96,7 @@ class DefaultHTTPAdapter(HTTPAdapter):
 
     def __init__(
         self,
-        connection_timeout: Union[int, float] = DEFAULT_REQUEST_TIMEOUT,
+        connection_timeout: Union[int, float, None] = DEFAULT_REQUEST_TIMEOUT,
         pool_connections: int = DEFAULT_POOLSIZE,
         pool_maxsize: int = DEFAULT_POOLSIZE,
         pool_timeout: Union[int, float, None] = None,
@@ -150,7 +150,7 @@ class DefaultHTTPClient(HTTPClient):
 
     def __init__(
         self,
-        request_timeout: Union[int, float] = DEFAULT_REQUEST_TIMEOUT,
+        request_timeout: Union[int, float, None] = DEFAULT_REQUEST_TIMEOUT,
         retry_attempts: int = 3,
         backoff_factor: float = 1.0,
         pool_connections: int = 10,
