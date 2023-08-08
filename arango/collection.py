@@ -41,7 +41,7 @@ from arango.formatter import format_collection, format_edge, format_index, forma
 from arango.request import Request
 from arango.response import Response
 from arango.result import Result
-from arango.typings import Fields, Headers, Json, Params, Jsons
+from arango.typings import Fields, Headers, Json, Jsons, Params
 from arango.utils import get_batches, get_doc_id, is_none_or_int, is_none_or_str
 
 
