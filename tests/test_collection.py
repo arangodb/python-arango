@@ -69,6 +69,7 @@ def test_collection_misc_methods(col, bad_col, cluster):
     assert properties["system"] is False
     assert properties["sync"] is not prev_sync
     assert properties["computedValues"] == computed_values
+    col.configure(computed_values=[])
 
     # Test configure properties with bad collection
     with assert_raises(CollectionConfigureError) as err:
@@ -210,6 +211,7 @@ def test_collection_management(db, bad_db, cluster):
     assert properties["sync"] is True
     assert properties["system"] is False
     assert properties["computedValues"] == computed_values
+    col.configure(computed_values=[])
 
     # Test create duplicate collection
     with assert_raises(CollectionCreateError) as err:
