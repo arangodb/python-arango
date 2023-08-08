@@ -64,7 +64,7 @@ number of items in the result set may or may not be known in advance.
     cursor.warnings()
 
     # Return the next item from the cursor. If current batch is depleted, the
-    # next batch if fetched from the server automatically.
+    # next batch is fetched from the server automatically.
     cursor.next()
 
     # Return the next item from the cursor. If current batch is depleted, an
