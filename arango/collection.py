@@ -306,6 +306,7 @@ class Collection(ApiGroup):
         schema: Optional[Json] = None,
         replication_factor: Optional[int] = None,
         write_concern: Optional[int] = None,
+        computed_values: Optional[List[Json]] = None
     ) -> Result[Json]:
         """Configure collection properties.
 
@@ -341,6 +342,8 @@ class Collection(ApiGroup):
             data["replicationFactor"] = replication_factor
         if write_concern is not None:
             data["writeConcern"] = write_concern
+        if computed_values is not None:
+            data["computedValues"] = computed_values
 
         request = Request(
             method="put",

@@ -49,10 +49,26 @@ def test_collection_misc_methods(col, bad_col, cluster):
 
     # Test configure properties
     prev_sync = properties["sync"]
-    properties = col.configure(sync=not prev_sync, schema={})
+
+    computed_values = [
+        {
+            "name": "foo",
+            "expression": "RETURN 1",
+            "computeOn": ["insert", "update", "replace"],
+            "overwrite": True,
+            "failOnWarning": False,
+            "keepNull": True,
+        }
+    ]
+
+    properties = col.configure(
+        sync=not prev_sync, schema={}, computed_values=computed_values
+    )
+
     assert properties["name"] == col.name
     assert properties["system"] is False
     assert properties["sync"] is not prev_sync
+    assert properties["computedValues"] == computed_values
 
     # Test configure properties with bad collection
     with assert_raises(CollectionConfigureError) as err:
@@ -153,6 +169,17 @@ def test_collection_management(db, bad_db, cluster):
         "type": "json",
     }
 
+    computed_values = [
+        {
+            "name": "foo",
+            "expression": "RETURN 1",
+            "computeOn": ["insert", "update", "replace"],
+            "overwrite": True,
+            "failOnWarning": False,
+            "keepNull": True,
+        }
+    ]
+
     col = db.create_collection(
         name=col_name,
         sync=True,
@@ -172,6 +199,7 @@ def test_collection_management(db, bad_db, cluster):
         smart_join_attribute="test_attr",
         write_concern=1,
         schema=schema,
+        computedValues=computed_values,
     )
     assert db.has_collection(col_name) is True
 
@@ -181,6 +209,7 @@ def test_collection_management(db, bad_db, cluster):
     assert properties["name"] == col_name
     assert properties["sync"] is True
     assert properties["system"] is False
+    assert properties["computedValues"] == computed_values
 
     # Test create duplicate collection
     with assert_raises(CollectionCreateError) as err:
