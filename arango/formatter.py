@@ -249,7 +249,7 @@ def format_collection(body: Json) -> Json:
         result["min_revision"] = body["minRevision"]
     if "schema" in body:
         result["schema"] = body["schema"]
-    if "computedValues" in body:
+    if body.get("computedValues") is not None:
         result["computedValues"] = body["computedValues"]
 
     if "internalValidatorType" in body:
