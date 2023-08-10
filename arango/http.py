@@ -117,7 +117,6 @@ class DefaultHTTPAdapter(HTTPAdapter):
             dict(
                 num_pools=connections,
                 maxsize=maxsize,
-                strict=True,
                 timeout=self._connection_timeout,
             )
         )
