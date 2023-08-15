@@ -1,2 +1,3 @@
 requests_toolbelt
 importlib_metadata
+jwt
