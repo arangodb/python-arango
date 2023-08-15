@@ -20,8 +20,6 @@ autodoc_mock_imports = [
     "importlib_metadata",
     "jwt",
     "requests_toolbelt",
-    "requests",
-    "urllib3",
 ]
 
 autodoc_member_order = "bysource"
