@@ -16,7 +16,6 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_static_path = ["static"]
 html_theme = "sphinx_rtd_theme"
 master_doc = "index"
-# autodoc_mock_imports = ["importlib_metadata", "jwt"]
 
 autodoc_member_order = "bysource"
 
