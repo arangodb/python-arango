@@ -1,5 +1,7 @@
-import sys, os
-sys.path.insert(0, os.path.abspath('..'))
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath(".."))
 
 project = "python-arango"
 copyright = "2016-2022, Joohwan Oh"
