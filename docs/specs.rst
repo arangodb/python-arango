@@ -9,7 +9,7 @@ python-arango.
 ArangoClient
 ============
 
-.. autoclass:: arango.client.ArangoClient
+.. autoclass:: arango.client::ArangoClient
     :members:
 
 .. _AsyncDatabase:
@@ -17,7 +17,7 @@ ArangoClient
 AsyncDatabase
 =============
 
-.. autoclass:: arango.database.AsyncDatabase
+.. autoclass:: arango.database::AsyncDatabase
     :inherited-members:
     :members:
 
@@ -26,7 +26,7 @@ AsyncDatabase
 AsyncJob
 ========
 
-.. autoclass:: arango.job.AsyncJob
+.. autoclass:: arango.job::AsyncJob
     :members:
 
 .. _AQL:
@@ -34,7 +34,7 @@ AsyncJob
 AQL
 ====
 
-.. autoclass:: arango.aql.AQL
+.. autoclass:: arango.aql::AQL
     :members:
 
 .. _AQLQueryCache:
@@ -42,7 +42,7 @@ AQL
 AQLQueryCache
 =============
 
-.. autoclass:: arango.aql.AQLQueryCache
+.. autoclass:: arango.aql::AQLQueryCache
     :members:
 
 .. _Backup:
@@ -50,7 +50,7 @@ AQLQueryCache
 Backup
 ======
 
-.. autoclass:: arango.backup.Backup
+.. autoclass:: arango.backup::Backup
     :inherited-members:
     :members:
 
@@ -59,7 +59,7 @@ Backup
 BatchDatabase
 =============
 
-.. autoclass:: arango.database.BatchDatabase
+.. autoclass:: arango.database::BatchDatabase
     :inherited-members:
     :members:
 
@@ -68,7 +68,7 @@ BatchDatabase
 BatchJob
 ========
 
-.. autoclass:: arango.job.BatchJob
+.. autoclass:: arango.job::BatchJob
     :members:
 
 .. _Cluster:
@@ -76,7 +76,7 @@ BatchJob
 Cluster
 =======
 
-.. autoclass:: arango.cluster.Cluster
+.. autoclass:: arango.cluster::Cluster
     :members:
 
 .. _Collection:
@@ -84,7 +84,7 @@ Cluster
 Collection
 ==========
 
-.. autoclass:: arango.collection.Collection
+.. autoclass:: arango.collection::Collection
     :members:
 
 .. _Cursor:
@@ -92,7 +92,7 @@ Collection
 Cursor
 ======
 
-.. autoclass:: arango.cursor.Cursor
+.. autoclass:: arango.cursor::Cursor
     :members:
 
 .. _DefaultHTTPClient:
@@ -100,7 +100,7 @@ Cursor
 DefaultHTTPClient
 =================
 
-.. autoclass:: arango.http.DefaultHTTPClient
+.. autoclass:: arango.http::DefaultHTTPClient
     :members:
 
 .. _EdgeCollection:
@@ -108,7 +108,7 @@ DefaultHTTPClient
 EdgeCollection
 ==============
 
-.. autoclass:: arango.collection.EdgeCollection
+.. autoclass:: arango.collection::EdgeCollection
     :members:
 
 .. _Foxx:
@@ -116,7 +116,7 @@ EdgeCollection
 Foxx
 ====
 
-.. autoclass:: arango.foxx.Foxx
+.. autoclass:: arango.foxx::Foxx
     :members:
 
 .. _Graph:
@@ -124,7 +124,7 @@ Foxx
 Graph
 =====
 
-.. autoclass:: arango.graph.Graph
+.. autoclass:: arango.graph::Graph
     :members:
 
 .. _HTTPClient:
@@ -132,7 +132,7 @@ Graph
 HTTPClient
 ==========
 
-.. autoclass:: arango.http.HTTPClient
+.. autoclass:: arango.http::HTTPClient
     :members:
 
 .. _OverloadControlDatabase:
@@ -140,7 +140,7 @@ HTTPClient
 OverloadControlDatabase
 =======================
 
-.. autoclass:: arango.database.OverloadControlDatabase
+.. autoclass:: arango.database::OverloadControlDatabase
     :inherited-members:
     :members:
 
@@ -149,7 +149,7 @@ OverloadControlDatabase
 Pregel
 ======
 
-.. autoclass:: arango.pregel.Pregel
+.. autoclass:: arango.pregel::Pregel
     :members:
 
 .. _Replication:
@@ -157,7 +157,7 @@ Pregel
 Replication
 ===========
 
-.. autoclass:: arango.replication.Replication
+.. autoclass:: arango.replication::Replication
     :members:
 
 .. _Request:
@@ -165,7 +165,7 @@ Replication
 Request
 =======
 
-.. autoclass:: arango.request.Request
+.. autoclass:: arango.request::Request
     :members:
 
 .. _Response:
@@ -173,7 +173,7 @@ Request
 Response
 ========
 
-.. autoclass:: arango.response.Response
+.. autoclass:: arango.response::Response
     :members:
 
 .. _StandardCollection:
@@ -181,7 +181,7 @@ Response
 StandardCollection
 ==================
 
-.. autoclass:: arango.collection.StandardCollection
+.. autoclass:: arango.collection::StandardCollection
     :inherited-members:
     :members:
 
@@ -190,7 +190,7 @@ StandardCollection
 StandardDatabase
 ================
 
-.. autoclass:: arango.database.StandardDatabase
+.. autoclass:: arango.database::StandardDatabase
     :inherited-members:
     :members:
 
@@ -199,7 +199,7 @@ StandardDatabase
 TransactionDatabase
 ===================
 
-.. autoclass:: arango.database.TransactionDatabase
+.. autoclass:: arango.database::TransactionDatabase
     :inherited-members:
     :members:
 
@@ -208,7 +208,7 @@ TransactionDatabase
 VertexCollection
 ================
 
-.. autoclass:: arango.collection.VertexCollection
+.. autoclass:: arango.collection::VertexCollection
     :members:
 
 .. _WriteAheadLog:
@@ -216,5 +216,5 @@ VertexCollection
 WAL
 ====
 
-.. autoclass:: arango.wal.WAL
+.. autoclass:: arango.wal::WAL
     :members:
