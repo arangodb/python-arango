@@ -1,0 +1,7 @@
+urllib3>=1.26.0
+requests
+requests_toolbelt
+PyJWT
+setuptools>=42
+importlib_metadata>=4.7.1
+packaging>=23.1
