@@ -1,9 +1,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath("."))
-sys.path.insert(0, os.path.abspath("../"))
-sys.path.insert(1, os.path.dirname(os.path.abspath("../")) + os.sep + "arango")
+sys.path.insert(0, os.path.abspath(".."))
 
 project = "python-arango"
 copyright = "2016-2022, Joohwan Oh"
@@ -18,7 +16,7 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 html_static_path = ["static"]
 html_theme = "sphinx_rtd_theme"
 master_doc = "index"
-autodoc_mock_imports = ["importlib_metadata"]
+autodoc_mock_imports = ["importlib_metadata", "jwt"]
 
 autodoc_member_order = "bysource"
 
