@@ -41,7 +41,7 @@ from arango.formatter import format_collection, format_edge, format_index, forma
 from arango.request import Request
 from arango.response import Response
 from arango.result import Result
-from arango.typings import Fields, Headers, Json, Params
+from arango.typings import Fields, Headers, Json, Jsons, Params
 from arango.utils import get_batches, get_doc_id, is_none_or_int, is_none_or_str
 
 
@@ -306,6 +306,7 @@ class Collection(ApiGroup):
         schema: Optional[Json] = None,
         replication_factor: Optional[int] = None,
         write_concern: Optional[int] = None,
+        computed_values: Optional[Jsons] = None,
     ) -> Result[Json]:
         """Configure collection properties.
 
@@ -341,6 +342,8 @@ class Collection(ApiGroup):
             data["replicationFactor"] = replication_factor
         if write_concern is not None:
             data["writeConcern"] = write_concern
+        if computed_values is not None:
+            data["computedValues"] = computed_values
 
         request = Request(
             method="put",
@@ -976,7 +979,7 @@ class Collection(ApiGroup):
         self,
         documents: Sequence[Union[str, Json]],
         allow_dirty_read: bool = False,
-    ) -> Result[List[Json]]:
+    ) -> Result[Jsons]:
         """Return multiple documents ignoring any missing ones.
 
         :param documents: List of document keys, IDs or bodies. Document bodies
@@ -1001,7 +1004,7 @@ class Collection(ApiGroup):
             headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
-        def response_handler(resp: Response) -> List[Json]:
+        def response_handler(resp: Response) -> Jsons:
             if not resp.is_success:
                 raise DocumentGetError(resp, request)
             return [doc for doc in resp.body if "_id" in doc]
@@ -1034,7 +1037,7 @@ class Collection(ApiGroup):
     # Index Management #
     ####################
 
-    def indexes(self) -> Result[List[Json]]:
+    def indexes(self) -> Result[Jsons]:
         """Return the collection indexes.
 
         :return: Collection indexes.
@@ -1047,7 +1050,7 @@ class Collection(ApiGroup):
             params={"collection": self.name},
         )
 
-        def response_handler(resp: Response) -> List[Json]:
+        def response_handler(resp: Response) -> Jsons:
             if not resp.is_success:
                 raise IndexListError(resp, request)
             result = resp.body["indexes"]
