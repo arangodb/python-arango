@@ -1590,6 +1590,7 @@ class Collection(ApiGroup):
         sync: Optional[bool] = None,
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
+        raise_on_document_error: bool = False,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Update multiple documents.
 
@@ -1599,7 +1600,8 @@ class Collection(ApiGroup):
             returned as an object in the result list. It is up to you to
             inspect the list to determine which documents were updated
             successfully (returns document metadata) and which were not
-            (returns exception object).
+            (returns exception object). Alternatively, you can rely on
+            setting **raise_on_document_error** to True (defaults to False).
 
         .. note::
 
@@ -1636,6 +1638,11 @@ class Collection(ApiGroup):
             index caches if document operations affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
+        :param raise_on_document_error: Whether to raise if a DocumentRevisionError
+            or a DocumentUpdateError is encountered on an individual document,
+            as opposed to returning the error as an object in the result list.
+            Defaults to False.
+        :type raise_on_document_error: bool
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoError] | bool
@@ -1688,6 +1695,9 @@ class Collection(ApiGroup):
                         error = DocumentRevisionError(sub_resp, request)
                     else:  # pragma: no cover
                         error = DocumentUpdateError(sub_resp, request)
+
+                    if raise_on_document_error:
+                        raise error
 
                     results.append(error)
 

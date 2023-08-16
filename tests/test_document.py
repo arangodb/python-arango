@@ -631,6 +631,17 @@ def test_document_update_many(col, bad_col, docs):
         bad_col.update_many([{}])
     assert str(err.value) == 'field "_key" or "_id" required'
 
+    # Test update_many with raise on document error (revision)
+    with assert_raises(DocumentRevisionError) as err:
+        # Raises: [HTTP 202][ERR 1200] conflict, _rev values do not match
+        col.update_many(docs, raise_on_document_error=True)
+
+    # Test update_many with raise on document error (update)
+    with assert_raises(DocumentUpdateError) as err:
+        # Raises: [HTTP 202][ERR 1202] document not found
+        bad_docs = [{"_key": "unknown_doc", "foo": "bar"}]
+        col.update_many(bad_docs, raise_on_document_error=True)
+
 
 def test_document_update_match(col, bad_col, docs):
     # Set up test documents
