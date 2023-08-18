@@ -1,5 +1,10 @@
+main
+-----
+
+* [DE-584] Refactor deprecated `/_api/simple` methods
+
 7.6.0
-----
+-----
 
 * [DE-562] Index Cache Refilling by @apetenchea in https://github.com/ArangoDB-Community/python-arango/pull/259
 
