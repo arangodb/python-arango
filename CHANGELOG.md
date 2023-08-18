@@ -1,5 +1,10 @@
+main
+-----
+
+* [DE-542] Added `shards()` method to `Collection`
+
 7.6.0
-----
+-----
 
 * [DE-562] Index Cache Refilling by @apetenchea in https://github.com/ArangoDB-Community/python-arango/pull/259
 
