@@ -949,7 +949,7 @@ class Collection(ApiGroup):
         # Initial assumption that attribute names are "latitude" and "longitude"
         geo_str = "[doc.longitude, doc.latitude]"
         if index is not None:
-            geo_index = self.get_index(f"{self.name}/{index}")
+            geo_index = self.get_index(index)
             assert isinstance(geo_index, dict)
 
             if geo_index["type"] != "geo":
@@ -1153,7 +1153,7 @@ class Collection(ApiGroup):
         """
         request = Request(
             method="get",
-            endpoint=f"/_api/index/{id}",
+            endpoint=f"/_api/index/{self.name}/{id}",
         )
 
         def response_handler(resp: Response) -> Json:
