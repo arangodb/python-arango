@@ -16,6 +16,7 @@ from arango.exceptions import (
     CollectionRenameError,
     CollectionResponsibleShardError,
     CollectionRevisionError,
+    CollectionShardsError,
     CollectionStatisticsError,
     CollectionTruncateError,
     CollectionUnloadError,
@@ -300,6 +301,31 @@ class Collection(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def shards(self, details: bool = False) -> Result[Json]:
+        """Return collection shards and properties.
+
+        Available only in a cluster setup.
+
+        :param details: Include responsible servers for each shard.
+        :type details: bool
+        :return: Collection shards and properties.
+        :rtype: dict
+        :raise arango.exceptions.CollectionShardsError: If retrieval fails.
+        """
+        request = Request(
+            method="get",
+            endpoint=f"/_api/collection/{self.name}/shards",
+            params={"details": details},
+            read=self.name,
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_collection(resp.body)
+            raise CollectionShardsError(resp, request)
+
+        return self._execute(request, response_handler)
+
     def configure(
         self,
         sync: Optional[bool] = None,
@@ -330,6 +356,9 @@ class Collection(ApiGroup):
             Default value is 1. Used for clusters only.
         :type write_concern: int
         :return: New collection properties.
+        :param computed_values: Define expressions on the collection level that
+            run on inserts, modifications, or both.
+        :type computed_values: dict | None
         :rtype: dict
         :raise arango.exceptions.CollectionConfigureError: If operation fails.
         """
