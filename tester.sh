@@ -21,9 +21,9 @@ if [[ "$tests" != "all" && "$tests" != "community" && "$tests" != "enterprise" ]
     exit 1
 fi
 
-# 3.11.1
+# 3.11.2
 # 3.10.9
-# 3.9.9
+# 3.9.11
 version="${3:-3.11.1}"
 
 if [[ -n "$4" && "$4" != "notest" ]]; then
