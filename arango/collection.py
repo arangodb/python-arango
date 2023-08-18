@@ -952,6 +952,9 @@ class Collection(ApiGroup):
             geo_index = self.get_index(f"{self.name}/{index}")
             assert isinstance(geo_index, dict)
 
+            if geo_index["type"] != "geo":
+                raise ValueError("**index** must point to a Geo Index")
+
             geo_index_fields = geo_index["fields"]
 
             if len(geo_index_fields) == 1:

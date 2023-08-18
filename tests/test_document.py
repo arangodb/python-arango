@@ -1427,6 +1427,27 @@ def test_document_find_in_box(col, bad_col, geo, cluster):
     )
     assert clean_doc(result) in [[doc1], [doc2], [doc3], [doc4]]
 
+    # Test find_in_box with non-existing index
+    with assert_raises(IndexGetError) as err:
+        col.find_in_box(
+            latitude1=0,
+            longitude1=0,
+            latitude2=6,
+            longitude2=3,
+            index='abc',
+        )
+
+    # Test find_in_box with non-geo index
+    non_geo = col.add_hash_index(fields=['loc'])
+    with assert_raises(ValueError) as err:
+        col.find_in_box(
+            latitude1=0,
+            longitude1=0,
+            latitude2=6,
+            longitude2=3,
+            index=non_geo["id"],
+        )
+
     # Test find_in_box with bad collection
     with assert_raises(IndexGetError) as err:
         bad_col.find_in_box(
