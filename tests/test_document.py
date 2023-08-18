@@ -12,6 +12,7 @@ from arango.exceptions import (
     DocumentReplaceError,
     DocumentRevisionError,
     DocumentUpdateError,
+    IndexGetError,
 )
 from tests.helpers import (
     assert_raises,
@@ -1164,6 +1165,20 @@ def test_document_find(col, bad_col, docs):
     assert len(found) == 1
     assert found[0]["_key"] == "2"
 
+    # Test find with text value
+    found = list(col.find({"text": "foo"}))
+    assert len(found) == 3
+
+    # Test find with list value
+    found = list(col.find({"loc": [1, 1]}))
+    assert len(found) == 1
+    assert found[0]["_key"] == "1"
+
+    # Test find with multiple conditions
+    found = list(col.find({"val": 2, "text": "foo"}))
+    assert len(found) == 1
+    assert found[0]["_key"] == "2"
+
     # Test find (multiple matches) with default options
     col.update_match({"val": 2}, {"val": 1})
     found = list(col.find({"val": 1}))
@@ -1364,7 +1379,7 @@ def test_document_find_in_box(col, bad_col, geo, cluster):
     result = col.find_in_box(
         latitude1=0, longitude1=0, latitude2=6, longitude2=3, limit=0, index=geo["id"]
     )
-    assert clean_doc(result) == [doc1, doc3]
+    assert clean_doc(result) == []
 
     # Test find_in_box with limit of 1
     result = col.find_in_box(
@@ -1373,12 +1388,13 @@ def test_document_find_in_box(col, bad_col, geo, cluster):
         latitude2=6,
         longitude2=3,
         limit=1,
+        index=geo["id"],
     )
     assert clean_doc(result) == [doc3]
 
     # Test find_in_box with limit of 4
     result = col.find_in_box(
-        latitude1=0, longitude1=0, latitude2=10, longitude2=10, limit=4
+        latitude1=0, longitude1=0, latitude2=10, longitude2=10, limit=4, index=geo["id"]
     )
     assert clean_doc(result) == [doc1, doc2, doc3, doc4]
 
@@ -1390,6 +1406,7 @@ def test_document_find_in_box(col, bad_col, geo, cluster):
             latitude2=6,
             longitude2=3,
             skip=-1,
+            index=geo["id"],
         )
     assert "skip must be a non-negative int" == str(err.value)
 
@@ -1400,22 +1417,24 @@ def test_document_find_in_box(col, bad_col, geo, cluster):
         latitude2=6,
         longitude2=3,
         skip=1,
+        index=geo["id"],
     )
     assert clean_doc(result) in [[doc1], [doc3]]
 
     # Test find_in_box with skip 3
     result = col.find_in_box(
-        latitude1=0, longitude1=0, latitude2=10, longitude2=10, skip=3
+        latitude1=0, longitude1=0, latitude2=10, longitude2=10, skip=3, index=geo["id"]
     )
     assert clean_doc(result) in [[doc1], [doc2], [doc3], [doc4]]
 
     # Test find_in_box with bad collection
-    with assert_raises(DocumentGetError) as err:
+    with assert_raises(IndexGetError) as err:
         bad_col.find_in_box(
             latitude1=0,
             longitude1=0,
             latitude2=6,
             longitude2=3,
+            index=geo["id"],
         )
     assert err.value.error_code in {11, 1228}
 
