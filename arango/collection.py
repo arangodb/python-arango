@@ -36,6 +36,7 @@ from arango.exceptions import (
     IndexGetError,
     IndexListError,
     IndexLoadError,
+    IndexMissingError,
 )
 from arango.executor import ApiExecutor
 from arango.formatter import format_collection, format_edge, format_index, format_vertex
@@ -944,25 +945,39 @@ class Collection(ApiGroup):
         assert is_none_or_int(limit), "limit must be a non-negative int"
         assert is_none_or_str(index), "index must be a string"
 
-        # TODO: REVISIT `geo_str` logic
-        # https://www.arangodb.com/docs/stable/aql/functions-geo.html#within_rectangle
-        # Initial assumption that attribute names are "latitude" and "longitude"
-        geo_str = "[doc.longitude, doc.latitude]"
-        if index is not None:
+        def build_coord_str_from_index(index: Json) -> str:
+            index_field: List[str] = index["fields"]
+
+            if len(index_field) == 1:
+                return f"doc.{index_field[0]}"
+            elif len(index_field) == 2:
+                return f"[doc.{index_field[0]}, doc.{index_field[1]}]"
+            else:
+                m = "**index** must be a geo index with 1 or 2 fields"
+                raise ValueError(m)
+
+        coord_str = ""
+        if index is None:
+            # Find the first geo index
+            for collection_index in self.indexes():  # type:ignore[union-attr]
+                if collection_index["type"] == "geo":
+                    coord_str = build_coord_str_from_index(collection_index)
+                    break
+
+            # If no geo index found, raise
+            if coord_str == "":
+                raise IndexMissingError(f"No geo index found in {self.name}")
+
+        else:
+            # Find the geo index with the given ID
             geo_index = self.get_index(index)
             assert isinstance(geo_index, dict)
 
+            # If the index is not a geo index, raise
             if geo_index["type"] != "geo":
                 raise ValueError("**index** must point to a Geo Index")
 
-            geo_index_fields = geo_index["fields"]
-
-            if len(geo_index_fields) == 1:
-                geo_str = f"doc.{geo_index_fields[0]}"
-            elif len(geo_index_fields) == 2:
-                geo_str = f"[doc.{geo_index_fields[0]}, doc.{geo_index_fields[1]}]"
-            else:
-                raise ValueError("**index** must be a geo index with 1 or 2 fields")
+            coord_str = build_coord_str_from_index(geo_index)
 
         skip_val = skip if skip is not None else 0
         limit_val = limit if limit is not None else "null"
@@ -976,7 +991,7 @@ class Collection(ApiGroup):
             ] ])
 
             FOR doc IN @@collection
-                FILTER GEO_CONTAINS(rect, {geo_str})
+                FILTER GEO_CONTAINS(rect, {coord_str})
                 LIMIT {skip_val}, {limit_val}
                 RETURN doc
         """
