@@ -204,6 +204,13 @@ def test_collection_management(db, bad_db, cluster):
     )
     assert db.has_collection(col_name) is True
 
+    if cluster:
+        for details in (False, True):
+            shards = col.shards(details=details)
+            assert shards["name"] == col_name
+            assert shards["system"] is False
+            assert len(shards["shards"]) == 2
+
     properties = col.properties()
     assert "key_options" in properties
     assert properties["schema"] == schema
