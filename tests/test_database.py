@@ -56,7 +56,7 @@ def test_database_attributes(db, username):
     assert isinstance(db.wal, WAL)
 
 
-def test_database_misc_methods(sys_db, db, bad_db):
+def test_database_misc_methods(sys_db, db, bad_db, cluster):
     # Test get properties
     properties = db.properties()
     assert "id" in properties
@@ -202,10 +202,6 @@ def test_database_misc_methods(sys_db, db, bad_db):
     # Test get log levels
     assert isinstance(sys_db.log_levels(), dict)
 
-    # Test get log levels (with server_id)
-    server_id = sys_db.replication.server_id()
-    assert isinstance(sys_db.log_levels(server_id), dict)
-
     # Test get log levels with bad database
     with assert_raises(ServerLogLevelError) as err:
         bad_db.log_levels()
@@ -219,12 +215,17 @@ def test_database_misc_methods(sys_db, db, bad_db):
     for key, value in sys_db.log_levels().items():
         assert result[key] == value
 
-    # Test set log levels (with server_id)
-    result = sys_db.set_log_levels(server_id, **new_levels)
-    for key, value in new_levels.items():
-        assert result[key] == value
-    for key, value in sys_db.log_levels(server_id).items():
-        assert result[key] == value
+    if cluster:
+        # Test get log levels (with server_id)
+        server_id = sys_db.cluster.server_id()
+        assert isinstance(sys_db.log_levels(server_id), dict)
+
+        # Test set log levels (with server_id)
+        result = sys_db.set_log_levels(server_id, **new_levels)
+        for key, value in new_levels.items():
+            assert result[key] == value
+        for key, value in sys_db.log_levels(server_id).items():
+            assert result[key] == value
 
     # Test set log levels with bad database
     with assert_raises(ServerLogLevelSetError):

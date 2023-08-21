@@ -258,6 +258,10 @@ class CollectionConfigureError(ArangoServerError):
     """Failed to configure collection properties."""
 
 
+class CollectionShardsError(ArangoServerError):
+    """Failed to retrieve collection shards."""
+
+
 class CollectionStatisticsError(ArangoServerError):
     """Failed to retrieve collection statistics."""
 

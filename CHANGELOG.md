@@ -1,6 +1,7 @@
 main
 -----
 
+* [DE-542] Added `shards()` method to `Collection`
 * [DE-584] Refactor deprecated `/_api/simple` methods
 
 7.6.0
