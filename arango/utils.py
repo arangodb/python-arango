@@ -66,7 +66,7 @@ def is_none_or_int(obj: Any) -> bool:
     """Check if obj is None or an integer.
 
     :param obj: Object to check.
-    :type obj: object
+    :type obj: Any
     :return: True if object is None or an integer.
     :rtype: bool
     """
@@ -77,11 +77,22 @@ def is_none_or_str(obj: Any) -> bool:
     """Check if obj is None or a string.
 
     :param obj: Object to check.
-    :type obj: object
+    :type obj: Any
     :return: True if object is None or a string.
     :rtype: bool
     """
     return obj is None or isinstance(obj, str)
+
+
+def is_none_or_bool(obj: Any) -> bool:
+    """Check if obj is None or a bool.
+
+    :param obj: Object to check.
+    :type obj: Any
+    :return: True if object is None or a bool.
+    :rtype: bool
+    """
+    return obj is None or isinstance(obj, bool)
 
 
 def get_batches(elements: Sequence[Json], batch_size: int) -> Iterator[Sequence[Json]]:
@@ -95,3 +106,24 @@ def get_batches(elements: Sequence[Json], batch_size: int) -> Iterator[Sequence[
     """
     for index in range(0, len(elements), batch_size):
         yield elements[index : index + batch_size]
+
+
+def build_filter_conditions(filters: Json) -> str:
+    """Build a filter condition for an AQL query.
+
+    :param filters: Document filters.
+    :type filters: Dict[str, Any]
+    :return: The complete AQL filter condition.
+    :rtype: str
+    """
+    if not filters:
+        return ""
+
+    def format_condition(key: str, value: Any) -> str:
+        if isinstance(value, str):
+            return f'doc.{key} == "{value}"'
+
+        return f"doc.{key} == {value}"
+
+    conditions = [format_condition(k, v) for k, v in filters.items()]
+    return "FILTER " + " AND ".join(conditions)

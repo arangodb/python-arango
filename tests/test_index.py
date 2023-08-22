@@ -4,6 +4,7 @@ from packaging import version
 from arango.exceptions import (
     IndexCreateError,
     IndexDeleteError,
+    IndexGetError,
     IndexListError,
     IndexLoadError,
 )
@@ -24,6 +25,25 @@ def test_list_indexes(icol, bad_col):
     with assert_raises(IndexListError) as err:
         bad_col.indexes()
     assert err.value.error_code in {11, 1228}
+
+
+def test_get_index(icol, bad_col):
+    indexes = icol.indexes()
+    for index in indexes:
+        retrieved_index = icol.get_index(index["id"])
+        assert retrieved_index["id"] == index["id"]
+        assert retrieved_index["name"] == index["name"]
+        assert retrieved_index["type"] == index["type"]
+        assert retrieved_index["fields"] == index["fields"]
+        assert retrieved_index["sparse"] == index["sparse"]
+        assert retrieved_index["unique"] == index["unique"]
+        # TODO: Revisit
+        # assert retrieved_index["selectivity"] == index["selectivity"]
+
+    with assert_raises(IndexGetError) as err:
+        icol.get_index("bad_index")
+
+    assert err.value.error_code == 1212
 
 
 def test_add_hash_index(icol):

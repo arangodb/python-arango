@@ -34,8 +34,10 @@ from arango.exceptions import (
     EdgeListError,
     IndexCreateError,
     IndexDeleteError,
+    IndexGetError,
     IndexListError,
     IndexLoadError,
+    IndexMissingError,
 )
 from arango.executor import ApiExecutor
 from arango.formatter import format_collection, format_edge, format_index, format_vertex
@@ -43,7 +45,14 @@ from arango.request import Request
 from arango.response import Response
 from arango.result import Result
 from arango.typings import Fields, Headers, Json, Jsons, Params
-from arango.utils import get_batches, get_doc_id, is_none_or_int, is_none_or_str
+from arango.utils import (
+    build_filter_conditions,
+    get_batches,
+    get_doc_id,
+    is_none_or_bool,
+    is_none_or_int,
+    is_none_or_str,
+)
 
 
 class Collection(ApiGroup):
@@ -557,7 +566,7 @@ class Collection(ApiGroup):
             is compared against the revision of target document.
         :type check_rev: bool
         :param allow_dirty_read: Allow reads from followers in a cluster.
-        :type allow_dirty_read: bool | None
+        :type allow_dirty_read: bool
         :return: True if document exists, False otherwise.
         :rtype: bool
         :raise arango.exceptions.DocumentInError: If check fails.
@@ -586,18 +595,24 @@ class Collection(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def ids(self) -> Result[Cursor]:
+    def ids(self, allow_dirty_read: bool = False) -> Result[Cursor]:
         """Return the IDs of all documents in the collection.
 
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool
         :return: Document ID cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentIDsError: If retrieval fails.
         """
+        query = "FOR doc IN @@collection RETURN doc._id"
+        bind_vars = {"@collection": self.name}
+
         request = Request(
-            method="put",
-            endpoint="/_api/simple/all-keys",
-            data={"collection": self.name, "type": "id"},
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": query, "bindVars": bind_vars},
             read=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> Cursor:
@@ -607,18 +622,24 @@ class Collection(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def keys(self) -> Result[Cursor]:
+    def keys(self, allow_dirty_read: bool = False) -> Result[Cursor]:
         """Return the keys of all documents in the collection.
 
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool
         :return: Document key cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentKeysError: If retrieval fails.
         """
+        query = "FOR doc IN @@collection RETURN doc._key"
+        bind_vars = {"@collection": self.name}
+
         request = Request(
-            method="put",
-            endpoint="/_api/simple/all-keys",
-            data={"collection": self.name, "type": "key"},
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": query, "bindVars": bind_vars},
             read=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> Cursor:
@@ -629,7 +650,10 @@ class Collection(ApiGroup):
         return self._execute(request, response_handler)
 
     def all(
-        self, skip: Optional[int] = None, limit: Optional[int] = None
+        self,
+        skip: Optional[int] = None,
+        limit: Optional[int] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Cursor]:
         """Return all documents in the collection.
 
@@ -637,6 +661,8 @@ class Collection(ApiGroup):
         :type skip: int | None
         :param limit: Max number of documents returned.
         :type limit: int | None
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool
         :return: Document cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
@@ -644,14 +670,22 @@ class Collection(ApiGroup):
         assert is_none_or_int(skip), "skip must be a non-negative int"
         assert is_none_or_int(limit), "limit must be a non-negative int"
 
-        data: Json = {"collection": self.name}
-        if skip is not None:
-            data["skip"] = skip
-        if limit is not None:
-            data["limit"] = limit
+        skip_val = skip if skip is not None else 0
+        limit_val = limit if limit is not None else "null"
+        query = f"""
+            FOR doc IN @@collection
+                LIMIT {skip_val}, {limit_val}
+                RETURN doc
+        """
+
+        bind_vars = {"@collection": self.name}
 
         request = Request(
-            method="put", endpoint="/_api/simple/all", data=data, read=self.name
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": query, "bindVars": bind_vars, "count": True},
+            read=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> Cursor:
@@ -662,7 +696,11 @@ class Collection(ApiGroup):
         return self._execute(request, response_handler)
 
     def find(
-        self, filters: Json, skip: Optional[int] = None, limit: Optional[int] = None
+        self,
+        filters: Json,
+        skip: Optional[int] = None,
+        limit: Optional[int] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Cursor]:
         """Return all documents that match the given filters.
 
@@ -672,6 +710,8 @@ class Collection(ApiGroup):
         :type skip: int | None
         :param limit: Max number of documents returned.
         :type limit: int | None
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool
         :return: Document cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
@@ -680,16 +720,23 @@ class Collection(ApiGroup):
         assert is_none_or_int(skip), "skip must be a non-negative int"
         assert is_none_or_int(limit), "limit must be a non-negative int"
 
-        data: Json = {
-            "collection": self.name,
-            "example": filters,
-            "skip": skip,
-        }
-        if limit is not None:
-            data["limit"] = limit
+        skip_val = skip if skip is not None else 0
+        limit_val = limit if limit is not None else "null"
+        query = f"""
+            FOR doc IN @@collection
+                {build_filter_conditions(filters)}
+                LIMIT {skip_val}, {limit_val}
+                RETURN doc
+        """
+
+        bind_vars = {"@collection": self.name}
 
         request = Request(
-            method="put", endpoint="/_api/simple/by-example", data=data, read=self.name
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": query, "bindVars": bind_vars, "count": True},
+            read=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> Cursor:
@@ -720,7 +767,7 @@ class Collection(ApiGroup):
         :param limit: Max number of documents returned.
         :type limit: int | None
         :param allow_dirty_read: Allow reads from followers in a cluster.
-        :type allow_dirty_read: bool | None
+        :type allow_dirty_read: bool
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
@@ -783,7 +830,7 @@ class Collection(ApiGroup):
         :param limit: Max number of documents returned.
         :type limit: int | None
         :param allow_dirty_read: Allow reads from followers in a cluster.
-        :type allow_dirty_read: bool | None
+        :type allow_dirty_read: bool
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
@@ -844,7 +891,7 @@ class Collection(ApiGroup):
             the given coordinate. This parameter is ignored in transactions.
         :type distance_field: str
         :param allow_dirty_read: Allow reads from followers in a cluster.
-        :type allow_dirty_read: bool | None
+        :type allow_dirty_read: bool
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
@@ -894,6 +941,7 @@ class Collection(ApiGroup):
         skip: Optional[int] = None,
         limit: Optional[int] = None,
         index: Optional[str] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[Cursor]:
         """Return all documents in a rectangular area.
 
@@ -912,6 +960,8 @@ class Collection(ApiGroup):
         :param index: ID of the geo index to use (without the collection
             prefix). This parameter is ignored in transactions.
         :type index: str | None
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
@@ -922,26 +972,67 @@ class Collection(ApiGroup):
         assert isinstance(longitude2, Number), "longitude2 must be a number"
         assert is_none_or_int(skip), "skip must be a non-negative int"
         assert is_none_or_int(limit), "limit must be a non-negative int"
+        assert is_none_or_str(index), "index must be a string"
 
-        data: Json = {
-            "collection": self._name,
-            "latitude1": latitude1,
-            "longitude1": longitude1,
-            "latitude2": latitude2,
-            "longitude2": longitude2,
-        }
-        if skip is not None:
-            data["skip"] = skip
-        if limit is not None:
-            data["limit"] = limit
-        if index is not None:
-            data["geo"] = self._name + "/" + index
+        def build_coord_str_from_index(index: Json) -> str:
+            index_field: List[str] = index["fields"]
+
+            if len(index_field) == 1:
+                return f"doc.{index_field[0]}"
+            elif len(index_field) == 2:
+                return f"[doc.{index_field[0]}, doc.{index_field[1]}]"
+            else:  # pragma: no cover
+                m = "**index** must be a geo index with 1 or 2 fields"
+                raise ValueError(m)
+
+        coord_str = ""
+        if index is None:
+            # Find the first geo index
+            for collection_index in self.indexes():  # type:ignore[union-attr]
+                if collection_index["type"] == "geo":
+                    coord_str = build_coord_str_from_index(collection_index)
+                    break
+
+            # If no geo index found, raise
+            if coord_str == "":
+                raise IndexMissingError(f"No geo index found in {self.name}")
+
+        else:
+            # Find the geo index with the given ID
+            geo_index = self.get_index(index)
+            assert isinstance(geo_index, dict)
+
+            # If the index is not a geo index, raise
+            if geo_index["type"] != "geo":
+                raise ValueError("**index** must point to a Geo Index")
+
+            coord_str = build_coord_str_from_index(geo_index)
+
+        skip_val = skip if skip is not None else 0
+        limit_val = limit if limit is not None else "null"
+        query = f"""
+            LET rect = GEO_POLYGON([ [
+                [{longitude1}, {latitude1}], // bottom-left
+                [{longitude2}, {latitude1}], // bottom-right
+                [{longitude2}, {latitude2}], // top-right
+                [{longitude1}, {latitude2}], // top-left
+                [{longitude1}, {latitude1}], // bottom-left (close polygon)
+            ] ])
+
+            FOR doc IN @@collection
+                FILTER GEO_CONTAINS(rect, {coord_str})
+                LIMIT {skip_val}, {limit_val}
+                RETURN doc
+        """
+
+        bind_vars = {"@collection": self.name}
 
         request = Request(
-            method="put",
-            endpoint="/_api/simple/within-rectangle",
-            data=data,
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": query, "bindVars": bind_vars, "count": True},
             read=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> Cursor:
@@ -967,7 +1058,7 @@ class Collection(ApiGroup):
         :param limit: Max number of documents returned.
         :type limit: int | None
         :param allow_dirty_read: Allow reads from followers in a cluster.
-        :type allow_dirty_read: bool | None
+        :type allow_dirty_read: bool
         :returns: Document cursor.
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
@@ -1015,7 +1106,7 @@ class Collection(ApiGroup):
             must contain the "_id" or "_key" fields.
         :type documents: [str | dict]
         :param allow_dirty_read: Allow reads from followers in a cluster.
-        :type allow_dirty_read: bool | None
+        :type allow_dirty_read: bool
         :return: Documents. Missing ones are not included.
         :rtype: [dict]
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
@@ -1040,25 +1131,33 @@ class Collection(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def random(self) -> Result[Json]:
-        """Return a random document from the collection.
+    def random(self, allow_dirty_read: bool = False) -> Result[Optional[Json]]:
+        """Return a random document from the collection. Returns None
+        if the collection is empty.
 
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool
         :return: A random document.
         :rtype: dict
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
         """
+        query = "FOR doc IN @@collection SORT RAND() LIMIT 1 RETURN doc"
+        bind_vars = {"@collection": self.name}
+
         request = Request(
-            method="put",
-            endpoint="/_api/simple/any",
-            data={"collection": self.name},
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": query, "bindVars": bind_vars},
             read=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
-        def response_handler(resp: Response) -> Json:
-            if resp.is_success:
-                result: Json = resp.body["document"]
-                return result
-            raise DocumentGetError(resp, request)
+        def response_handler(resp: Response) -> Optional[Json]:
+            if not resp.is_success:
+                raise DocumentGetError(resp, request)
+
+            cursor = Cursor(self._conn, resp.body)
+            return cursor.pop() if not cursor.empty() else None
 
         return self._execute(request, response_handler)
 
@@ -1084,6 +1183,28 @@ class Collection(ApiGroup):
                 raise IndexListError(resp, request)
             result = resp.body["indexes"]
             return [format_index(index) for index in result]
+
+        return self._execute(request, response_handler)
+
+    def get_index(self, id: str) -> Result[Json]:
+        """Return the index with the given id.
+
+        :param id: The id of the index
+        :type id: str
+        :return: Index details
+        :rtype: dict
+        :raise arango.exceptions.IndexGetError: If retrieval fails.
+        """
+        request = Request(
+            method="get",
+            endpoint=f"/_api/index/{self.name}/{id}",
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise IndexGetError(resp, request)
+
+            return format_index(resp.body)
 
         return self._execute(request, response_handler)
 
@@ -1745,6 +1866,7 @@ class Collection(ApiGroup):
         keep_none: bool = True,
         sync: Optional[bool] = None,
         merge: bool = True,
+        allow_dirty_read: bool = False,
     ) -> Result[int]:
         """Update matching documents.
 
@@ -1772,32 +1894,46 @@ class Collection(ApiGroup):
         :param merge: If set to True, sub-dictionaries are merged instead of
             the new ones overwriting the old ones.
         :type merge: bool | None
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool
         :return: Number of documents updated.
         :rtype: int
         :raise arango.exceptions.DocumentUpdateError: If update fails.
         """
-        data: Json = {
-            "collection": self.name,
-            "example": filters,
-            "newValue": body,
-            "keepNull": keep_none,
-            "mergeObjects": merge,
+        assert isinstance(filters, dict), "filters must be a dict"
+        assert is_none_or_int(limit), "limit must be a non-negative int"
+        assert is_none_or_bool(sync), "sync must be None or a bool"
+
+        # If the waitForSync parameter is not specified or set to false,
+        # then the collection’s default waitForSync behavior is applied.
+        sync_val = f", waitForSync: {sync}" if sync is not None else ""
+
+        query = f"""
+            FOR doc IN @@collection
+                {build_filter_conditions(filters)}
+                {f"LIMIT {limit}" if limit is not None else ""}
+                UPDATE doc WITH @body IN @@collection
+                OPTIONS {{ keepNull: @keep_none, mergeObjects: @merge {sync_val} }}
+        """
+
+        bind_vars = {
+            "@collection": self.name,
+            "body": body,
+            "keep_none": keep_none,
+            "merge": merge,
         }
-        if limit is not None:
-            data["limit"] = limit
-        if sync is not None:
-            data["waitForSync"] = sync
 
         request = Request(
-            method="put",
-            endpoint="/_api/simple/update-by-example",
-            data=data,
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": query, "bindVars": bind_vars},
             write=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> int:
             if resp.is_success:
-                result: int = resp.body["updated"]
+                result: int = resp.body["extra"]["stats"]["writesExecuted"]
                 return result
             raise DocumentUpdateError(resp, request)
 
@@ -1916,6 +2052,7 @@ class Collection(ApiGroup):
         body: Json,
         limit: Optional[int] = None,
         sync: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[int]:
         """Replace matching documents.
 
@@ -1936,28 +2073,43 @@ class Collection(ApiGroup):
         :type limit: int | None
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool
         :return: Number of documents replaced.
         :rtype: int
         :raise arango.exceptions.DocumentReplaceError: If replace fails.
         """
-        data: Json = {"collection": self.name, "example": filters, "newValue": body}
-        if limit is not None:
-            data["limit"] = limit
-        if sync is not None:
-            data["waitForSync"] = sync
+        assert isinstance(filters, dict), "filters must be a dict"
+        assert is_none_or_int(limit), "limit must be a non-negative int"
+        assert is_none_or_bool(sync), "sync must be None or a bool"
+
+        # If the waitForSync parameter is not specified or set to false,
+        # then the collection’s default waitForSync behavior is applied.
+        sync_val = f"waitForSync: {sync}" if sync is not None else ""
+
+        query = f"""
+            FOR doc IN @@collection
+                {build_filter_conditions(filters)}
+                {f"LIMIT {limit}" if limit is not None else ""}
+                REPLACE doc WITH @body IN @@collection
+                {f"OPTIONS {{ {sync_val} }}" if sync_val else ""}
+        """
+
+        bind_vars = {"@collection": self.name, "body": body}
 
         request = Request(
-            method="put",
-            endpoint="/_api/simple/replace-by-example",
-            data=data,
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": query, "bindVars": bind_vars},
             write=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> int:
-            if not resp.is_success:
-                raise DocumentReplaceError(resp, request)
-            result: int = resp.body["replaced"]
-            return result
+            if resp.is_success:
+                result: int = resp.body["extra"]["stats"]["writesExecuted"]
+                return result
+            raise DocumentReplaceError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -2063,7 +2215,11 @@ class Collection(ApiGroup):
         return self._execute(request, response_handler)
 
     def delete_match(
-        self, filters: Json, limit: Optional[int] = None, sync: Optional[bool] = None
+        self,
+        filters: Json,
+        limit: Optional[int] = None,
+        sync: Optional[bool] = None,
+        allow_dirty_read: bool = False,
     ) -> Result[int]:
         """Delete matching documents.
 
@@ -2082,26 +2238,41 @@ class Collection(ApiGroup):
         :type limit: int | None
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
+        :param allow_dirty_read: Allow reads from followers in a cluster.
+        :type allow_dirty_read: bool
         :return: Number of documents deleted.
         :rtype: int
         :raise arango.exceptions.DocumentDeleteError: If delete fails.
         """
-        data: Json = {"collection": self.name, "example": filters}
-        if sync is not None:
-            data["waitForSync"] = sync
-        if limit is not None and limit != 0:
-            data["limit"] = limit
+        assert isinstance(filters, dict), "filters must be a dict"
+        assert is_none_or_int(limit), "limit must be a non-negative int"
+        assert is_none_or_bool(sync), "sync must be None or a bool"
+
+        # If the waitForSync parameter is not specified or set to false,
+        # then the collection’s default waitForSync behavior is applied.
+        sync_val = f"waitForSync: {sync}" if sync is not None else ""
+
+        query = f"""
+            FOR doc IN @@collection
+                {build_filter_conditions(filters)}
+                {f"LIMIT {limit}" if limit is not None else ""}
+                REMOVE doc IN @@collection
+                {f"OPTIONS {{ {sync_val} }}" if sync_val else ""}
+        """
+
+        bind_vars = {"@collection": self.name}
 
         request = Request(
-            method="put",
-            endpoint="/_api/simple/remove-by-example",
-            data=data,
+            method="post",
+            endpoint="/_api/cursor",
+            data={"query": query, "bindVars": bind_vars},
             write=self.name,
+            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
         )
 
         def response_handler(resp: Response) -> int:
             if resp.is_success:
-                result: int = resp.body["deleted"]
+                result: int = resp.body["extra"]["stats"]["writesExecuted"]
                 return result
             raise DocumentDeleteError(resp, request)
 
@@ -2263,7 +2434,7 @@ class StandardCollection(Collection):
             is compared against the revision of target document.
         :type check_rev: bool
         :param allow_dirty_read: Allow reads from followers in a cluster.
-        :type allow_dirty_read: bool | None
+        :type allow_dirty_read: bool
         :return: Document, or None if not found.
         :rtype: dict | None
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
@@ -3325,7 +3496,7 @@ class EdgeCollection(Collection):
             and "out". If not set, edges in both directions are returned.
         :type direction: str
         :param allow_dirty_read: Allow reads from followers in a cluster.
-        :type allow_dirty_read: bool | None
+        :type allow_dirty_read: bool
         :return: List of edges and statistics.
         :rtype: dict
         :raise arango.exceptions.EdgeListError: If retrieval fails.

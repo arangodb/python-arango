@@ -560,6 +560,14 @@ class IndexCreateError(ArangoServerError):
     """Failed to create collection index."""
 
 
+class IndexGetError(ArangoServerError):
+    """Failed to retrieve collection index."""
+
+
+class IndexMissingError(ArangoClientError):
+    """Failed to find collection index."""
+
+
 class IndexDeleteError(ArangoServerError):
     """Failed to delete collection index."""
 
