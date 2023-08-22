@@ -981,7 +981,7 @@ class Collection(ApiGroup):
                 return f"doc.{index_field[0]}"
             elif len(index_field) == 2:
                 return f"[doc.{index_field[0]}, doc.{index_field[1]}]"
-            else:
+            else:  # pragma: no cover
                 m = "**index** must be a geo index with 1 or 2 fields"
                 raise ValueError(m)
 
