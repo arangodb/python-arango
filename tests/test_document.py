@@ -13,6 +13,7 @@ from arango.exceptions import (
     DocumentRevisionError,
     DocumentUpdateError,
     IndexGetError,
+    IndexMissingError,
 )
 from tests.helpers import (
     assert_raises,
@@ -1346,7 +1347,7 @@ def test_document_find_in_radius(col, bad_col):
     assert err.value.error_code in {11, 1228}
 
 
-def test_document_find_in_box(col, bad_col, geo, cluster):
+def test_document_find_in_box(db, col, bad_col, geo, cluster):
     if cluster:
         pytest.skip("Not tested in a cluster setup")
 
@@ -1361,6 +1362,10 @@ def test_document_find_in_box(col, bad_col, geo, cluster):
     result = col.find_in_box(
         latitude1=0, longitude1=0, latitude2=6, longitude2=3, index=geo["id"]
     )
+    assert clean_doc(result) == [doc1, doc3]
+
+    # Test find_in_box with no index provided
+    result = col.find_in_box(latitude1=0, longitude1=0, latitude2=6, longitude2=3)
     assert clean_doc(result) == [doc1, doc3]
 
     # Test find_in_box with limit of -1
@@ -1426,6 +1431,16 @@ def test_document_find_in_box(col, bad_col, geo, cluster):
         latitude1=0, longitude1=0, latitude2=10, longitude2=10, skip=3, index=geo["id"]
     )
     assert clean_doc(result) in [[doc1], [doc2], [doc3], [doc4]]
+
+    # Test find_in_box with missing index in collection
+    empty_col = db.create_collection("empty_collection")
+    with assert_raises(IndexMissingError) as err:
+        empty_col.find_in_box(
+            latitude1=0,
+            longitude1=0,
+            latitude2=6,
+            longitude2=3,
+        )
 
     # Test find_in_box with non-existing index
     with assert_raises(IndexGetError) as err:
