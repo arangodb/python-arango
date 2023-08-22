@@ -1433,7 +1433,7 @@ def test_document_find_in_box(db, col, bad_col, geo, cluster):
     assert clean_doc(result) in [[doc1], [doc2], [doc3], [doc4]]
 
     # Test find_in_box with missing index in collection
-    empty_col = db.create_collection("empty_collection")
+    empty_col = db.create_collection(generate_col_name())
     with assert_raises(IndexMissingError) as err:
         empty_col.find_in_box(
             latitude1=0,
