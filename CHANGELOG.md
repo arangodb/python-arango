@@ -1,8 +1,14 @@
 main
 -----
 
-* [DE-542] Added `shards()` method to `Collection`
-* [DE-584] Refactor deprecated `/_api/simple` methods
+7.6.1
+-----
+
+* [DE-542] Added `shards()` method to `Collection` by @apetenchea in https://github.com/ArangoDB-Community/python-arango/pull/274
+* [DE-584] Refactor deprecated `/_api/simple` methods by @aMahanna in https://github.com/ArangoDB-Community/python-arango/pull/268
+* Added `raise_on_document_error` parameter to `Collection.update_many()` by @aMahanna in https://github.com/ArangoDB-Community/python-arango/pull/273
+* Added `computed_values` parameter to `Collection.onfigure()` by @aMahanna in https://github.com/ArangoDB-Community/python-arango/pull/268
+* Various bug fixes
 
 7.6.0
 -----
