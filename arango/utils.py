@@ -6,7 +6,7 @@ __all__ = [
     "is_none_or_str",
 ]
 
-# import json
+import json
 import logging
 from contextlib import contextmanager
 from typing import Any, Iterator, Sequence, Union
@@ -120,12 +120,5 @@ def build_filter_conditions(filters: Json) -> str:
     if not filters:
         return ""
 
-    def format_condition(key: str, value: Any) -> str:
-        if isinstance(value, str):
-            return f'doc.{key} == "{value}"'
-
-        return f"doc.{key} == {value}"
-
-    # conditions = [f"doc.{k} == {json.dumps(v)}" for k, v in filters.items()]
-    conditions = [format_condition(k, v) for k, v in filters.items()]
+    conditions = [f"doc.{k} == {json.dumps(v)}" for k, v in filters.items()]
     return "FILTER " + " AND ".join(conditions)
