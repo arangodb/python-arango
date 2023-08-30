@@ -1175,6 +1175,12 @@ def test_document_find(col, bad_col, docs):
     assert len(found) == 1
     assert found[0]["_key"] == "1"
 
+    # Test find with dict value with None
+    data = {"dict": {"foo": "bar", "foo_2": None}}
+    col.insert(data)
+    found = list(col.find(data))
+    assert len(found) == 1
+
     # Test find with multiple conditions
     found = list(col.find({"val": 2, "text": "foo"}))
     assert len(found) == 1
