@@ -761,13 +761,30 @@ class Database(ApiGroup):
     #######################
 
     def databases(self) -> Result[List[str]]:
-        """Return the names all databases.
+        """Return the names of all databases.
 
         :return: Database names.
         :rtype: [str]
         :raise arango.exceptions.DatabaseListError: If retrieval fails.
         """
         request = Request(method="get", endpoint="/_api/database")
+
+        def response_handler(resp: Response) -> List[str]:
+            if not resp.is_success:
+                raise DatabaseListError(resp, request)
+            result: List[str] = resp.body["result"]
+            return result
+
+        return self._execute(request, response_handler)
+
+    def databases_accessible_to_user(self) -> Result[List[str]]:
+        """Return the names of all databases accessible by the user.
+
+        :return: Database names accesible by the current user.
+        :rtype: List[str]
+        :raise arango.exceptions.DatabaseListError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_api/database/user")
 
         def response_handler(resp: Response) -> List[str]:
             if not resp.is_success:
