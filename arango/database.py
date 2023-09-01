@@ -76,6 +76,7 @@ from arango.exceptions import (
     ViewRenameError,
     ViewReplaceError,
     ViewUpdateError,
+    TransactionListError
 )
 from arango.executor import (
     AsyncApiExecutor,
@@ -304,6 +305,24 @@ class Database(ApiGroup):
                 raise TransactionExecuteError(resp, request)
 
             return resp.body.get("result")
+
+        return self._execute(request, response_handler)
+
+    def list_transactions(self) -> Result[Jsons]:
+        """Return the list of running stream transactions.
+
+        :return: The list of transactions, with each transaction
+          containing an "id" and a "state" field.
+        :rtype: List[Dict[str, Any]]
+        :raise arango.exceptions.TransactionListError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_api/transaction")
+
+        def response_handler(resp: Response) -> Jsons:
+            if not resp.is_success:
+                raise TransactionListError(resp, request)
+
+            return resp.body.get("transactions")
 
         return self._execute(request, response_handler)
 

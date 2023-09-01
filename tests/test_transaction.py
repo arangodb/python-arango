@@ -41,6 +41,11 @@ def test_transaction_execute_raw(db, col, docs):
         db.execute_transaction(command="INVALID COMMAND")
     assert err.value.error_code == 10
 
+def test_transaction_list(db, col, docs):
+    no_transactions = db.list_transactions()
+    assert no_transactions == []
+    # TODO: Add proper transaction test here
+
 
 def test_transaction_init(db, bad_db, col, username):
     txn_db = db.begin_transaction()

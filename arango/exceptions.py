@@ -724,6 +724,10 @@ class TransactionAbortError(ArangoServerError):
     """Failed to abort transaction."""
 
 
+class TransactionListError(ArangoServerError):
+    """Failed to retrieve transactions."""
+
+
 ###################
 # User Exceptions #
 ###################
