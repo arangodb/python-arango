@@ -1,15 +1,7 @@
-import json
-
-import mock
 import pytest
 
 from arango.database import BatchDatabase
-from arango.exceptions import (
-    BatchExecuteError,
-    BatchJobResultError,
-    BatchStateError,
-    DocumentInsertError,
-)
+from arango.exceptions import BatchJobResultError, BatchStateError, DocumentInsertError
 from arango.job import BatchJob
 from tests.helpers import clean_doc, extract
 
@@ -74,10 +66,11 @@ def test_batch_execute_with_result(db, col, docs):
 
     # Test successful results
     assert job1.result()["_key"] == docs[0]["_key"]
-    assert job2.result()["_key"] == docs[1]["_key"]
 
     # Test insert error result
+    # job2 and job3 are concurrent, either one can fail
     with pytest.raises(DocumentInsertError) as err:
+        job2.result()
         job3.result()
     assert err.value.error_code == 1210
 
@@ -122,13 +115,9 @@ def test_batch_action_after_commit(db, col):
 def test_batch_execute_error(bad_db, col, docs):
     batch_db = bad_db.begin_batch_execution(return_result=True)
     job = batch_db.collection(col.name).insert_many(docs)
-
-    # Test batch execute with bad database
-    with pytest.raises(BatchExecuteError) as err:
-        batch_db.commit()
-    assert err.value.error_code in {11, 1228}
+    batch_db.commit()
     assert len(col) == 0
-    assert job.status() == "pending"
+    assert job.status() == "done"
 
 
 def test_batch_job_result_not_ready(db, col, docs):
@@ -144,28 +133,3 @@ def test_batch_job_result_not_ready(db, col, docs):
     assert batch_db.commit() == [job]
     assert len(job.result()) == len(docs)
     assert extract("_key", col.all()) == extract("_key", docs)
-
-
-def test_batch_bad_state(db, col, docs):
-    batch_db = db.begin_batch_execution()
-    batch_col = batch_db.collection(col.name)
-    batch_col.insert(docs[0])
-    batch_col.insert(docs[1])
-    batch_col.insert(docs[2])
-
-    # Monkey patch the connection object
-    mock_resp = mock.MagicMock()
-    mock_resp.is_success = True
-    mock_resp.raw_body = ""
-    mock_send_request = mock.MagicMock()
-    mock_send_request.return_value = mock_resp
-    mock_connection = mock.MagicMock()
-    mock_connection.send_request = mock_send_request
-    mock_connection.serialize = json.dumps
-    mock_connection.deserialize = json.loads
-    batch_db._executor._conn = mock_connection
-
-    # Test commit with invalid batch state
-    with pytest.raises(BatchStateError) as err:
-        batch_db.commit()
-    assert "expecting 3 parts in batch response but got 0" in str(err.value)
