@@ -246,6 +246,12 @@ def test_database_management(db, sys_db, bad_db):
     # Test list databases
     result = sys_db.databases()
     assert "_system" in result
+    assert db.name in result
+
+    # Test list databases accesible to root user
+    result = sys_db.databases_accessible_to_user()
+    assert "_system" in result
+    assert db.name in result
 
     # Test list databases accessible to user
     result = db.databases_accessible_to_user()
