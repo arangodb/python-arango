@@ -1,11 +1,33 @@
 main
 -----
 
+* Refactoring `BatchDatabase` API
+
+  - The batch API is deprecated since ArangoDB 3.8.0 and will be removed in a future version.
+  - The `BatchDatabase` is still available, but it now uses a `TreadPoolExecutor` internally.
+  - For backwards compatibility, the `BatchDatabase` uses only one worker thread, essentially
+    sending the requests sequentially. Feel free to set the `max_workers` parameter to a higher
+    value if you want to use multiple threads, but be aware that the requests will be sent in
+    parallel, which may cause problems if you are using transactions.
+  - To discourage the use of this API, we now issue a warning when the `BatchDatabase` is used.
+
+  Note that `{"foo": "bar"}` may be inserted after `{"foo": "baz"}` in the following example:
+  ```python
+  with db.begin_batch_execution(max_workers=2) as batch_db:
+      job1 = batch_db.collection.insert({"foo": "bar"})
+      job2 = batch_db.collection.insert({"foo": "baz"})
+  ```
+
+7.6.2
+-----
+
+* Fix: build_filter_conditions utils method
+
 7.6.1
 -----
 
 * [DE-542] Added `shards()` method to `Collection` by @apetenchea in https://github.com/ArangoDB-Community/python-arango/pull/274
-* [DE-584] Refactor deprecated `/_api/simple` methods by @aMahanna in https://github.com/ArangoDB-Community/python-arango/pull/268
+* [DE-584] Refactor deprecated `/_api/simple` methods by @aMahanna in https://github.com/ArangoDB-Community/python-arango/pull/275
 * Added `raise_on_document_error` parameter to `Collection.update_many()` by @aMahanna in https://github.com/ArangoDB-Community/python-arango/pull/273
 * Added `computed_values` parameter to `Collection.onfigure()` by @aMahanna in https://github.com/ArangoDB-Community/python-arango/pull/268
 * Various bug fixes
