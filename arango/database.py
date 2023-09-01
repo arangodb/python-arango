@@ -63,6 +63,7 @@ from arango.exceptions import (
     TaskGetError,
     TaskListError,
     TransactionExecuteError,
+    TransactionListError,
     UserCreateError,
     UserDeleteError,
     UserGetError,
@@ -76,7 +77,6 @@ from arango.exceptions import (
     ViewRenameError,
     ViewReplaceError,
     ViewUpdateError,
-    TransactionListError
 )
 from arango.executor import (
     AsyncApiExecutor,
@@ -322,7 +322,8 @@ class Database(ApiGroup):
             if not resp.is_success:
                 raise TransactionListError(resp, request)
 
-            return resp.body.get("transactions")
+            result: Jsons = resp.body["transactions"]
+            return result
 
         return self._execute(request, response_handler)
 
