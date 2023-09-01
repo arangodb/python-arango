@@ -157,6 +157,8 @@ def format_database(body: Json) -> Json:
         result["replication_factor"] = body["replicationFactor"]
     if "writeConcern" in body:
         result["write_concern"] = body["writeConcern"]
+    if "replicationVersion" in body:
+        result["replication_version"] = body["replicationVersion"]
 
     return verify_format(body, result)
 
