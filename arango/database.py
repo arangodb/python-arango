@@ -2132,13 +2132,29 @@ class Database(ApiGroup):
         return self._execute(request, response_handler)
 
     def view(self, name: str) -> Result[Json]:
-        """Return view details.
+        """Return the properties of a View.
 
-        :return: View details.
+        :return: The View properties.
         :rtype: dict
         :raise arango.exceptions.ViewGetError: If retrieval fails.
         """
         request = Request(method="get", endpoint=f"/_api/view/{name}/properties")
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_view(resp.body)
+            raise ViewGetError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def view_info(self, name: str) -> Result[Json]:
+        """Return the id, name and type of a View.
+
+        :return: Some View information.
+        :rtype: dict
+        :raise arango.exceptions.ViewGetError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint=f"/_api/view/{name}")
 
         def response_handler(resp: Response) -> Json:
             if resp.is_success:

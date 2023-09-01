@@ -49,16 +49,26 @@ def test_view_management(db, bad_db, col, cluster):
         bad_db.views()
     assert err.value.error_code in {11, 1228}
 
-    # Test get view
+    # Test get view (properties)
     view = db.view(view_name)
     assert view["id"] == view_id
     assert view["name"] == view_name
     assert view["type"] == view_type
     assert view["consolidation_interval_msec"] == 50000
 
+    # Test get view (info)
+    view_info = db.view_info(view_name)
+    assert view_info["id"] == view_id
+    assert view_info["name"] == view_name
+    assert view_info["type"] == view_type
+
     # Test get missing view
     with assert_raises(ViewGetError) as err:
         db.view(bad_view_name)
+    assert err.value.error_code == 1203
+
+    with assert_raises(ViewGetError) as err:
+        db.view_info(bad_view_name)
     assert err.value.error_code == 1203
 
     # Test update view
