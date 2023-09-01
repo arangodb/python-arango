@@ -1,9 +1,30 @@
 Batch API Execution
 -------------------
+.. warning::
 
-In **batch API executions**, requests to ArangoDB server are stored in client-side
-in-memory queue, and committed together in a single HTTP call. After the commit,
-results can be retrieved later from :ref:`BatchJob` objects.
+    The batch request API is deprecated since ArangoDB 3.8.0.
+    We discourage its use, as it will be removed in a future release.
+    It is already slow and seems to regularly create weird errors when
+    used with recent versions of ArangoDB.
+
+    The driver functionality has been refactored to no longer use the batch API,
+    but a `ThreadPoolExecutor` instead. For backwards compatibility,
+    `max_workers` is set to 1 by default, but can be increased to speed up
+    batch operations. Essentially, the batch API can now be used to send
+    multiple requests in parallel, but not to send multiple requests in a
+    single HTTP call. Note that sending multiple requests in parallel may
+    cause conflicts on the servers side (for example, requests that modify the same document).
+
+    To send multiple documents at once to an ArangoDB instance,
+    please use any of :class:`arango.collection.Collection` methods
+    that accept a list of documents as input, such as:
+
+    * :func:`~arango.collection.Collection.insert_many`
+    * :func:`~arango.collection.Collection.update_many`
+    * :func:`~arango.collection.Collection.replace_many`
+    * :func:`~arango.collection.Collection.delete_many`
+
+After the commit, results can be retrieved later from :ref:`BatchJob` objects.
 
 **Example:**
 
