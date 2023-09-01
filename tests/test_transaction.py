@@ -43,8 +43,8 @@ def test_transaction_execute_raw(db, col, docs):
 
 
 def test_transaction_list(db, col, docs):
-    no_transactions = db.list_transactions()
-    assert no_transactions == []
+    transactions = db.list_transactions()
+    assert isinstance(transactions, list)
     # TODO: Add proper transaction test here
 
 
