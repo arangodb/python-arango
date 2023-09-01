@@ -6,7 +6,7 @@ import jwt
 import pytest
 
 from arango.cursor import Cursor
-from arango.exceptions import AsyncExecuteError, BatchExecuteError, TransactionInitError
+from arango.exceptions import AsyncExecuteError, TransactionInitError
 
 
 def generate_db_name():
@@ -180,6 +180,4 @@ def assert_raises(*exc):
     :param exc: Expected exception(s).
     :type: exc
     """
-    return pytest.raises(
-        exc + (AsyncExecuteError, BatchExecuteError, TransactionInitError)
-    )
+    return pytest.raises(exc + (AsyncExecuteError, TransactionInitError))

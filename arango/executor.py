@@ -8,14 +8,13 @@ __all__ = [
 ]
 
 from collections import OrderedDict
+from concurrent.futures import ThreadPoolExecutor
+from os import cpu_count
 from typing import Any, Callable, Optional, Sequence, Tuple, TypeVar, Union
-from urllib.parse import urlencode
-from uuid import uuid4
 
 from arango.connection import Connection
 from arango.exceptions import (
     AsyncExecuteError,
-    BatchExecuteError,
     BatchStateError,
     OverloadControlExecutorError,
     TransactionAbortError,
@@ -27,7 +26,6 @@ from arango.job import AsyncJob, BatchJob
 from arango.request import Request
 from arango.response import Response
 from arango.typings import Fields, Json
-from arango.utils import suppress_warning
 
 ApiExecutor = Union[
     "DefaultApiExecutor",
@@ -126,34 +124,28 @@ class BatchApiExecutor:
         If set to False, API executions return None and no results are tracked
         client-side.
     :type return_result: bool
+    :param max_workers: Use a thread pool of at most `max_workers`. If None,
+        the default value is the number of CPUs. For backwards compatibility,
+        the default value is 1, effectively behaving like single-threaded
+        execution.
+    :type max_workers: Optional[int]
     """
 
-    def __init__(self, connection: Connection, return_result: bool) -> None:
+    def __init__(
+        self,
+        connection: Connection,
+        return_result: bool,
+        max_workers: Optional[int] = 1,
+    ) -> None:
         self._conn = connection
         self._return_result: bool = return_result
         self._queue: OrderedDict[str, Tuple[Request, BatchJob[Any]]] = OrderedDict()
         self._committed: bool = False
+        self._max_workers: int = max_workers or cpu_count()  # type: ignore
 
     @property
     def context(self) -> str:
         return "batch"
-
-    def _stringify_request(self, request: Request) -> str:
-        path = request.endpoint
-
-        if request.params is not None:
-            path += f"?{urlencode(request.params)}"
-        buffer = [f"{request.method} {path} HTTP/1.1"]
-
-        if request.headers is not None:
-            for key, value in sorted(request.headers.items()):
-                buffer.append(f"{key}: {value}")
-
-        if request.data is not None:
-            serialized = self._conn.serialize(request.data)
-            buffer.append("\r\n" + serialized)
-
-        return "\r\n".join(buffer)
 
     @property
     def jobs(self) -> Optional[Sequence[BatchJob[Any]]]:
@@ -190,7 +182,7 @@ class BatchApiExecutor:
         return job if self._return_result else None
 
     def commit(self) -> Optional[Sequence[BatchJob[Any]]]:
-        """Execute the queued requests in a single batch API request.
+        """Execute the queued requests in a batch of requests.
 
         If **return_result** parameter was set to True during initialization,
         :class:`arango.job.BatchJob` instances are populated with results.
@@ -199,9 +191,7 @@ class BatchApiExecutor:
             False during initialization.
         :rtype: [arango.job.BatchJob] | None
         :raise arango.exceptions.BatchStateError: If batch state is invalid
-            (e.g. batch was already committed or size of response from server
-            did not match the expected).
-        :raise arango.exceptions.BatchExecuteError: If commit fails.
+            (e.g. batch was already committed).
         """
         if self._committed:
             raise BatchStateError("batch already committed")
@@ -211,64 +201,17 @@ class BatchApiExecutor:
         if len(self._queue) == 0:
             return self.jobs
 
-        # Boundary used for multipart request
-        boundary = uuid4().hex
+        with ThreadPoolExecutor(
+            max_workers=min(self._max_workers, len(self._queue))
+        ) as executor:
+            for req, job in self._queue.values():
+                job._future = executor.submit(self._conn.send_request, req)
 
-        # Build the batch request payload
-        buffer = []
-        for req, job in self._queue.values():
-            buffer.append(f"--{boundary}")
-            buffer.append("Content-Type: application/x-arango-batchpart")
-            buffer.append(f"Content-Id: {job.id}")
-            buffer.append("\r\n" + self._stringify_request(req))
-        buffer.append(f"--{boundary}--")
-
-        request = Request(
-            method="post",
-            endpoint="/_api/batch",
-            headers={"Content-Type": f"multipart/form-data; boundary={boundary}"},
-            data="\r\n".join(buffer),
-        )
-        with suppress_warning("requests.packages.urllib3.connectionpool"):
-            resp = self._conn.send_request(request)
-
-        if not resp.is_success:
-            raise BatchExecuteError(resp, request)
+        for _, job in self._queue.values():
+            job._status = "done"
 
         if not self._return_result:
             return None
-
-        url_prefix = resp.url.strip("/_api/batch")
-        raw_responses = resp.raw_body.split(f"--{boundary}")[1:-1]
-
-        if len(self._queue) != len(raw_responses):
-            raise BatchStateError(
-                "expecting {} parts in batch response but got {}".format(
-                    len(self._queue), len(raw_responses)
-                )
-            )
-        for raw_resp in raw_responses:
-            # Parse and breakdown the batch response body
-            resp_parts = raw_resp.strip().split("\r\n")
-            raw_content_id = resp_parts[1]
-            raw_body = resp_parts[-1]
-            raw_status = resp_parts[3]
-            job_id = raw_content_id.split(" ")[1]
-            _, status_code, status_text = raw_status.split(" ", 2)
-
-            # Update the corresponding batch job
-            queued_req, queued_job = self._queue[job_id]
-
-            queued_job._status = "done"
-            resp = Response(
-                method=queued_req.method,
-                url=url_prefix + queued_req.endpoint,
-                headers={},
-                status_code=int(status_code),
-                status_text=status_text,
-                raw_body=raw_body,
-            )
-            queued_job._response = self._conn.prep_response(resp)
 
         return self.jobs
 

@@ -9,6 +9,7 @@ __all__ = [
 from datetime import datetime
 from numbers import Number
 from typing import Any, List, Optional, Sequence, Union
+from warnings import warn
 
 from arango.api import ApiGroup
 from arango.aql import AQL
@@ -2488,18 +2489,38 @@ class StandardDatabase(Database):
         """
         return AsyncDatabase(self._conn, return_result)
 
-    def begin_batch_execution(self, return_result: bool = True) -> "BatchDatabase":
+    def begin_batch_execution(
+        self,
+        return_result: bool = True,
+        max_workers: Optional[int] = 1,
+    ) -> "BatchDatabase":
         """Begin batch execution.
+
+        .. warning::
+
+            The batch request API is deprecated since ArangoDB 3.8.0.
+            This functionality should no longer be used.
+            To send multiple documents at once to an ArangoDB instance,
+            please use any of :class:`arango.collection.Collection` methods
+            that accept a list of documents as input.
+            See :func:`~arango.collection.Collection.insert_many`,
+            :func:`~arango.collection.Collection.update_many`,
+            :func:`~arango.collection.Collection.replace_many`,
+            :func:`~arango.collection.Collection.delete_many`.
 
         :param return_result: If set to True, API executions return instances
             of :class:`arango.job.BatchJob` that are populated with results on
             commit. If set to False, API executions return None and no results
             are tracked client-side.
         :type return_result: bool
+        :param max_workers: Maximum number of workers to use for submitting
+            requests asynchronously. If None, the default value is the minimum
+            between `os.cpu_count()` and the number of requests.
+        :type max_workers: Optional[int]
         :return: Database API wrapper object specifically for batch execution.
         :rtype: arango.database.BatchDatabase
         """
-        return BatchDatabase(self._conn, return_result)
+        return BatchDatabase(self._conn, return_result, max_workers)
 
     def begin_transaction(
         self,
@@ -2587,7 +2608,11 @@ class AsyncDatabase(Database):
 class BatchDatabase(Database):
     """Database API wrapper tailored specifically for batch execution.
 
-    See :func:`arango.database.StandardDatabase.begin_batch_execution`.
+    .. note::
+
+        This class is not intended to be instantiated directly.
+        See
+        :func:`arango.database.StandardDatabase.begin_batch_execution`.
 
     :param connection: HTTP connection.
     :param return_result: If set to True, API executions return instances of
@@ -2595,12 +2620,22 @@ class BatchDatabase(Database):
         If set to False, API executions return None and no results are tracked
         client-side.
     :type return_result: bool
+    :param max_workers: Use a thread pool of at most `max_workers`.
+    :type max_workers: Optional[int]
     """
 
-    def __init__(self, connection: Connection, return_result: bool) -> None:
+    def __init__(
+        self, connection: Connection, return_result: bool, max_workers: Optional[int]
+    ) -> None:
         self._executor: BatchApiExecutor
         super().__init__(
-            connection=connection, executor=BatchApiExecutor(connection, return_result)
+            connection=connection,
+            executor=BatchApiExecutor(connection, return_result, max_workers),
+        )
+        warn(
+            "The batch request API is deprecated since ArangoDB version 3.8.0.",
+            FutureWarning,
+            stacklevel=3,
         )
 
     def __repr__(self) -> str:
