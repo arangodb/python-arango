@@ -250,6 +250,10 @@ class CollectionListError(ArangoServerError):
     """Failed to retrieve collections."""
 
 
+class CollectionInformationError(ArangoServerError):
+    """Failed to retrieve collection information."""
+
+
 class CollectionPropertiesError(ArangoServerError):
     """Failed to retrieve collection properties."""
 
@@ -272,6 +276,10 @@ class CollectionRevisionError(ArangoServerError):
 
 class CollectionChecksumError(ArangoServerError):
     """Failed to retrieve collection checksum."""
+
+
+class CollectionCompactError(ArangoServerError):
+    """Failed to compact collection."""
 
 
 class CollectionCreateError(ArangoServerError):

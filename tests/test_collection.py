@@ -151,6 +151,16 @@ def test_collection_misc_methods(col, bad_col, cluster):
         bad_col.recalculate_count()
     assert err.value.error_code in {11, 1228}
 
+    # Test collection info
+    info = col.info()
+    assert set(info.keys()) == {"id", "name", "system", "type", "status", "global_id"}
+    assert info["name"] == col.name
+    assert info["system"] is False
+
+    # Test collection compact
+    result = col.compact()
+    assert result == info
+
 
 def test_collection_management(db, bad_db, cluster):
     # Test create collection
