@@ -614,6 +614,14 @@ class ServerDetailsError(ArangoServerError):
     """Failed to retrieve server details."""
 
 
+class ServerLicenseGetError(ArangoServerError):
+    """Failed to retrieve server license."""
+
+
+class ServerLicenseSetError(ArangoServerError):
+    """Failed to set server license."""
+
+
 class ServerStatusError(ArangoServerError):
     """Failed to retrieve server status."""
 

@@ -319,3 +319,20 @@ def test_database_utf8(sys_db, db_version, special_db_names):
         assert sys_db.create_database(name)
         assert sys_db.has_database(name)
         assert sys_db.delete_database(name)
+
+
+def test_license(sys_db, db, enterprise):
+    license = sys_db.license()
+    assert isinstance(license, dict)
+
+    if enterprise:
+        assert set(license.keys()) == {
+            "upgrading",
+            "features",
+            "hash",
+            "license",
+            "version",
+            "status",
+        }
+    else:
+        assert license == {"license": "none"}
