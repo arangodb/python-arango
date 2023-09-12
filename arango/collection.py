@@ -526,7 +526,6 @@ class Collection(ApiGroup):
 
         def response_handler(resp: Response) -> Json:
             if resp.is_success:
-                breakpoint()
                 return format_collection(resp.body)
             raise CollectionCompactError(resp, request)
 
