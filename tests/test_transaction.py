@@ -8,7 +8,7 @@ from arango.exceptions import (
     TransactionInitError,
     TransactionStatusError,
 )
-from tests.helpers import extract
+from tests.helpers import extract, generate_db_name
 
 
 def test_transaction_execute_raw(db, col, docs):
@@ -151,7 +151,16 @@ def test_transaction_graph(db, graph, fvcol, fvdocs):
     txn_db.commit_transaction()
 
 
-def test_transaction_list(db):
+def test_transaction_list(client, sys_db, username, password):
+    db_name = generate_db_name()
+
+    sys_db.create_database(
+        name=db_name,
+        users=[{"username": username, "password": password, "active": True}],
+    )
+
+    db = client.db(db_name, username, password)
+
     assert db.list_transactions() == []
 
     txn_db = db.begin_transaction()
@@ -169,3 +178,5 @@ def test_transaction_list(db):
     txn_db_2.commit_transaction()
 
     assert db.list_transactions() == []
+
+    sys_db.delete_database(db_name)
