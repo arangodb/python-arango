@@ -9,7 +9,9 @@ from arango.cursor import Cursor
 from arango.exceptions import (
     ArangoServerError,
     CollectionChecksumError,
+    CollectionCompactError,
     CollectionConfigureError,
+    CollectionInformationError,
     CollectionLoadError,
     CollectionPropertiesError,
     CollectionRecalculateCountError,
@@ -335,6 +337,26 @@ class Collection(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def info(self) -> Result[Json]:
+        """Return the collection information.
+
+        :return: Information about the collection.
+        :rtype: dict
+        :raise arango.exceptions.CollectionInformationError: If retrieval fails.
+        """
+        request = Request(
+            method="get",
+            endpoint=f"/_api/collection/{self.name}",
+            read=self.name,
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_collection(resp.body)
+            raise CollectionInformationError(resp, request)
+
+        return self._execute(request, response_handler)
+
     def configure(
         self,
         sync: Optional[bool] = None,
@@ -477,6 +499,35 @@ class Collection(ApiGroup):
             if resp.is_success:
                 return str(resp.body["checksum"])
             raise CollectionChecksumError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def compact(self) -> Result[Json]:
+        """Compact a collection.
+
+        Compacts the data of a collection in order to reclaim disk space.
+        The operation will compact the document and index data by rewriting the
+        underlying .sst files and only keeping the relevant entries.
+
+        Under normal circumstances, running a compact operation is not necessary, as
+        the collection data will eventually get compacted anyway. However, in some
+        situations, e.g. after running lots of update/replace or remove operations,
+        the disk data for a collection may contain a lot of outdated data for which the
+        space shall be reclaimed. In this case the compaction operation can be used.
+
+        :return: Collection compact.
+        :rtype: dict
+        :raise arango.exceptions.CollectionCompactError: If retrieval fails.
+        """
+        request = Request(
+            method="put",
+            endpoint=f"/_api/collection/{self.name}/compact",
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_collection(resp.body)
+            raise CollectionCompactError(resp, request)
 
         return self._execute(request, response_handler)
 
