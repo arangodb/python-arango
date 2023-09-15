@@ -152,14 +152,13 @@ def test_transaction_graph(db, graph, fvcol, fvdocs):
 
 
 def test_transaction_list(db):
-    transactions = db.list_transactions()
-    assert transactions == []
+    assert db.list_transactions() == []
 
     txn_db = db.begin_transaction()
     txn_db.aql.execute("RETURN 1")
 
-    txt_db_2 = db.begin_transaction()
-    txt_db_2.aql.execute("RETURN 1")
+    txn_db_2 = db.begin_transaction()
+    txn_db_2.aql.execute("RETURN 1")
 
     assert len(db.list_transactions()) == 2
 
@@ -167,6 +166,6 @@ def test_transaction_list(db):
 
     assert len(db.list_transactions()) == 1
 
-    txt_db_2.commit_transaction()
+    txn_db_2.commit_transaction()
 
     assert db.list_transactions() == []
