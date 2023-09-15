@@ -20,6 +20,7 @@ from arango.exceptions import (
     ServerDetailsError,
     ServerEchoError,
     ServerEngineError,
+    ServerLicenseSetError,
     ServerLogLevelError,
     ServerLogLevelSetError,
     ServerMetricsError,
@@ -321,7 +322,7 @@ def test_database_utf8(sys_db, db_version, special_db_names):
         assert sys_db.delete_database(name)
 
 
-def test_license(sys_db, db, enterprise):
+def test_license(sys_db, enterprise):
     license = sys_db.license()
     assert isinstance(license, dict)
 
@@ -336,3 +337,5 @@ def test_license(sys_db, db, enterprise):
         }
     else:
         assert license == {"license": "none"}
+        with pytest.raises(ServerLicenseSetError):
+            sys_db.set_license("abc")
