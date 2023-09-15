@@ -52,6 +52,7 @@ from arango.exceptions import (
     ServerRoleError,
     ServerRunTestsError,
     ServerShutdownError,
+    ServerShutdownProgressError,
     ServerStatisticsError,
     ServerStatusError,
     ServerTimeError,
@@ -471,19 +472,46 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def shutdown(self) -> Result[bool]:  # pragma: no cover
+    def shutdown(self, soft: bool = False) -> Result[bool]:  # pragma: no cover
         """Initiate server shutdown sequence.
 
+        :param soft: If set to true, this initiates a soft shutdown. This is only
+            available on Coordinators. When issued, the Coordinator tracks a number
+            of ongoing operations, waits until all have finished, and then shuts
+            itself down normally. It will still accept new operations.
+        :type soft: bool
         :return: True if the server was shutdown successfully.
         :rtype: bool
         :raise arango.exceptions.ServerShutdownError: If shutdown fails.
         """
-        request = Request(method="delete", endpoint="/_admin/shutdown")
+        request = Request(
+            method="delete", endpoint="/_admin/shutdown", params={"soft": soft}
+        )
 
         def response_handler(resp: Response) -> bool:
             if not resp.is_success:
                 raise ServerShutdownError(resp, request)
             return True
+
+        return self._execute(request, response_handler)
+
+    def shutdown_progress(self) -> Result[Json]:  # pragma: no cover
+        """Query the soft shutdown progress. This call reports progress about a
+            soft Coordinator shutdown (DELETE /_admin/shutdown?soft=true). This API
+            is only available on Coordinators.
+
+        :return: Information about the shutdown progress.
+        :rtype: dict
+        :raise arango.exceptions.ServerShutdownError: If shutdown fails.
+        """
+        request = Request(method="get", endpoint="/_admin/shutdown")
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ServerShutdownProgressError(resp, request)
+
+            result: Json = resp.body
+            return result
 
         return self._execute(request, response_handler)
 

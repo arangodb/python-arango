@@ -630,6 +630,10 @@ class ServerShutdownError(ArangoServerError):
     """Failed to initiate shutdown sequence."""
 
 
+class ServerShutdownProgressError(ArangoServerError):
+    """Failed to retrieve soft shutdown progress."""
+
+
 class ServerRunTestsError(ArangoServerError):
     """Failed to execute server tests."""
 
