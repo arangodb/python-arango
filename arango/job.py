@@ -1,5 +1,6 @@
 __all__ = ["AsyncJob", "BatchJob"]
 
+from concurrent.futures import Future
 from typing import Callable, Generic, Optional, TypeVar
 from uuid import uuid4
 
@@ -160,13 +161,13 @@ class BatchJob(Generic[T]):
     :type response_handler: callable
     """
 
-    __slots__ = ["_id", "_status", "_response", "_response_handler"]
+    __slots__ = ["_id", "_status", "_response_handler", "_future"]
 
     def __init__(self, response_handler: Callable[[Response], T]) -> None:
         self._id = uuid4().hex
         self._status = "pending"
-        self._response: Optional[Response] = None
         self._response_handler = response_handler
+        self._future: Optional[Future[Response]] = None
 
     def __repr__(self) -> str:
         return f"<BatchJob {self._id}>"
@@ -200,7 +201,7 @@ class BatchJob(Generic[T]):
         :raise arango.exceptions.BatchJobResultError: If job result is not
             available (i.e. batch is not committed yet).
         """
-        if self._status == "pending" or self._response is None:
+        if self._status == "pending" or self._future is None or not self._future.done():
             raise BatchJobResultError("result not available yet")
 
-        return self._response_handler(self._response)
+        return self._response_handler(self._future.result())
