@@ -975,6 +975,10 @@ class ClusterServerCountError(ArangoServerError):
     """Failed to retrieve cluster server count."""
 
 
+class ClusterRebalanceError(ArangoServerError):
+    """Failed to execute cluster re-balancing operation (load/set)."""
+
+
 ##################
 # JWT Exceptions #
 ##################
