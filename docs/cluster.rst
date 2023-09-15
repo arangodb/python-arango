@@ -91,7 +91,7 @@ Below is an example on how to manage clusters using python-arango.
     cluster.toggle_maintenance_mode('on')
     cluster.toggle_maintenance_mode('off')
 
-    # Rebalance the distribution of shards.
+    # Rebalance the distribution of shards. Available with ArangoDB 3.10+.
     cluster.rebalance()
 
 See :ref:`ArangoClient` and :ref:`Cluster` for API specification.
