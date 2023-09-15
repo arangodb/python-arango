@@ -44,6 +44,8 @@ from arango.exceptions import (
     ServerEchoError,
     ServerEncryptionError,
     ServerEngineError,
+    ServerLicenseGetError,
+    ServerLicenseSetError,
     ServerLogLevelError,
     ServerLogLevelSetError,
     ServerMetricsError,
@@ -347,6 +349,54 @@ class Database(ApiGroup):
                 result: Json = resp.body["details"]
                 return result
             raise ServerDetailsError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def license(self) -> Result[Json]:
+        """View the license information and status of an
+        Enterprise Edition instance. Can be called on
+        single servers, Coordinators, and DB-Servers.
+
+        :return: Server license.
+        :rtype: dict
+        :raise arango.exceptions.ServerLicenseGetError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_admin/license")
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body
+                return result
+            raise ServerLicenseGetError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def set_license(self, license: str, force: bool = False) -> Result[Json]:
+        """Set a new license for an Enterprise Edition
+        instance. Can be called on single servers, Coordinators,
+        and DB-Servers.
+
+        :param license: The Base64-encoded license string.
+        :type license: str
+        :param force: If set to True, the new license will be set even if
+            it expires sooner than the current license.
+        :type force: bool
+        :return: Server license.
+        :rtype: dict
+        :raise arango.exceptions.ServerLicenseError: If retrieval fails.
+        """
+        request = Request(
+            method="put",
+            endpoint="/_admin/license",
+            params={"force": force},
+            data=license,
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body
+                return result
+            raise ServerLicenseSetError(resp, request)
 
         return self._execute(request, response_handler)
 
