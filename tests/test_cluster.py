@@ -1,10 +1,12 @@
 import pytest
+from packaging import version
 
 from arango.errno import DATABASE_NOT_FOUND, FORBIDDEN
 from arango.exceptions import (
     ClusterEndpointsError,
     ClusterHealthError,
     ClusterMaintenanceModeError,
+    ClusterRebalanceError,
     ClusterServerCountError,
     ClusterServerEngineError,
     ClusterServerIDError,
@@ -134,3 +136,55 @@ def test_cluster_server_count(db, bad_db, cluster):
     with assert_raises(ClusterServerCountError) as err:
         bad_db.cluster.server_count()
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
+
+
+def test_cluster_rebalance(sys_db, bad_db, cluster, db_version):
+    if not cluster:
+        pytest.skip("Only tested in a cluster setup")
+
+    if db_version < version.parse("3.10.0"):
+        pytest.skip("Only tested on ArangoDB 3.10+")
+
+    # Test imbalance retrieval
+    imbalance = sys_db.cluster.calculate_imbalance()
+    assert "leader" in imbalance
+    assert "shards" in imbalance
+    assert imbalance["pendingMoveShards"] == 0
+    assert imbalance["todoMoveShards"] == 0
+
+    with assert_raises(ClusterRebalanceError) as err:
+        bad_db.cluster.calculate_imbalance()
+    assert err.value.error_code == FORBIDDEN
+
+    # Test rebalance computation
+    rebalance = sys_db.cluster.calculate_rebalance_plan(
+        max_moves=3,
+        leader_changes=True,
+        move_leaders=True,
+        move_followers=True,
+        pi_factor=1234.5,
+        databases_excluded=["_system"],
+    )
+    assert "imbalanceBefore" in rebalance
+    assert "imbalanceAfter" in rebalance
+    assert "moves" in rebalance
+
+    with assert_raises(ClusterRebalanceError) as err:
+        bad_db.cluster.calculate_rebalance_plan()
+    assert err.value.error_code == FORBIDDEN
+
+    # Test rebalance execution
+    assert sys_db.cluster.execute_rebalance_plan(rebalance["moves"]) is True
+    with assert_raises(ClusterRebalanceError) as err:
+        bad_db.cluster.execute_rebalance_plan(rebalance["moves"])
+    assert err.value.error_code == FORBIDDEN
+
+    # Rebalance cluster in one go
+    rebalance = sys_db.cluster.rebalance()
+    assert "imbalanceBefore" in rebalance
+    assert "imbalanceAfter" in rebalance
+    assert "moves" in rebalance
+
+    with assert_raises(ClusterRebalanceError) as err:
+        bad_db.cluster.rebalance()
+    assert err.value.error_code == FORBIDDEN

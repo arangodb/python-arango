@@ -1,12 +1,13 @@
 __all__ = ["Cluster"]
 
-from typing import List
+from typing import List, Optional
 
 from arango.api import ApiGroup
 from arango.exceptions import (
     ClusterEndpointsError,
     ClusterHealthError,
     ClusterMaintenanceModeError,
+    ClusterRebalanceError,
     ClusterServerCountError,
     ClusterServerEngineError,
     ClusterServerIDError,
@@ -193,5 +194,179 @@ class Cluster(ApiGroup):  # pragma: no cover
             if not resp.is_success:
                 raise ClusterEndpointsError(resp, request)
             return [item["endpoint"] for item in resp.body["endpoints"]]
+
+        return self._execute(request, response_handler)
+
+    def calculate_imbalance(self) -> Result[Json]:
+        """Compute the current cluster imbalance, including
+        the amount of ongoing and pending move shard operations.
+
+        :return: Cluster imbalance information.
+        :rtype: dict
+        :raise: arango.exceptions.ClusterRebalanceError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_admin/cluster/rebalance")
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ClusterRebalanceError(resp, request)
+            result: Json = resp.body["result"]
+            return result
+
+        return self._execute(request, response_handler)
+
+    def rebalance(
+        self,
+        version: int = 1,
+        max_moves: Optional[int] = None,
+        leader_changes: Optional[bool] = None,
+        move_leaders: Optional[bool] = None,
+        move_followers: Optional[bool] = None,
+        pi_factor: Optional[float] = None,
+        exclude_system_collections: Optional[bool] = None,
+        databases_excluded: Optional[List[str]] = None,
+    ) -> Result[Json]:
+        """Compute and execute a cluster rebalance plan.
+
+        :param version: Must be set to 1.
+        :type version: int
+        :param max_moves: Maximum number of moves to be computed.
+        :type max_moves: int | None
+        :param leader_changes: Allow leader changes without moving data.
+        :type leader_changes: bool | None
+        :param move_leaders: Allow moving shard leaders.
+        :type move_leaders: bool | None
+        :param move_followers: Allow moving shard followers.
+        :type move_followers: bool | None
+        :param pi_factor: A weighting factor that should remain untouched.
+        :type pi_factor: float | None
+        :param exclude_system_collections: Ignore system collections in the
+            rebalance plan.
+        :type exclude_system_collections: bool | None
+        :param databases_excluded: List of database names to be excluded
+            from the analysis.
+        :type databases_excluded: [str] | None
+        :return: Cluster rebalance plan that has been executed.
+        :rtype: dict
+        :raise: arango.exceptions.ClusterRebalanceError: If retrieval fails.
+        """
+        data: Json = dict(version=version)
+        if max_moves is not None:
+            data["maximumNumberOfMoves"] = max_moves
+        if leader_changes is not None:
+            data["leaderChanges"] = leader_changes
+        if move_leaders is not None:
+            data["moveLeaders"] = move_leaders
+        if move_followers is not None:
+            data["moveFollowers"] = move_followers
+        if pi_factor is not None:
+            data["piFactor"] = pi_factor
+        if exclude_system_collections is not None:
+            data["excludeSystemCollections"] = exclude_system_collections
+        if databases_excluded is not None:
+            data["databasesExcluded"] = databases_excluded
+
+        request = Request(method="put", endpoint="/_admin/cluster/rebalance", data=data)
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ClusterRebalanceError(resp, request)
+            result: Json = resp.body["result"]
+            return result
+
+        return self._execute(request, response_handler)
+
+    def calculate_rebalance_plan(
+        self,
+        version: int = 1,
+        max_moves: Optional[int] = None,
+        leader_changes: Optional[bool] = None,
+        move_leaders: Optional[bool] = None,
+        move_followers: Optional[bool] = None,
+        pi_factor: Optional[float] = None,
+        exclude_system_collections: Optional[bool] = None,
+        databases_excluded: Optional[List[str]] = None,
+    ) -> Result[Json]:
+        """Compute the cluster rebalance plan.
+
+        :param version: Must be set to 1.
+        :type version: int
+        :param max_moves: Maximum number of moves to be computed.
+        :type max_moves: int | None
+        :param leader_changes: Allow leader changes without moving data.
+        :type leader_changes: bool | None
+        :param move_leaders: Allow moving shard leaders.
+        :type move_leaders: bool | None
+        :param move_followers: Allow moving shard followers.
+        :type move_followers: bool | None
+        :param pi_factor: A weighting factor that should remain untouched.
+        :type pi_factor: float | None
+        :param exclude_system_collections: Ignore system collections in the
+            rebalance plan.
+        :type exclude_system_collections: bool | None
+        :param databases_excluded: List of database names to be excluded
+            from the analysis.
+        :type databases_excluded: [str] | None
+        :return: Cluster rebalance plan.
+        :rtype: dict
+        :raise: arango.exceptions.ClusterRebalanceError: If retrieval fails.
+        """
+        data: Json = dict(version=version)
+        if max_moves is not None:
+            data["maximumNumberOfMoves"] = max_moves
+        if leader_changes is not None:
+            data["leaderChanges"] = leader_changes
+        if move_leaders is not None:
+            data["moveLeaders"] = move_leaders
+        if move_followers is not None:
+            data["moveFollowers"] = move_followers
+        if pi_factor is not None:
+            data["piFactor"] = pi_factor
+        if exclude_system_collections is not None:
+            data["excludeSystemCollections"] = exclude_system_collections
+        if databases_excluded is not None:
+            data["databasesExcluded"] = databases_excluded
+
+        request = Request(
+            method="post", endpoint="/_admin/cluster/rebalance", data=data
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ClusterRebalanceError(resp, request)
+            result: Json = resp.body["result"]
+            return result
+
+        return self._execute(request, response_handler)
+
+    def execute_rebalance_plan(
+        self, moves: List[Json], version: int = 1
+    ) -> Result[bool]:
+        """Execute the given set of move shard operations.
+
+        You can use :meth:`Cluster.calculate_rebalance_plan` to calculate
+        these operations to improve the balance of shards, leader shards,
+        and follower shards.
+
+        :param moves: List of move shard operations.
+        :type moves: [dict]
+        :param version: Must be set to 1.
+        :type version: int
+        :return: True if the methods have been accepted and scheduled
+            for execution.
+        :rtype: bool
+        :raise: arango.exceptions.ClusterRebalanceError: If request fails.
+        """
+        data: Json = dict(version=version, moves=moves)
+
+        request = Request(
+            method="post", endpoint="/_admin/cluster/rebalance/execute", data=data
+        )
+
+        def response_handler(resp: Response) -> bool:
+            if not resp.is_success:
+                raise ClusterRebalanceError(resp, request)
+            result: bool = resp.body["code"] == 202
+            return result
 
         return self._execute(request, response_handler)
