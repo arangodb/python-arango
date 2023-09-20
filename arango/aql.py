@@ -36,7 +36,7 @@ from arango.formatter import (
 from arango.request import Request
 from arango.response import Response
 from arango.result import Result
-from arango.typings import Json, Jsons
+from arango.typings import DataTypes, Json, Jsons
 
 
 class AQLQueryCache(ApiGroup):
@@ -173,7 +173,7 @@ class AQL(ApiGroup):
         all_plans: bool = False,
         max_plans: Optional[int] = None,
         opt_rules: Optional[Sequence[str]] = None,
-        bind_vars: Optional[MutableMapping[str, str]] = None,
+        bind_vars: Optional[MutableMapping[str, DataTypes]] = None,
     ) -> Result[Union[Json, Jsons]]:
         """Inspect the query and return its metadata without executing it.
 
@@ -257,7 +257,7 @@ class AQL(ApiGroup):
         count: bool = False,
         batch_size: Optional[int] = None,
         ttl: Optional[Number] = None,
-        bind_vars: Optional[MutableMapping[str, str]] = None,
+        bind_vars: Optional[MutableMapping[str, DataTypes]] = None,
         full_count: Optional[bool] = None,
         max_plans: Optional[int] = None,
         optimizer_rules: Optional[Sequence[str]] = None,
