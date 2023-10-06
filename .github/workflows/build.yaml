@@ -2,7 +2,7 @@ name: Build
 
 on:
   pull_request:
-    branches: [main, dev]
+    branches: [main]
   workflow_dispatch:
     inputs:
       debug_enabled:
@@ -12,12 +12,8 @@ on:
         default: false
 
 jobs:
-  build:
+  docs:
     runs-on: ubuntu-22.04
-
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
       - name: Checkout repository
@@ -29,7 +25,7 @@ jobs:
       - name: Create ArangoDB Docker container
         run: >
           docker create --name arango -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd -v "$(pwd)/tests/static/":/tests/static
-          arangodb/arangodb:3.10.9 --server.jwt-secret-keyfile=/tests/static/keyfile
+          arangodb/arangodb:3.11.4 --server.jwt-secret-keyfile=/tests/static/keyfile
 
       - name: Start ArangoDB Docker container
         run: docker start arango
@@ -37,7 +33,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.10'
 
       - name: Debug with tmate
         uses: mxschmitt/action-tmate@v3
@@ -49,18 +45,8 @@ jobs:
       - name: Install dependencies
         run: pip install .[dev]
 
-      - name: Run unit tests
-        run: py.test --complete --cov=arango --cov-report=xml
-
       - name: Run Sphinx doctest
         run: python -m sphinx -b doctest docs docs/_build
 
       - name: Generate Sphinx HTML
         run: python -m sphinx -b html -W docs docs/_build
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        if: matrix.python-version == '3.10'
-        with:
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}

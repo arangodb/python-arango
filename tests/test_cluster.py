@@ -1,3 +1,5 @@
+import time
+
 import pytest
 from packaging import version
 
@@ -174,7 +176,15 @@ def test_cluster_rebalance(sys_db, bad_db, cluster, db_version):
     assert err.value.error_code == FORBIDDEN
 
     # Test rebalance execution
-    assert sys_db.cluster.execute_rebalance_plan(rebalance["moves"]) is True
+    tries = 0
+    while sys_db.cluster.execute_rebalance_plan(rebalance["moves"]) is False:
+        if tries < 10:
+            tries += 1
+            time.sleep(1)
+        else:
+            tries = -1
+            break
+    assert tries != -1
     with assert_raises(ClusterRebalanceError) as err:
         bad_db.cluster.execute_rebalance_plan(rebalance["moves"])
     assert err.value.error_code == FORBIDDEN

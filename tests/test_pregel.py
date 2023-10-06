@@ -1,6 +1,7 @@
 import time
 
 import pytest
+from packaging import version
 
 from arango.exceptions import (
     PregelJobCreateError,
@@ -17,7 +18,7 @@ def test_pregel_attributes(db, username):
     assert repr(db.pregel) == f"<Pregel in {db.name}>"
 
 
-def test_pregel_management(db, graph, cluster):
+def test_pregel_management(db, db_version, graph, cluster):
     if cluster:
         pytest.skip("Not tested in a cluster setup")
 
@@ -51,9 +52,13 @@ def test_pregel_management(db, graph, cluster):
     # Test delete existing pregel job
     assert db.pregel.delete_job(job_id) is True
     time.sleep(0.2)
-    with assert_raises(PregelJobGetError) as err:
-        db.pregel.job(job_id)
-    assert err.value.error_code in {4, 10, 1600}
+    if db_version < version.parse("3.11.0"):
+        with assert_raises(PregelJobGetError) as err:
+            db.pregel.job(job_id)
+        assert err.value.error_code in {4, 10, 1600}
+    else:
+        job = db.pregel.job(job_id)
+        assert job["state"] == "canceled"
 
     # Test delete missing pregel job
     with assert_raises(PregelJobDeleteError) as err:
