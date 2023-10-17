@@ -65,7 +65,7 @@ jobs:
           name: "Run pytest"
           command: |
             mkdir test-results
-            args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "localhost")
+            args=("--junitxml=test-results/junit.xml" "--host" "localhost")
             if [ << parameters.cluster >> = true ]; then
               args+=("--cluster" "--port=8529" "--port=8539" "--port=8549")
             else
