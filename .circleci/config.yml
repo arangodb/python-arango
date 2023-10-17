@@ -64,8 +64,9 @@ jobs:
       - run:
           name: "Run pytest"
           command: |
+            . venv/bin/activate
             mkdir test-results
-            args=("--junitxml=test-results/junit.xml" "--host" "localhost")
+            args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "localhost")
             if [ << parameters.cluster >> = true ]; then
               args+=("--cluster" "--port=8529" "--port=8539" "--port=8549")
             else
@@ -76,9 +77,9 @@ jobs:
             fi
             echo "Running py.test with args: ${args[@]}"
             py.test "${args[@]}"
-      - store_test_results:
-          path: test-results
       - store_artifacts:
+          path: test-results
+      - store_test_results:
           path: test-results
 
 workflows:
