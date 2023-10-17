@@ -65,7 +65,7 @@ jobs:
           name: "Run pytest"
           command: |
             mkdir test-results
-            args=("--log-cli-level=DEBUG" "--host" "localhost" "--junitxml=./test-results/junit.xml")
+            args=("--log-cli-level=DEBUG" "--host" "localhost" "--junitxml=test-results/junit.xml")
             if [ << parameters.cluster >> = true ]; then
               args+=("--cluster" "--port=8529" "--port=8539" "--port=8549")
             else
@@ -77,9 +77,9 @@ jobs:
             echo "Running py.test with args: ${args[@]}"
             py.test "${args[@]}"
       - store_test_results:
-          path: ./test-results/junit.xml
+          path: test-results
       - store_artifacts:
-          path: ./test-results
+          path: test-results
 
 workflows:
   python-3.8-community-single-3.10:
