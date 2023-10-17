@@ -330,6 +330,7 @@ def test_create_graph_with_edge_definition(db):
         orphan_collections=[ovcol_name],
     )
     assert edge_definition in new_graph.edge_definitions()
+    assert ovcol_name in new_graph.vertex_collections()
 
 
 def test_vertex_management(fvcol, bad_fvcol, fvdocs):
