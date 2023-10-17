@@ -64,7 +64,6 @@ jobs:
       - run:
           name: "Run pytest"
           command: |
-            . venv/bin/activate
             mkdir test-results
             args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "localhost")
             if [ << parameters.cluster >> = true ]; then
