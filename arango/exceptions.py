@@ -1014,3 +1014,11 @@ class JWTSecretListError(ArangoServerError):
 
 class JWTSecretReloadError(ArangoServerError):
     """Failed to reload JWT secrets."""
+
+
+class JWTRefreshError(ArangoClientError):
+    """Failed to refresh JWT token."""
+
+
+class JWTExpiredError(ArangoClientError):
+    """JWT token has expired."""

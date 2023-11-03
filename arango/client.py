@@ -171,6 +171,7 @@ class ArangoClient:
         password: str = "",
         verify: bool = False,
         auth_method: str = "basic",
+        user_token: Optional[str] = None,
         superuser_token: Optional[str] = None,
         verify_certificate: bool = True,
     ) -> StandardDatabase:
@@ -189,6 +190,10 @@ class ArangoClient:
             refreshed automatically using ArangoDB username and password. This
             assumes that the clocks of the server and client are synchronized.
         :type auth_method: str
+        :param user_token: User generated token for user access.
+            If set, parameters **username**, **password** and **auth_method**
+            are ignored. This token is not refreshed automatically.
+        :type user_token: str
         :param superuser_token: User generated token for superuser access.
             If set, parameters **username**, **password** and **auth_method**
             are ignored. This token is not refreshed automatically.
@@ -212,6 +217,17 @@ class ArangoClient:
                 serializer=self._serializer,
                 deserializer=self._deserializer,
                 superuser_token=superuser_token,
+            )
+        elif user_token is not None:
+            connection = JwtConnection(
+                hosts=self._hosts,
+                host_resolver=self._host_resolver,
+                sessions=self._sessions,
+                db_name=name,
+                http_client=self._http,
+                serializer=self._serializer,
+                deserializer=self._deserializer,
+                user_token=user_token,
             )
         elif auth_method.lower() == "basic":
             connection = BasicConnection(

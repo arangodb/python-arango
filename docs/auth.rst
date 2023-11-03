@@ -40,6 +40,7 @@ to work correctly.
 
 .. testcode::
     from arango import ArangoClient
+    import os
 
     # Initialize the ArangoDB client.
     client = ArangoClient()
@@ -58,6 +59,10 @@ to work correctly.
     # Override the token expiry compare leeway in seconds (default: 0) to
     # compensate for out-of-sync clocks between the client and server.
     db.conn.ext_leeway = 2
+
+    # It is also possible to connect via a pre-generated JWT.
+    token = os.environ["ARANGODB_USER_JWT"]
+    db = client.db('test', user_token=token)
 
 User generated JWT token can be used for superuser access.
 

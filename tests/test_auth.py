@@ -2,6 +2,7 @@ from arango.connection import BasicConnection, JwtConnection, JwtSuperuserConnec
 from arango.errno import FORBIDDEN, HTTP_UNAUTHORIZED
 from arango.exceptions import (
     JWTAuthError,
+    JWTExpiredError,
     JWTSecretListError,
     JWTSecretReloadError,
     ServerEncryptionError,
@@ -37,7 +38,8 @@ def test_auth_basic(client, db_name, username, password):
     assert isinstance(db.properties(), dict)
 
 
-def test_auth_jwt(client, db_name, username, password):
+def test_auth_jwt(client, db_name, username, password, secret):
+    # Test JWT authentication with username and password.
     db = client.db(
         name=db_name,
         username=username,
@@ -53,6 +55,13 @@ def test_auth_jwt(client, db_name, username, password):
     with assert_raises(JWTAuthError) as err:
         client.db(db_name, username, bad_password, auth_method="jwt")
     assert err.value.error_code == HTTP_UNAUTHORIZED
+
+    # Test JWT authentication with user token.
+    token = generate_jwt(secret)
+    db = client.db("_system", user_token=token)
+    assert isinstance(db.conn, JwtConnection)
+    assert isinstance(db.version(), str)
+    assert isinstance(db.properties(), dict)
 
 
 # TODO re-examine commented out code
@@ -121,8 +130,12 @@ def test_auth_jwt_expiry(client, db_name, root_password, secret):
     db.conn._auth_header = f"bearer {expired_token}"
     assert isinstance(db.version(), str)
 
-    # Test correct error on token expiry.
+    # Test correct error on token expiry (superuser).
     db = client.db("_system", superuser_token=expired_token)
     with assert_raises(ServerVersionError) as err:
         db.version()
     assert err.value.error_code == FORBIDDEN
+
+    # Test correct error on token expiry (user).
+    with assert_raises(JWTExpiredError) as err:
+        db = client.db("_system", user_token=expired_token)
