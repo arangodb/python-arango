@@ -40,7 +40,6 @@ to work correctly.
 
 .. testcode::
     from arango import ArangoClient
-    import os
 
     # Initialize the ArangoDB client.
     client = ArangoClient()
@@ -60,11 +59,7 @@ to work correctly.
     # compensate for out-of-sync clocks between the client and server.
     db.conn.ext_leeway = 2
 
-    # It is also possible to connect via a pre-generated JWT.
-    token = os.environ["ARANGODB_USER_JWT"]
-    db = client.db('test', user_token=token)
-
-User generated JWT token can be used for superuser access.
+User generated JWT token can be used for user and superuser access.
 
 **Example:**
 
@@ -94,3 +89,9 @@ User generated JWT token can be used for superuser access.
 
     # Connect to "test" database as superuser using the token.
     db = client.db('test', superuser_token=token)
+
+    # Connect to "test" database as user using the token.
+    db = client.db('test', user_token=token)
+
+    # Manually set the token (JwtConnection only).
+    db.conn.set_token('new token')
