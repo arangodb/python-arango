@@ -192,7 +192,9 @@ class ArangoClient:
         :type auth_method: str
         :param user_token: User generated token for user access.
             If set, parameters **username**, **password** and **auth_method**
-            are ignored. This token is not refreshed automatically.
+            are ignored. This token is not refreshed automatically. If automatic
+            token refresh is required, consider setting **auth_method** to "jwt"
+            and using the **username** and **password** parameters instead.
         :type user_token: str
         :param superuser_token: User generated token for superuser access.
             If set, parameters **username**, **password** and **auth_method**
