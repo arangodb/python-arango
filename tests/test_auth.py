@@ -139,3 +139,8 @@ def test_auth_jwt_expiry(client, db_name, root_password, secret):
     # Test correct error on token expiry (user).
     with assert_raises(JWTExpiredError) as err:
         db = client.db("_system", user_token=expired_token)
+
+    # Test set_token() with expired token.
+    db = client.db("_system", user_token=generate_jwt(secret))
+    with assert_raises(JWTExpiredError) as err:
+        db.conn.set_token(expired_token)
