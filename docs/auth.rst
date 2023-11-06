@@ -93,5 +93,25 @@ User generated JWT token can be used for user and superuser access.
     # Connect to "test" database as user using the token.
     db = client.db('test', user_token=token)
 
-    # Manually set the token (JwtConnection only).
+User and superuser tokens can be set on the connection object as well.
+
+**Example:**
+
+.. code-block:: python
+
+    from arango import ArangoClient
+
+    # Initialize the ArangoDB client.
+    client = ArangoClient()
+
+    # Connect to "test" database as superuser using the token.
+    db = client.db('test', user_token='token')
+
+    # Set the user token on the connection object.
     db.conn.set_token('new token')
+
+    # Connect to "test" database as superuser using the token.
+    db = client.db('test', superuser_token='superuser token')
+
+    # Set the user token on the connection object.
+    db.conn.set_token('new superuser token')
