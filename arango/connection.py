@@ -475,3 +475,30 @@ class JwtSuperuserConnection(BaseConnection):
         request.headers["Authorization"] = self._auth_header
 
         return self.process_request(host_index, request)
+
+    def set_token(self, token: str) -> None:
+        """Set the JWT token.
+
+        :param token: JWT token.
+        :type token: str
+        :raise arango.exceptions.JWTExpiredError: If the token is expired.
+        """
+        assert token is not None
+
+        try:
+            jwt.decode(
+                token,
+                issuer="arangodb",
+                algorithms=["HS256"],
+                options={
+                    "require_exp": True,
+                    "require_iat": True,
+                    "verify_iat": True,
+                    "verify_exp": True,
+                    "verify_signature": False,
+                },
+            )
+        except ExpiredSignatureError:
+            raise JWTExpiredError("JWT token is expired")
+
+        self._auth_header = f"bearer {self._token}"
