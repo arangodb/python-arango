@@ -501,4 +501,4 @@ class JwtSuperuserConnection(BaseConnection):
         except ExpiredSignatureError:
             raise JWTExpiredError("JWT token is expired")
 
-        self._auth_header = f"bearer {self._token}"
+        self._auth_header = f"bearer {token}"
