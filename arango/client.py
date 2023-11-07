@@ -194,11 +194,13 @@ class ArangoClient:
             If set, parameters **username**, **password** and **auth_method**
             are ignored. This token is not refreshed automatically. If automatic
             token refresh is required, consider setting **auth_method** to "jwt"
-            and using the **username** and **password** parameters instead.
+            and using the **username** and **password** parameters instead. Token
+            expiry will be checked.
         :type user_token: str
         :param superuser_token: User generated token for superuser access.
             If set, parameters **username**, **password** and **auth_method**
-            are ignored. This token is not refreshed automatically.
+            are ignored. This token is not refreshed automatically. Token
+            expiry will not be checked.
         :type superuser_token: str
         :param verify_certificate: Verify TLS certificates.
         :type verify_certificate: bool
