@@ -209,7 +209,7 @@ class BaseConnection:
         request = Request(method="get", endpoint="/_api/collection")
         resp = self.send_request(request)
         if resp.status_code in {401, 403}:
-            raise ServerConnectionError("bad username and/or password")
+            raise ServerConnectionError("bad username/password or token is expired")
         if not resp.is_success:  # pragma: no cover
             raise ServerConnectionError(resp.error_message or "bad server response")
         return resp.status_code
