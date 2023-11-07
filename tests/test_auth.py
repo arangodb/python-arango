@@ -5,11 +5,11 @@ from arango.exceptions import (
     JWTExpiredError,
     JWTSecretListError,
     JWTSecretReloadError,
+    ServerConnectionError,
     ServerEncryptionError,
     ServerTLSError,
     ServerTLSReloadError,
     ServerVersionError,
-    ServerConnectionError,
 )
 from tests.helpers import assert_raises, generate_jwt, generate_string
 
