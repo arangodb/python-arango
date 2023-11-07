@@ -13,10 +13,16 @@ from abc import abstractmethod
 from typing import Any, Callable, Optional, Sequence, Set, Tuple, Union
 
 import jwt
+from jwt.exceptions import ExpiredSignatureError
 from requests import ConnectionError, Session
 from requests_toolbelt import MultipartEncoder
 
-from arango.exceptions import JWTAuthError, ServerConnectionError
+from arango.exceptions import (
+    JWTAuthError,
+    JWTExpiredError,
+    JWTRefreshError,
+    ServerConnectionError,
+)
 from arango.http import HTTPClient
 from arango.request import Request
 from arango.resolver import HostResolver
@@ -203,7 +209,7 @@ class BaseConnection:
         request = Request(method="get", endpoint="/_api/collection")
         resp = self.send_request(request)
         if resp.status_code in {401, 403}:
-            raise ServerConnectionError("bad username and/or password")
+            raise ServerConnectionError("bad username/password or token is expired")
         if not resp.is_success:  # pragma: no cover
             raise ServerConnectionError(resp.error_message or "bad server response")
         return resp.status_code
@@ -300,11 +306,12 @@ class JwtConnection(BaseConnection):
         host_resolver: HostResolver,
         sessions: Sequence[Session],
         db_name: str,
-        username: str,
-        password: str,
         http_client: HTTPClient,
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        user_token: Optional[str] = None,
     ) -> None:
         super().__init__(
             hosts,
@@ -323,7 +330,13 @@ class JwtConnection(BaseConnection):
         self._token: Optional[str] = None
         self._token_exp: int = sys.maxsize
 
-        self.refresh_token()
+        if user_token is not None:
+            self.set_token(user_token)
+        elif username is not None and password is not None:
+            self.refresh_token()
+        else:
+            m = "Either **user_token** or **username** & **password** must be set"
+            raise ValueError(m)
 
     def send_request(self, request: Request) -> Response:
         """Send an HTTP request to ArangoDB server.
@@ -360,7 +373,12 @@ class JwtConnection(BaseConnection):
 
         :return: JWT token.
         :rtype: str
+        :raise arango.exceptions.JWTRefreshError: If missing username & password.
+        :raise arango.exceptions.JWTAuthError: If token retrieval fails.
         """
+        if self._username is None or self._password is None:
+            raise JWTRefreshError("username and password must be set")
+
         request = Request(
             method="post",
             endpoint="/_open/auth",
@@ -374,21 +392,34 @@ class JwtConnection(BaseConnection):
         if not resp.is_success:
             raise JWTAuthError(resp, request)
 
-        self._token = resp.body["jwt"]
-        assert self._token is not None
+        self.set_token(resp.body["jwt"])
 
-        jwt_payload = jwt.decode(
-            self._token,
-            issuer="arangodb",
-            algorithms=["HS256"],
-            options={
-                "require_exp": True,
-                "require_iat": True,
-                "verify_iat": True,
-                "verify_exp": True,
-                "verify_signature": False,
-            },
-        )
+    def set_token(self, token: str) -> None:
+        """Set the JWT token.
+
+        :param token: JWT token.
+        :type token: str
+        :raise arango.exceptions.JWTExpiredError: If the token is expired.
+        """
+        assert token is not None
+
+        try:
+            jwt_payload = jwt.decode(
+                token,
+                issuer="arangodb",
+                algorithms=["HS256"],
+                options={
+                    "require_exp": True,
+                    "require_iat": True,
+                    "verify_iat": True,
+                    "verify_exp": True,
+                    "verify_signature": False,
+                },
+            )
+        except ExpiredSignatureError:
+            raise JWTExpiredError("JWT token is expired")
+
+        self._token = token
         self._token_exp = jwt_payload["exp"]
         self._auth_header = f"bearer {self._token}"
 
@@ -444,3 +475,30 @@ class JwtSuperuserConnection(BaseConnection):
         request.headers["Authorization"] = self._auth_header
 
         return self.process_request(host_index, request)
+
+    def set_token(self, token: str) -> None:
+        """Set the JWT token.
+
+        :param token: JWT token.
+        :type token: str
+        :raise arango.exceptions.JWTExpiredError: If the token is expired.
+        """
+        assert token is not None
+
+        try:
+            jwt.decode(
+                token,
+                issuer="arangodb",
+                algorithms=["HS256"],
+                options={
+                    "require_exp": True,
+                    "require_iat": True,
+                    "verify_iat": True,
+                    "verify_exp": True,
+                    "verify_signature": False,
+                },
+            )
+        except ExpiredSignatureError:
+            raise JWTExpiredError("JWT token is expired")
+
+        self._auth_header = f"bearer {token}"
