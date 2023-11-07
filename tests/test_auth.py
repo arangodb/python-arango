@@ -9,6 +9,7 @@ from arango.exceptions import (
     ServerTLSError,
     ServerTLSReloadError,
     ServerVersionError,
+    ServerConnectionError,
 )
 from tests.helpers import assert_raises, generate_jwt, generate_string
 
@@ -125,22 +126,32 @@ def test_auth_superuser_token(client, db_name, root_password, secret):
 def test_auth_jwt_expiry(client, db_name, root_password, secret):
     # Test automatic token refresh on expired token.
     db = client.db("_system", "root", root_password, auth_method="jwt")
+    valid_token = generate_jwt(secret)
     expired_token = generate_jwt(secret, exp=-1000)
     db.conn._token = expired_token
     db.conn._auth_header = f"bearer {expired_token}"
     assert isinstance(db.version(), str)
 
-    # Test correct error on token expiry (superuser).
+    # Test expiry error on db instantiation (superuser)
+    with assert_raises(ServerConnectionError) as err:
+        client.db("_system", superuser_token=expired_token, verify=True)
+
+    # Test expiry error on db version (superuser)
     db = client.db("_system", superuser_token=expired_token)
     with assert_raises(ServerVersionError) as err:
         db.version()
     assert err.value.error_code == FORBIDDEN
 
-    # Test correct error on token expiry (user).
+    # Test expiry error on set_token (superuser).
+    db = client.db("_system", superuser_token=valid_token)
+    with assert_raises(JWTExpiredError) as err:
+        db.conn.set_token(expired_token)
+
+    # Test expiry error on db instantiation (user)
     with assert_raises(JWTExpiredError) as err:
         db = client.db("_system", user_token=expired_token)
 
-    # Test set_token() with expired token.
-    db = client.db("_system", user_token=generate_jwt(secret))
+    # Test expiry error on set_token (user).
+    db = client.db("_system", user_token=valid_token)
     with assert_raises(JWTExpiredError) as err:
         db.conn.set_token(expired_token)
