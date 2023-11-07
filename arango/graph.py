@@ -107,9 +107,9 @@ class Graph(ApiGroup):
         return self._execute(request, response_handler)
 
     def vertex_collections(self) -> Result[List[str]]:
-        """Return vertex collections in the graph that are not orphaned.
+        """Return vertex collections in the graph.
 
-        :return: Names of vertex collections that are not orphaned.
+        :return: Names of vertex collections in Edge Definitions and Orphan Collections.
         :rtype: [str]
         :raise arango.exceptions.VertexCollectionListError: If retrieval fails.
         """
