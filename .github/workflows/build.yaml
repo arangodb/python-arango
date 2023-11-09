@@ -1,23 +1,106 @@
 name: Build
 
-on:
-  pull_request:
-    branches: [main]
-  workflow_dispatch:
-    inputs:
-      debug_enabled:
-        type: boolean
-        description: Debug with tmate
-        required: false
-        default: false
+on: push
+# on:
+#   pull_request:
+#     branches: [main]
+#   workflow_dispatch:
+#     inputs:
+#       debug_enabled:
+#         type: boolean
+#         description: Debug with tmate
+#         required: false
+#         default: false
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: pip install .[dev]
+
+      - name: Run black
+        run: black --check --verbose --diff --color --config=pyproject.toml ./arango ./tests/
+
+      - name: Run flake8
+        run: flake8 ./arango ./tests
+
+      - name: Run isort
+        run: isort --check ./arango ./tests
+
+      - name: Run mypy
+        run: mypy ./arango
+
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python_version: ["3.10"] #["3.8", "3.9", "3.10", "3.11", "3.12"]
+        arangodb_config: ["single"] #["single", "cluster"]
+        arangodb_license: ["community"] #["community", "enterprise"]
+        arangodb_version: ["latest"] #["3.10.10", "3.11.4", "latest"]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python_version }}
+
+      - name: Setup ArangoDB
+        run: |
+          chmod +x starter.sh
+          ./starter.sh ${{ matrix.arangodb_config }} ${{ matrix.arangodb_license }} ${{ matrix.arangodb_version }}
+
+      - name: Install Dependencies
+        run: pip install -e .[dev]
+
+      # - name: Sleep
+      #   run: sleep 15
+
+      - name: List Docker Containers
+        run: docker ps -a
+
+      # - name: Show Docker Logs
+      #   run: docker logs arango
+
+      # - name: Curl Request
+      #   run: curl -v http://localhost:8529/
+
+      - name: Pytest
+        run: |
+          args=("--host" "localhost" "--port=8529")
+
+          if [ ${{ matrix.arangodb_config }} = "cluster" ]; then
+            args+=("--cluster" "--port=8539" "--port=8549")
+          fi
+
+          if [ ${{ matrix.arangodb_license }} = "enterprise" ]; then
+            args+=("--enterprise")
+          fi
+
+          echo "Running pytest with args: ${args[@]}"
+          pytest -k "test_client_good_connection" --cov=arango --cov-report=xml "${args[@]}"
+
   docs:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Fetch all tags and branches
         run: git fetch --prune --unshallow
@@ -25,7 +108,7 @@ jobs:
       - name: Create ArangoDB Docker container
         run: >
           docker create --name arango -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd -v "$(pwd)/tests/static/":/tests/static
-          arangodb/arangodb:3.11.4 --server.jwt-secret-keyfile=/tests/static/keyfile
+          arangodb/arangodb:latest --server.jwt-secret-keyfile=/tests/static/keyfile
 
       - name: Start ArangoDB Docker container
         run: docker start arango
