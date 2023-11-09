@@ -1,164 +1,97 @@
 version: 2.1
 
-parameters:
-  preview:
-    type: boolean
-    default: true
-  3-10:
-    type: boolean
-    default: true
-  3-11:
-    type: boolean
-    default: true
+# orbs:
+#   coveralls: coveralls/coveralls@2.2.1
+
+workflows:
+  ci:
+    jobs:
+      - lint
+      - test:
+          matrix:
+            parameters:
+              python_version: ["3.10"] # ["3.8", "3.9", "3.10", "3.11", "3.12"]
+              arangodb_config: ["single"] # ["single", "cluster"]
+              arangodb_license: ["community"] # ["community", "enterprise"]
+              arangodb_version: ["latest"] # ["3.10.10", "3.11.4", "latest"]
 
 jobs:
-  run-tests:
-    resource_class: small
-    parameters:
-      python-version:
-        type: string
-        default: "latest"
-      arangodb-version:
-        type: string
-        default: "arangodb:latest"
-      arangodb-config:
-        type: string
-        default: "single.conf"
-      cluster:
-        type: boolean
-        default: false
-      enterprise:
-        type: boolean
-        default: false
+  lint:
     docker:
-      - image: python:<< parameters.python-version >>
-        command: ["/bin/sh", "-c", "python -m http.server"]
-      - image: arangodb/<< parameters.arangodb-version >>
-        environment:
-          ARANGODB_CONF: << parameters.arangodb-config >>
-          PROJECT: /root/project
-        command:
-          - "/bin/sh"
-          - "-c"
-          - >
-            while ! wget -q -O /dev/null http://localhost:8000/$PROJECT/tests/static/setup.sh; do sleep 1; done &&
-            wget -O - http://localhost:8000/$PROJECT/tests/static/setup.sh |
-            /bin/sh
+      - image: python:latest
     steps:
       - checkout
       - run:
-          name: "Install Dependencies"
-          command: |
-            pip install -e .[dev]
+          name: Install Dependencies
+          command: pip install .[dev]
+
       - run:
-          name: "Wait for ArangoDB starter"
+          name: Run black
+          command: black --check --verbose --diff --color --config=pyproject.toml ./arango ./tests/
+
+      - run:
+          name: Run flake8
+          command: flake8 ./arango ./tests
+
+      - run:
+          name: Run isort
+          command: isort --check ./arango ./tests
+
+      - run:
+          name: Run mypy
+          command: mypy ./arango
+
+  test:
+    resource_class: small
+    parameters:
+      python_version:
+        type: string
+      arangodb_config:
+        type: string
+      arangodb_license:
+        type: string
+      arangodb_version:
+        type: string
+    docker:
+      - image: cimg/python:<< parameters.python_version >>
+    steps:
+      - checkout
+      - setup_remote_docker
+
+      - run:
+          name: Set Up ArangoDB
           command: |
-            wget --quiet --waitretry=1 --tries=120 -O - http://localhost:8528/version
-            if [ $? -eq 0 ]; then
-              echo "starter ready"
-              exit 0
-            else
-              echo "starter not ready, giving up"
-              exit 1
-            fi
+            chmod +x starter.sh
+            ./starter.sh << parameters.arangodb_config >> << parameters.arangodb_license >> << parameters.arangodb_version >>
+
+      - run:
+          name: "Install Dependencies"
+          command: pip install -e .[dev] pytest
+
+      - run:
+          name: "Sleep"
+          command: sleep 15
+
+      - run: docker ps -a
+
+      # - run: docker logs arango
+
+      - run: curl -v http://localhost:8529/
+
       - run:
           name: "Run pytest"
           command: |
-            mkdir test-results
-            args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "localhost")
-            if [ << parameters.cluster >> = true ]; then
-              args+=("--cluster" "--port=8529" "--port=8539" "--port=8549")
-            else
-              args+=("--port=8529")
+            args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "arango" "--port=8529")
+
+            if [ << parameters.arangodb_config >> = "cluster" ]; then
+              args+=("--cluster" "--port=8539" "--port=8549")
             fi
-            if [ << parameters.enterprise >> = true ]; then
+
+            if [ << parameters.arangodb_license >> = "enterprise" ]; then
               args+=("--enterprise")
             fi
-            echo "Running py.test with args: ${args[@]}"
-            py.test "${args[@]}"
-      - store_artifacts:
-          path: test-results
-      - store_test_results:
-          path: test-results
 
-workflows:
-  python-3.8-community-single-3.10:
-    when: << pipeline.parameters.3-10 >>
-    jobs:
-      - run-tests:
-          name: python-3.8-community-single-3.10
-          python-version: "3.8.2"
-          arangodb-version: "arangodb:3.10.10"
-          arangodb-config: "single-3.10.conf"
-          cluster: false
-          enterprise: false
-  python-3.8-enterprise-cluster-3.10:
-    when: << pipeline.parameters.3-10 >>
-    jobs:
-      - run-tests:
-          name: python-3.8-enterprise-cluster-3.10
-          python-version: "3.8.2"
-          arangodb-version: "enterprise:3.10.10"
-          arangodb-config: "cluster-3.10.conf"
-          cluster: true
-          enterprise: true
-  python-3.10-community-single-3.11:
-    when: << pipeline.parameters.3-11 >>
-    jobs:
-      - run-tests:
-          name: python-3.10-community-single-3.11
-          python-version: "3.10.6"
-          arangodb-version: "arangodb:3.11.4"
-          arangodb-config: "single.conf"
-          cluster: false
-          enterprise: false
-  python-3.10-community-cluster-3.11:
-    when: << pipeline.parameters.3-11 >>
-    jobs:
-      - run-tests:
-          name: python-3.10-community-cluster-3.11
-          python-version: "3.10.6"
-          arangodb-version: "arangodb:3.11.4"
-          arangodb-config: "cluster.conf"
-          cluster: true
-          enterprise: false
-  python-3.10-enterprise-single-3.11:
-    when: << pipeline.parameters.3-11 >>
-    jobs:
-      - run-tests:
-          name: python-3.10-enterprise-single-3.11
-          python-version: "3.10.6"
-          arangodb-version: "enterprise:3.11.4"
-          arangodb-config: "single.conf"
-          cluster: false
-          enterprise: true
-  python-3.10-enterprise-cluster-3.11:
-    when: << pipeline.parameters.3-11 >>
-    jobs:
-      - run-tests:
-          name: python-3.10-enterprise-cluster-3.11
-          python-version: "3.10.6"
-          arangodb-version: "enterprise:3.11.4"
-          arangodb-config: "cluster.conf"
-          cluster: true
-          enterprise: true
-  python-latest-enterprise-single-preview:
-    when: << pipeline.parameters.preview >>
-    jobs:
-      - run-tests:
-          name: python-latest-enterprise-single-preview
-          python-version: "latest"
-          arangodb-version: "enterprise-preview:latest"
-          arangodb-config: "single.conf"
-          cluster: false
-          enterprise: true
-  python-latest-enterprise-cluster-preview:
-    when: << pipeline.parameters.preview >>
-    jobs:
-      - run-tests:
-          name: python-latest-enterprise-cluster-preview
-          python-version: "latest"
-          arangodb-version: "enterprise-preview:latest"
-          arangodb-config: "cluster.conf"
-          cluster: true
-          enterprise: true
+            echo "Running pytest with args: ${args[@]}"
+            pytest --cov=arango --cov-report=xml "${args[@]}"
+
+      # - coveralls/upload
