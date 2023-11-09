@@ -93,7 +93,7 @@ jobs:
           fi
 
           echo "Running pytest with args: ${args[@]}"
-          pytest -k "test_client_good_connection" --cov=arango --cov-report=xml "${args[@]}"
+          pytest --cov=arango --cov-report=xml "${args[@]}"
 
   docs:
     runs-on: ubuntu-latest
