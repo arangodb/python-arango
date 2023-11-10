@@ -55,6 +55,7 @@ def test_client_attributes():
 
 
 def test_client_good_connection(db, username, password):
+    assert False
     client = ArangoClient(hosts="http://127.0.0.1:8529")
 
     # Test connection with verify flag on and off
