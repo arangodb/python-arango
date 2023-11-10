@@ -89,14 +89,14 @@ jobs:
 
             args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "localhost" "--port=8529")
             if [ << parameters.arangodb_config >> = "cluster" ]; then
-              args+=("--cluster" "--port=8529" "--port=8539" "--port=8549")
+              args+=("--cluster" "--port=8539" "--port=8549")
             fi
     
             if [ << parameters.arangodb_license >> = "enterprise" ]; then
               args+=("--enterprise")
             fi
 
-            echo "Running py.test with args: ${args[@]}"
+            echo "Running pytest with args: ${args[@]}"
             pytest "${args[@]}"
 
       - store_artifacts:
