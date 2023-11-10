@@ -52,11 +52,11 @@ jobs:
         type: string
       arangodb_version:
         type: string
-    docker:
-      - image: cimg/python:<< parameters.python_version >>
+    machine:
+      image: ubuntu-2004:202101-01
     steps:
       - checkout
-      - setup_remote_docker
+      # - setup_remote_docker
 
       - run:
           name: Set Up ArangoDB
@@ -74,7 +74,7 @@ jobs:
 
       - run: docker ps -a
 
-      # - run: docker logs arango
+      - run: docker logs arango
 
       - run: curl -v http://localhost:8529/
 
