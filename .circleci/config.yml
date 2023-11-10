@@ -96,6 +96,6 @@ jobs:
             fi
 
             echo "Running pytest with args: ${args[@]}"
-            pytest --cov=arango --cov-report=xml "${args[@]}"
+            py.test --cov=arango --cov-report=xml "${args[@]}"
 
       # - coveralls/upload
