@@ -52,7 +52,7 @@ jobs:
       arangodb_version:
         type: string
     machine:
-      image: ubuntu-2004:current
+      image: ubuntu-2204:current
     steps:
       - checkout
 
@@ -69,12 +69,8 @@ jobs:
       - run:
           name: Setup Python
           command: |
-            pyenv update
-            if ! pyenv versions | grep -q << parameters.python_version >>; then
-              pyenv install << parameters.python_version >>
-            else
-              echo "<< parameters.python_version >> already installed"
-            fi
+            pyenv --version
+            pyenv install -f << parameters.python_version >>
             pyenv global << parameters.python_version >>
 
       - run:
