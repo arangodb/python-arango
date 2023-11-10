@@ -91,7 +91,7 @@ jobs:
   docs:
     runs-on: ubuntu-latest
 
-    name: Sphinx Docs
+    name: Docs
 
     steps:
       - name: Checkout repository
