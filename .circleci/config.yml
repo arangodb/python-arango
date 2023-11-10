@@ -56,7 +56,6 @@ jobs:
       image: ubuntu-2004:202101-01
     steps:
       - checkout
-      # - setup_remote_docker
 
       - run:
           name: Set Up ArangoDB
@@ -64,13 +63,18 @@ jobs:
             chmod +x starter.sh
             ./starter.sh << parameters.arangodb_config >> << parameters.arangodb_license >> << parameters.arangodb_version >>
 
+      - restore_cache:
+          key: pip-and-local-cache
+
+      - run:
+          name: Setup Python
+          command: |
+            pyenv install << parameters.python_version >>
+            pyenv global << parameters.python_version >>
+
       - run:
           name: "Install Dependencies"
           command: pip install -e .[dev] pytest
-
-      - run:
-          name: "Sleep"
-          command: sleep 15
 
       - run: docker ps -a
 
