@@ -1,7 +1,7 @@
 version: 2.1
 
-orbs:
-  coveralls: coveralls/coveralls@2.2.1
+# orbs:
+#   coveralls: coveralls/coveralls@2.2.1
 
 workflows:
   ci:
@@ -105,9 +105,9 @@ jobs:
       - store_test_results:
           path: test-results
 
-      - run:
-          name: Upload to Coveralls
-          command: |
-            if [ "<< parameters.python_version >>" = "3.11" && "<< parameters.arangodb_config >>" = "single" && "<< parameters.arangodb_license >>" = "community" && "<< parameters.arangodb_version >>" = "latest"  ]; then
-              coveralls/upload
-            fi
+      # - run:
+      #     name: Upload to Coveralls
+      #     command: |
+      #       if [ "<< parameters.python_version >>" = "3.11" && "<< parameters.arangodb_config >>" = "single" && "<< parameters.arangodb_license >>" = "community" && "<< parameters.arangodb_version >>" = "latest"  ]; then
+      #         coveralls/upload
+      #       fi
