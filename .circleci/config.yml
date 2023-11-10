@@ -42,7 +42,7 @@ jobs:
           command: mypy ./arango
 
   test:
-    resource_class: small
+    resource_class: medium
     parameters:
       python_version:
         type: string
@@ -53,7 +53,7 @@ jobs:
       arangodb_version:
         type: string
     machine:
-      image: ubuntu-2204:2023.10.1
+      image: ubuntu-2004
     steps:
       - checkout
 
@@ -87,7 +87,7 @@ jobs:
             if [ << parameters.arangodb_config >> = "cluster" ]; then
               args+=("--cluster" "--port=8539" "--port=8549")
             fi
-    
+
             if [ << parameters.arangodb_license >> = "enterprise" ]; then
               args+=("--enterprise")
             fi
