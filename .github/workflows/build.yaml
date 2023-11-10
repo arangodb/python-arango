@@ -14,6 +14,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
 
+    name: Lint
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
@@ -49,7 +51,7 @@ jobs:
         arangodb_license: ["community", "enterprise"]
         arangodb_version: ["3.10.10", "3.11.4", "latest"]
 
-    name: Python ${{ matrix.python_version }} - ArangoDB ${{ matrix.arangodb_config }}:${{ matrix.arangodb_license }}:${{ matrix.arangodb_version }}
+    name: Test (${{ matrix.python_version }}:${{ matrix.arangodb_config }}:${{ matrix.arangodb_license }}:${{ matrix.arangodb_version }})
 
     steps:
       - name: Checkout code
@@ -88,6 +90,8 @@ jobs:
 
   docs:
     runs-on: ubuntu-latest
+
+    name: Sphinx Docs
 
     steps:
       - name: Checkout repository
