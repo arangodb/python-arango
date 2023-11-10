@@ -74,7 +74,7 @@ jobs:
 
       - run:
           name: "Install Dependencies"
-          command: pip install -e .[dev] pytest
+          command: pip install -e .[dev]
 
       - run: docker ps -a
 
@@ -85,17 +85,24 @@ jobs:
       - run:
           name: "Run pytest"
           command: |
-            args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "arango" "--port=8529")
+            mkdir test-results
 
+            args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "localhost" "--port=8529")
             if [ << parameters.arangodb_config >> = "cluster" ]; then
-              args+=("--cluster" "--port=8539" "--port=8549")
+              args+=("--cluster" "--port=8529" "--port=8539" "--port=8549")
             fi
-
+    
             if [ << parameters.arangodb_license >> = "enterprise" ]; then
               args+=("--enterprise")
             fi
 
-            echo "Running pytest with args: ${args[@]}"
-            py.test --cov=arango --cov-report=xml "${args[@]}"
+            echo "Running py.test with args: ${args[@]}"
+            pytest "${args[@]}"
+
+      - store_artifacts:
+          path: test-results
+
+      - store_test_results:
+          path: test-results
 
       # - coveralls/upload
