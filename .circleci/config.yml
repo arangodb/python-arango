@@ -65,10 +65,16 @@ jobs:
       - restore_cache:
           key: pip-and-local-cache
 
+      # TODO: Revisit this bottleneck
       - run:
           name: Setup Python
           command: |
-            pyenv install << parameters.python_version >>
+            pyenv update
+            if ! pyenv versions | grep -q << parameters.python_version >>; then
+              pyenv install << parameters.python_version >>
+            else
+              echo "<< parameters.python_version >> already installed"
+            fi
             pyenv global << parameters.python_version >>
 
       - run:
