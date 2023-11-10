@@ -11,9 +11,9 @@ workflows:
           matrix:
             parameters:
               python_version: ["3.10"] # ["3.8", "3.9", "3.10", "3.11", "3.12"]
-              arangodb_config: ["single"] # ["single", "cluster"]
-              arangodb_license: ["community"] # ["community", "enterprise"]
-              arangodb_version: ["latest"] # ["3.10.10", "3.11.4", "latest"]
+              arangodb_config: ["single", "cluster"]
+              arangodb_license: ["community", "enterprise"]
+              arangodb_version: ["3.10.10", "3.11.4", "latest"]
 
 jobs:
   lint:
@@ -78,10 +78,6 @@ jobs:
 
       - run: docker ps -a
 
-      - run: docker logs arango
-
-      - run: curl -v http://localhost:8529/
-
       - run:
           name: "Run pytest"
           command: |
@@ -97,7 +93,7 @@ jobs:
             fi
 
             echo "Running pytest with args: ${args[@]}"
-            pytest "${args[@]}"
+            pytest --cov=arango --cov-report=xml "${args[@]}"
 
       - store_artifacts:
           path: test-results
