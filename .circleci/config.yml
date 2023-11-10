@@ -42,7 +42,6 @@ jobs:
           command: mypy ./arango
 
   test:
-    resource_class: medium
     parameters:
       python_version:
         type: string
