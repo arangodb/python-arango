@@ -10,7 +10,8 @@ workflows:
       - test:
           matrix:
             parameters:
-              python_version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+              # TODO: Revisit why pyenv doesn't recognize 3.12
+              python_version: ["3.8", "3.9", "3.10", "3.11"] # "3.12"
               arangodb_config: ["single", "cluster"]
               arangodb_license: ["community", "enterprise"]
               arangodb_version: ["3.10.10", "3.11.4", "latest"]
@@ -102,4 +103,9 @@ jobs:
       - store_test_results:
           path: test-results
 
-      # - coveralls/upload
+      - run:
+          name: Upload to Coveralls
+          command: |
+            if [ "<< parameters.python_version >>" = "3.11" && "<< parameters.arangodb_config >>" == "single" && "<< parameters.arangodb_license >>" == "community" ]; then
+              coveralls/upload
+            fi
