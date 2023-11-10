@@ -1,7 +1,7 @@
 version: 2.1
 
-# orbs:
-#   coveralls: coveralls/coveralls@2.2.1
+orbs:
+  coveralls: coveralls/coveralls@2.2.1
 
 workflows:
   ci:
@@ -52,6 +52,8 @@ jobs:
         type: string
       arangodb_version:
         type: string
+    # TODO: Reconsider using a docker image instead of a machine
+    # i.e cimg/python:<< parameters.python_version >>
     machine:
       image: ubuntu-2204:current
     steps:
@@ -106,6 +108,6 @@ jobs:
       - run:
           name: Upload to Coveralls
           command: |
-            if [ "<< parameters.python_version >>" = "3.11" && "<< parameters.arangodb_config >>" == "single" && "<< parameters.arangodb_license >>" == "community" ]; then
+            if [ "<< parameters.python_version >>" = "3.11" && "<< parameters.arangodb_config >>" = "single" && "<< parameters.arangodb_license >>" = "community" && "<< parameters.arangodb_version >>" = "latest"  ]; then
               coveralls/upload
             fi
