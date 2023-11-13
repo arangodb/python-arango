@@ -1236,6 +1236,10 @@ def test_document_find(col, bad_col, docs):
         bad_col.find({"val": 1})
     assert err.value.error_code in {11, 1228}
 
+    # Test find by attribute with a space
+    col.insert({"foo bar": "baz"})
+    assert len(list(col.find({"foo bar": "baz"}))) == 1
+
 
 def test_document_find_near(col, bad_col, docs):
     col.import_bulk(docs)
