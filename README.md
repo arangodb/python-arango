@@ -1,7 +1,8 @@
 ![Logo](https://user-images.githubusercontent.com/2701938/108583516-c3576680-72ee-11eb-883f-2d9b52e74e45.png)
 
-[![Build](https://github.com/ArangoDB-Community/python-arango/actions/workflows/build.yaml/badge.svg)](https://github.com/ArangoDB-Community/python-arango/actions/workflows/build.yaml)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/ArangoDB-Community/python-arango/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/ArangoDB-Community/python-arango/tree/main)
 [![CodeQL](https://github.com/ArangoDB-Community/python-arango/actions/workflows/codeql.yaml/badge.svg)](https://github.com/ArangoDB-Community/python-arango/actions/workflows/codeql.yaml)
+[![Docs](https://github.com/ArangoDB-Community/python-arango/actions/workflows/docs.yaml/badge.svg)](https://github.com/ArangoDB-Community/python-arango/actions/workflows/docs.yaml)
 [![codecov](https://codecov.io/gh/ArangoDB-Community/python-arango/branch/main/graph/badge.svg?token=M8zrjrzsUY)](https://codecov.io/gh/ArangoDB-Community/python-arango)
 [![PyPI version](https://badge.fury.io/py/python-arango.svg)](https://badge.fury.io/py/python-arango)
 [![GitHub license](https://img.shields.io/github/license/ArangoDB-Community/python-arango?color=brightgreen)](https://github.com/ArangoDB-Community/python-arango/blob/main/LICENSE)
