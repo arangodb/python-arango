@@ -16,6 +16,12 @@ from arango.job import AsyncJob
 from tests.helpers import extract
 
 
+@pytest.fixture(autouse=True)
+def teardown(db):
+    yield
+    db.clear_async_jobs()
+
+
 def wait_on_job(job):
     """Block until the async job is done."""
     while job.status() != "done":
@@ -65,7 +71,10 @@ def test_async_execute_without_result(db, col, docs):
     assert async_col.insert(docs[2]) is None
 
     # Ensure that the operations went through
-    wait_on_jobs(db)
+    for _ in range(10):
+        if col.count() == 3:
+            break
+        time.sleep(0.5)
     assert extract("_key", col.all()) == ["1", "2", "3"]
 
 
@@ -242,7 +251,7 @@ def test_async_list_jobs(db, col, docs):
     assert job3.id in job_ids
 
     # Test list async jobs that are pending
-    job4 = async_db.aql.execute("RETURN SLEEP(0.3)")
+    job4 = async_db.aql.execute("RETURN SLEEP(3)")
     assert db.async_jobs(status="pending") == [job4.id]
     wait_on_job(job4)  # Make sure the job is done
 

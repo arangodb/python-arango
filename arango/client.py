@@ -15,7 +15,9 @@ from arango.database import StandardDatabase
 from arango.exceptions import ServerConnectionError
 from arango.http import DEFAULT_REQUEST_TIMEOUT, DefaultHTTPClient, HTTPClient
 from arango.resolver import (
+    FallbackHostResolver,
     HostResolver,
+    PeriodicHostResolver,
     RandomHostResolver,
     RoundRobinHostResolver,
     SingleHostResolver,
@@ -52,9 +54,9 @@ class ArangoClient:
     :param hosts: Host URL or list of URLs (coordinators in a cluster).
     :type hosts: str | [str]
     :param host_resolver: Host resolver. This parameter used for clusters (when
-        multiple host URLs are provided). Accepted values are "roundrobin" and
-        "random". Any other value defaults to round robin.
-    :type host_resolver: str
+        multiple host URLs are provided). Accepted values are "fallback",
+        "roundrobin", "random" and "periodic". The default value is "fallback".
+    :type host_resolver: str | arango.resolver.HostResolver
     :param resolver_max_tries: Number of attempts to process an HTTP request
         before throwing a ConnectionAbortedError. Must not be lower than the
         number of hosts.
@@ -88,7 +90,7 @@ class ArangoClient:
     def __init__(
         self,
         hosts: Union[str, Sequence[str]] = "http://127.0.0.1:8529",
-        host_resolver: str = "roundrobin",
+        host_resolver: Union[str, HostResolver] = "fallback",
         resolver_max_tries: Optional[int] = None,
         http_client: Optional[HTTPClient] = None,
         serializer: Callable[..., str] = default_serializer,
@@ -106,10 +108,18 @@ class ArangoClient:
 
         if host_count == 1:
             self._host_resolver = SingleHostResolver(1, resolver_max_tries)
+        elif host_resolver == "fallback":
+            self._host_resolver = FallbackHostResolver(host_count, resolver_max_tries)
         elif host_resolver == "random":
             self._host_resolver = RandomHostResolver(host_count, resolver_max_tries)
-        else:
+        elif host_resolver == "roundrobin":
             self._host_resolver = RoundRobinHostResolver(host_count, resolver_max_tries)
+        elif host_resolver == "periodic":
+            self._host_resolver = PeriodicHostResolver(host_count, resolver_max_tries)
+        else:
+            if not isinstance(host_resolver, HostResolver):
+                raise ValueError("Invalid host resolver")
+            self._host_resolver = host_resolver
 
         # Initializes the http client
         self._http = http_client or DefaultHTTPClient(request_timeout=request_timeout)

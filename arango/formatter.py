@@ -1194,6 +1194,12 @@ def format_pregel_job_data(body: Json) -> Json:
     if "useMemoryMaps" in body:
         result["use_memory_maps"] = body["useMemoryMaps"]
 
+    # Introduced in 3.11
+    if "user" in body:
+        result["user"] = body["user"]
+    if "graphLoaded" in body:
+        result["graph_loaded"] = body["graphLoaded"]
+
     return verify_format(body, result)
 
 

@@ -209,7 +209,7 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
     assert err.value.error_code in {11, 1228}
 
     # Test set log levels
-    new_levels = {"agency": "DEBUG", "collector": "INFO", "threads": "WARNING"}
+    new_levels = {"agency": "DEBUG", "engines": "INFO", "threads": "WARNING"}
     result = sys_db.set_log_levels(**new_levels)
     for key, value in new_levels.items():
         assert result[key] == value
@@ -344,7 +344,6 @@ def test_license(sys_db, enterprise):
         assert set(license.keys()) == {
             "upgrading",
             "features",
-            "hash",
             "license",
             "version",
             "status",

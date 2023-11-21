@@ -13,10 +13,10 @@ Run unit tests with coverage:
 py.test --cov=arango --cov-report=html  # Open htmlcov/index.html in your browser
 ```
 
-For a more comprehensive test suite, run:
+To start and ArangoDB instance locally, run:
 
 ```shell
-./tester.sh  # Requires docker
+./starter.sh  # Requires docker
 ```
 
 Build and test documentation:

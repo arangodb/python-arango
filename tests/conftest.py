@@ -5,6 +5,7 @@ from packaging import version
 
 from arango import ArangoClient, formatter
 from arango.database import StandardDatabase
+from arango.http import DefaultHTTPClient
 from arango.typings import Json
 from tests.executors import TestAsyncApiExecutor, TestTransactionApiExecutor
 from tests.helpers import (
@@ -49,7 +50,7 @@ global_data = GlobalData()
 
 def pytest_addoption(parser):
     parser.addoption("--host", action="store", default="127.0.0.1")
-    parser.addoption("--port", action="store", default="8529")
+    parser.addoption("--port", action="append", default=None)
     parser.addoption("--passwd", action="store", default="passwd")
     parser.addoption("--complete", action="store_true")
     parser.addoption("--cluster", action="store_true")
@@ -59,15 +60,28 @@ def pytest_addoption(parser):
 
 
 def pytest_configure(config):
-    url = f"http://{config.getoption('host')}:{config.getoption('port')}"
+    ports = config.getoption("port")
+    if ports is None:
+        ports = ["8529"]
+    hosts = [f"http://{config.getoption('host')}:{p}" for p in ports]
+    url = hosts[0]
     secret = config.getoption("secret")
-    client = ArangoClient(hosts=[url, url, url])
+    cluster = config.getoption("cluster")
+
+    host_resolver = "fallback"
+    http_client = DefaultHTTPClient(request_timeout=120)
+
+    client = ArangoClient(
+        hosts=hosts, host_resolver=host_resolver, http_client=http_client
+    )
     sys_db = client.db(
         name="_system",
         username="root",
         password=config.getoption("passwd"),
         superuser_token=generate_jwt(secret),
+        verify=True,
     )
+
     db_version = sys_db.version()
 
     # Create a user and non-system database for testing.
@@ -131,7 +145,7 @@ def pytest_configure(config):
     global_data.ecol_name = ecol_name
     global_data.fvcol_name = fvcol_name
     global_data.tvcol_name = tvcol_name
-    global_data.cluster = config.getoption("cluster")
+    global_data.cluster = cluster
     global_data.complete = config.getoption("complete")
     global_data.replication = config.getoption("replication")
     global_data.enterprise = config.getoption("enterprise")

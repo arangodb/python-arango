@@ -10,11 +10,7 @@ from arango.client import ArangoClient
 from arango.database import StandardDatabase
 from arango.exceptions import ServerConnectionError
 from arango.http import DefaultHTTPClient
-from arango.resolver import (
-    RandomHostResolver,
-    RoundRobinHostResolver,
-    SingleHostResolver,
-)
+from arango.resolver import FallbackHostResolver, RandomHostResolver, SingleHostResolver
 from tests.helpers import generate_db_name, generate_string, generate_username
 
 
@@ -40,7 +36,7 @@ def test_client_attributes():
     assert client.version == importlib_metadata.version("python-arango")
     assert client.hosts == client_hosts
     assert repr(client) == client_repr
-    assert isinstance(client._host_resolver, RoundRobinHostResolver)
+    assert isinstance(client._host_resolver, FallbackHostResolver)
 
     client = ArangoClient(
         hosts=client_hosts,

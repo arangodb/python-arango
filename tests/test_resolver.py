@@ -3,6 +3,8 @@ from typing import Set
 import pytest
 
 from arango.resolver import (
+    FallbackHostResolver,
+    PeriodicHostResolver,
     RandomHostResolver,
     RoundRobinHostResolver,
     SingleHostResolver,
@@ -54,3 +56,30 @@ def test_resolver_round_robin():
     assert resolver.get_host_index() == 8
     assert resolver.get_host_index() == 9
     assert resolver.get_host_index() == 0
+
+
+def test_resolver_periodic():
+    resolver = PeriodicHostResolver(3, requests_period=3)
+    assert resolver.get_host_index() == 0
+    assert resolver.get_host_index() == 0
+    assert resolver.get_host_index() == 1
+    assert resolver.get_host_index() == 1
+    assert resolver.get_host_index() == 1
+    assert resolver.get_host_index() == 2
+    assert resolver.get_host_index() == 2
+    assert resolver.get_host_index() == 2
+    assert resolver.get_host_index() == 0
+    assert resolver.get_host_index() == 0
+    assert resolver.get_host_index({0}) == 1
+    assert resolver.get_host_index() == 1
+
+
+def test_resolver_fallback():
+    resolver = FallbackHostResolver(4)
+    assert resolver.get_host_index() == 0
+    assert resolver.get_host_index() == 0
+    assert resolver.get_host_index({0, 1, 3}) == 2
+    assert resolver.get_host_index({1, 2, 3}) == 0
+    assert resolver.get_host_index({0}) == 1
+    assert resolver.get_host_index({0}) == 1
+    assert resolver.get_host_index() == 1
