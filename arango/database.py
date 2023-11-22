@@ -646,7 +646,7 @@ class Database(ApiGroup):
         :raise arango.exceptions.ServerReadLogError: If read fails.
         """
         m = "read_log() is deprecated in ArangoDB 3.8 and will be removed in a future version of the driver. Use read_log_entries() instead."  # noqa: E501
-        warn(m, DeprecationWarning, stacklevel=1)
+        warn(m, DeprecationWarning, stacklevel=2)
 
         params = dict()
         if upto is not None:
