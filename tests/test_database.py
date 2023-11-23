@@ -167,29 +167,50 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
     assert err.value.error_code in {11, 1228}
 
     # Test read_log with default parameters
+    # Deprecated in 3.8.0
+    # TODO: Remove in future release
     log = sys_db.read_log(upto="fatal")
     assert "lid" in log
     assert "level" in log
     assert "text" in log
     assert "total_amount" in log
 
+    log_entry = sys_db.read_log_entries(upto="fatal")
+    assert "total" in log_entry
+    assert "messages" in log_entry
+
+    kwargs = {
+        "level": "error",
+        "start": 0,
+        "size": 100000,
+        "offset": 0,
+        "search": "test",
+        "sort": "desc",
+    }
+
     # Test read_log with specific parameters
-    log = sys_db.read_log(
-        level="error",
-        start=0,
-        size=100000,
-        offset=0,
-        search="test",
-        sort="desc",
-    )
+    # Deprecated in 3.8.0
+    # TODO: Remove in future release
+    log = sys_db.read_log(**kwargs)
     assert "lid" in log
     assert "level" in log
     assert "text" in log
     assert "total_amount" in log
 
+    log_entry = sys_db.read_log_entries(**kwargs)
+    assert "total" in log_entry
+    assert "messages" in log_entry
+
     # Test read_log with bad database
+    # Deprecated in 3.8.0
+    # TODO: Remove in future release
     with assert_raises(ServerReadLogError) as err:
         bad_db.read_log()
+    assert err.value.error_code in {11, 1228}
+
+    # Test read_log_entries with bad database
+    with assert_raises(ServerReadLogError) as err:
+        bad_db.read_log_entries()
     assert err.value.error_code in {11, 1228}
 
     # Test reload routing

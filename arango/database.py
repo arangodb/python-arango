@@ -615,7 +615,10 @@ class Database(ApiGroup):
         search: Optional[str] = None,
         sort: Optional[str] = None,
     ) -> Result[Json]:
-        """Read the global log from server.
+        """Read the global log from server. This method is deprecated
+            in ArangoDB 3.8 and will be removed in a future version
+            of the driver. Use :func:`arango.database.Database.read_log_entries`
+            instead.
 
         :param upto: Return the log entries up to the given level (mutually
             exclusive with parameter **level**). Allowed values are "fatal",
@@ -642,6 +645,9 @@ class Database(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.ServerReadLogError: If read fails.
         """
+        m = "read_log() is deprecated in ArangoDB 3.8 and will be removed in a future version of the driver. Use read_log_entries() instead."  # noqa: E501
+        warn(m, DeprecationWarning, stacklevel=2)
+
         params = dict()
         if upto is not None:
             params["upto"] = upto
@@ -667,6 +673,78 @@ class Database(ApiGroup):
             result: Json = resp.body
             if "totalAmount" in result:
                 resp.body["total_amount"] = resp.body.pop("totalAmount")
+            return result
+
+        return self._execute(request, response_handler)
+
+    def read_log_entries(
+        self,
+        upto: Optional[Union[int, str]] = None,
+        level: Optional[Union[int, str]] = None,
+        start: Optional[int] = None,
+        size: Optional[int] = None,
+        offset: Optional[int] = None,
+        search: Optional[str] = None,
+        sort: Optional[str] = None,
+        server_id: Optional[str] = None,
+    ) -> Result[Json]:
+        """Read the global log from server.
+
+        :param upto: Return the log entries up to the given level (mutually
+            exclusive with parameter **level**). Allowed values are "fatal",
+            "error", "warning", "info" (default) and "debug".
+        :type upto: int | str
+        :param level: Return the log entries of only the given level (mutually
+            exclusive with **upto**). Allowed values are "fatal", "error",
+            "warning", "info" (default) and "debug".
+        :type level: int | str
+        :param start: Return the log entries whose ID is greater or equal to
+            the given value.
+        :type start: int
+        :param size: Restrict the size of the result to the given value. This
+            can be used for pagination.
+        :type size: int
+        :param offset: Number of entries to skip (e.g. for pagination).
+        :type offset: int
+        :param search: Return only the log entries containing the given text.
+        :type search: str
+        :param sort: Sort the log entries according to the given fashion, which
+            can be "sort" or "desc".
+        :type sort: str
+        :param server_id: Returns all log entries of the specified server.
+            All other query parameters remain valid. If no serverId is given,
+            the asked server will reply. This parameter is only meaningful
+            on Coordinators.
+        :type server_id: str
+        :return: Server log entries.
+        :rtype: dict
+        :raise arango.exceptions.ServerReadLogError: If read fails.
+        """
+        params = dict()
+        if upto is not None:
+            params["upto"] = upto
+        if level is not None:
+            params["level"] = level
+        if start is not None:
+            params["start"] = start
+        if size is not None:
+            params["size"] = size
+        if offset is not None:
+            params["offset"] = offset
+        if search is not None:
+            params["search"] = search
+        if sort is not None:
+            params["sort"] = sort
+        if server_id is not None:
+            params["serverId"] = server_id
+
+        request = Request(method="get", endpoint="/_admin/log/entries", params=params)
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ServerReadLogError(resp, request)
+
+            result: Json = resp.body
             return result
 
         return self._execute(request, response_handler)
