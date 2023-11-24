@@ -89,11 +89,11 @@ jobs:
         uses: mxschmitt/action-tmate@v3
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
 
-      - name: Install dependencies
-        run: pip install .[dev]
-
       - name: Run pre-commit checks
         uses: pre-commit/action@v3.0.0
+
+      - name: Install dependencies
+        run: pip install .[dev]
 
       - name: Run Sphinx doctest
         run: python -m sphinx -b doctest docs docs/_build
