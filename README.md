@@ -3,10 +3,16 @@
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/ArangoDB-Community/python-arango/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/ArangoDB-Community/python-arango/tree/main)
 [![CodeQL](https://github.com/ArangoDB-Community/python-arango/actions/workflows/codeql.yaml/badge.svg)](https://github.com/ArangoDB-Community/python-arango/actions/workflows/codeql.yaml)
 [![Docs](https://github.com/ArangoDB-Community/python-arango/actions/workflows/docs.yaml/badge.svg)](https://github.com/ArangoDB-Community/python-arango/actions/workflows/docs.yaml)
-[![codecov](https://codecov.io/gh/ArangoDB-Community/python-arango/branch/main/graph/badge.svg?token=M8zrjrzsUY)](https://codecov.io/gh/ArangoDB-Community/python-arango)
-[![PyPI version](https://badge.fury.io/py/python-arango.svg)](https://badge.fury.io/py/python-arango)
-[![GitHub license](https://img.shields.io/github/license/ArangoDB-Community/python-arango?color=brightgreen)](https://github.com/ArangoDB-Community/python-arango/blob/main/LICENSE)
-![Python version](https://img.shields.io/badge/python-3.8%2B-blue)
+[![Coverage Status](https://codecov.io/gh/ArangoDB-Community/python-arango/branch/main/graph/badge.svg?token=M8zrjrzsUY)](https://codecov.io/gh/ArangoDB-Community/python-arango)
+[![Last commit](https://img.shields.io/github/last-commit/ArangoDB-Community/python-arango)](https://github.com/ArangoDB-Community/python-arango/commits/master)
+
+[![PyPI version badge](https://img.shields.io/pypi/v/python-arango?color=3775A9&style=for-the-badge&logo=pypi&logoColor=FFD43B)](https://pypi.org/project/python-arango/)
+[![Python versions badge](https://img.shields.io/badge/3.8%2B-3776AB?style=for-the-badge&logo=python&logoColor=FFD43B&label=Python)](https://pypi.org/project/python-arango/)
+
+[![License](https://img.shields.io/github/license/ArangoDB-Community/python-arango?color=9E2165&style=for-the-badge)](https://github.com/ArangoDB-Community/python-arango/blob/master/LICENSE)
+[![Code style: black](https://img.shields.io/static/v1?style=for-the-badge&label=code%20style&message=black&color=black)](https://github.com/psf/black)
+[![Downloads](https://img.shields.io/pepy/dt/python-arango?style=for-the-badge&color=282661
+)](https://pepy.tech/project/python-arango)
 
 # Python-Arango
 
