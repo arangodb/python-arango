@@ -100,7 +100,7 @@ class DefaultHTTPAdapter(HTTPAdapter):
         pool_connections: int = DEFAULT_POOLSIZE,
         pool_maxsize: int = DEFAULT_POOLSIZE,
         pool_timeout: Union[int, float, None] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         self._connection_timeout = connection_timeout
         self._pool_timeout = pool_timeout
