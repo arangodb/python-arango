@@ -32,15 +32,7 @@ jobs:
 
       # - run: docker start adb
 
-      - run: |
-        docker run -d --rm \
-        --name arango \
-        -p 8528:8528 \
-        -p 8529:8529 \
-        -v "$(pwd)/tests/static/":/tests/static \
-        -v /tmp:/tmp \
-        "arangodb/arangodb:latest" \
-        /bin/sh -c "arangodb --configuration=$(pwd)/tests/static/single.conf"
+      - run: docker run -d --rm --name adb -p 8529:8529 -e ARANGO_ROOT_PASSWORD= arangodb/arangodb:latest
 
       - run: docker ps -a
 
