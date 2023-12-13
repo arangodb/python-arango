@@ -28,9 +28,18 @@ jobs:
       - setup_remote_docker:
           docker_layer_caching: true
 
-      - run: docker create --name adb -p 8529:8529 -e ARANGO_ROOT_PASSWORD= arangodb/arangodb
+      # - run: docker create --name adb -p 8529:8529 -e ARANGO_ROOT_PASSWORD= arangodb/arangodb
 
-      - run: docker start adb
+      # - run: docker start adb
+
+      - run: docker run -d --rm \
+        --name arango \
+        -p 8528:8528 \
+        -p 8529:8529 \
+        -v "$(pwd)/tests/static/":/tests/static \
+        -v /tmp:/tmp \
+        "arangodb/arangodb:latest" \
+        /bin/sh -c "arangodb --configuration=/tests/static/single.conf"
 
       - run: docker ps -a
 
