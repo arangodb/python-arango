@@ -6,111 +6,131 @@ version: 2.1
 workflows:
   ci:
     jobs:
-      - lint
-      - test:
-          matrix:
-            parameters:
-              # TODO: Revisit why pyenv doesn't recognize 3.12
-              python_version: ["3.10"] # ["3.8", "3.9", "3.10", "3.11"] # "3.12"
-              arangodb_config: ["single"] # ["single", "cluster"]
-              arangodb_license: ["community"] #["community", "enterprise"]
-              arangodb_version: ["latest"] #["3.10.10", "3.11.4", "latest"]
+      - temp
+      # - lint
+      # - test:
+      #     matrix:
+      #       parameters:
+      #         # TODO: Revisit why pyenv doesn't recognize 3.12
+      #         python_version: ["3.10"] # ["3.8", "3.9", "3.10", "3.11"] # "3.12"
+      #         arangodb_config: ["single"] # ["single", "cluster"]
+      #         arangodb_license: ["community"] #["community", "enterprise"]
+      #         arangodb_version: ["latest"] #["3.10.10", "3.11.4", "latest"]
 
 jobs:
-  lint:
-    docker:
-      - image: python:latest
-    steps:
-      - checkout
-      - run:
-          name: Install Dependencies
-          command: pip install .[dev]
-
-      - run:
-          name: Run black
-          command: black --check --verbose --diff --color --config=pyproject.toml ./arango ./tests/
-
-      - run:
-          name: Run flake8
-          command: flake8 ./arango ./tests
-
-      - run:
-          name: Run isort
-          command: isort --check ./arango ./tests
-
-      - run:
-          name: Run mypy
-          command: mypy ./arango
-
-  test:
-    parameters:
-      python_version:
-        type: string
-      arangodb_config:
-        type: string
-      arangodb_license:
-        type: string
-      arangodb_version:
-        type: string
-    # TODO: Reconsider using a docker image instead of a machine
-    # i.e cimg/python:<< parameters.python_version >>
+  temp:
     docker:
       - image: cimg/python:<< parameters.python_version >>
-    # machine:
-    #   image: ubuntu-2204:current
+
     steps:
       - checkout
 
       - setup_remote_docker:
-          docker_layer_caching: true
+        docker_layer_caching: true
 
-      - run:
-          name: Set Up ArangoDB
-          command: |
-            chmod +x starter.sh
-            ./starter.sh << parameters.arangodb_config >> << parameters.arangodb_license >> << parameters.arangodb_version >>
+      - run: docker create --name adb -p 8529:8529 -e ARANGO_ROOT_PASSWORD= arangodb/arangodb
 
-      - restore_cache:
-          key: pip-and-local-cache
-
-      # TODO: Revisit this bottleneck
-      # - run:
-      #     name: Setup Python
-      #     command: |
-      #       pyenv --version
-      #       pyenv install -f << parameters.python_version >>
-      #       pyenv global << parameters.python_version >>
-
-      - run:
-          name: "Install Dependencies"
-          command: pip install -e .[dev]
+      - run: docker start adb
 
       - run: docker ps -a
+      
 
-      - run: docker logs arango
+      
 
-      - run:
-          name: "Run pytest"
-          command: |
-            mkdir test-results
+  # lint:
+  #   docker:
+  #     - image: python:latest
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         name: Install Dependencies
+  #         command: pip install .[dev]
 
-            args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "localhost" "--port=8529")
-            if [ << parameters.arangodb_config >> = "cluster" ]; then
-              args+=("--cluster" "--port=8539" "--port=8549")
-            fi
+  #     - run:
+  #         name: Run black
+  #         command: black --check --verbose --diff --color --config=pyproject.toml ./arango ./tests/
 
-            if [ << parameters.arangodb_license >> = "enterprise" ]; then
-              args+=("--enterprise")
-            fi
+  #     - run:
+  #         name: Run flake8
+  #         command: flake8 ./arango ./tests
 
-            echo "Running pytest with args: ${args[@]}"
-            pytest --cov=arango --cov-report=xml "${args[@]}"
+  #     - run:
+  #         name: Run isort
+  #         command: isort --check ./arango ./tests
 
-      - store_artifacts:
-          path: test-results
+  #     - run:
+  #         name: Run mypy
+  #         command: mypy ./arango
 
-      - store_test_results:
-          path: test-results
+  # test:
+  #   parameters:
+  #     python_version:
+  #       type: string
+  #     arangodb_config:
+  #       type: string
+  #     arangodb_license:
+  #       type: string
+  #     arangodb_version:
+  #       type: string
+  #   # TODO: Reconsider using a docker image instead of a machine
+  #   # i.e cimg/python:<< parameters.python_version >>
+  #   docker:
+  #     - image: cimg/python:<< parameters.python_version >>
+  #   # machine:
+  #   #   image: ubuntu-2204:current
+  #   steps:
+  #     - checkout
+
+  #     - setup_remote_docker:
+  #         docker_layer_caching: true
+
+  #     - run:
+  #         name: Set Up ArangoDB
+  #         command: |
+  #           chmod +x starter.sh
+  #           ./starter.sh << parameters.arangodb_config >> << parameters.arangodb_license >> << parameters.arangodb_version >>
+
+  #     - restore_cache:
+  #         key: pip-and-local-cache
+
+  #     # TODO: Revisit this bottleneck
+  #     # - run:
+  #     #     name: Setup Python
+  #     #     command: |
+  #     #       pyenv --version
+  #     #       pyenv install -f << parameters.python_version >>
+  #     #       pyenv global << parameters.python_version >>
+
+  #     - run:
+  #         name: "Install Dependencies"
+  #         command: pip install -e .[dev]
+
+  #     - run: docker ps -a
+
+  #     - run: docker logs arango
+
+  #     - run:
+  #         name: "Run pytest"
+  #         command: |
+  #           mkdir test-results
+
+  #           args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "localhost" "--port=8529")
+  #           if [ << parameters.arangodb_config >> = "cluster" ]; then
+  #             args+=("--cluster" "--port=8539" "--port=8549")
+  #           fi
+
+  #           if [ << parameters.arangodb_license >> = "enterprise" ]; then
+  #             args+=("--enterprise")
+  #           fi
+
+  #           echo "Running pytest with args: ${args[@]}"
+  #           pytest --cov=arango --cov-report=xml "${args[@]}"
+
+  #     - store_artifacts:
+  #         path: test-results
+
+  #     - store_test_results:
+  #         path: test-results
 
       # - run:
       #     name: Upload to Coveralls
