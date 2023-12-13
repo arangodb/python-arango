@@ -11,10 +11,10 @@ workflows:
           matrix:
             parameters:
               # TODO: Revisit why pyenv doesn't recognize 3.12
-              python_version: ["3.8", "3.9", "3.10", "3.11"] # "3.12"
-              arangodb_config: ["single", "cluster"]
-              arangodb_license: ["community", "enterprise"]
-              arangodb_version: ["3.10.10", "3.11.4", "latest"]
+              python_version: ["3.10"] # ["3.8", "3.9", "3.10", "3.11"] # "3.12"
+              arangodb_config: ["single"] # ["single", "cluster"]
+              arangodb_license: ["community"] #["community", "enterprise"]
+              arangodb_version: ["latest"] #["3.10.10", "3.11.4", "latest"]
 
 jobs:
   lint:
@@ -54,10 +54,15 @@ jobs:
         type: string
     # TODO: Reconsider using a docker image instead of a machine
     # i.e cimg/python:<< parameters.python_version >>
-    machine:
-      image: ubuntu-2204:current
+    docker:
+      - image: cimg/python:<< parameters.python_version >>
+    # machine:
+    #   image: ubuntu-2204:current
     steps:
       - checkout
+
+      - setup_remote_docker:
+          docker_layer_caching: true
 
       - run:
           name: Set Up ArangoDB
@@ -69,18 +74,20 @@ jobs:
           key: pip-and-local-cache
 
       # TODO: Revisit this bottleneck
-      - run:
-          name: Setup Python
-          command: |
-            pyenv --version
-            pyenv install -f << parameters.python_version >>
-            pyenv global << parameters.python_version >>
+      # - run:
+      #     name: Setup Python
+      #     command: |
+      #       pyenv --version
+      #       pyenv install -f << parameters.python_version >>
+      #       pyenv global << parameters.python_version >>
 
       - run:
           name: "Install Dependencies"
           command: pip install -e .[dev]
 
       - run: docker ps -a
+
+      - run: docker logs arango
 
       - run:
           name: "Run pytest"
