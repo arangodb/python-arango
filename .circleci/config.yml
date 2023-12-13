@@ -34,6 +34,9 @@ jobs:
 
       - run: docker ps -a
 
+      - run: docker logs adb
+
+
   # lint:
   #   docker:
   #     - image: python:latest
