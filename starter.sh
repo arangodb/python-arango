@@ -41,13 +41,13 @@ fi
 
 docker run -d --rm \
   --name arango \
-  -p 8528:8528 \
+#   -p 8528:8528 \
   -p 8529:8529 \
   $extra_ports \
-  -v "$(pwd)/tests/static/":/tests/static \
-  -v /tmp:/tmp \
-  "arangodb/$image_name:$version" \
-  /bin/sh -c "arangodb --configuration=/tests/static/$conf_file.conf"
+#   -v "$(pwd)/tests/static/":/tests/static \
+#   -v /tmp:/tmp \
+  "arangodb/$image_name:$version"
+#   /bin/sh -c "arangodb --configuration=/tests/static/$conf_file.conf"
 
 wget --quiet --waitretry=1 --tries=120 -O - http://localhost:8528/version | jq
 if [ $? -eq 0 ]; then
