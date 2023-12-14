@@ -92,7 +92,7 @@ jobs:
           name: Set Up ArangoDB
           command: ./starter.sh << parameters.arangodb_config >> << parameters.arangodb_license >> << parameters.arangodb_version >>
 
-      - run: docker ps -a
+      - run: docker logs adb --follow
 
       - run: sleep 10
 
