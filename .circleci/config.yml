@@ -90,6 +90,12 @@ jobs:
           name: Set Up ArangoDB
           command: ./starter.sh << parameters.arangodb_config >> << parameters.arangodb_license >> << parameters.arangodb_version >>
 
+      - run: docker ps -a
+
+      - run: sleep 10
+
+      - run: docker logs adb
+
       # - restore_cache:
       #     key: pip-and-local-cache
 
@@ -104,10 +110,6 @@ jobs:
       # - run:
       #     name: "Install Dependencies"
       #     command: pip install -e .[dev]
-
-      - run: docker ps -a
-
-      - run: docker logs arango
 
       # - run:
       #     name: "Run pytest"
