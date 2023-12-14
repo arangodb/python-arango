@@ -38,6 +38,8 @@ jobs:
 
       - run: sleep 10
 
+      - run: docker ps -a
+
       - run: docker logs adb
 
 
@@ -93,6 +95,8 @@ jobs:
       - run: docker ps -a
 
       - run: sleep 10
+
+      - run: docker ps -a
 
       - run: docker logs adb
 
