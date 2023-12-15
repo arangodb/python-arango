@@ -8,7 +8,7 @@ workflows:
     jobs:
       - lint
       - test:
-         name:  test-python-<< matrix.python_version >>-arangodb-<< matrix.arangodb_version >>-<< matrix.arangodb_config >>-<< matrix.arangodb_license >>
+          name:  test-python-<< matrix.python_version >>-arangodb-<< matrix.arangodb_version >>-<< matrix.arangodb_config >>-<< matrix.arangodb_license >>
           matrix:
             parameters:
               # TODO: Revisit why pyenv doesn't recognize 3.12
