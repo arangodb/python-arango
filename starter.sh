@@ -39,25 +39,21 @@ else
     conf_file="${setup}"
 fi
 
-docker run -d --rm --name adb -p 8529:8529 arangodb/arangodb:latest
+docker run -d \
+  --name arango \
+  -p 8528:8528 \
+  -p 8529:8529 \
+  $extra_ports \
+  -v "$(pwd)/tests/static/":/tests/static \
+  -v /tmp:/tmp \
+  "arangodb/$image_name:$version" \
+  /bin/sh -c "arangodb --configuration=/tests/static/$conf_file.conf"
 
-docker ps -a
-
-# docker run -d --rm \
-#   --name arango \
-#   -p 8528:8528 \
-#   -p 8529:8529 \
-#   $extra_ports \
-#   -v "$(pwd)/tests/static/":/tests/static \
-#   -v /tmp:/tmp \
-#   "arangodb/$image_name:$version"
-#   /bin/sh -c "arangodb --configuration=/tests/static/$conf_file.conf"
-
-# wget --quiet --waitretry=1 --tries=120 -O - http://localhost:8528/version | jq
-# if [ $? -eq 0 ]; then
-#     echo "OK starter ready"
-#     exit 0
-# else
-#     echo "ERROR starter not ready, giving up"
-#     exit 1
-# fi
+wget --quiet --waitretry=1 --tries=120 -O - http://localhost:8528/version | jq
+if [ $? -eq 0 ]; then
+    echo "OK starter ready"
+    exit 0
+else
+    echo "ERROR starter not ready, giving up"
+    exit 1
+fi
