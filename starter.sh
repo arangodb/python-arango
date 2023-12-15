@@ -40,6 +40,7 @@ else
 fi
 
 echo "$(pwd)/tests/static/"
+ls
 
 docker run -d \
   --name arango \
@@ -51,7 +52,7 @@ docker run -d \
   "arangodb/$image_name:$version" \
   /bin/sh -c "arangodb --configuration=/tests/static/$conf_file.conf"
 
-wget --quiet --waitretry=1 --tries=120 -O - http://localhost:8528/version | jq
+wget --quiet --waitretry=1 --tries=3 -O - http://localhost:8528/version | jq
 if [ $? -eq 0 ]; then
     echo "OK starter ready"
     exit 0
