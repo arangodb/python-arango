@@ -96,10 +96,8 @@ jobs:
 
       - run: docker ps -a
 
-      - run: docker logs adb
-
-      # - restore_cache:
-      #     key: pip-and-local-cache
+      - restore_cache:
+          key: pip-and-local-cache
 
       # TODO: Revisit this bottleneck
       # - run:
@@ -109,32 +107,32 @@ jobs:
       #       pyenv install -f << parameters.python_version >>
       #       pyenv global << parameters.python_version >>
 
-      # - run:
-      #     name: "Install Dependencies"
-      #     command: pip install -e .[dev]
+      - run:
+          name: "Install Dependencies"
+          command: pip install -e .[dev]
 
-      # - run:
-      #     name: "Run pytest"
-      #     command: |
-      #       mkdir test-results
+      - run:
+          name: "Run pytest"
+          command: |
+            mkdir test-results
 
-      #       args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "localhost" "--port=8529")
-      #       if [ << parameters.arangodb_config >> = "cluster" ]; then
-      #         args+=("--cluster" "--port=8539" "--port=8549")
-      #       fi
+            args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "localhost" "--port=8529")
+            if [ << parameters.arangodb_config >> = "cluster" ]; then
+              args+=("--cluster" "--port=8539" "--port=8549")
+            fi
 
-      #       if [ << parameters.arangodb_license >> = "enterprise" ]; then
-      #         args+=("--enterprise")
-      #       fi
+            if [ << parameters.arangodb_license >> = "enterprise" ]; then
+              args+=("--enterprise")
+            fi
 
-      #       echo "Running pytest with args: ${args[@]}"
-      #       pytest --cov=arango --cov-report=xml "${args[@]}"
+            echo "Running pytest with args: ${args[@]}"
+            pytest --cov=arango --cov-report=xml "${args[@]}"
 
-      # - store_artifacts:
-      #     path: test-results
+      - store_artifacts:
+          path: test-results
 
-      # - store_test_results:
-      #     path: test-results
+      - store_test_results:
+          path: test-results
 
       # - run:
       #     name: Upload to Coveralls
