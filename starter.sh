@@ -39,6 +39,8 @@ else
     conf_file="${setup}"
 fi
 
+echo "$(pwd)/tests/static/"
+
 docker run -d \
   --name arango \
   -p 8528:8528 \
