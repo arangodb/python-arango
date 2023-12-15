@@ -39,18 +39,28 @@ else
     conf_file="${setup}"
 fi
 
-echo "$(pwd)/tests/static/"
-ls
+docker build \
+  --build-arg image_name=$image_name \
+  --build-arg version=$version \
+  -t arangodb-$image_name-ci:$version .
 
 docker run -d \
   --name arango \
   -p 8528:8528 \
   -p 8529:8529 \
   $extra_ports \
-  -v "$(pwd)/tests/static/":/tests/static \
-  -v /tmp:/tmp \
-  "arangodb/$image_name:$version" \
+  arangodb-$image_name-ci:$version \
   /bin/sh -c "arangodb --configuration=/tests/static/$conf_file.conf"
+
+# docker run -d \
+#   --name arango \
+#   -p 8528:8528 \
+#   -p 8529:8529 \
+#   $extra_ports \
+#   -v "$(pwd)/tests/static/":/tests/static \
+#   -v /tmp:/tmp \
+#   "arangodb/$image_name:$version" \
+#   /bin/sh -c "arangodb --configuration=/tests/static/$conf_file.conf"
 
 wget --quiet --waitretry=1 --tries=3 -O - http://localhost:8528/version | jq
 if [ $? -eq 0 ]; then
