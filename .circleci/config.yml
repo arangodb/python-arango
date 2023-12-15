@@ -92,8 +92,6 @@ jobs:
           name: Set Up ArangoDB
           command: ./starter.sh << parameters.arangodb_config >> << parameters.arangodb_license >> << parameters.arangodb_version >>
 
-      - run: sleep 10
-
       - run: docker logs arango
 
       - run: docker ps -a
