@@ -82,6 +82,8 @@ jobs:
 
       - run: docker ps -a
 
+      - run: docker logs arango
+
       - run:
           name: "Run pytest"
           command: |
