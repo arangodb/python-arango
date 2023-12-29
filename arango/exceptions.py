@@ -361,7 +361,7 @@ class DatabaseDeleteError(ArangoServerError):
 
 
 class DatabaseCompactError(ArangoServerError):
-    """Failed to compact database."""
+    """Failed to compact databases."""
 
 
 #######################
