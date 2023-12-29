@@ -1,6 +1,6 @@
+import time
 import warnings
 
-import time
 import pytest
 from packaging import version
 
