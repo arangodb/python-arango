@@ -8,7 +8,7 @@ __all__ = [
 
 from datetime import datetime
 from numbers import Number
-from typing import Any, List, Optional, Sequence, Union
+from typing import Any, List, Optional, Sequence, Union, Dict
 from warnings import warn
 
 from arango.api import ApiGroup
@@ -81,6 +81,8 @@ from arango.exceptions import (
     ViewRenameError,
     ViewReplaceError,
     ViewUpdateError,
+    ServerLogSettingError,
+    ServerLogSettingSetError,
 )
 from arango.executor import (
     AsyncApiExecutor,
@@ -749,6 +751,52 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def log_settings(self) -> Result[Json]:
+        """Return the structured log settings.
+
+        :return: Current log settings. False values are not returned.
+        :rtype: dict
+        """
+        request = Request(method="get", endpoint="/_admin/log/structured")
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ServerLogSettingError(resp, request)
+            result: Json = resp.body
+            return result
+
+        return self._execute(request, response_handler)
+
+    def set_log_settings(self, **kwargs: Dict[str, Any]) -> Result[Json]:
+        """Set the structured log settings.
+
+        This method takes arbitrary keyword arguments where the keys are the
+        structured log parameters and the values are true or false, for either
+        enabling or disabling the parameters.
+
+        .. code-block:: python
+
+            arango.set_log_settings(
+                database=True,
+                url=True,
+                username=False,
+            )
+
+        :param kwargs: Structured log parameters.
+        :type kwargs: Dict[str, Any]
+        :return: New log settings. False values are not returned.
+        :rtype: dict
+        """
+        request = Request(method="put", endpoint="/_admin/log/structured", data=kwargs)
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ServerLogSettingSetError(resp, request)
+            result: Json = resp.body
+            return result
+
+        return self._execute(request, response_handler)
+
     def log_levels(self, server_id: Optional[str] = None) -> Result[Json]:
         """Return current logging levels.
 
@@ -775,7 +823,7 @@ class Database(ApiGroup):
         return self._execute(request, response_handler)
 
     def set_log_levels(
-        self, server_id: Optional[str] = None, **kwargs: str
+        self, server_id: Optional[str] = None, **kwargs: Dict[str, Any]
     ) -> Result[Json]:
         """Set the logging levels.
 
@@ -797,6 +845,8 @@ class Database(ApiGroup):
             JWT authentication whereas Coordinators also support authentication
             using usernames and passwords.
         :type server_id: str | None
+        :param kwargs: Logging levels.
+        :type kwargs: Dict[str, Any]
         :return: New logging levels.
         :rtype: dict
         """
