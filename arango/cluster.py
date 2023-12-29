@@ -140,6 +140,58 @@ class Cluster(ApiGroup):  # pragma: no cover
 
         return self._execute(request, response_handler)
 
+    def server_maintenance_mode(self, server_id: str) -> Result[Json]:
+        """Return the maintenance status for the given server.
+
+        :param server_id: Server ID.
+        :type server_id: str
+        :return: Maintenance status for the given server.
+        :rtype: dict
+        :raise arango.exceptions.ClusterMaintenanceModeError: If retrieval fails.
+        """
+        request = Request(
+            method="get",
+            endpoint=f"/_admin/cluster/maintenance/{server_id}",
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body.get("result", {})
+                return result
+
+            raise ClusterMaintenanceModeError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def toggle_server_maintenance_mode(
+        self, server_id: str, mode: str, timeout: Optional[int] = None
+    ) -> Result[Json]:
+        """Enable or disable the maintenance mode for the given server.
+
+        :param server_id: Server ID.
+        :type server_id: str
+        :param mode: Maintenance mode. Allowed values are "normal" and "maintenance".
+        :type mode: str
+        :param timeout: Timeout in seconds.
+        :type timeout: Optional[int]
+        :return: Result of the operation.
+        :rtype: dict
+        :raise arango.exceptions.ClusterMaintenanceModeError: If toggle fails.
+        """
+        request = Request(
+            method="put",
+            endpoint=f"/_admin/cluster/maintenance/{server_id}",
+            data={"mode": mode, "timeout": timeout},
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_body(resp.body)
+
+            raise ClusterMaintenanceModeError(resp, request)
+
+        return self._execute(request, response_handler)
+
     def health(self) -> Result[Json]:
         """Return the cluster health.
 
