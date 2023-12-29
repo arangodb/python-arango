@@ -13,6 +13,7 @@ from arango.errno import (
     USE_SYSTEM_DATABASE,
 )
 from arango.exceptions import (
+    DatabaseCompactError,
     DatabaseCreateError,
     DatabaseDeleteError,
     DatabaseListError,
@@ -37,7 +38,12 @@ from arango.foxx import Foxx
 from arango.pregel import Pregel
 from arango.replication import Replication
 from arango.wal import WAL
-from tests.helpers import assert_raises, generate_db_name
+from tests.helpers import (
+    assert_raises,
+    generate_col_name,
+    generate_db_name,
+    generate_jwt,
+)
 
 
 def test_database_attributes(db, username):
@@ -57,7 +63,7 @@ def test_database_attributes(db, username):
     assert isinstance(db.wal, WAL)
 
 
-def test_database_misc_methods(sys_db, db, bad_db, cluster):
+def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret):
     # Test get properties
     properties = db.properties()
     assert "id" in properties
@@ -262,6 +268,23 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
     with assert_raises(ServerEngineError) as err:
         bad_db.engine()
     assert err.value.error_code in {11, 1228}
+
+    # Test database compact
+    with assert_raises(DatabaseCompactError) as err:
+        db.compact()
+
+    with assert_raises(DatabaseCompactError) as err:
+        sys_db.compact()
+
+    collection = db.create_collection(generate_col_name())
+    collection.insert({"foo": "bar"})
+
+    token = generate_jwt(secret)
+    db_superuser = client.db(db.name, superuser_token=token)
+    result = db_superuser.compact()
+
+    # TODO: Why is `result` == {} ?
+    # assert result == ...
 
 
 def test_database_management(db, sys_db, bad_db):
