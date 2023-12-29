@@ -543,6 +543,27 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def echo_request(self, body: Any) -> Result[Json]:
+        """Echo a request.
+
+        Returns an object with the servers request information.
+
+        :param body: The body of the request. Can be of any type
+            and is simply forwarded.
+        :return: The echo response.
+        :rtype: dict
+        :raise arango.exceptions.ServerEchoError: If retrieval fails.
+        """
+        request = Request(method="post", endpoint="/_admin/echo", data=body)
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ServerEchoError(resp, request)
+            result: Json = resp.body
+            return result
+
+        return self._execute(request, response_handler)
+
     def shutdown(self, soft: bool = False) -> Result[bool]:  # pragma: no cover
         """Initiate server shutdown sequence.
 

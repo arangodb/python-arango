@@ -166,6 +166,12 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
         bad_db.echo()
     assert err.value.error_code in {11, 1228}
 
+    # Test echo (forward request)
+    body = "request goes here"
+    echo = db.echo_request(body)
+    assert isinstance(echo, dict)
+    assert echo["requestBody"] == body
+
     # Test read_log with default parameters
     # Deprecated in 3.8.0
     # TODO: Remove in future release
