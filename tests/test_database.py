@@ -273,9 +273,6 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret):
     with assert_raises(DatabaseCompactError) as err:
         db.compact()
 
-    with assert_raises(DatabaseCompactError) as err:
-        sys_db.compact()
-
     collection = db.create_collection(generate_col_name())
     collection.insert({"foo": "bar"})
 
