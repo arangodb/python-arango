@@ -263,6 +263,12 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
         bad_db.engine()
     assert err.value.error_code in {11, 1228}
 
+    # Test execute JavaScript code
+    assert db.execute(1) == None
+    assert db.execute(None) == {"error": False, "code": 200}
+    assert db.execute("") == {"error": False, "code": 200}
+    assert db.execute("return 1") == 1
+
 
 def test_database_management(db, sys_db, bad_db):
     # Test list databases
