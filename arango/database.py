@@ -8,7 +8,7 @@ __all__ = [
 
 from datetime import datetime
 from numbers import Number
-from typing import Any, List, Optional, Sequence, Union, Dict
+from typing import Any, Dict, List, Optional, Sequence, Union
 from warnings import warn
 
 from arango.api import ApiGroup
@@ -48,6 +48,8 @@ from arango.exceptions import (
     ServerLicenseSetError,
     ServerLogLevelError,
     ServerLogLevelSetError,
+    ServerLogSettingError,
+    ServerLogSettingSetError,
     ServerMetricsError,
     ServerReadLogError,
     ServerReloadRoutingError,
@@ -81,8 +83,6 @@ from arango.exceptions import (
     ViewRenameError,
     ViewReplaceError,
     ViewUpdateError,
-    ServerLogSettingError,
-    ServerLogSettingSetError,
 )
 from arango.executor import (
     AsyncApiExecutor,
