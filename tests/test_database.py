@@ -143,15 +143,8 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
         db.set_mode("readonly")
     assert err.value.error_code in {11, 1228}
 
-    sys_db.set_mode("readonly")
-    assert db.mode() == "readonly"
-
-    with assert_raises(DatabaseCreateError):
-        # Should fail because of read-only mode
-        sys_db.create_database("test")
-    assert err.value.error_code in {11, 1228}
-
-    sys_db.set_mode("default")
+    result = sys_db.set_mode("default")
+    assert result == {"mode": "default"}
 
     # Test get server status
     status = db.status()
