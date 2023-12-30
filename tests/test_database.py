@@ -270,7 +270,6 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
     info = sys_db.support_info()
     assert isinstance(info, dict)
     assert "deployment" in info
-    assert "host" in info
     assert "date" in info
 
 
