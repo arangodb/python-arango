@@ -32,8 +32,21 @@ database.
     # Retrieve the server time.
     sys_db.time()
 
-    # Retrieve the server role in a cluster.
+    # Retrieve the server role.
     sys_db.role()
+
+    # Retrieve the server role in a cluster.
+    sys_db.cluster.server_role()
+
+    # Retrieve the server mode.
+    sys_db.mode()
+
+    # Retrieve the server mode in a cluster.
+    sys_db.cluster.server_mode()
+
+    # Set the server mode.
+    sys_db.set_mode('readonly')
+    sys_db.set_mode('default')
 
     # Retrieve the server statistics.
     sys_db.statistics()

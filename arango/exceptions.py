@@ -683,7 +683,15 @@ class ServerMetricsError(ArangoServerError):
 
 
 class ServerRoleError(ArangoServerError):
-    """Failed to retrieve server role in a cluster."""
+    """Failed to retrieve server role."""
+
+
+class ServerModeError(ArangoServerError):
+    """Failed to retrieve server mode."""
+
+
+class ServerModeSetError(ArangoServerError):
+    """Failed to set server mode."""
 
 
 class ServerTLSError(ArangoServerError):
@@ -968,7 +976,11 @@ class ClusterServerIDError(ArangoServerError):
 
 
 class ClusterServerRoleError(ArangoServerError):
-    """Failed to retrieve server role."""
+    """Failed to retrieve server role in a cluster."""
+
+
+class ClusterServerModeError(ArangoServerError):
+    """Failed to retrieve server mode in a cluster."""
 
 
 class ClusterServerStatisticsError(ArangoServerError):

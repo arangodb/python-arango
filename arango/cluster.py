@@ -11,6 +11,7 @@ from arango.exceptions import (
     ClusterServerCountError,
     ClusterServerEngineError,
     ClusterServerIDError,
+    ClusterServerModeError,
     ClusterServerRoleError,
     ClusterServerStatisticsError,
     ClusterServerVersionError,
@@ -54,6 +55,27 @@ class Cluster(ApiGroup):  # pragma: no cover
             if resp.is_success:
                 return str(resp.body["role"])
             raise ClusterServerRoleError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def server_mode(self) -> Result[str]:
+        """Return the server mode.
+
+        In a read-only server, all write operations will fail
+        with an error code of 1004 (ERROR_READ_ONLY). Creating or dropping
+        databases and collections will also fail with error code 11 (ERROR_FORBIDDEN).
+
+        :return: Server mode. Possible values are "default" or "readonly".
+        :rtype: str
+        :raise arango.exceptions.ClusterServerModeError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_admin/server/mode")
+
+        def response_handler(resp: Response) -> str:
+            if resp.is_success:
+                return str(resp.body["mode"])
+
+            raise ClusterServerModeError(resp, request)
 
         return self._execute(request, response_handler)
 

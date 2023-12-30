@@ -24,6 +24,7 @@ from arango.exceptions import (
     ServerLogLevelError,
     ServerLogLevelSetError,
     ServerMetricsError,
+    ServerModeSetError,
     ServerReadLogError,
     ServerReloadRoutingError,
     ServerRequiredDBVersionError,
@@ -131,6 +132,26 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
     with assert_raises(ServerRoleError) as err:
         bad_db.role()
     assert err.value.error_code in {11, 1228}
+
+    # Test get/set server mode
+    assert sys_db.mode() == "default"
+    with assert_raises(ServerModeSetError):
+        sys_db.set_mode("badmode")
+    assert err.value.error_code in {11, 1228}
+
+    with assert_raises(ServerModeSetError):
+        db.set_mode("readonly")
+    assert err.value.error_code in {11, 1228}
+
+    sys_db.set_mode("readonly")
+    assert db.mode() == "readonly"
+
+    with assert_raises(DatabaseCreateError):
+        # Should fail because of read-only mode
+        sys_db.create_database("test")
+    assert err.value.error_code in {11, 1228}
+
+    sys_db.set_mode("default")
 
     # Test get server status
     status = db.status()
