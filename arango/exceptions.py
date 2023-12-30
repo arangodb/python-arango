@@ -360,6 +360,10 @@ class DatabaseDeleteError(ArangoServerError):
     """Failed to delete database."""
 
 
+class DatabaseSupportInfoError(ArangoServerError):
+    """Failed to retrieve support info for deployment."""
+
+
 #######################
 # Document Exceptions #
 #######################

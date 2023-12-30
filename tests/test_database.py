@@ -17,6 +17,7 @@ from arango.exceptions import (
     DatabaseDeleteError,
     DatabaseListError,
     DatabasePropertiesError,
+    DatabaseSupportInfoError,
     ServerDetailsError,
     ServerEchoError,
     ServerEngineError,
@@ -262,6 +263,15 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
     with assert_raises(ServerEngineError) as err:
         bad_db.engine()
     assert err.value.error_code in {11, 1228}
+
+    with assert_raises(DatabaseSupportInfoError) as err:
+        db.support_info()
+
+    info = sys_db.support_info()
+    assert isinstance(info, dict)
+    assert "deployment" in info
+    assert "host" in info
+    assert "date" in info
 
 
 def test_database_management(db, sys_db, bad_db):

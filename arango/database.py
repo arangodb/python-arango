@@ -31,6 +31,7 @@ from arango.exceptions import (
     DatabaseDeleteError,
     DatabaseListError,
     DatabasePropertiesError,
+    DatabaseSupportInfoError,
     GraphCreateError,
     GraphDeleteError,
     GraphListError,
@@ -2672,6 +2673,38 @@ class Database(ApiGroup):
             if resp.is_success:
                 return True
             raise AnalyzerDeleteError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    ###########
+    # Support #
+    ###########
+
+    def support_info(self) -> Result[Json]:
+        """Return information about the deployment.
+
+        Retrieves deployment information for support purposes.
+        The endpoint returns data about the ArangoDB version used,
+        the host (operating system, server ID, CPU and storage capacity,
+        current utilization, a few metrics) and the other servers in the
+        deployment (in case of Active Failover or cluster deployments).
+
+        NOTE: This method can only be accessed from inside the **_system** database.
+        The is a policy control startup option `--server.support-info-api` that controls
+        if and to whom the API is made available.
+
+        :return: Deployment information.
+        :rtype: dict
+        :raise arango.exceptions.DatabaseSupportInfoError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_admin/support-info")
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body
+                return result
+
+            raise DatabaseSupportInfoError(resp, request)
 
         return self._execute(request, response_handler)
 
