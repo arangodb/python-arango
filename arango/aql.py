@@ -276,6 +276,7 @@ class AQL(ApiGroup):
         fill_block_cache: Optional[bool] = None,
         allow_dirty_read: bool = False,
         allow_retry: bool = False,
+        force_one_shard_attribute_value: Optional[str] = None,
     ) -> Result[Cursor]:
         """Execute the query and return the result cursor.
 
@@ -373,6 +374,16 @@ class AQL(ApiGroup):
         :param allow_retry: Make it possible to retry fetching the latest batch
             from a cursor.
         :type allow_retry: bool
+        :param force_one_shard_attribute_value: (Enterprise Only) Explicitly set
+            a shard key value that will be used during query snippet distribution
+            to limit the query to a specific server in the cluster. This query option
+            can be used in complex queries in case the query optimizer cannot
+            automatically detect that the query can be limited to only a single
+            server (e.g. in a disjoint smart graph case). If the option is set
+            incorrectly, i.e. to a wrong shard key value, then the query may be
+            shipped to a wrong DB server and may not return results
+            (i.e. empty result set). Use at your own risk.
+        :param force_one_shard_attribute_value: str | None
         :return: Result cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.AQLQueryExecuteError: If execute fails.
@@ -418,10 +429,10 @@ class AQL(ApiGroup):
             options["skipInaccessibleCollections"] = skip_inaccessible_cols
         if max_runtime is not None:
             options["maxRuntime"] = max_runtime
-
-        # New in 3.11
         if allow_retry is not None:
             options["allowRetry"] = allow_retry
+        if force_one_shard_attribute_value is not None:
+            options["forceOneShardAttributeValue"] = force_one_shard_attribute_value
 
         if options:
             data["options"] = options
