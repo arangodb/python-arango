@@ -1,4 +1,4 @@
 requests_toolbelt
 importlib_metadata
-jwt
+PyJWT
 sphinx_rtd_theme
