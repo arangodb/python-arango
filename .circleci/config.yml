@@ -1,13 +1,14 @@
 version: 2.1
 
-# orbs:
-#   coveralls: coveralls/coveralls@2.2.1
+orbs:
+  codecov: codecov/codecov@3.3.0
 
 workflows:
   ci:
     jobs:
       - lint
       - test:
+          name:  Python (<< matrix.python_version >>) - ArangoDB (<< matrix.arangodb_license >>, << matrix.arangodb_version >> << matrix.arangodb_config >>)
           matrix:
             parameters:
               # TODO: Revisit why pyenv doesn't recognize 3.12
@@ -82,6 +83,8 @@ jobs:
 
       - run: docker ps -a
 
+      - run: docker logs arango
+
       - run:
           name: "Run pytest"
           command: |
@@ -97,7 +100,7 @@ jobs:
             fi
 
             echo "Running pytest with args: ${args[@]}"
-            pytest --cov=arango --cov-report=xml "${args[@]}"
+            pytest --cov=arango --cov-report=xml --cov-report term-missing --color=yes --code-highlight=yes "${args[@]}"
 
       - store_artifacts:
           path: test-results
@@ -105,9 +108,5 @@ jobs:
       - store_test_results:
           path: test-results
 
-      # - run:
-      #     name: Upload to Coveralls
-      #     command: |
-      #       if [ "<< parameters.python_version >>" = "3.11" && "<< parameters.arangodb_config >>" = "single" && "<< parameters.arangodb_license >>" = "community" && "<< parameters.arangodb_version >>" = "latest"  ]; then
-      #         coveralls/upload
-      #       fi
+      - codecov/upload:
+        file: coverage.xml
