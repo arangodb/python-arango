@@ -248,6 +248,71 @@ def test_add_inverted_index(icol, enterprise, db_version):
     icol.delete_index(result["id"])
 
 
+def test_add_zkd_index(icol, db_version):
+    result = icol.add_zkd_index(
+        name="zkd_index",
+        fields=["x", "y", "z"],
+        field_value_types="double",
+        unique=True,
+        deduplicate=True,
+        in_background=False,
+    )
+
+    expected_index = {
+        "name": "zkd_index",
+        "type": "zkd",
+        "fields": ["x", "y", "z"],
+        "unique": True,
+        "new": True,
+        "sparse": False,
+    }
+
+    for key, value in expected_index.items():
+        assert result[key] == value
+
+    assert result["id"] in extract("id", icol.indexes())
+
+    with assert_raises(IndexCreateError) as err:
+        icol.add_zkd_index(field_value_types="integer", fields=["x", "y", "z"])
+    assert err.value.error_code == 10
+
+    icol.delete_index(result["id"])
+
+
+def test_add_mdi_index(icol, db_version):
+    if db_version < version.parse("3.12.0"):
+        pytest.skip("MDI indexes are usable with 3.12+ only")
+
+    result = icol.add_mdi_index(
+        name="mdi_index",
+        fields=["x", "y", "z"],
+        field_value_types="double",
+        unique=True,
+        deduplicate=True,
+        in_background=False,
+    )
+
+    expected_index = {
+        "name": "mdi_index",
+        "type": "zkd",
+        "fields": ["x", "y", "z"],
+        "unique": True,
+        "new": True,
+        "sparse": False,
+    }
+
+    for key, value in expected_index.items():
+        assert result[key] == value
+
+    assert result["id"] in extract("id", icol.indexes())
+
+    with assert_raises(IndexCreateError) as err:
+        icol.add_mdi_index(field_value_types="integer", fields=["x", "y", "z"])
+    assert err.value.error_code == 10
+
+    icol.delete_index(result["id"])
+
+
 def test_delete_index(icol, bad_col):
     old_indexes = set(extract("id", icol.indexes()))
     icol.add_hash_index(["attr3", "attr4"], unique=True)
