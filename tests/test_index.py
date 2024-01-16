@@ -264,7 +264,6 @@ def test_add_zkd_index(icol, db_version):
         "fields": ["x", "y", "z"],
         "unique": True,
         "new": True,
-        "sparse": False,
     }
 
     for key, value in expected_index.items():
@@ -298,7 +297,6 @@ def test_add_mdi_index(icol, db_version):
         "fields": ["x", "y", "z"],
         "unique": True,
         "new": True,
-        "sparse": False,
     }
 
     for key, value in expected_index.items():
