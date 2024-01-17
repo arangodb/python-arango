@@ -698,6 +698,14 @@ class ServerEncryptionError(ArangoServerError):
     """Failed to reload user-defined encryption keys."""
 
 
+class ServerCurrentOptionsGetError(ArangoServerError):
+    """Failed to retrieve currently-set server options."""
+
+
+class ServerAvailableOptionsGetError(ArangoServerError):
+    """Failed to retrieve available server options."""
+
+
 #####################
 # Task Exceptions   #
 #####################

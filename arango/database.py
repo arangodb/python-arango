@@ -40,6 +40,8 @@ from arango.exceptions import (
     PermissionListError,
     PermissionResetError,
     PermissionUpdateError,
+    ServerAvailableOptionsGetError,
+    ServerCurrentOptionsGetError,
     ServerDetailsError,
     ServerEchoError,
     ServerEncryptionError,
@@ -930,6 +932,58 @@ class Database(ApiGroup):
                 result: Json = resp.body["result"]
                 return result
             raise ServerEncryptionError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def options(self) -> Result[Json]:
+        """Return the currently-set server options.
+
+        As this API may reveal sensitive data about the deployment, it can only
+        be accessed from inside the _system database. In addition, there is a
+        policy control startup option --server.options-api that determines if and
+        to whom the API is made available. This option can have the following
+        values:
+        - disabled: API is disabled.
+        - jwt: API can only be accessed via superuser JWT.
+        - admin: API can be accessed by admin users in the _system database only.
+        - public: everyone with access to _system database can access the API.
+
+        :return: Server options.
+        :rtype: dict
+        """
+        request = Request(method="get", endpoint="/_admin/options")
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body
+                return result
+            raise ServerCurrentOptionsGetError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def options_available(self) -> Result[Json]:
+        """Return a description of all available server options.
+
+        As this API may reveal sensitive data about the deployment, it can only
+        be accessed from inside the _system database. In addition, there is a
+        policy control startup option --server.options-api that determines if and
+        to whom the API is made available. This option can have the following
+        values:
+        - disabled: API is disabled.
+        - jwt: API can only be accessed via superuser JWT.
+        - admin: API can be accessed by admin users in the _system database only.
+        - public: everyone with access to _system database can access the options API.
+
+        :return: Server options.
+        :rtype: dict
+        """
+        request = Request(method="get", endpoint="/_admin/options-description")
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body
+                return result
+            raise ServerAvailableOptionsGetError(resp, request)
 
         return self._execute(request, response_handler)
 
