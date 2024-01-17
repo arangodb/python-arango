@@ -936,7 +936,7 @@ class Database(ApiGroup):
         return self._execute(request, response_handler)
 
     def options(self) -> Result[Json]:
-        """Return the currently-set server options.
+        """Return the currently-set server options (ArangoDB 3.12+)
 
         As this API may reveal sensitive data about the deployment, it can only
         be accessed from inside the _system database. In addition, there is a
@@ -962,7 +962,7 @@ class Database(ApiGroup):
         return self._execute(request, response_handler)
 
     def options_available(self) -> Result[Json]:
-        """Return a description of all available server options.
+        """Return a description of all available server options (ArangoDB 3.12+)
 
         As this API may reveal sensitive data about the deployment, it can only
         be accessed from inside the _system database. In addition, there is a
