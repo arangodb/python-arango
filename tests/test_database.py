@@ -168,7 +168,7 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
 
     # Test echo (forward request)
     body = "request goes here"
-    echo = db.echo_request(body)
+    echo = db.echo(body)
     assert isinstance(echo, dict)
     assert echo["requestBody"] == body
 

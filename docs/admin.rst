@@ -55,7 +55,7 @@ database.
     sys_db.echo()
 
     # Echo a request
-    sys_db.echo_request('request goes here')
+    sys_db.echo('request goes here')
 
     # Reload the routing collection.
     sys_db.reload_routing()
