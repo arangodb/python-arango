@@ -840,7 +840,8 @@ class Database(ApiGroup):
         :return: Server metrics in Prometheus format.
         :rtype: str
         """
-        if version.parse(self.version()) < version.parse("3.10"):
+        db_version: str = str(self.version()).split("-")[0]
+        if version.parse(db_version) < version.parse("3.10"):
             m = "You are using the Metrics V2 API with a database version less than 3.10. The old metrics format is not available anymore."  # noqa: E501
             warn(m, DeprecationWarning, stacklevel=2)
 
