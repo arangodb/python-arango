@@ -11,8 +11,6 @@ from numbers import Number
 from typing import Any, List, Optional, Sequence, Union
 from warnings import warn
 
-from packaging import version
-
 from arango.api import ApiGroup
 from arango.aql import AQL
 from arango.backup import Backup
@@ -840,11 +838,6 @@ class Database(ApiGroup):
         :return: Server metrics in Prometheus format.
         :rtype: str
         """
-        db_version: str = str(self.version()).split("-")[0]
-        if version.parse(db_version) < version.parse("3.10"):
-            m = "You are using the Metrics V2 API with a database version less than 3.10. The old metrics format is not available anymore."  # noqa: E501
-            warn(m, DeprecationWarning, stacklevel=2)
-
         request = Request(method="get", endpoint="/_admin/metrics/v2")
 
         def response_handler(resp: Response) -> str:
