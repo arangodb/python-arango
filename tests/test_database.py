@@ -279,9 +279,7 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret):
     token = generate_jwt(secret)
     db_superuser = client.db(db.name, superuser_token=token)
     result = db_superuser.compact()
-
-    # TODO: Why is `result` == {} ?
-    # assert result == ...
+    assert result == {}
 
 
 def test_database_management(db, sys_db, bad_db):
