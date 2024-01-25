@@ -253,17 +253,16 @@ def test_add_zkd_index(icol, db_version):
         name="zkd_index",
         fields=["x", "y", "z"],
         field_value_types="double",
-        unique=True,
-        deduplicate=True,
         in_background=False,
+        unique=False,
     )
 
     expected_index = {
         "name": "zkd_index",
         "type": "zkd",
         "fields": ["x", "y", "z"],
-        "unique": True,
         "new": True,
+        "unique": False,
     }
 
     for key, value in expected_index.items():
@@ -286,17 +285,16 @@ def test_add_mdi_index(icol, db_version):
         name="mdi_index",
         fields=["x", "y", "z"],
         field_value_types="double",
-        unique=True,
-        deduplicate=True,
         in_background=False,
+        unique=True,
     )
 
     expected_index = {
         "name": "mdi_index",
-        "type": "zkd",
+        "type": "mdi",
         "fields": ["x", "y", "z"],
-        "unique": True,
         "new": True,
+        "unique": True,
     }
 
     for key, value in expected_index.items():

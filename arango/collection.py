@@ -1620,10 +1620,9 @@ class Collection(ApiGroup):
     def add_zkd_index(
         self,
         fields: Sequence[str],
-        field_value_types: str,
-        unique: Optional[bool] = None,
-        deduplicate: Optional[bool] = None,
+        field_value_types: str = "double",
         name: Optional[str] = None,
+        unique: Optional[bool] = None,
         in_background: Optional[bool] = None,
     ) -> Result[Json]:
         """Create a new ZKD Index.
@@ -1632,15 +1631,12 @@ class Collection(ApiGroup):
             order of the fields does not matter.
         :type fields: Sequence[str]
         :param field_value_types: The type of the field values. The only allowed
-            value is "double" at the moment.
+            value is "double" at the moment. Defaults to "double".
         :type field_value_types: str
-        :param unique: Whether the index is unique.
-        :type unique: bool | None
-        :param deduplicate: If set to True, inserting duplicate index values
-            from the same document triggers unique constraint errors.
-        :type deduplicate: bool | None
         :param name: Optional name for the index.
         :type name: str | None
+        :param unique: Whether the index is unique.
+        :type unique: bool | None
         :param in_background: Do not hold the collection lock.
         :type in_background: bool | None
         :return: New index details.
@@ -1655,8 +1651,6 @@ class Collection(ApiGroup):
 
         if unique is not None:
             data["unique"] = unique
-        if deduplicate is not None:
-            data["deduplicate"] = deduplicate
         if name is not None:
             data["name"] = name
         if in_background is not None:
@@ -1667,12 +1661,10 @@ class Collection(ApiGroup):
     def add_mdi_index(
         self,
         fields: Sequence[str],
-        field_value_types: str,
-        unique: Optional[bool] = None,
-        deduplicate: Optional[bool] = None,
+        field_value_types: str = "double",
         name: Optional[str] = None,
+        unique: Optional[bool] = None,
         in_background: Optional[bool] = None,
-        stored_values: Optional[Sequence[str]] = None,
     ) -> Result[Json]:
         """Create a new MDI index, previously known as ZKD index. This method
             is only usable with ArangoDB 3.12 and later.
@@ -1681,19 +1673,14 @@ class Collection(ApiGroup):
             order of the fields does not matter.
         :type fields: Sequence[str]
         :param field_value_types: The type of the field values. The only allowed
-            value is "double" at the moment.
+            value is "double" at the moment. Defaults to "double".
         :type field_value_types: str
-        :param unique: Whether the index is unique.
-        :type unique: bool | None
-        :param deduplicate: If set to True, inserting duplicate index values
-            from the same document triggers unique constraint errors.
-        :type deduplicate: bool | None
         :param name: Optional name for the index.
         :type name: str | None
+        :param unique: Whether the index is unique.
+        :type unique: bool | None
         :param in_background: Do not hold the collection lock.
         :type in_background: bool | None
-        :param stored_values: TODO
-        :type stored_values: TODO
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
@@ -1706,14 +1693,10 @@ class Collection(ApiGroup):
 
         if unique is not None:
             data["unique"] = unique
-        if deduplicate is not None:
-            data["deduplicate"] = deduplicate
         if name is not None:
             data["name"] = name
         if in_background is not None:
             data["inBackground"] = in_background
-        if stored_values is not None:
-            data["storedValues"] = stored_values
 
         return self._add_index(data)
 
