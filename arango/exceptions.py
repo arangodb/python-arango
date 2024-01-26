@@ -368,7 +368,6 @@ class DatabaseCompactError(ArangoServerError):
     """Failed to compact databases."""
 
 
-
 #######################
 # Document Exceptions #
 #######################

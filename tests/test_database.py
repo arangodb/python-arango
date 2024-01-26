@@ -333,7 +333,6 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret):
     assert result == {}
 
 
-
 def test_database_management(db, sys_db, bad_db):
     # Test list databases
     result = sys_db.databases()
