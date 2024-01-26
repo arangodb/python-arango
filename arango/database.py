@@ -27,6 +27,7 @@ from arango.exceptions import (
     CollectionCreateError,
     CollectionDeleteError,
     CollectionListError,
+    DatabaseCompactError,
     DatabaseCreateError,
     DatabaseDeleteError,
     DatabaseListError,
@@ -438,6 +439,47 @@ class Database(ApiGroup):
             if not resp.is_success:
                 raise ServerStatusError(resp, request)
             return format_server_status(resp.body)
+
+        return self._execute(request, response_handler)
+
+    def compact(
+        self,
+        change_level: Optional[bool] = None,
+        compact_bottom_most_level: Optional[bool] = None,
+    ) -> Result[Json]:
+        """Compact all databases.
+
+        NOTE: This command can cause a full rewrite of all data in all databases,
+        which may take very long for large databases. It should thus only be used with
+        care and only when additional I/O load can be tolerated for a prolonged time.
+
+        This method can be used to reclaim disk space after substantial data deletions
+        have taken place, by compacting the entire database system data.
+
+        This method requires superuser access.
+
+        :param change_level: Whether or not compacted data should be moved to
+            the minimum possible level. Default value is False.
+        :type change_level: bool | None
+        :param compact_bottom_most_level: Whether or not to compact the
+            bottom-most level of data. Default value is False.
+        :type compact_bottom_most_level: bool | None
+        :return: Collection compact.
+        :rtype: dict
+        :raise arango.exceptions.CollectionCompactError: If retrieval fails.
+        """
+        data = {}
+        if change_level is not None:
+            data["changeLevel"] = change_level
+        if compact_bottom_most_level is not None:
+            data["compactBottomMostLevel"] = compact_bottom_most_level
+
+        request = Request(method="put", endpoint="/_admin/compact", data=data)
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_body(resp.body)
+            raise DatabaseCompactError(resp, request)
 
         return self._execute(request, response_handler)
 

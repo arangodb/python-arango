@@ -360,6 +360,10 @@ class DatabaseDeleteError(ArangoServerError):
     """Failed to delete database."""
 
 
+class DatabaseCompactError(ArangoServerError):
+    """Failed to compact databases."""
+
+
 #######################
 # Document Exceptions #
 #######################
