@@ -570,14 +570,23 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def echo(self) -> Result[Json]:
-        """Return details of the last request (e.g. headers, payload).
+    def echo(self, body: Optional[Any] = None) -> Result[Json]:
+        """Return details of the last request (e.g. headers, payload),
+        or echo the given request body.
 
+        :param body: The body of the request. Can be of any type
+            and is simply forwarded. If not set, the details of the last
+            request are returned.
+        :type body: dict | list | str | int | float | None
         :return: Details of the last request.
         :rtype: dict
         :raise arango.exceptions.ServerEchoError: If retrieval fails.
         """
-        request = Request(method="get", endpoint="/_admin/echo")
+        request = (
+            Request(method="get", endpoint="/_admin/echo")
+            if body is None
+            else Request(method="post", endpoint="/_admin/echo", data=body)
+        )
 
         def response_handler(resp: Response) -> Json:
             if not resp.is_success:
