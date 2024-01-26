@@ -360,6 +360,10 @@ class DatabaseDeleteError(ArangoServerError):
     """Failed to delete database."""
 
 
+class DatabaseCompactError(ArangoServerError):
+    """Failed to compact databases."""
+
+
 #######################
 # Document Exceptions #
 #######################
@@ -666,8 +670,16 @@ class ServerLogLevelError(ArangoServerError):
     """Failed to retrieve server log levels."""
 
 
+class ServerLogSettingError(ArangoServerError):
+    """Failed to retrieve server log settings."""
+
+
 class ServerLogLevelSetError(ArangoServerError):
     """Failed to set server log levels."""
+
+
+class ServerLogSettingSetError(ArangoServerError):
+    """Failed to set server log settings."""
 
 
 class ServerReloadRoutingError(ArangoServerError):
