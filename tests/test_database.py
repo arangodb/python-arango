@@ -305,6 +305,12 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret):
         bad_db.engine()
     assert err.value.error_code in {11, 1228}
 
+    # Test execute JavaScript code
+    assert db.execute(1) is None
+    assert db.execute(None) == {"error": False, "code": 200}
+    assert db.execute("") == {"error": False, "code": 200}
+    assert db.execute("return 1") == 1
+
     # Test database compact
     with assert_raises(DatabaseCompactError) as err:
         db.compact()

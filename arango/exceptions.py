@@ -718,6 +718,10 @@ class ServerEncryptionError(ArangoServerError):
     """Failed to reload user-defined encryption keys."""
 
 
+class ServerExecuteError(ArangoServerError):
+    """Failed to execute raw JavaScript command."""
+
+
 #####################
 # Task Exceptions   #
 #####################

@@ -45,6 +45,7 @@ from arango.exceptions import (
     ServerEchoError,
     ServerEncryptionError,
     ServerEngineError,
+    ServerExecuteError,
     ServerLicenseGetError,
     ServerLicenseSetError,
     ServerLogLevelError,
@@ -226,6 +227,36 @@ class Database(ApiGroup):
             if not resp.is_success:
                 raise DatabasePropertiesError(resp, request)
             return format_database(resp.body["result"])
+
+        return self._execute(request, response_handler)
+
+    def execute(self, command: str) -> Result[Any]:
+        """Execute raw Javascript command on the server.
+
+        Executes the JavaScript code in the body on the server as
+        the body of a function with no arguments. If you have a
+        return statement then the return value you produce will be returned
+        as 'application/json'.
+
+        NOTE: this method endpoint will only be usable if the server
+        was started with the option `--javascript.allow-admin-execute true`.
+        The default value of this option is false, which disables the execution
+        of user-defined code and disables this API endpoint entirely.
+        This is also the recommended setting for production.
+
+        :param command: Javascript command to execute.
+        :type command: str
+        :return: Return value of **command**, if any.
+        :rtype: Any
+        :raise arango.exceptions.ServerExecuteError: If execution fails.
+        """
+        request = Request(method="post", endpoint="/_admin/execute", data=command)
+
+        def response_handler(resp: Response) -> Any:
+            if not resp.is_success:
+                raise ServerExecuteError(resp, request)
+
+            return resp.body
 
         return self._execute(request, response_handler)
 
