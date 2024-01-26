@@ -253,6 +253,22 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
     with assert_raises(ServerLogLevelSetError):
         bad_db.set_log_levels(**new_levels)
 
+    # Test Log Settings
+    result_1 = sys_db.set_log_settings(database=True, url=True, username=True)
+    result_2 = sys_db.log_settings()
+    assert isinstance(result_1, dict)
+    assert "database" in result_1
+    assert "url" in result_1
+    assert "username" in result_1
+    assert result_1 == result_2
+
+    result_1 = sys_db.set_log_settings(database=True, username=False)
+    result_2 = sys_db.log_settings()
+    assert "database" in result_1
+    assert "url" in result_1
+    assert "username" not in result_1
+    assert result_1 == result_2
+
     # Test get storage engine
     engine = db.engine()
     assert engine["name"] in ["rocksdb"]
