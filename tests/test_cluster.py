@@ -117,7 +117,7 @@ def test_cluster_server_maintenance_mode(sys_db, bad_db, cluster):
     assert "Mode" in result
     assert "Until" in result
 
-    time.sleep(3)
+    time.sleep(5)
     result = sys_db.cluster.server_maintenance_mode(server_id)
     assert result == {}
 
