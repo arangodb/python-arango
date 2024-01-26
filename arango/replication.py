@@ -180,13 +180,15 @@ class Replication(ApiGroup):
             if resp.is_success:
                 result = format_replication_header(resp.headers)
                 result["content"] = [
-                    [
-                        self._conn.deserialize(line)
-                        for line in resp.body.split("\n")
-                        if line
-                    ]
-                    if deserialize
-                    else resp.body
+                    (
+                        [
+                            self._conn.deserialize(line)
+                            for line in resp.body.split("\n")
+                            if line
+                        ]
+                        if deserialize
+                        else resp.body
+                    )
                 ]
                 return result
 
