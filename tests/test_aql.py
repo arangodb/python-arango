@@ -17,7 +17,7 @@ from arango.exceptions import (
     AQLQueryTrackingSetError,
     AQLQueryValidateError,
 )
-from tests.helpers import assert_raises, extract
+from tests.helpers import assert_raises, extract, generate_col_name
 
 
 def test_aql_attributes(db, username):
@@ -244,6 +244,36 @@ def test_aql_query_management(db_version, db, bad_db, col, docs):
     with assert_raises(AQLQueryClearError) as err:
         bad_db.aql.clear_slow_queries()
     assert err.value.error_code in {11, 1228}
+
+
+def test_aql_query_force_one_shard_attribute_value(db, db_version, enterprise, cluster):
+    if db_version < version.parse("3.10") or not enterprise or not cluster:
+        return
+
+    name = generate_col_name()
+    col = db.create_collection(name, shard_fields=["foo"], shard_count=3)
+
+    doc = {"foo": "bar"}
+    col.insert(doc)
+
+    cursor = db.aql.execute(
+        "FOR d IN @@c RETURN d",
+        bind_vars={"@c": name},
+        force_one_shard_attribute_value="bar",
+    )
+
+    results = [doc for doc in cursor]
+    assert len(results) == 1
+    assert results[0]["foo"] == "bar"
+
+    cursor = db.aql.execute(
+        "FOR d IN @@c RETURN d",
+        bind_vars={"@c": name},
+        force_one_shard_attribute_value="ooo",
+    )
+
+    results = [doc for doc in cursor]
+    assert len(results) == 0
 
 
 def test_aql_function_management(db, bad_db):

@@ -13,6 +13,7 @@ from arango.errno import (
     USE_SYSTEM_DATABASE,
 )
 from arango.exceptions import (
+    DatabaseCompactError,
     DatabaseCreateError,
     DatabaseDeleteError,
     DatabaseListError,
@@ -25,6 +26,7 @@ from arango.exceptions import (
     ServerLogLevelError,
     ServerLogLevelSetError,
     ServerMetricsError,
+    ServerModeSetError,
     ServerReadLogError,
     ServerReloadRoutingError,
     ServerRequiredDBVersionError,
@@ -38,7 +40,12 @@ from arango.foxx import Foxx
 from arango.pregel import Pregel
 from arango.replication import Replication
 from arango.wal import WAL
-from tests.helpers import assert_raises, generate_db_name
+from tests.helpers import (
+    assert_raises,
+    generate_col_name,
+    generate_db_name,
+    generate_jwt,
+)
 
 
 def test_database_attributes(db, username):
@@ -58,7 +65,7 @@ def test_database_attributes(db, username):
     assert isinstance(db.wal, WAL)
 
 
-def test_database_misc_methods(sys_db, db, bad_db, cluster):
+def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret):
     # Test get properties
     properties = db.properties()
     assert "id" in properties
@@ -133,6 +140,19 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
         bad_db.role()
     assert err.value.error_code in {11, 1228}
 
+    # Test get/set server mode
+    assert sys_db.mode() == "default"
+    with assert_raises(ServerModeSetError):
+        sys_db.set_mode("badmode")
+    assert err.value.error_code in {11, 1228}
+
+    with assert_raises(ServerModeSetError):
+        db.set_mode("readonly")
+    assert err.value.error_code in {11, 1228}
+
+    result = sys_db.set_mode("default")
+    assert result == {"mode": "default"}
+
     # Test get server status
     status = db.status()
     assert "host" in status
@@ -166,6 +186,12 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
     with assert_raises(ServerEchoError) as err:
         bad_db.echo()
     assert err.value.error_code in {11, 1228}
+
+    # Test echo (forward request)
+    body = "request goes here"
+    echo = db.echo(body)
+    assert isinstance(echo, dict)
+    assert echo["requestBody"] == body
 
     # Test read_log with default parameters
     # Deprecated in 3.8.0
@@ -254,6 +280,22 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
     with assert_raises(ServerLogLevelSetError):
         bad_db.set_log_levels(**new_levels)
 
+    # Test Log Settings
+    result_1 = sys_db.set_log_settings(database=True, url=True, username=True)
+    result_2 = sys_db.log_settings()
+    assert isinstance(result_1, dict)
+    assert "database" in result_1
+    assert "url" in result_1
+    assert "username" in result_1
+    assert result_1 == result_2
+
+    result_1 = sys_db.set_log_settings(database=True, username=False)
+    result_2 = sys_db.log_settings()
+    assert "database" in result_1
+    assert "url" in result_1
+    assert "username" not in result_1
+    assert result_1 == result_2
+
     # Test get storage engine
     engine = db.engine()
     assert engine["name"] in ["rocksdb"]
@@ -271,6 +313,19 @@ def test_database_misc_methods(sys_db, db, bad_db, cluster):
     assert isinstance(info, dict)
     assert "deployment" in info
     assert "date" in info
+
+    # Test database compact
+    with assert_raises(DatabaseCompactError) as err:
+        db.compact()
+
+    collection = db.create_collection(generate_col_name())
+    collection.insert({"foo": "bar"})
+
+    token = generate_jwt(secret)
+    db_superuser = client.db(db.name, superuser_token=token)
+    result = db_superuser.compact()
+    assert result == {}
+
 
 
 def test_database_management(db, sys_db, bad_db):
