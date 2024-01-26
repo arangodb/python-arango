@@ -25,6 +25,7 @@ from arango.exceptions import (
     ServerLogLevelError,
     ServerLogLevelSetError,
     ServerMetricsError,
+    ServerModeSetError,
     ServerReadLogError,
     ServerReloadRoutingError,
     ServerRequiredDBVersionError,
@@ -137,6 +138,19 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret):
     with assert_raises(ServerRoleError) as err:
         bad_db.role()
     assert err.value.error_code in {11, 1228}
+
+    # Test get/set server mode
+    assert sys_db.mode() == "default"
+    with assert_raises(ServerModeSetError):
+        sys_db.set_mode("badmode")
+    assert err.value.error_code in {11, 1228}
+
+    with assert_raises(ServerModeSetError):
+        db.set_mode("readonly")
+    assert err.value.error_code in {11, 1228}
+
+    result = sys_db.set_mode("default")
+    assert result == {"mode": "default"}
 
     # Test get server status
     status = db.status()

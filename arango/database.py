@@ -52,6 +52,8 @@ from arango.exceptions import (
     ServerLogSettingError,
     ServerLogSettingSetError,
     ServerMetricsError,
+    ServerModeError,
+    ServerModeSetError,
     ServerReadLogError,
     ServerReloadRoutingError,
     ServerRequiredDBVersionError,
@@ -551,6 +553,56 @@ class Database(ApiGroup):
             if resp.is_success:
                 return str(resp.body["role"])
             raise ServerRoleError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def mode(self) -> Result[str]:
+        """Return the server mode (default or read-only)
+
+        In a read-only server, all write operations will fail
+        with an error code of 1004 (ERROR_READ_ONLY). Creating or dropping
+        databases and collections will also fail with error code 11 (ERROR_FORBIDDEN).
+
+        :return: Server mode. Possible values are "default" or "readonly".
+        :rtype: str
+        :raise arango.exceptions.ServerModeError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_admin/server/mode")
+
+        def response_handler(resp: Response) -> str:
+            if resp.is_success:
+                return str(resp.body["mode"])
+
+            raise ServerModeError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def set_mode(self, mode: str) -> Result[Json]:
+        """Set the server mode to read-only or default.
+
+        Update mode information about a server. The JSON response will
+        contain a field mode with the value readonly or default.
+        In a read-only server all write operations will fail with an error
+        code of 1004 (ERROR_READ_ONLY). Creating or dropping of databases
+        and collections will also fail with error code 11 (ERROR_FORBIDDEN).
+
+        This is a protected API. It requires authentication and administrative
+        server rights.
+
+        :param mode: Server mode. Possible values are "default" or "readonly".
+        :type mode: str
+        :return: Server mode.
+        :rtype: str
+        :raise arango.exceptions.ServerModeSetError: If set fails.
+        """
+        request = Request(
+            method="put", endpoint="/_admin/server/mode", data={"mode": mode}
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_body(resp.body)
+            raise ServerModeSetError(resp, request)
 
         return self._execute(request, response_handler)
 
