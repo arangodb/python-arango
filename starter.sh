@@ -39,7 +39,7 @@ else
     conf_file="${setup}"
 fi
 
-docker run -d --rm \
+docker run -d \
   --name arango \
   -p 8528:8528 \
   -p 8529:8529 \

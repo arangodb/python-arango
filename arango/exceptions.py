@@ -360,6 +360,14 @@ class DatabaseDeleteError(ArangoServerError):
     """Failed to delete database."""
 
 
+class DatabaseSupportInfoError(ArangoServerError):
+    """Failed to retrieve support info for deployment."""
+
+
+class DatabaseCompactError(ArangoServerError):
+    """Failed to compact databases."""
+
+
 #######################
 # Document Exceptions #
 #######################
@@ -666,8 +674,16 @@ class ServerLogLevelError(ArangoServerError):
     """Failed to retrieve server log levels."""
 
 
+class ServerLogSettingError(ArangoServerError):
+    """Failed to retrieve server log settings."""
+
+
 class ServerLogLevelSetError(ArangoServerError):
     """Failed to set server log levels."""
+
+
+class ServerLogSettingSetError(ArangoServerError):
+    """Failed to set server log settings."""
 
 
 class ServerReloadRoutingError(ArangoServerError):
@@ -683,7 +699,15 @@ class ServerMetricsError(ArangoServerError):
 
 
 class ServerRoleError(ArangoServerError):
-    """Failed to retrieve server role in a cluster."""
+    """Failed to retrieve server role."""
+
+
+class ServerModeError(ArangoServerError):
+    """Failed to retrieve server mode."""
+
+
+class ServerModeSetError(ArangoServerError):
+    """Failed to set server mode."""
 
 
 class ServerTLSError(ArangoServerError):
@@ -696,6 +720,10 @@ class ServerTLSReloadError(ArangoServerError):
 
 class ServerEncryptionError(ArangoServerError):
     """Failed to reload user-defined encryption keys."""
+
+
+class ServerExecuteError(ArangoServerError):
+    """Failed to execute raw JavaScript command."""
 
 
 #####################
@@ -968,7 +996,11 @@ class ClusterServerIDError(ArangoServerError):
 
 
 class ClusterServerRoleError(ArangoServerError):
-    """Failed to retrieve server role."""
+    """Failed to retrieve server role in a cluster."""
+
+
+class ClusterServerModeError(ArangoServerError):
+    """Failed to retrieve server mode in a cluster."""
 
 
 class ClusterServerStatisticsError(ArangoServerError):

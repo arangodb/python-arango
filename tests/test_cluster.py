@@ -13,6 +13,7 @@ from arango.exceptions import (
     ClusterServerCountError,
     ClusterServerEngineError,
     ClusterServerIDError,
+    ClusterServerModeError,
     ClusterServerRoleError,
     ClusterServerStatisticsError,
     ClusterServerVersionError,
@@ -41,6 +42,18 @@ def test_cluster_server_role(sys_db, bad_db, cluster):
 
     with assert_raises(ClusterServerRoleError) as err:
         bad_db.cluster.server_role()
+    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
+
+
+def test_cluster_server_mode(sys_db, bad_db, cluster):
+    if not cluster:
+        pytest.skip("Only tested in a cluster setup")
+
+    result = sys_db.cluster.server_mode()
+    assert result == "default"
+
+    with assert_raises(ClusterServerModeError) as err:
+        bad_db.cluster.server_mode()
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
 
 
