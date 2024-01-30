@@ -117,7 +117,16 @@ def test_cluster_server_maintenance_mode(sys_db, bad_db, cluster):
     if not cluster:
         pytest.skip("Only tested in a cluster setup")
 
-    server_id = sys_db.cluster.server_id()
+    # Must be a DBServer
+    health = sys_db.cluster.health()
+    server_id = None
+    for server_id, info in health["Health"].items():
+        if info["Role"] == "DBServer":
+            server_id = server_id
+            break
+    if server_id is None:
+        pytest.skip("No DBServer found in cluster")
+
     result = sys_db.cluster.server_maintenance_mode(server_id)
     assert result == {}
 
