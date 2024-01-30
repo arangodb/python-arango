@@ -1385,7 +1385,9 @@ class Collection(ApiGroup):
             with at least two floats. Documents with missing fields or invalid
             values are excluded.
         :type fields: str | [str]
-        :param geo_json: Whether to use GeoJSON data-format or not.
+        :param geo_json: Whether to use GeoJSON data-format or not. This
+            parameter has been renamed from `ordered`. See Github Issue
+            #234 for more details.
         :type geo_json: bool | None
         :param name: Optional name for the index.
         :type name: str | None
