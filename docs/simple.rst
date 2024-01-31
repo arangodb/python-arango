@@ -1,8 +1,6 @@
 Simple Queries
 --------------
 
-.. caution:: There is no option to add a TTL (Time to live) or batch size optimizations to the Simple Queries due to how Arango is handling simple collection HTTP requests. Your request may time out and you'll see a CursorNextError exception. The AQL queries provide full functionality.
-
 Here is an example of using ArangoDB's **simply queries**:
 
 .. testcode::
