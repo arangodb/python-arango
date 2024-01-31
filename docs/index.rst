@@ -23,42 +23,74 @@ Installation
 Contents
 ========
 
+Basics
+
 .. toctree::
     :maxdepth: 1
 
     overview
     database
     collection
-    document
-    schema
     indexes
+    document
     graph
-    aql
     simple
-    cursor
+    aql
+
+Specialized Features
+
+.. toctree::
+    :maxdepth: 1
+
+    pregel
+    foxx
+    replication
+    transaction
+    cluster
+    analyzer
+    view
+    wal
+
+API Executions
+
+.. toctree::
+    :maxdepth: 1
+
     async
     batch
     overload
-    transaction
+
+Administration
+
+.. toctree::
+    :maxdepth: 1
+
     admin
     user
+
+Miscellaneous
+
+.. toctree::
+    :maxdepth: 1
+
     task
-    wal
-    pregel
-    foxx
-    view
-    analyzer
     threading
     certificates
     errors
     logging
     auth
     http
-    replication
-    cluster
     serializer
+    schema
+    cursor
     backup
     errno
+
+Development
+
+.. toctree::
+    :maxdepth: 1
+
     contributing
     specs
 
