@@ -51,7 +51,7 @@ global_data = GlobalData()
 def pytest_addoption(parser):
     parser.addoption("--host", action="store", default="127.0.0.1")
     parser.addoption("--port", action="append", default=None)
-    parser.addoption("--passwd", action="store", default="passwd")
+    parser.addoption("--passwd", action="store", default="")
     parser.addoption("--complete", action="store_true")
     parser.addoption("--cluster", action="store_true")
     parser.addoption("--replication", action="store_true")
@@ -78,7 +78,7 @@ def pytest_configure(config):
         name="_system",
         username="root",
         password=config.getoption("passwd"),
-        superuser_token=generate_jwt(secret),
+        # superuser_token=generate_jwt(secret),
         verify=True,
     )
 
@@ -106,9 +106,9 @@ def pytest_configure(config):
     col_name = generate_col_name()
     tst_col = tst_db.create_collection(col_name, edge=False)
 
-    tst_col.add_skiplist_index(["val"])
-    tst_col.add_fulltext_index(["text"])
-    geo_index = tst_col.add_geo_index(["loc"])
+    tst_col.add_index({"type": "skiplist", "fields": ["val"]})
+    tst_col.add_index({"type": "fulltext", "fields": ["text"]})
+    geo_index = tst_col.add_index({"type": "geo", "fields": ["loc"]})
 
     # Create a legacy edge collection for testing.
     icol_name = generate_col_name()

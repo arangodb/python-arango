@@ -1463,7 +1463,8 @@ def test_document_find_in_box(db, col, bad_col, geo, cluster):
         )
 
     # Test find_in_box with non-geo index
-    non_geo = col.add_hash_index(fields=["loc"])
+    hash_index = {"type": "hash", "fields": ["loc"]}
+    non_geo = col.add_index(hash_index)
     with assert_raises(ValueError) as err:
         col.find_in_box(
             latitude1=0,
