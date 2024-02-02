@@ -51,7 +51,7 @@ global_data = GlobalData()
 def pytest_addoption(parser):
     parser.addoption("--host", action="store", default="127.0.0.1")
     parser.addoption("--port", action="append", default=None)
-    parser.addoption("--passwd", action="store", default="")
+    parser.addoption("--passwd", action="store", default="passwd")
     parser.addoption("--complete", action="store_true")
     parser.addoption("--cluster", action="store_true")
     parser.addoption("--replication", action="store_true")
@@ -78,7 +78,7 @@ def pytest_configure(config):
         name="_system",
         username="root",
         password=config.getoption("passwd"),
-        # superuser_token=generate_jwt(secret),
+        superuser_token=generate_jwt(secret),
         verify=True,
     )
 
