@@ -71,3 +71,10 @@ def test_analyzer_management(db, bad_db, cluster, enterprise, db_version):
             "format": "latLngDouble",
         }
         assert db.delete_analyzer(analyzer_name)
+
+    if db_version >= version.parse("3.12.0"):
+        analyzer_name = generate_analyzer_name()
+        result = db.create_analyzer(analyzer_name, "wildcard", {"ngramSize": 4})
+        assert result["type"] == "wildcard"
+        assert result["features"] == []
+        assert result["properties"] == {"ngramSize": 4}
