@@ -1,3 +1,4 @@
+import time
 import warnings
 
 import pytest
@@ -110,6 +111,37 @@ def test_cluster_server_statistics(sys_db, bad_db, cluster):
     with assert_raises(ClusterServerStatisticsError) as err:
         bad_db.cluster.server_statistics(server_id)
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
+
+
+def test_cluster_server_maintenance_mode(sys_db, bad_db, cluster):
+    if not cluster:
+        pytest.skip("Only tested in a cluster setup")
+
+    # Must be a DBServer
+    health = sys_db.cluster.health()
+    server_id = None
+    for server_id, info in health["Health"].items():
+        if info["Role"] == "DBServer":
+            server_id = server_id
+            break
+    if server_id is None:
+        pytest.skip("No DBServer found in cluster")
+
+    result = sys_db.cluster.server_maintenance_mode(server_id)
+    assert result == {}
+
+    with assert_raises(ClusterMaintenanceModeError) as err:
+        bad_db.cluster.server_maintenance_mode(server_id)
+    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
+
+    sys_db.cluster.toggle_server_maintenance_mode(server_id, "maintenance", timeout=2)
+    result = sys_db.cluster.server_maintenance_mode(server_id)
+    assert "Mode" in result
+    assert "Until" in result
+
+    time.sleep(5)
+    result = sys_db.cluster.server_maintenance_mode(server_id)
+    assert result == {}
 
 
 def test_cluster_toggle_maintenance_mode(sys_db, bad_db, cluster):
