@@ -1023,7 +1023,7 @@ class Database(ApiGroup):
         :return: Server metrics in Prometheus format.
         :rtype: str
         """
-        request = Request(method="get", endpoint="/_admin/metrics")
+        request = Request(method="get", endpoint="/_admin/metrics/v2")
 
         def response_handler(resp: Response) -> str:
             if resp.is_success:
