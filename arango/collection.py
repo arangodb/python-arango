@@ -1617,6 +1617,89 @@ class Collection(ApiGroup):
 
         return self._add_index(data)
 
+    def add_zkd_index(
+        self,
+        fields: Sequence[str],
+        field_value_types: str = "double",
+        name: Optional[str] = None,
+        unique: Optional[bool] = None,
+        in_background: Optional[bool] = None,
+    ) -> Result[Json]:
+        """Create a new ZKD Index.
+
+        :param fields: Document fields to index. Unlike for other indexes the
+            order of the fields does not matter.
+        :type fields: Sequence[str]
+        :param field_value_types: The type of the field values. The only allowed
+            value is "double" at the moment. Defaults to "double".
+        :type field_value_types: str
+        :param name: Optional name for the index.
+        :type name: str | None
+        :param unique: Whether the index is unique.
+        :type unique: bool | None
+        :param in_background: Do not hold the collection lock.
+        :type in_background: bool | None
+        :return: New index details.
+        :rtype: dict
+        :raise arango.exceptions.IndexCreateError: If create fails.
+        """
+        data: Json = {
+            "type": "zkd",
+            "fields": fields,
+            "fieldValueTypes": field_value_types,
+        }
+
+        if unique is not None:
+            data["unique"] = unique
+        if name is not None:
+            data["name"] = name
+        if in_background is not None:
+            data["inBackground"] = in_background
+
+        return self._add_index(data)
+
+    def add_mdi_index(
+        self,
+        fields: Sequence[str],
+        field_value_types: str = "double",
+        name: Optional[str] = None,
+        unique: Optional[bool] = None,
+        in_background: Optional[bool] = None,
+    ) -> Result[Json]:
+        """Create a new MDI index, previously known as ZKD index. This method
+            is only usable with ArangoDB 3.12 and later.
+
+        :param fields: Document fields to index. Unlike for other indexes the
+            order of the fields does not matter.
+        :type fields: Sequence[str]
+        :param field_value_types: The type of the field values. The only allowed
+            value is "double" at the moment. Defaults to "double".
+        :type field_value_types: str
+        :param name: Optional name for the index.
+        :type name: str | None
+        :param unique: Whether the index is unique.
+        :type unique: bool | None
+        :param in_background: Do not hold the collection lock.
+        :type in_background: bool | None
+        :return: New index details.
+        :rtype: dict
+        :raise arango.exceptions.IndexCreateError: If create fails.
+        """
+        data: Json = {
+            "type": "mdi",
+            "fields": fields,
+            "fieldValueTypes": field_value_types,
+        }
+
+        if unique is not None:
+            data["unique"] = unique
+        if name is not None:
+            data["name"] = name
+        if in_background is not None:
+            data["inBackground"] = in_background
+
+        return self._add_index(data)
+
     def delete_index(self, index_id: str, ignore_missing: bool = False) -> Result[bool]:
         """Delete an index.
 
