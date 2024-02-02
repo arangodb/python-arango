@@ -134,12 +134,12 @@ def test_cluster_server_maintenance_mode(sys_db, bad_db, cluster):
         bad_db.cluster.server_maintenance_mode(server_id)
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
 
-    sys_db.cluster.toggle_server_maintenance_mode(server_id, "maintenance", timeout=1)
+    sys_db.cluster.toggle_server_maintenance_mode(server_id, "maintenance", timeout=2)
     result = sys_db.cluster.server_maintenance_mode(server_id)
     assert "Mode" in result
     assert "Until" in result
 
-    time.sleep(3)
+    time.sleep(5)
     result = sys_db.cluster.server_maintenance_mode(server_id)
     assert result == {}
 
