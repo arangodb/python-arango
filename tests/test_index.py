@@ -107,7 +107,7 @@ def test_add_skiplist_index(icol):
 def test_add_geo_index(icol):
     # Test add geo index with one attribute
     result = icol.add_geo_index(
-        fields=["attr1"], ordered=False, name="geo_index", in_background=True
+        fields=["attr1"], geo_json=True, name="geo_index", in_background=True
     )
 
     expected_index = {
@@ -115,7 +115,7 @@ def test_add_geo_index(icol):
         "type": "geo",
         "fields": ["attr1"],
         "unique": False,
-        "geo_json": False,
+        "geo_json": True,
         "name": "geo_index",
     }
     for key, value in expected_index.items():
@@ -126,7 +126,7 @@ def test_add_geo_index(icol):
     # Test add geo index with two attributes
     result = icol.add_geo_index(
         fields=["attr1", "attr2"],
-        ordered=False,
+        geo_json=False,
     )
     expected_index = {
         "sparse": True,

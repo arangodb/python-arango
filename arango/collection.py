@@ -1373,7 +1373,7 @@ class Collection(ApiGroup):
     def add_geo_index(
         self,
         fields: Fields,
-        ordered: Optional[bool] = None,
+        geo_json: Optional[bool] = None,
         name: Optional[str] = None,
         in_background: Optional[bool] = None,
         legacyPolygons: Optional[bool] = False,
@@ -1385,8 +1385,10 @@ class Collection(ApiGroup):
             with at least two floats. Documents with missing fields or invalid
             values are excluded.
         :type fields: str | [str]
-        :param ordered: Whether the order is longitude, then latitude.
-        :type ordered: bool | None
+        :param geo_json: Whether to use GeoJSON data-format or not. This
+            parameter has been renamed from `ordered`. See Github Issue
+            #234 for more details.
+        :type geo_json: bool | None
         :param name: Optional name for the index.
         :type name: str | None
         :param in_background: Do not hold the collection lock.
@@ -1400,8 +1402,8 @@ class Collection(ApiGroup):
         """
         data: Json = {"type": "geo", "fields": fields}
 
-        if ordered is not None:
-            data["geoJson"] = ordered
+        if geo_json is not None:
+            data["geoJson"] = geo_json
         if name is not None:
             data["name"] = name
         if in_background is not None:
