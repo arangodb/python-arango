@@ -84,13 +84,14 @@ def test_analyzer_management(db, bad_db, cluster, enterprise, db_version):
 
     # Test create delimieter analyzer with multiple delimiters
     # NOTE: This is currently failing on 3.12.0-NIGHTLY.20240116
+    # [HTTP 501][ERR 9] Not implemented analyzer type 'multi_delimiter'
     if db_version >= version.parse("3.12.0"):
         result = db.create_analyzer(
             name=generate_analyzer_name(),
-            analyzer_type="delimiter",
+            analyzer_type="multi_delimiter",
             properties={"delimiter": [",", "."]},
         )
 
-        assert result["type"] == "delimiter"
+        assert result["type"] == "multi_delimiter"
         assert result["properties"] == {"delimiter": [",", "."]}
         assert result["features"] == []
