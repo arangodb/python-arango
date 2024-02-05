@@ -11,7 +11,10 @@ from arango.exceptions import (
 from tests.helpers import assert_raises, generate_string
 
 
-def test_pregel_attributes(db, username):
+def test_pregel_attributes(db, db_version, username):
+    if db_version >= version.parse("3.12.0"):
+        pytest.skip("Pregel is not tested in 3.12.0+")
+
     assert db.pregel.context in ["default", "async", "batch", "transaction"]
     assert db.pregel.username == username
     assert db.pregel.db_name == db.name
@@ -19,6 +22,9 @@ def test_pregel_attributes(db, username):
 
 
 def test_pregel_management(db, db_version, graph, cluster):
+    if db_version >= version.parse("3.12.0"):
+        pytest.skip("Pregel is not tested in 3.12.0+")
+
     if cluster:
         pytest.skip("Not tested in a cluster setup")
 
