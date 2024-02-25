@@ -1813,9 +1813,9 @@ class Collection(ApiGroup):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
-        param version_attribute: support for simple external versioning to 
+        param version_attribute: support for simple external versioning to
             document operations.
-        :type version_attribute: str    
+        :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :return: List of document metadata (e.g. document keys, revisions) and
@@ -1888,7 +1888,7 @@ class Collection(ApiGroup):
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
         raise_on_document_error: bool = False,
-        version_attribute: Optional[str] = None
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Update multiple documents.
 
@@ -1941,9 +1941,9 @@ class Collection(ApiGroup):
             as opposed to returning the error as an object in the result list.
             Defaults to False.
         :type raise_on_document_error: bool
-        param version_attribute: support for simple external versioning to 
+        param version_attribute: support for simple external versioning to
             document operations.
-        :type version_attribute: str    
+        :type version_attribute: str
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoError] | bool
@@ -2098,7 +2098,7 @@ class Collection(ApiGroup):
         sync: Optional[bool] = None,
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
-        version_attribute: Optional[str] = None
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Replace multiple documents.
 
@@ -2140,9 +2140,9 @@ class Collection(ApiGroup):
             index caches if document operations affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
-        param version_attribute: support for simple external versioning to 
+        param version_attribute: support for simple external versioning to
             document operations.
-        :type version_attribute: str    
+        :type version_attribute: str
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoServerError] | bool
@@ -2153,7 +2153,7 @@ class Collection(ApiGroup):
             "returnOld": return_old,
             "ignoreRevs": not check_rev,
             "overwrite": not check_rev,
-            "silent": silent
+            "silent": silent,
         }
         if sync is not None:
             params["waitForSync"] = sync
@@ -2633,7 +2633,7 @@ class StandardCollection(Collection):
         keep_none: Optional[bool] = None,
         merge: Optional[bool] = None,
         refill_index_caches: Optional[bool] = None,
-        version_attribute: Optional[str] = None
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, Json]]:
         """Insert a new document.
 
@@ -2672,9 +2672,9 @@ class StandardCollection(Collection):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
-        param version_attribute: support for simple external versioning to 
+        param version_attribute: support for simple external versioning to
             document operations.
-        :type version_attribute: str   
+        :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2736,7 +2736,7 @@ class StandardCollection(Collection):
         sync: Optional[bool] = None,
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
-        version_attribute: Optional[str] = None
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, Json]]:
         """Update a document.
 
@@ -2767,9 +2767,9 @@ class StandardCollection(Collection):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
-        param version_attribute: support for simple external versioning 
+        param version_attribute: support for simple external versioning
             to document operations.
-        :type version_attribute: str    
+        :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2783,7 +2783,7 @@ class StandardCollection(Collection):
             "returnOld": return_old,
             "ignoreRevs": not check_rev,
             "overwrite": not check_rev,
-            "silent": silent
+            "silent": silent,
         }
         if sync is not None:
             params["waitForSync"] = sync
@@ -2826,7 +2826,7 @@ class StandardCollection(Collection):
         sync: Optional[bool] = None,
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
-        version_attribute: Optional[str] = None
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, Json]]:
         """Replace a document.
 
@@ -2852,9 +2852,9 @@ class StandardCollection(Collection):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
-        param version_attribute: support for simple external versioning to 
+        param version_attribute: support for simple external versioning to
             document operations.
-        :type version_attribute: str    
+        :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2866,7 +2866,7 @@ class StandardCollection(Collection):
             "returnOld": return_old,
             "ignoreRevs": not check_rev,
             "overwrite": not check_rev,
-            "silent": silent
+            "silent": silent,
         }
         if sync is not None:
             params["waitForSync"] = sync
