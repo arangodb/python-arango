@@ -2783,11 +2783,13 @@ class StandardCollection(Collection):
             "returnOld": return_old,
             "ignoreRevs": not check_rev,
             "overwrite": not check_rev,
-            "silent": silent,
-            "versionAttribute": version_attribute
+            "silent": silent
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
@@ -2864,11 +2866,13 @@ class StandardCollection(Collection):
             "returnOld": return_old,
             "ignoreRevs": not check_rev,
             "overwrite": not check_rev,
-            "silent": silent,
-            "versionAttribute": version_attribute
+            "silent": silent
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
