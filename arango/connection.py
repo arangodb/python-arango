@@ -9,6 +9,7 @@ __all__ = [
 import logging
 import sys
 import time
+import zlib
 from abc import abstractmethod
 from typing import Any, Callable, Optional, Sequence, Set, Tuple, Union
 
@@ -44,6 +45,7 @@ class BaseConnection:
         http_client: HTTPClient,
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
+        compress_request_threshold: int = 0,
     ) -> None:
         self._url_prefixes = [f"{host}/_db/{db_name}" for host in hosts]
         self._host_resolver = host_resolver
@@ -53,6 +55,7 @@ class BaseConnection:
         self._serializer = serializer
         self._deserializer = deserializer
         self._username: Optional[str] = None
+        self._compress_request_threshold = compress_request_threshold
 
     @property
     def db_name(self) -> str:
@@ -133,6 +136,16 @@ class BaseConnection:
         """
         tries = 0
         indexes_to_filter: Set[int] = set()
+
+        data = self.normalize_data(request.data)
+        if (
+            self._compress_request_threshold
+            and isinstance(data, str)
+            and len(data) >= self._compress_request_threshold
+        ):
+            request.headers["content-encoding"] = "deflate"
+            data = zlib.compress(data.encode("utf-8"))
+
         while tries < self._host_resolver.max_tries:
             try:
                 resp = self._http.send_request(
@@ -140,7 +153,7 @@ class BaseConnection:
                     method=request.method,
                     url=self._url_prefixes[host_index] + request.endpoint,
                     params=request.params,
-                    data=self.normalize_data(request.data),
+                    data=data,
                     headers=request.headers,
                     auth=auth,
                 )
@@ -243,6 +256,8 @@ class BasicConnection(BaseConnection):
     :type password: str
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
+    :param: compress_request_threshold: The threshold for request compression.
+    :type compress_request_threshold: int
     """
 
     def __init__(
@@ -256,6 +271,7 @@ class BasicConnection(BaseConnection):
         http_client: HTTPClient,
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
+        compress_request_threshold: int,
     ) -> None:
         super().__init__(
             hosts,
@@ -265,6 +281,7 @@ class BasicConnection(BaseConnection):
             http_client,
             serializer,
             deserializer,
+            compress_request_threshold,
         )
         self._username = username
         self._auth = (username, password)
@@ -298,6 +315,8 @@ class JwtConnection(BaseConnection):
     :type password: str
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
+    :param compress_request_threshold: The threshold for request compression.
+    :type compress_request_threshold: int
     """
 
     def __init__(
@@ -312,6 +331,7 @@ class JwtConnection(BaseConnection):
         username: Optional[str] = None,
         password: Optional[str] = None,
         user_token: Optional[str] = None,
+        compress_request_threshold: int = 0,
     ) -> None:
         super().__init__(
             hosts,
@@ -321,6 +341,7 @@ class JwtConnection(BaseConnection):
             http_client,
             serializer,
             deserializer,
+            compress_request_threshold,
         )
         self._username = username
         self._password = password
@@ -439,6 +460,8 @@ class JwtSuperuserConnection(BaseConnection):
     :type http_client: arango.http.HTTPClient
     :param superuser_token: User generated token for superuser access.
     :type superuser_token: str
+    :param: compress_request_threshold: The threshold for request compression.
+    :type compress_request_threshold: int
     """
 
     def __init__(
@@ -451,6 +474,7 @@ class JwtSuperuserConnection(BaseConnection):
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
         superuser_token: str,
+        compress_request_threshold: int,
     ) -> None:
         super().__init__(
             hosts,
@@ -460,6 +484,7 @@ class JwtSuperuserConnection(BaseConnection):
             http_client,
             serializer,
             deserializer,
+            compress_request_threshold,
         )
         self._auth_header = f"bearer {superuser_token}"
 

@@ -33,7 +33,7 @@ def default_serializer(x: Any) -> str:
     :return: The object serialized as a JSON string
     :rtype: str
     """
-    return dumps(x)
+    return dumps(x, separators=(",", ":"))
 
 
 def default_deserializer(x: str) -> Any:
@@ -85,6 +85,11 @@ class ArangoClient:
        None: No timeout.
        int: Timeout value in seconds.
     :type request_timeout: int | float
+    :type compress_request_threshold: int
+    :param compress_request_threshold: Will compress requests to the server if
+        the size of the request body (in bytes) is at least the value of this
+        option. The default value is 0, which disables compression. Compression
+        will be performed using the "deflate" algorithm.
     """
 
     def __init__(
@@ -97,6 +102,7 @@ class ArangoClient:
         deserializer: Callable[[str], Any] = default_deserializer,
         verify_override: Union[bool, str, None] = None,
         request_timeout: Union[int, float, None] = DEFAULT_REQUEST_TIMEOUT,
+        compress_request_threshold: int = 0,
     ) -> None:
         if isinstance(hosts, str):
             self._hosts = [host.strip("/") for host in hosts.split(",")]
@@ -132,6 +138,8 @@ class ArangoClient:
         if verify_override is not None:
             for session in self._sessions:
                 session.verify = verify_override
+
+        self._compress_request_threshold = compress_request_threshold
 
     def __repr__(self) -> str:
         return f"<ArangoClient {','.join(self._hosts)}>"
@@ -231,6 +239,7 @@ class ArangoClient:
                 serializer=self._serializer,
                 deserializer=self._deserializer,
                 superuser_token=superuser_token,
+                compress_request_threshold=self._compress_request_threshold,
             )
         elif user_token is not None:
             connection = JwtConnection(
@@ -242,6 +251,7 @@ class ArangoClient:
                 serializer=self._serializer,
                 deserializer=self._deserializer,
                 user_token=user_token,
+                compress_request_threshold=self._compress_request_threshold,
             )
         elif auth_method.lower() == "basic":
             connection = BasicConnection(
@@ -254,6 +264,7 @@ class ArangoClient:
                 http_client=self._http,
                 serializer=self._serializer,
                 deserializer=self._deserializer,
+                compress_request_threshold=self._compress_request_threshold,
             )
         elif auth_method.lower() == "jwt":
             connection = JwtConnection(
@@ -266,6 +277,7 @@ class ArangoClient:
                 http_client=self._http,
                 serializer=self._serializer,
                 deserializer=self._deserializer,
+                compress_request_threshold=self._compress_request_threshold,
             )
         else:
             raise ValueError(f"invalid auth_method: {auth_method}")

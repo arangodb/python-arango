@@ -40,7 +40,7 @@ class HTTPClient(ABC):  # pragma: no cover
         url: str,
         headers: Optional[Headers] = None,
         params: Optional[MutableMapping[str, str]] = None,
-        data: Union[str, MultipartEncoder, None] = None,
+        data: Union[str, bytes, MultipartEncoder, None] = None,
         auth: Optional[Tuple[str, str]] = None,
     ) -> Response:
         """Send an HTTP request.
@@ -58,7 +58,7 @@ class HTTPClient(ABC):  # pragma: no cover
         :param params: URL (query) parameters.
         :type params: dict
         :param data: Request payload.
-        :type data: str | MultipartEncoder | None
+        :type data: str | bytes | MultipartEncoder | None
         :param auth: Username and password.
         :type auth: tuple
         :returns: HTTP response.
@@ -198,7 +198,7 @@ class DefaultHTTPClient(HTTPClient):
         url: str,
         headers: Optional[Headers] = None,
         params: Optional[MutableMapping[str, str]] = None,
-        data: Union[str, MultipartEncoder, None] = None,
+        data: Union[str, bytes, MultipartEncoder, None] = None,
         auth: Optional[Tuple[str, str]] = None,
     ) -> Response:
         """Send an HTTP request.
@@ -214,7 +214,7 @@ class DefaultHTTPClient(HTTPClient):
         :param params: URL (query) parameters.
         :type params: dict
         :param data: Request payload.
-        :type data: str | MultipartEncoder | None
+        :type data: str | bytes | MultipartEncoder | None
         :param auth: Username and password.
         :type auth: tuple
         :returns: HTTP response.

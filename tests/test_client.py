@@ -11,7 +11,12 @@ from arango.database import StandardDatabase
 from arango.exceptions import ServerConnectionError
 from arango.http import DefaultHTTPClient
 from arango.resolver import FallbackHostResolver, RandomHostResolver, SingleHostResolver
-from tests.helpers import generate_db_name, generate_string, generate_username
+from tests.helpers import (
+    generate_col_name,
+    generate_db_name,
+    generate_string,
+    generate_username,
+)
 
 
 def test_client_attributes():
@@ -184,3 +189,53 @@ def test_can_serialize_deserialize_client() -> None:
     client_pstr = pickle.dumps(client)
     client2 = pickle.loads(client_pstr)
     assert len(client2._sessions) > 0
+
+
+def test_client_compression(db, username, password):
+    class CheckCompression:
+        def __init__(self, should_compress: bool):
+            self.should_compress = should_compress
+
+        def check(self, headers):
+            if self.should_compress:
+                assert headers["content-encoding"] == "deflate"
+            else:
+                assert "content-encoding" not in headers
+
+    class MyHTTPClient(DefaultHTTPClient):
+        def __init__(self, checker: CheckCompression) -> None:
+            super().__init__()
+            self.checker = checker
+
+        def send_request(
+            self, session, method, url, headers=None, params=None, data=None, auth=None
+        ):
+            self.checker.check(headers)
+            return super().send_request(
+                session, method, url, headers, params, data, auth
+            )
+
+    checker = CheckCompression(should_compress=False)
+
+    # should not compress, as threshold is 0
+    client = ArangoClient(
+        hosts="http://127.0.0.1:8529", http_client=MyHTTPClient(checker=checker)
+    )
+    db = client.db(db.name, username, password)
+    col = db.create_collection(generate_col_name())
+    col.insert({"_key": "1"})
+
+    # should not compress, as size of payload is less than threshold
+    checker = CheckCompression(should_compress=False)
+    client = ArangoClient(
+        hosts="http://127.0.0.1:8529",
+        http_client=MyHTTPClient(checker=checker),
+        compress_request_threshold=250,
+    )
+    db = client.db(db.name, username, password)
+    col = db.create_collection(generate_col_name())
+    col.insert({"_key": "2"})
+
+    # should compress
+    checker.should_compress = True
+    col.insert({"_key": "3" * 250})
