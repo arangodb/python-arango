@@ -146,6 +146,8 @@ class BaseConnection:
             request.headers["content-encoding"] = "deflate"
             data = zlib.compress(data.encode("utf-8"))
 
+        request.headers["accept-encoding"] = "deflate, gzip"
+
         while tries < self._host_resolver.max_tries:
             try:
                 resp = self._http.send_request(
