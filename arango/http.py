@@ -1,6 +1,13 @@
-__all__ = ["HTTPClient", "DefaultHTTPClient", "DEFAULT_REQUEST_TIMEOUT"]
+__all__ = [
+    "HTTPClient",
+    "DefaultHTTPClient",
+    "DeflateRequestCompression",
+    "RequestCompression",
+    "DEFAULT_REQUEST_TIMEOUT",
+]
 
 import typing
+import zlib
 from abc import ABC, abstractmethod
 from typing import Any, MutableMapping, Optional, Tuple, Union
 
@@ -237,3 +244,65 @@ class DefaultHTTPClient(HTTPClient):
             status_text=response.reason,
             raw_body=response.text,
         )
+
+
+class RequestCompression(ABC):
+    """Abstract base class for request compression."""
+
+    @abstractmethod
+    def needs_compression(self, data: str) -> bool:
+        """Return True if the data needs to be compressed.
+
+        :param data: Data to be compressed.
+        :type data: str
+        :returns: True if the data needs to be compressed.
+        :rtype: bool
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def compress(self, data: str) -> bytes:
+        """Compress the data.
+
+        :param data: Data to be compressed.
+        :type data: str
+        :returns: Compressed data.
+        :rtype: bytes
+        """
+        raise NotImplementedError
+
+
+class DeflateRequestCompression(RequestCompression):
+    """Compress requests using the 'deflate' algorithm."""
+
+    def __init__(self, threshold: int, level: int = -1):
+        """
+        :param threshold: Will compress requests to the server if
+        the size of the request body (in bytes) is at least the value of this
+        option.
+        :type threshold: int
+        :param level: Compression level, in 0-9 or -1.
+        :type level: int
+        """
+        self._threshold = threshold
+        self._level = level
+
+    def needs_compression(self, data: str) -> bool:
+        """Return True if the data needs to be compressed.
+
+        :param data: Data to be compressed.
+        :type data: str
+        :returns: True if the data needs to be compressed.
+        :rtype: bool
+        """
+        return len(data) >= self._threshold
+
+    def compress(self, data: str) -> bytes:
+        """Compress the data.
+
+        :param data: Data to be compressed.
+        :type data: str
+        :returns: Compressed data.
+        :rtype: bytes
+        """
+        return zlib.compress(data.encode("utf-8"), level=self._level)

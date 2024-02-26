@@ -9,7 +9,6 @@ __all__ = [
 import logging
 import sys
 import time
-import zlib
 from abc import abstractmethod
 from typing import Any, Callable, Optional, Sequence, Set, Tuple, Union
 
@@ -24,7 +23,7 @@ from arango.exceptions import (
     JWTRefreshError,
     ServerConnectionError,
 )
-from arango.http import HTTPClient
+from arango.http import HTTPClient, RequestCompression
 from arango.request import Request
 from arango.resolver import HostResolver
 from arango.response import Response
@@ -45,7 +44,8 @@ class BaseConnection:
         http_client: HTTPClient,
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
-        compress_request_threshold: int = 0,
+        request_compression: Optional[RequestCompression] = None,
+        response_compression: Optional[str] = None,
     ) -> None:
         self._url_prefixes = [f"{host}/_db/{db_name}" for host in hosts]
         self._host_resolver = host_resolver
@@ -55,7 +55,8 @@ class BaseConnection:
         self._serializer = serializer
         self._deserializer = deserializer
         self._username: Optional[str] = None
-        self._compress_request_threshold = compress_request_threshold
+        self._request_compression = request_compression
+        self._response_compression = response_compression
 
     @property
     def db_name(self) -> str:
@@ -139,14 +140,15 @@ class BaseConnection:
 
         data = self.normalize_data(request.data)
         if (
-            self._compress_request_threshold
+            self._request_compression is not None
             and isinstance(data, str)
-            and len(data) >= self._compress_request_threshold
+            and self._request_compression.needs_compression(data)
         ):
             request.headers["content-encoding"] = "deflate"
-            data = zlib.compress(data.encode("utf-8"))
+            data = self._request_compression.compress(data)
 
-        request.headers["accept-encoding"] = "deflate, gzip"
+        if self._response_compression is not None:
+            request.headers["accept-encoding"] = self._response_compression
 
         while tries < self._host_resolver.max_tries:
             try:
@@ -258,8 +260,10 @@ class BasicConnection(BaseConnection):
     :type password: str
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
-    :param: compress_request_threshold: The threshold for request compression.
-    :type compress_request_threshold: int
+    :param: request_compression: The request compression algorithm.
+    :type request_compression: arango.http.RequestCompression | None
+    :param: response_compression: The response compression algorithm.
+    :type response_compression: str | None
     """
 
     def __init__(
@@ -273,7 +277,8 @@ class BasicConnection(BaseConnection):
         http_client: HTTPClient,
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
-        compress_request_threshold: int,
+        request_compression: Optional[RequestCompression] = None,
+        response_compression: Optional[str] = None,
     ) -> None:
         super().__init__(
             hosts,
@@ -283,7 +288,8 @@ class BasicConnection(BaseConnection):
             http_client,
             serializer,
             deserializer,
-            compress_request_threshold,
+            request_compression,
+            response_compression,
         )
         self._username = username
         self._auth = (username, password)
@@ -317,8 +323,10 @@ class JwtConnection(BaseConnection):
     :type password: str
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
-    :param compress_request_threshold: The threshold for request compression.
-    :type compress_request_threshold: int
+    :param request_compression: The request compression algorithm.
+    :type request_compression: arango.http.RequestCompression | None
+    :param response_compression: The response compression algorithm.
+    :type response_compression: str | None
     """
 
     def __init__(
@@ -333,7 +341,8 @@ class JwtConnection(BaseConnection):
         username: Optional[str] = None,
         password: Optional[str] = None,
         user_token: Optional[str] = None,
-        compress_request_threshold: int = 0,
+        request_compression: Optional[RequestCompression] = None,
+        response_compression: Optional[str] = None,
     ) -> None:
         super().__init__(
             hosts,
@@ -343,7 +352,8 @@ class JwtConnection(BaseConnection):
             http_client,
             serializer,
             deserializer,
-            compress_request_threshold,
+            request_compression,
+            response_compression,
         )
         self._username = username
         self._password = password
@@ -462,8 +472,10 @@ class JwtSuperuserConnection(BaseConnection):
     :type http_client: arango.http.HTTPClient
     :param superuser_token: User generated token for superuser access.
     :type superuser_token: str
-    :param: compress_request_threshold: The threshold for request compression.
-    :type compress_request_threshold: int
+    :param request_compression: The request compression algorithm.
+    :type request_compression: arango.http.RequestCompression | None
+    :param response_compression: The response compression algorithm.
+    :type response_compression: str | None
     """
 
     def __init__(
@@ -476,7 +488,8 @@ class JwtSuperuserConnection(BaseConnection):
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
         superuser_token: str,
-        compress_request_threshold: int,
+        request_compression: Optional[RequestCompression] = None,
+        response_compression: Optional[str] = None,
     ) -> None:
         super().__init__(
             hosts,
@@ -486,7 +499,8 @@ class JwtSuperuserConnection(BaseConnection):
             http_client,
             serializer,
             deserializer,
-            compress_request_threshold,
+            request_compression,
+            response_compression,
         )
         self._auth_header = f"bearer {superuser_token}"
 

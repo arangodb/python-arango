@@ -9,7 +9,7 @@ from requests import Session
 from arango.client import ArangoClient
 from arango.database import StandardDatabase
 from arango.exceptions import ServerConnectionError
-from arango.http import DefaultHTTPClient
+from arango.http import DefaultHTTPClient, DeflateRequestCompression
 from arango.resolver import FallbackHostResolver, RandomHostResolver, SingleHostResolver
 from tests.helpers import (
     generate_col_name,
@@ -203,9 +203,9 @@ def test_client_compression(db, username, password):
                 assert "content-encoding" not in headers
 
     class MyHTTPClient(DefaultHTTPClient):
-        def __init__(self, checker: CheckCompression) -> None:
+        def __init__(self, compression_checker: CheckCompression) -> None:
             super().__init__()
-            self.checker = checker
+            self.checker = compression_checker
 
         def send_request(
             self, session, method, url, headers=None, params=None, data=None, auth=None
@@ -219,7 +219,9 @@ def test_client_compression(db, username, password):
 
     # should not compress, as threshold is 0
     client = ArangoClient(
-        hosts="http://127.0.0.1:8529", http_client=MyHTTPClient(checker=checker)
+        hosts="http://127.0.0.1:8529",
+        http_client=MyHTTPClient(compression_checker=checker),
+        response_compression="gzip",
     )
     db = client.db(db.name, username, password)
     col = db.create_collection(generate_col_name())
@@ -229,8 +231,9 @@ def test_client_compression(db, username, password):
     checker = CheckCompression(should_compress=False)
     client = ArangoClient(
         hosts="http://127.0.0.1:8529",
-        http_client=MyHTTPClient(checker=checker),
-        compress_request_threshold=250,
+        http_client=MyHTTPClient(compression_checker=checker),
+        request_compression=DeflateRequestCompression(250, level=7),
+        response_compression="deflate",
     )
     db = client.db(db.name, username, password)
     col = db.create_collection(generate_col_name())

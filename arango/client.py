@@ -13,7 +13,12 @@ from arango.connection import (
 )
 from arango.database import StandardDatabase
 from arango.exceptions import ServerConnectionError
-from arango.http import DEFAULT_REQUEST_TIMEOUT, DefaultHTTPClient, HTTPClient
+from arango.http import (
+    DEFAULT_REQUEST_TIMEOUT,
+    DefaultHTTPClient,
+    HTTPClient,
+    RequestCompression,
+)
 from arango.resolver import (
     FallbackHostResolver,
     HostResolver,
@@ -85,11 +90,12 @@ class ArangoClient:
        None: No timeout.
        int: Timeout value in seconds.
     :type request_timeout: int | float
-    :type compress_request_threshold: int
-    :param compress_request_threshold: Will compress requests to the server if
-        the size of the request body (in bytes) is at least the value of this
-        option. The default value is 0, which disables compression. Compression
-        will be performed using the "deflate" algorithm.
+    :param request_compression: Will compress requests to the server according to
+        the given algorithm. Currently only `deflate` is supported.
+    :type request_compression: arango.http.RequestCompression | None
+    :param response_compression: Tells the server what compression algorithm is
+        acceptable for the response
+    :type response_compression: str | None
     """
 
     def __init__(
@@ -102,7 +108,8 @@ class ArangoClient:
         deserializer: Callable[[str], Any] = default_deserializer,
         verify_override: Union[bool, str, None] = None,
         request_timeout: Union[int, float, None] = DEFAULT_REQUEST_TIMEOUT,
-        compress_request_threshold: int = 0,
+        request_compression: Optional[RequestCompression] = None,
+        response_compression: Optional[str] = None,
     ) -> None:
         if isinstance(hosts, str):
             self._hosts = [host.strip("/") for host in hosts.split(",")]
@@ -139,7 +146,8 @@ class ArangoClient:
             for session in self._sessions:
                 session.verify = verify_override
 
-        self._compress_request_threshold = compress_request_threshold
+        self._request_compression = request_compression
+        self._response_compression = response_compression
 
     def __repr__(self) -> str:
         return f"<ArangoClient {','.join(self._hosts)}>"
@@ -239,7 +247,8 @@ class ArangoClient:
                 serializer=self._serializer,
                 deserializer=self._deserializer,
                 superuser_token=superuser_token,
-                compress_request_threshold=self._compress_request_threshold,
+                request_compression=self._request_compression,
+                response_compression=self._response_compression,
             )
         elif user_token is not None:
             connection = JwtConnection(
@@ -251,7 +260,8 @@ class ArangoClient:
                 serializer=self._serializer,
                 deserializer=self._deserializer,
                 user_token=user_token,
-                compress_request_threshold=self._compress_request_threshold,
+                request_compression=self._request_compression,
+                response_compression=self._response_compression,
             )
         elif auth_method.lower() == "basic":
             connection = BasicConnection(
@@ -264,7 +274,8 @@ class ArangoClient:
                 http_client=self._http,
                 serializer=self._serializer,
                 deserializer=self._deserializer,
-                compress_request_threshold=self._compress_request_threshold,
+                request_compression=self._request_compression,
+                response_compression=self._response_compression,
             )
         elif auth_method.lower() == "jwt":
             connection = JwtConnection(
@@ -277,7 +288,8 @@ class ArangoClient:
                 http_client=self._http,
                 serializer=self._serializer,
                 deserializer=self._deserializer,
-                compress_request_threshold=self._compress_request_threshold,
+                request_compression=self._request_compression,
+                response_compression=self._response_compression,
             )
         else:
             raise ValueError(f"invalid auth_method: {auth_method}")
