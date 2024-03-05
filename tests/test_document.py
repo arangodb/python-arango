@@ -2070,7 +2070,7 @@ def test_document_management_via_db(db, col):
     assert len(col) == 2
 
 
-def test_version_attributes(db, coll, db_version):
+def test_version_attributes(col, db_version):
     if db_version < version.parse("3.12.0"):
         pytest.skip("Version attributes is tested in 3.12.0+")
 
@@ -2088,8 +2088,8 @@ def test_version_attributes(db, coll, db_version):
         {"_key": "test3", "value": 2},
     ]
 
-    coll.insert_many(docs, version_attribute="version")
+    col.insert_many(docs, version_attribute="version")
 
-    assert coll["test1"]["version"] == 3
-    assert coll["test2"]["version"] == 42
-    assert coll["test3"]["version"] == 5
+    assert col["test1"]["version"] == 3
+    assert col["test2"]["version"] == 42
+    assert col["test3"]["version"] == 5
