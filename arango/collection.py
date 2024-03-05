@@ -1816,8 +1816,6 @@ class Collection(ApiGroup):
         param version_attribute: support for simple external versioning to
             document operations.
         :type version_attribute: str
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
         :return: List of document metadata (e.g. document keys, revisions) and
             any exception, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoServerError] | bool

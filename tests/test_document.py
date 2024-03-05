@@ -24,6 +24,7 @@ from tests.helpers import (
     generate_doc_key,
 )
 
+from packaging import version
 
 def test_document_insert(col, docs):
     # Test insert document with no key
@@ -2067,3 +2068,32 @@ def test_document_management_via_db(db, col):
     assert result["_id"] == doc1_id
     assert doc1_id not in col
     assert len(col) == 2
+
+def test_version_attributes(db, coll, db_version):
+    if db_version < version.parse("3.12.0"):
+        pytest.skip("Version attributes is tested in 3.12.0+")
+
+    docs = [
+        { "_key": "test1", "version": 2 },
+        { "_key": "test1", "version": 3 },
+        { "_key": "test1", "version": 1 },
+        { "_key": "test2", "version": 1 },
+        { "_key": "test2", "version": 9 },
+        { "_key": "test2", "version": 42 },
+        { "_key": "test2", "version": 0 },
+        { "_key": "test3" },
+        { "_key": "test3", "version": 5 },
+        { "_key": "test3", "version": 4 },
+        { "_key": "test3", "value": 2 },
+    ]
+
+    coll.insert_many(docs, version_attribute='version')
+    
+    assert coll["test1"]["version"] == 3
+    assert coll["test2"]["version"] == 42
+    assert coll["test3"]["version"] == 5
+
+
+
+
+    
