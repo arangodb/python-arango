@@ -1,3 +1,5 @@
+import time
+
 import pytest
 from packaging import version
 
@@ -2070,9 +2072,17 @@ def test_document_management_via_db(db, col):
     assert len(col) == 2
 
 
-def test_version_attributes(col, db_version):
+def test_version_attributes_update_many(col, db_version):
     if db_version < version.parse("3.12.0"):
         pytest.skip("Version attributes is tested in 3.12.0+")
+
+    col.insert_many(
+        [
+            {"_key": "test1", "version": 0},
+            {"_key": "test2", "version": 0},
+            {"_key": "test3", "version": 0},
+        ]
+    )
 
     docs = [
         {"_key": "test1", "version": 2},
@@ -2088,8 +2098,46 @@ def test_version_attributes(col, db_version):
         {"_key": "test3", "value": 2},
     ]
 
-    col.insert_many(docs, version_attribute="version")
-
+    col.update_many(docs, version_attribute="version")
     assert col["test1"]["version"] == 3
     assert col["test2"]["version"] == 42
     assert col["test3"]["version"] == 5
+
+    docs = [
+        {"_key": "test1", "version": 2},
+        {"_key": "test1", "version": 3},
+        {"_key": "test1", "version": 5},
+        {"_key": "test2", "version": 1},
+        {"_key": "test2", "version": 9},
+        {"_key": "test2", "version": 42},
+        {"_key": "test2", "version": 0},
+        {"_key": "test3", "version": 5},
+        {"_key": "test3", "version": 6},
+    ]
+
+    col.replace_many(docs, version_attribute="version")
+    assert col["test1"]["version"] == 5
+    assert col["test2"]["version"] == 42
+    assert col["test3"]["version"] == 6
+
+    docs = [
+        {"_key": "test1", "version": 0},
+        {"_key": "test2", "version": 0},
+        {"_key": "test3", "version": 0},
+    ]
+
+    col.insert_many(docs, overwrite_mode="update", version_attribute="version")
+    assert col["test1"]["version"] == 5
+    assert col["test2"]["version"] == 42
+    assert col["test3"]["version"] == 6
+
+    docs = [
+        {"_key": "test1", "version": 43},
+        {"_key": "test2", "version": 41},
+        {"_key": "test3", "version": 43},
+    ]
+
+    col.insert_many(docs, overwrite_mode="replace", version_attribute="version")
+    assert col["test1"]["version"] == 43
+    assert col["test2"]["version"] == 42
+    assert col["test3"]["version"] == 43
