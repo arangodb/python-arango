@@ -251,8 +251,7 @@ class RequestCompression(ABC):
 
     @abstractmethod
     def needs_compression(self, data: str) -> bool:
-        """Return True if the data needs to be compressed.
-
+        """
         :param data: Data to be compressed.
         :type data: str
         :returns: True if the data needs to be compressed.
@@ -275,7 +274,7 @@ class RequestCompression(ABC):
 class DeflateRequestCompression(RequestCompression):
     """Compress requests using the 'deflate' algorithm."""
 
-    def __init__(self, threshold: int, level: int = -1):
+    def __init__(self, threshold: int = 1024, level: int = 6):
         """
         :param threshold: Will compress requests to the server if
         the size of the request body (in bytes) is at least the value of this
