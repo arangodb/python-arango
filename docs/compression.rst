@@ -9,7 +9,7 @@ when creating the client. Currently, only the "deflate" compression algorithm is
 
     from arango import ArangoClient
 
-    from http import DeflateRequestCompression
+    from arango.http import DeflateRequestCompression
 
     client = ArangoClient(
         hosts='http://localhost:8529',
