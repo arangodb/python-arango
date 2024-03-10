@@ -270,6 +270,16 @@ class RequestCompression(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def content_encoding(self) -> str:
+        """Return the content encoding exactly as it should
+            appear in the headers.
+
+        :returns: Content encoding.
+        :rtype: str
+        """
+        raise NotImplementedError
+
 
 class DeflateRequestCompression(RequestCompression):
     """Compress requests using the 'deflate' algorithm."""
@@ -287,8 +297,7 @@ class DeflateRequestCompression(RequestCompression):
         self._level = level
 
     def needs_compression(self, data: str) -> bool:
-        """Return True if the data needs to be compressed.
-
+        """
         :param data: Data to be compressed.
         :type data: str
         :returns: True if the data needs to be compressed.
@@ -297,11 +306,13 @@ class DeflateRequestCompression(RequestCompression):
         return len(data) >= self._threshold
 
     def compress(self, data: str) -> bytes:
-        """Compress the data.
-
+        """
         :param data: Data to be compressed.
         :type data: str
         :returns: Compressed data.
         :rtype: bytes
         """
         return zlib.compress(data.encode("utf-8"), level=self._level)
+
+    def content_encoding(self) -> str:
+        return "deflate"
