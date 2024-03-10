@@ -271,7 +271,7 @@ class RequestCompression(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def content_encoding(self) -> str:
+    def encoding(self) -> str:
         """Return the content encoding exactly as it should
             appear in the headers.
 
@@ -314,5 +314,5 @@ class DeflateRequestCompression(RequestCompression):
         """
         return zlib.compress(data.encode("utf-8"), level=self._level)
 
-    def content_encoding(self) -> str:
+    def encoding(self) -> str:
         return "deflate"

@@ -144,9 +144,7 @@ class BaseConnection:
             and isinstance(data, str)
             and self._request_compression.needs_compression(data)
         ):
-            request.headers[
-                "content-encoding"
-            ] = self._request_compression.content_encoding()
+            request.headers["content-encoding"] = self._request_compression.encoding()
             data = self._request_compression.compress(data)
 
         if self._response_compression is not None:
