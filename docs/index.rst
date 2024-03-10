@@ -80,6 +80,7 @@ Miscellaneous
     logging
     auth
     http
+    compression
     serializer
     schema
     cursor

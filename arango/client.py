@@ -91,10 +91,10 @@ class ArangoClient:
        int: Timeout value in seconds.
     :type request_timeout: int | float
     :param request_compression: Will compress requests to the server according to
-        the given algorithm. Currently only `deflate` is supported.
+        the given algorithm. No compression happens by default.
     :type request_compression: arango.http.RequestCompression | None
     :param response_compression: Tells the server what compression algorithm is
-        acceptable for the response
+        acceptable for the response. No compression happens by default.
     :type response_compression: str | None
     """
 
