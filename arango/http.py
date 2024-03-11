@@ -246,7 +246,7 @@ class DefaultHTTPClient(HTTPClient):
         )
 
 
-class RequestCompression(ABC):
+class RequestCompression(ABC):  # pragma: no cover
     """Abstract base class for request compression."""
 
     @abstractmethod
