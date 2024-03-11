@@ -68,6 +68,15 @@ logical unit of work (ACID compliant).
     assert '_rev' in txn_col.insert({'_key': 'Lily'})
     assert len(txn_col) == 6
 
+    # Fetch an existing transaction. Useful if you have received a Transaction ID
+    # from some other part of your system or an external system.
+    original_txn = db.begin_transaction(write='students')
+    txn_col = original_txn.collection('students')
+    assert '_rev' in txn_col.insert({'_key': 'Chip'})
+    txn_db = db.fetch_transaction(original_txn.transaction_id)
+    txn_col = txn_db.collection('students')
+    assert '_rev' in txn_col.insert({'_key': 'Alya'})
+
     # Abort the transaction
     txn_db.abort_transaction()
     assert 'Kate' not in col

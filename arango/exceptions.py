@@ -772,6 +772,10 @@ class TransactionAbortError(ArangoServerError):
     """Failed to abort transaction."""
 
 
+class TransactionFetchError(ArangoServerError):
+    """Failed to fetch existing transaction."""
+
+
 class TransactionListError(ArangoServerError):
     """Failed to retrieve transactions."""
 

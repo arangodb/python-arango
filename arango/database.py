@@ -2948,6 +2948,14 @@ class StandardDatabase(Database):
         """
         return BatchDatabase(self._conn, return_result, max_workers)
 
+    def fetch_transaction(self, transaction_id: str) -> "TransactionDatabase":
+        """Fetch an existing transaction.
+
+        :param transaction_id: The ID of the existing transaction.
+        :type transaction_id: str
+        """
+        return TransactionDatabase(connection=self._conn, transaction_id=transaction_id)
+
     def begin_transaction(
         self,
         read: Union[str, Sequence[str], None] = None,
@@ -3125,6 +3133,9 @@ class TransactionDatabase(Database):
     :type lock_timeout: int | None
     :param max_size: Max transaction size in bytes.
     :type max_size: int | None
+    :param transaction_id: Initialize using an existing transaction instead of creating
+        a new transaction.
+    :type transaction_id: str | None
     """
 
     def __init__(
@@ -3137,6 +3148,7 @@ class TransactionDatabase(Database):
         allow_implicit: Optional[bool] = None,
         lock_timeout: Optional[int] = None,
         max_size: Optional[int] = None,
+        transaction_id: Optional[str] = None,
     ) -> None:
         self._executor: TransactionApiExecutor
         super().__init__(
@@ -3150,6 +3162,7 @@ class TransactionDatabase(Database):
                 allow_implicit=allow_implicit,
                 lock_timeout=lock_timeout,
                 max_size=max_size,
+                transaction_id=transaction_id,
             ),
         )
 
