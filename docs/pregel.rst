@@ -12,7 +12,7 @@ iterative graph processing. For more information, refer to `ArangoDB manual`_.
 
 **Example:**
 
-.. testcode::
+.. code-block:: python
 
     from arango import ArangoClient
 
