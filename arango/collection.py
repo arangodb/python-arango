@@ -1813,7 +1813,7 @@ class Collection(ApiGroup):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
-        param version_attribute: support for simple external versioning to
+        :param version_attribute: support for simple external versioning to
             document operations.
         :type version_attribute: str
         :return: List of document metadata (e.g. document keys, revisions) and
@@ -1939,7 +1939,7 @@ class Collection(ApiGroup):
             as opposed to returning the error as an object in the result list.
             Defaults to False.
         :type raise_on_document_error: bool
-        param version_attribute: support for simple external versioning to
+        :param version_attribute: support for simple external versioning to
             document operations.
         :type version_attribute: str
         :return: List of document metadata (e.g. document keys, revisions) and
@@ -2138,7 +2138,7 @@ class Collection(ApiGroup):
             index caches if document operations affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
-        param version_attribute: support for simple external versioning to
+        :param version_attribute: support for simple external versioning to
             document operations.
         :type version_attribute: str
         :return: List of document metadata (e.g. document keys, revisions) and
@@ -2670,7 +2670,7 @@ class StandardCollection(Collection):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
-        param version_attribute: support for simple external versioning to
+        :param version_attribute: support for simple external versioning to
             document operations.
         :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if
@@ -2765,7 +2765,7 @@ class StandardCollection(Collection):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
-        param version_attribute: support for simple external versioning
+        :param version_attribute: support for simple external versioning
             to document operations.
         :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if
@@ -2850,7 +2850,7 @@ class StandardCollection(Collection):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
-        param version_attribute: support for simple external versioning to
+        :param version_attribute: support for simple external versioning to
             document operations.
         :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if

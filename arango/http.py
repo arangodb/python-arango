@@ -1,6 +1,13 @@
-__all__ = ["HTTPClient", "DefaultHTTPClient", "DEFAULT_REQUEST_TIMEOUT"]
+__all__ = [
+    "HTTPClient",
+    "DefaultHTTPClient",
+    "DeflateRequestCompression",
+    "RequestCompression",
+    "DEFAULT_REQUEST_TIMEOUT",
+]
 
 import typing
+import zlib
 from abc import ABC, abstractmethod
 from typing import Any, MutableMapping, Optional, Tuple, Union
 
@@ -40,7 +47,7 @@ class HTTPClient(ABC):  # pragma: no cover
         url: str,
         headers: Optional[Headers] = None,
         params: Optional[MutableMapping[str, str]] = None,
-        data: Union[str, MultipartEncoder, None] = None,
+        data: Union[str, bytes, MultipartEncoder, None] = None,
         auth: Optional[Tuple[str, str]] = None,
     ) -> Response:
         """Send an HTTP request.
@@ -58,7 +65,7 @@ class HTTPClient(ABC):  # pragma: no cover
         :param params: URL (query) parameters.
         :type params: dict
         :param data: Request payload.
-        :type data: str | MultipartEncoder | None
+        :type data: str | bytes | MultipartEncoder | None
         :param auth: Username and password.
         :type auth: tuple
         :returns: HTTP response.
@@ -198,7 +205,7 @@ class DefaultHTTPClient(HTTPClient):
         url: str,
         headers: Optional[Headers] = None,
         params: Optional[MutableMapping[str, str]] = None,
-        data: Union[str, MultipartEncoder, None] = None,
+        data: Union[str, bytes, MultipartEncoder, None] = None,
         auth: Optional[Tuple[str, str]] = None,
     ) -> Response:
         """Send an HTTP request.
@@ -214,7 +221,7 @@ class DefaultHTTPClient(HTTPClient):
         :param params: URL (query) parameters.
         :type params: dict
         :param data: Request payload.
-        :type data: str | MultipartEncoder | None
+        :type data: str | bytes | MultipartEncoder | None
         :param auth: Username and password.
         :type auth: tuple
         :returns: HTTP response.
@@ -237,3 +244,75 @@ class DefaultHTTPClient(HTTPClient):
             status_text=response.reason,
             raw_body=response.text,
         )
+
+
+class RequestCompression(ABC):  # pragma: no cover
+    """Abstract base class for request compression."""
+
+    @abstractmethod
+    def needs_compression(self, data: str) -> bool:
+        """
+        :param data: Data to be compressed.
+        :type data: str
+        :returns: True if the data needs to be compressed.
+        :rtype: bool
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def compress(self, data: str) -> bytes:
+        """Compress the data.
+
+        :param data: Data to be compressed.
+        :type data: str
+        :returns: Compressed data.
+        :rtype: bytes
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def encoding(self) -> str:
+        """Return the content encoding exactly as it should
+            appear in the headers.
+
+        :returns: Content encoding.
+        :rtype: str
+        """
+        raise NotImplementedError
+
+
+class DeflateRequestCompression(RequestCompression):
+    """Compress requests using the 'deflate' algorithm."""
+
+    def __init__(self, threshold: int = 1024, level: int = 6):
+        """
+        :param threshold: Will compress requests to the server if
+        the size of the request body (in bytes) is at least the value of this
+        option.
+        :type threshold: int
+        :param level: Compression level, in 0-9 or -1.
+        :type level: int
+        """
+        self._threshold = threshold
+        self._level = level
+
+    def needs_compression(self, data: str) -> bool:
+        """
+        :param data: Data to be compressed.
+        :type data: str
+        :returns: True if the data needs to be compressed.
+        :rtype: bool
+        """
+        return len(data) >= self._threshold
+
+    def compress(self, data: str) -> bytes:
+        """
+        :param data: Data to be compressed.
+        :type data: str
+        :returns: Compressed data.
+        :rtype: bytes
+        """
+        return zlib.compress(data.encode("utf-8"), level=self._level)
+
+    def encoding(self) -> str:
+        return "deflate"
