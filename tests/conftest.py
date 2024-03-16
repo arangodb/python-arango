@@ -106,9 +106,9 @@ def pytest_configure(config):
     col_name = generate_col_name()
     tst_col = tst_db.create_collection(col_name, edge=False)
 
-    tst_col.add_skiplist_index(["val"])
-    tst_col.add_fulltext_index(["text"])
-    geo_index = tst_col.add_geo_index(["loc"])
+    tst_col.add_index({"type": "skiplist", "fields": ["val"]})
+    tst_col.add_index({"type": "fulltext", "fields": ["text"]})
+    geo_index = tst_col.add_index({"type": "geo", "fields": ["loc"]})
 
     # Create a legacy edge collection for testing.
     icol_name = generate_col_name()

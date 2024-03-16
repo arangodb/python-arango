@@ -30,7 +30,7 @@ Here is an example showing how **python-arango** client can be used:
         students = db.create_collection('students')
 
     # Add a hash index to the collection.
-    students.add_hash_index(fields=['name'], unique=False)
+    students.add_index({'type': 'hash', 'fields': ['name'], 'unique': True})
 
     # Truncate the collection.
     students.truncate()
