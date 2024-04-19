@@ -1,6 +1,7 @@
 __all__ = ["Graph"]
 
 from typing import List, Optional, Sequence, Union
+from warnings import warn
 
 from arango.api import ApiGroup
 from arango.collection import EdgeCollection, VertexCollection
@@ -384,6 +385,11 @@ class Graph(ApiGroup):
     ) -> Result[Json]:
         """Traverse the graph and return the visited vertices and edges.
 
+        .. warning::
+
+            This method is deprecated and no longer works since ArangoDB 3.12.
+            The preferred way to traverse graphs is via AQL.
+
         :param start_vertex: Start vertex document ID or body with "_id" field.
         :type start_vertex: str | dict
         :param direction: Traversal direction. Allowed values are "outbound"
@@ -441,6 +447,9 @@ class Graph(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.GraphTraverseError: If traversal fails.
         """
+        m = "The HTTP traversal API is deprecated since version 3.4.0. The preferred way to traverse graphs is via AQL."  # noqa: E501
+        warn(m, DeprecationWarning, stacklevel=2)
+
         if strategy is not None:
             if strategy.lower() == "dfs":
                 strategy = "depthfirst"
