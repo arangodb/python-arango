@@ -1,3 +1,6 @@
+import pytest
+from packaging import version
+
 from arango.collection import EdgeCollection
 from arango.exceptions import (
     DocumentDeleteError,
@@ -1071,7 +1074,10 @@ def test_edge_management_via_graph(graph, ecol, fvcol, fvdocs, tvcol, tvdocs):
     assert len(ecol) == 1
 
 
-def test_traverse(db):
+def test_traverse(db, db_version):
+    if db_version >= version.parse("3.12.0"):
+        pytest.skip("Traversal API is no longer available for ArangoDB 3.12+")
+
     # Create test graph, vertex and edge collections
     school = db.create_graph(generate_graph_name())
     profs = school.create_vertex_collection(generate_col_name())
