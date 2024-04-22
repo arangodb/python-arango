@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pytest
+from packaging import version
 
 from arango.aql import AQL
 from arango.backup import Backup
