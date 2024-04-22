@@ -199,8 +199,7 @@ def test_aql_query_management(db_version, db, bad_db, col, docs):
         assert "state" in query
         assert "bind_vars" in query
         assert "runtime" in query
-        if db_version >= version.parse("3.11"):
-            assert "peak_memory_usage" in query
+        assert "peak_memory_usage" in query
     assert len(queries) == 2
 
     # Test list queries with bad database
@@ -247,7 +246,7 @@ def test_aql_query_management(db_version, db, bad_db, col, docs):
 
 
 def test_aql_query_force_one_shard_attribute_value(db, db_version, enterprise, cluster):
-    if db_version < version.parse("3.10") or not enterprise or not cluster:
+    if not enterprise or not cluster:
         return
 
     name = generate_col_name()

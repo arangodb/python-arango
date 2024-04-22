@@ -134,7 +134,7 @@ def pytest_configure(config):
     global_data.username = username
     global_data.password = password
     global_data.db_name = tst_db_name
-    global_data.db_version = version.parse(db_version)
+    global_data.db_version = version.parse(db_version.split("-")[0])
     global_data.sys_db = sys_db
     global_data.tst_db = tst_db
     global_data.bad_db = bad_db

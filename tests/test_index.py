@@ -107,7 +107,7 @@ def test_add_skiplist_index(icol):
 def test_add_geo_index(icol):
     # Test add geo index with one attribute
     result = icol.add_geo_index(
-        fields=["attr1"], ordered=False, name="geo_index", in_background=True
+        fields=["attr1"], geo_json=True, name="geo_index", in_background=True
     )
 
     expected_index = {
@@ -115,7 +115,7 @@ def test_add_geo_index(icol):
         "type": "geo",
         "fields": ["attr1"],
         "unique": False,
-        "geo_json": False,
+        "geo_json": True,
         "name": "geo_index",
     }
     for key, value in expected_index.items():
@@ -126,7 +126,7 @@ def test_add_geo_index(icol):
     # Test add geo index with two attributes
     result = icol.add_geo_index(
         fields=["attr1", "attr2"],
-        ordered=False,
+        geo_json=False,
     )
     expected_index = {
         "sparse": True,
@@ -220,10 +220,7 @@ def test_add_ttl_index(icol):
     icol.delete_index(result["id"])
 
 
-def test_add_inverted_index(icol, enterprise, db_version):
-    if db_version < version.parse("3.10.0"):
-        pytest.skip("Inverted indexes are not supported before 3.10.0")
-
+def test_add_inverted_index(icol, enterprise):
     parameters = dict(
         fields=[{"name": "attr1", "cache": True}],
         name="c0_cached",
@@ -234,7 +231,7 @@ def test_add_inverted_index(icol, enterprise, db_version):
     )
     expected_keys = ["primary_sort", "analyzer", "include_all_fields", "search_field"]
 
-    if enterprise and db_version >= version.parse("3.10.2"):
+    if enterprise:
         parameters["cache"] = True
         parameters["primaryKeyCache"] = True
         expected_keys.extend(["cache", "primaryKeyCache"])
@@ -244,6 +241,67 @@ def test_add_inverted_index(icol, enterprise, db_version):
 
     for key in expected_keys:
         assert key in result
+
+    icol.delete_index(result["id"])
+
+
+def test_add_zkd_index(icol, db_version):
+    result = icol.add_zkd_index(
+        name="zkd_index",
+        fields=["x", "y", "z"],
+        field_value_types="double",
+        in_background=False,
+        unique=False,
+    )
+
+    expected_index = {
+        "name": "zkd_index",
+        "type": "zkd",
+        "fields": ["x", "y", "z"],
+        "new": True,
+        "unique": False,
+    }
+
+    for key, value in expected_index.items():
+        assert result[key] == value
+
+    assert result["id"] in extract("id", icol.indexes())
+
+    with assert_raises(IndexCreateError) as err:
+        icol.add_zkd_index(field_value_types="integer", fields=["x", "y", "z"])
+    assert err.value.error_code == 10
+
+    icol.delete_index(result["id"])
+
+
+def test_add_mdi_index(icol, db_version):
+    if db_version < version.parse("3.12.0"):
+        pytest.skip("MDI indexes are usable with 3.12+ only")
+
+    result = icol.add_mdi_index(
+        name="mdi_index",
+        fields=["x", "y", "z"],
+        field_value_types="double",
+        in_background=False,
+        unique=True,
+    )
+
+    expected_index = {
+        "name": "mdi_index",
+        "type": "mdi",
+        "fields": ["x", "y", "z"],
+        "new": True,
+        "unique": True,
+    }
+
+    for key, value in expected_index.items():
+        assert result[key] == value
+
+    assert result["id"] in extract("id", icol.indexes())
+
+    with assert_raises(IndexCreateError) as err:
+        icol.add_mdi_index(field_value_types="integer", fields=["x", "y", "z"])
+    assert err.value.error_code == 10
 
     icol.delete_index(result["id"])
 

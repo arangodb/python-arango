@@ -86,8 +86,13 @@ Below is an example on how to manage clusters using python-arango.
     cluster.server_engine(server_id)
     cluster.server_version(server_id)
     cluster.server_statistics(server_id)
+    cluster.server_maintenance_mode(server_id)
 
-    # Toggle maintenance mode (allowed values are "on" and "off").
+    # Toggle Server maintenance mode (allowed values are "normal" and "maintenance").
+    cluster.toggle_server_maintenance_mode(server_id, 'normal')
+    cluster.toggle_server_maintenance_mode(server_id, 'maintenance', timeout=30)
+
+    # Toggle Cluster maintenance mode (allowed values are "on" and "off").
     cluster.toggle_maintenance_mode('on')
     cluster.toggle_maintenance_mode('off')
 

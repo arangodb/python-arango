@@ -10,7 +10,7 @@ Welcome to the documentation for **python-arango**, a Python driver for ArangoDB
 Requirements
 =============
 
-- ArangoDB version 3.9+
+- ArangoDB version 3.11+
 - Python version 3.8+
 
 Installation
@@ -23,42 +23,75 @@ Installation
 Contents
 ========
 
+Basics
+
 .. toctree::
     :maxdepth: 1
 
     overview
     database
     collection
-    document
-    schema
     indexes
+    document
     graph
-    aql
     simple
-    cursor
+    aql
+
+Specialized Features
+
+.. toctree::
+    :maxdepth: 1
+
+    pregel
+    foxx
+    replication
+    transaction
+    cluster
+    analyzer
+    view
+    wal
+
+API Executions
+
+.. toctree::
+    :maxdepth: 1
+
     async
     batch
     overload
-    transaction
+
+Administration
+
+.. toctree::
+    :maxdepth: 1
+
     admin
     user
+
+Miscellaneous
+
+.. toctree::
+    :maxdepth: 1
+
     task
-    wal
-    pregel
-    foxx
-    view
-    analyzer
     threading
     certificates
     errors
     logging
     auth
     http
-    replication
-    cluster
+    compression
     serializer
+    schema
+    cursor
     backup
     errno
+
+Development
+
+.. toctree::
+    :maxdepth: 1
+
     contributing
     specs
 

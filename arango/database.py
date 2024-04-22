@@ -8,7 +8,7 @@ __all__ = [
 
 from datetime import datetime
 from numbers import Number
-from typing import Any, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 from warnings import warn
 
 from arango.api import ApiGroup
@@ -27,10 +27,12 @@ from arango.exceptions import (
     CollectionCreateError,
     CollectionDeleteError,
     CollectionListError,
+    DatabaseCompactError,
     DatabaseCreateError,
     DatabaseDeleteError,
     DatabaseListError,
     DatabasePropertiesError,
+    DatabaseSupportInfoError,
     GraphCreateError,
     GraphDeleteError,
     GraphListError,
@@ -46,11 +48,16 @@ from arango.exceptions import (
     ServerEchoError,
     ServerEncryptionError,
     ServerEngineError,
+    ServerExecuteError,
     ServerLicenseGetError,
     ServerLicenseSetError,
     ServerLogLevelError,
     ServerLogLevelSetError,
+    ServerLogSettingError,
+    ServerLogSettingSetError,
     ServerMetricsError,
+    ServerModeError,
+    ServerModeSetError,
     ServerReadLogError,
     ServerReloadRoutingError,
     ServerRequiredDBVersionError,
@@ -223,6 +230,36 @@ class Database(ApiGroup):
             if not resp.is_success:
                 raise DatabasePropertiesError(resp, request)
             return format_database(resp.body["result"])
+
+        return self._execute(request, response_handler)
+
+    def execute(self, command: str) -> Result[Any]:
+        """Execute raw Javascript command on the server.
+
+        Executes the JavaScript code in the body on the server as
+        the body of a function with no arguments. If you have a
+        return statement then the return value you produce will be returned
+        as 'application/json'.
+
+        NOTE: this method endpoint will only be usable if the server
+        was started with the option `--javascript.allow-admin-execute true`.
+        The default value of this option is false, which disables the execution
+        of user-defined code and disables this API endpoint entirely.
+        This is also the recommended setting for production.
+
+        :param command: Javascript command to execute.
+        :type command: str
+        :return: Return value of **command**, if any.
+        :rtype: Any
+        :raise arango.exceptions.ServerExecuteError: If execution fails.
+        """
+        request = Request(method="post", endpoint="/_admin/execute", data=command)
+
+        def response_handler(resp: Response) -> Any:
+            if not resp.is_success:
+                raise ServerExecuteError(resp, request)
+
+            return resp.body
 
         return self._execute(request, response_handler)
 
@@ -441,6 +478,47 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def compact(
+        self,
+        change_level: Optional[bool] = None,
+        compact_bottom_most_level: Optional[bool] = None,
+    ) -> Result[Json]:
+        """Compact all databases.
+
+        NOTE: This command can cause a full rewrite of all data in all databases,
+        which may take very long for large databases. It should thus only be used with
+        care and only when additional I/O load can be tolerated for a prolonged time.
+
+        This method can be used to reclaim disk space after substantial data deletions
+        have taken place, by compacting the entire database system data.
+
+        This method requires superuser access.
+
+        :param change_level: Whether or not compacted data should be moved to
+            the minimum possible level. Default value is False.
+        :type change_level: bool | None
+        :param compact_bottom_most_level: Whether or not to compact the
+            bottom-most level of data. Default value is False.
+        :type compact_bottom_most_level: bool | None
+        :return: Collection compact.
+        :rtype: dict
+        :raise arango.exceptions.CollectionCompactError: If retrieval fails.
+        """
+        data = {}
+        if change_level is not None:
+            data["changeLevel"] = change_level
+        if compact_bottom_most_level is not None:
+            data["compactBottomMostLevel"] = compact_bottom_most_level
+
+        request = Request(method="put", endpoint="/_admin/compact", data=data)
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_body(resp.body)
+            raise DatabaseCompactError(resp, request)
+
+        return self._execute(request, response_handler)
+
     def required_db_version(self) -> Result[str]:
         """Return required version of target database.
 
@@ -512,6 +590,56 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def mode(self) -> Result[str]:
+        """Return the server mode (default or read-only)
+
+        In a read-only server, all write operations will fail
+        with an error code of 1004 (ERROR_READ_ONLY). Creating or dropping
+        databases and collections will also fail with error code 11 (ERROR_FORBIDDEN).
+
+        :return: Server mode. Possible values are "default" or "readonly".
+        :rtype: str
+        :raise arango.exceptions.ServerModeError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_admin/server/mode")
+
+        def response_handler(resp: Response) -> str:
+            if resp.is_success:
+                return str(resp.body["mode"])
+
+            raise ServerModeError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def set_mode(self, mode: str) -> Result[Json]:
+        """Set the server mode to read-only or default.
+
+        Update mode information about a server. The JSON response will
+        contain a field mode with the value readonly or default.
+        In a read-only server all write operations will fail with an error
+        code of 1004 (ERROR_READ_ONLY). Creating or dropping of databases
+        and collections will also fail with error code 11 (ERROR_FORBIDDEN).
+
+        This is a protected API. It requires authentication and administrative
+        server rights.
+
+        :param mode: Server mode. Possible values are "default" or "readonly".
+        :type mode: str
+        :return: Server mode.
+        :rtype: str
+        :raise arango.exceptions.ServerModeSetError: If set fails.
+        """
+        request = Request(
+            method="put", endpoint="/_admin/server/mode", data={"mode": mode}
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_body(resp.body)
+            raise ServerModeSetError(resp, request)
+
+        return self._execute(request, response_handler)
+
     def time(self) -> Result[datetime]:
         """Return server system time.
 
@@ -528,14 +656,23 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def echo(self) -> Result[Json]:
-        """Return details of the last request (e.g. headers, payload).
+    def echo(self, body: Optional[Any] = None) -> Result[Json]:
+        """Return details of the last request (e.g. headers, payload),
+        or echo the given request body.
 
+        :param body: The body of the request. Can be of any type
+            and is simply forwarded. If not set, the details of the last
+            request are returned.
+        :type body: dict | list | str | int | float | None
         :return: Details of the last request.
         :rtype: dict
         :raise arango.exceptions.ServerEchoError: If retrieval fails.
         """
-        request = Request(method="get", endpoint="/_admin/echo")
+        request = (
+            Request(method="get", endpoint="/_admin/echo")
+            if body is None
+            else Request(method="post", endpoint="/_admin/echo", data=body)
+        )
 
         def response_handler(resp: Response) -> Json:
             if not resp.is_success:
@@ -751,6 +888,52 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def log_settings(self) -> Result[Json]:
+        """Return the structured log settings.
+
+        :return: Current log settings. False values are not returned.
+        :rtype: dict
+        """
+        request = Request(method="get", endpoint="/_admin/log/structured")
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ServerLogSettingError(resp, request)
+            result: Json = resp.body
+            return result
+
+        return self._execute(request, response_handler)
+
+    def set_log_settings(self, **kwargs: Dict[str, Any]) -> Result[Json]:
+        """Set the structured log settings.
+
+        This method takes arbitrary keyword arguments where the keys are the
+        structured log parameters and the values are true or false, for either
+        enabling or disabling the parameters.
+
+        .. code-block:: python
+
+            arango.set_log_settings(
+                database=True,
+                url=True,
+                username=False,
+            )
+
+        :param kwargs: Structured log parameters.
+        :type kwargs: Dict[str, Any]
+        :return: New log settings. False values are not returned.
+        :rtype: dict
+        """
+        request = Request(method="put", endpoint="/_admin/log/structured", data=kwargs)
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ServerLogSettingSetError(resp, request)
+            result: Json = resp.body
+            return result
+
+        return self._execute(request, response_handler)
+
     def log_levels(self, server_id: Optional[str] = None) -> Result[Json]:
         """Return current logging levels.
 
@@ -777,7 +960,7 @@ class Database(ApiGroup):
         return self._execute(request, response_handler)
 
     def set_log_levels(
-        self, server_id: Optional[str] = None, **kwargs: str
+        self, server_id: Optional[str] = None, **kwargs: Dict[str, Any]
     ) -> Result[Json]:
         """Set the logging levels.
 
@@ -799,6 +982,8 @@ class Database(ApiGroup):
             JWT authentication whereas Coordinators also support authentication
             using usernames and passwords.
         :type server_id: str | None
+        :param kwargs: Logging levels.
+        :type kwargs: Dict[str, Any]
         :return: New logging levels.
         :rtype: dict
         """
@@ -840,7 +1025,7 @@ class Database(ApiGroup):
         :return: Server metrics in Prometheus format.
         :rtype: str
         """
-        request = Request(method="get", endpoint="/_admin/metrics")
+        request = Request(method="get", endpoint="/_admin/metrics/v2")
 
         def response_handler(resp: Response) -> str:
             if resp.is_success:
@@ -2729,6 +2914,38 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    ###########
+    # Support #
+    ###########
+
+    def support_info(self) -> Result[Json]:
+        """Return information about the deployment.
+
+        Retrieves deployment information for support purposes.
+        The endpoint returns data about the ArangoDB version used,
+        the host (operating system, server ID, CPU and storage capacity,
+        current utilization, a few metrics) and the other servers in the
+        deployment (in case of Active Failover or cluster deployments).
+
+        NOTE: This method can only be accessed from inside the **_system** database.
+        The is a policy control startup option `--server.support-info-api` that controls
+        if and to whom the API is made available.
+
+        :return: Deployment information.
+        :rtype: dict
+        :raise arango.exceptions.DatabaseSupportInfoError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_admin/support-info")
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body
+                return result
+
+            raise DatabaseSupportInfoError(resp, request)
+
+        return self._execute(request, response_handler)
+
 
 class StandardDatabase(Database):
     """Standard database API wrapper."""
@@ -2784,6 +3001,14 @@ class StandardDatabase(Database):
         :rtype: arango.database.BatchDatabase
         """
         return BatchDatabase(self._conn, return_result, max_workers)
+
+    def fetch_transaction(self, transaction_id: str) -> "TransactionDatabase":
+        """Fetch an existing transaction.
+
+        :param transaction_id: The ID of the existing transaction.
+        :type transaction_id: str
+        """
+        return TransactionDatabase(connection=self._conn, transaction_id=transaction_id)
 
     def begin_transaction(
         self,
@@ -2962,6 +3187,9 @@ class TransactionDatabase(Database):
     :type lock_timeout: int | None
     :param max_size: Max transaction size in bytes.
     :type max_size: int | None
+    :param transaction_id: Initialize using an existing transaction instead of creating
+        a new transaction.
+    :type transaction_id: str | None
     """
 
     def __init__(
@@ -2974,6 +3202,7 @@ class TransactionDatabase(Database):
         allow_implicit: Optional[bool] = None,
         lock_timeout: Optional[int] = None,
         max_size: Optional[int] = None,
+        transaction_id: Optional[str] = None,
     ) -> None:
         self._executor: TransactionApiExecutor
         super().__init__(
@@ -2987,6 +3216,7 @@ class TransactionDatabase(Database):
                 allow_implicit=allow_implicit,
                 lock_timeout=lock_timeout,
                 max_size=max_size,
+                transaction_id=transaction_id,
             ),
         )
 

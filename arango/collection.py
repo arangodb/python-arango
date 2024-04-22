@@ -1373,7 +1373,7 @@ class Collection(ApiGroup):
     def add_geo_index(
         self,
         fields: Fields,
-        ordered: Optional[bool] = None,
+        geo_json: Optional[bool] = None,
         name: Optional[str] = None,
         in_background: Optional[bool] = None,
         legacyPolygons: Optional[bool] = False,
@@ -1385,8 +1385,10 @@ class Collection(ApiGroup):
             with at least two floats. Documents with missing fields or invalid
             values are excluded.
         :type fields: str | [str]
-        :param ordered: Whether the order is longitude, then latitude.
-        :type ordered: bool | None
+        :param geo_json: Whether to use GeoJSON data-format or not. This
+            parameter has been renamed from `ordered`. See Github Issue
+            #234 for more details.
+        :type geo_json: bool | None
         :param name: Optional name for the index.
         :type name: str | None
         :param in_background: Do not hold the collection lock.
@@ -1400,8 +1402,8 @@ class Collection(ApiGroup):
         """
         data: Json = {"type": "geo", "fields": fields}
 
-        if ordered is not None:
-            data["geoJson"] = ordered
+        if geo_json is not None:
+            data["geoJson"] = geo_json
         if name is not None:
             data["name"] = name
         if in_background is not None:
@@ -1617,6 +1619,89 @@ class Collection(ApiGroup):
 
         return self._add_index(data)
 
+    def add_zkd_index(
+        self,
+        fields: Sequence[str],
+        field_value_types: str = "double",
+        name: Optional[str] = None,
+        unique: Optional[bool] = None,
+        in_background: Optional[bool] = None,
+    ) -> Result[Json]:
+        """Create a new ZKD Index.
+
+        :param fields: Document fields to index. Unlike for other indexes the
+            order of the fields does not matter.
+        :type fields: Sequence[str]
+        :param field_value_types: The type of the field values. The only allowed
+            value is "double" at the moment. Defaults to "double".
+        :type field_value_types: str
+        :param name: Optional name for the index.
+        :type name: str | None
+        :param unique: Whether the index is unique.
+        :type unique: bool | None
+        :param in_background: Do not hold the collection lock.
+        :type in_background: bool | None
+        :return: New index details.
+        :rtype: dict
+        :raise arango.exceptions.IndexCreateError: If create fails.
+        """
+        data: Json = {
+            "type": "zkd",
+            "fields": fields,
+            "fieldValueTypes": field_value_types,
+        }
+
+        if unique is not None:
+            data["unique"] = unique
+        if name is not None:
+            data["name"] = name
+        if in_background is not None:
+            data["inBackground"] = in_background
+
+        return self._add_index(data)
+
+    def add_mdi_index(
+        self,
+        fields: Sequence[str],
+        field_value_types: str = "double",
+        name: Optional[str] = None,
+        unique: Optional[bool] = None,
+        in_background: Optional[bool] = None,
+    ) -> Result[Json]:
+        """Create a new MDI index, previously known as ZKD index. This method
+            is only usable with ArangoDB 3.12 and later.
+
+        :param fields: Document fields to index. Unlike for other indexes the
+            order of the fields does not matter.
+        :type fields: Sequence[str]
+        :param field_value_types: The type of the field values. The only allowed
+            value is "double" at the moment. Defaults to "double".
+        :type field_value_types: str
+        :param name: Optional name for the index.
+        :type name: str | None
+        :param unique: Whether the index is unique.
+        :type unique: bool | None
+        :param in_background: Do not hold the collection lock.
+        :type in_background: bool | None
+        :return: New index details.
+        :rtype: dict
+        :raise arango.exceptions.IndexCreateError: If create fails.
+        """
+        data: Json = {
+            "type": "mdi",
+            "fields": fields,
+            "fieldValueTypes": field_value_types,
+        }
+
+        if unique is not None:
+            data["unique"] = unique
+        if name is not None:
+            data["name"] = name
+        if in_background is not None:
+            data["inBackground"] = in_background
+
+        return self._add_index(data)
+
     def delete_index(self, index_id: str, ignore_missing: bool = False) -> Result[bool]:
         """Delete an index.
 
@@ -1673,6 +1758,7 @@ class Collection(ApiGroup):
         keep_none: Optional[bool] = None,
         merge: Optional[bool] = None,
         refill_index_caches: Optional[bool] = None,
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Insert multiple documents.
 
@@ -1727,6 +1813,9 @@ class Collection(ApiGroup):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
+        :param version_attribute: support for simple external versioning to
+            document operations.
+        :type version_attribute: str
         :return: List of document metadata (e.g. document keys, revisions) and
             any exception, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoServerError] | bool
@@ -1749,6 +1838,8 @@ class Collection(ApiGroup):
             params["keepNull"] = keep_none
         if merge is not None:
             params["mergeObjects"] = merge
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
@@ -1795,6 +1886,7 @@ class Collection(ApiGroup):
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
         raise_on_document_error: bool = False,
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Update multiple documents.
 
@@ -1847,6 +1939,9 @@ class Collection(ApiGroup):
             as opposed to returning the error as an object in the result list.
             Defaults to False.
         :type raise_on_document_error: bool
+        :param version_attribute: support for simple external versioning to
+            document operations.
+        :type version_attribute: str
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoError] | bool
@@ -1863,6 +1958,8 @@ class Collection(ApiGroup):
         }
         if sync is not None:
             params["waitForSync"] = sync
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
@@ -1999,6 +2096,7 @@ class Collection(ApiGroup):
         sync: Optional[bool] = None,
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Replace multiple documents.
 
@@ -2040,6 +2138,9 @@ class Collection(ApiGroup):
             index caches if document operations affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
+        :param version_attribute: support for simple external versioning to
+            document operations.
+        :type version_attribute: str
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoServerError] | bool
@@ -2054,6 +2155,8 @@ class Collection(ApiGroup):
         }
         if sync is not None:
             params["waitForSync"] = sync
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
@@ -2528,6 +2631,7 @@ class StandardCollection(Collection):
         keep_none: Optional[bool] = None,
         merge: Optional[bool] = None,
         refill_index_caches: Optional[bool] = None,
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, Json]]:
         """Insert a new document.
 
@@ -2566,6 +2670,9 @@ class StandardCollection(Collection):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
+        :param version_attribute: support for simple external versioning to
+            document operations.
+        :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2587,6 +2694,8 @@ class StandardCollection(Collection):
             params["keepNull"] = keep_none
         if merge is not None:
             params["mergeObjects"] = merge
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
@@ -2625,6 +2734,7 @@ class StandardCollection(Collection):
         sync: Optional[bool] = None,
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, Json]]:
         """Update a document.
 
@@ -2655,6 +2765,9 @@ class StandardCollection(Collection):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
+        :param version_attribute: support for simple external versioning
+            to document operations.
+        :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2672,6 +2785,9 @@ class StandardCollection(Collection):
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
@@ -2708,6 +2824,7 @@ class StandardCollection(Collection):
         sync: Optional[bool] = None,
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, Json]]:
         """Replace a document.
 
@@ -2733,6 +2850,9 @@ class StandardCollection(Collection):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
+        :param version_attribute: support for simple external versioning to
+            document operations.
+        :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2748,6 +2868,9 @@ class StandardCollection(Collection):
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:

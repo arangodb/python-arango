@@ -101,6 +101,8 @@ def format_index(body: Json) -> Json:
         result["writebuffer_active"] = body["writebufferActive"]
     if "writebufferSizeMax" in body:
         result["writebuffer_max_size"] = body["writebufferSizeMax"]
+    if "fieldValueTypes" in body:
+        result["field_value_types"] = body["fieldValueTypes"]
 
     return verify_format(body, result)
 

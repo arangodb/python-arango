@@ -11,6 +11,7 @@ from arango.exceptions import (
     ClusterServerCountError,
     ClusterServerEngineError,
     ClusterServerIDError,
+    ClusterServerModeError,
     ClusterServerRoleError,
     ClusterServerStatisticsError,
     ClusterServerVersionError,
@@ -54,6 +55,27 @@ class Cluster(ApiGroup):  # pragma: no cover
             if resp.is_success:
                 return str(resp.body["role"])
             raise ClusterServerRoleError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def server_mode(self) -> Result[str]:
+        """Return the server mode.
+
+        In a read-only server, all write operations will fail
+        with an error code of 1004 (ERROR_READ_ONLY). Creating or dropping
+        databases and collections will also fail with error code 11 (ERROR_FORBIDDEN).
+
+        :return: Server mode. Possible values are "default" or "readonly".
+        :rtype: str
+        :raise arango.exceptions.ClusterServerModeError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_admin/server/mode")
+
+        def response_handler(resp: Response) -> str:
+            if resp.is_success:
+                return str(resp.body["mode"])
+
+            raise ClusterServerModeError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -137,6 +159,58 @@ class Cluster(ApiGroup):  # pragma: no cover
             if resp.is_success:
                 return format_body(resp.body)
             raise ClusterServerStatisticsError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def server_maintenance_mode(self, server_id: str) -> Result[Json]:
+        """Return the maintenance status for the given server.
+
+        :param server_id: Server ID.
+        :type server_id: str
+        :return: Maintenance status for the given server.
+        :rtype: dict
+        :raise arango.exceptions.ClusterMaintenanceModeError: If retrieval fails.
+        """
+        request = Request(
+            method="get",
+            endpoint=f"/_admin/cluster/maintenance/{server_id}",
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body.get("result", {})
+                return result
+
+            raise ClusterMaintenanceModeError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def toggle_server_maintenance_mode(
+        self, server_id: str, mode: str, timeout: Optional[int] = None
+    ) -> Result[Json]:
+        """Enable or disable the maintenance mode for the given server.
+
+        :param server_id: Server ID.
+        :type server_id: str
+        :param mode: Maintenance mode. Allowed values are "normal" and "maintenance".
+        :type mode: str
+        :param timeout: Timeout in seconds.
+        :type timeout: Optional[int]
+        :return: Result of the operation.
+        :rtype: dict
+        :raise arango.exceptions.ClusterMaintenanceModeError: If toggle fails.
+        """
+        request = Request(
+            method="put",
+            endpoint=f"/_admin/cluster/maintenance/{server_id}",
+            data={"mode": mode, "timeout": timeout},
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                return format_body(resp.body)
+
+            raise ClusterMaintenanceModeError(resp, request)
 
         return self._execute(request, response_handler)
 
