@@ -19,6 +19,7 @@ from arango.exceptions import (
     OverloadControlExecutorError,
     TransactionAbortError,
     TransactionCommitError,
+    TransactionFetchError,
     TransactionInitError,
     TransactionStatusError,
 )
@@ -241,6 +242,9 @@ class TransactionApiExecutor:
     :type max_size: int
     :param allow_dirty_read: Allow reads from followers in a cluster.
     :type allow_dirty_read: bool | None
+    :param transaction_id: Initialize using an existing transaction instead of starting
+        a new transaction.
+    :type transaction_id: str | None
     """
 
     def __init__(
@@ -254,6 +258,7 @@ class TransactionApiExecutor:
         lock_timeout: Optional[int] = None,
         max_size: Optional[int] = None,
         allow_dirty_read: bool = False,
+        transaction_id: Optional[str] = None,
     ) -> None:
         self._conn = connection
 
@@ -275,19 +280,29 @@ class TransactionApiExecutor:
         if max_size is not None:
             data["maxTransactionSize"] = max_size
 
-        request = Request(
-            method="post",
-            endpoint="/_api/transaction/begin",
-            data=data,
-            headers={"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None,
-        )
-        resp = self._conn.send_request(request)
+        if transaction_id is None:
+            request = Request(
+                method="post",
+                endpoint="/_api/transaction/begin",
+                data=data,
+                headers=(
+                    {"x-arango-allow-dirty-read": "true"} if allow_dirty_read else None
+                ),
+            )
+            resp = self._conn.send_request(request)
 
-        if not resp.is_success:
-            raise TransactionInitError(resp, request)
+            if not resp.is_success:
+                raise TransactionInitError(resp, request)
 
-        result: Json = resp.body["result"]
-        self._id: str = result["id"]
+            result = resp.body["result"]
+            self._id: str = result["id"]
+        else:
+            self._id = transaction_id
+
+            try:
+                self.status()
+            except TransactionStatusError as err:
+                raise TransactionFetchError(err.response, err.request)
 
     @property
     def context(self) -> str:

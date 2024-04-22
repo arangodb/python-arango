@@ -7,16 +7,16 @@ Requirements
 Before submitting a pull request on GitHub_, please make sure you meet the
 following requirements:
 
-* The pull request points to dev_ branch.
+* The pull request points to main_ branch.
 * Changes are squashed into a single commit. I like to use git rebase for this.
 * Commit message is in present tense. For example, "Fix bug" is good while
   "Fixed bug" is not.
 * Sphinx_-compatible docstrings.
 * PEP8_ compliance.
 * No missing docstrings or commented-out lines.
-* Test coverage_ remains at %100. If a piece of code is trivial and does not
+* Test coverage remains at %100. If a piece of code is trivial and does not
   need unit tests, use this_ to exclude it from coverage.
-* No build failures on `Travis CI`_. Builds automatically trigger on pull
+* No build failures. Builds automatically trigger on pull
   request submissions.
 * Documentation is kept up-to-date with the new changes (see below).
 
@@ -40,7 +40,7 @@ To ensure PEP8_ compliance, run flake8_:
 .. code-block:: bash
 
     ~$ pip install flake8
-    ~$ git clone https://github.com/ArangoDB-Community/python-arango.git
+    ~$ git clone https://github.com/arangodb/python-arango.git
     ~$ cd python-arango
     ~$ flake8
 
@@ -57,7 +57,7 @@ To run the test suite (use your own host, port and root password):
 .. code-block:: bash
 
     ~$ pip install pytest
-    ~$ git clone https://github.com/ArangoDB-Community/python-arango.git
+    ~$ git clone https://github.com/arangodb/python-arango.git
     ~$ cd python-arango
     ~$ py.test --complete --host=127.0.0.1 --port=8529 --passwd=passwd
 
@@ -66,7 +66,7 @@ To run the test suite with coverage report:
 .. code-block:: bash
 
     ~$ pip install coverage pytest pytest-cov
-    ~$ git clone https://github.com/ArangoDB-Community/python-arango.git
+    ~$ git clone https://github.com/arangodb/python-arango.git
     ~$ cd python-arango
     ~$ py.test --complete --host=127.0.0.1 --port=8529 --passwd=passwd --cov=kq
 
@@ -82,18 +82,16 @@ Sphinx_. To build an HTML version on your local machine:
 .. code-block:: bash
 
     ~$ pip install sphinx sphinx_rtd_theme
-    ~$ git clone https://github.com/ArangoDB-Community/python-arango.git
+    ~$ git clone https://github.com/arangodb/python-arango.git
     ~$ cd python-arango
     ~$ python -m sphinx -b html -W docs docs/_build/  # Open build/index.html in a browser
 
 As always, thank you for your contribution!
 
-.. _dev: https://github.com/joowani/python-arango/tree/dev
-.. _GitHub: https://github.com/joowani/python-arango
+.. _main: https://github.com/arangodb/python-arango/tree/main
+.. _GitHub: https://github.com/arangodb/python-arango
 .. _PEP8: https://www.python.org/dev/peps/pep-0008/
-.. _coverage: https://coveralls.io/github/joowani/python-arango
 .. _this: http://coverage.readthedocs.io/en/latest/excluding.html
-.. _Travis CI: https://travis-ci.org/joowani/python-arango
 .. _Sphinx: https://github.com/sphinx-doc/sphinx
 .. _flake8: http://flake8.pycqa.org
 .. _here: http://flake8.pycqa.org/en/latest/user/violations.html#in-line-ignoring-errors

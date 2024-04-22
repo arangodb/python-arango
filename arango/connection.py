@@ -23,7 +23,7 @@ from arango.exceptions import (
     JWTRefreshError,
     ServerConnectionError,
 )
-from arango.http import HTTPClient
+from arango.http import HTTPClient, RequestCompression
 from arango.request import Request
 from arango.resolver import HostResolver
 from arango.response import Response
@@ -44,6 +44,8 @@ class BaseConnection:
         http_client: HTTPClient,
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
+        request_compression: Optional[RequestCompression] = None,
+        response_compression: Optional[str] = None,
     ) -> None:
         self._url_prefixes = [f"{host}/_db/{db_name}" for host in hosts]
         self._host_resolver = host_resolver
@@ -53,6 +55,8 @@ class BaseConnection:
         self._serializer = serializer
         self._deserializer = deserializer
         self._username: Optional[str] = None
+        self._request_compression = request_compression
+        self._response_compression = response_compression
 
     @property
     def db_name(self) -> str:
@@ -133,6 +137,19 @@ class BaseConnection:
         """
         tries = 0
         indexes_to_filter: Set[int] = set()
+
+        data = self.normalize_data(request.data)
+        if (
+            self._request_compression is not None
+            and isinstance(data, str)
+            and self._request_compression.needs_compression(data)
+        ):
+            request.headers["content-encoding"] = self._request_compression.encoding()
+            data = self._request_compression.compress(data)
+
+        if self._response_compression is not None:
+            request.headers["accept-encoding"] = self._response_compression
+
         while tries < self._host_resolver.max_tries:
             try:
                 resp = self._http.send_request(
@@ -140,7 +157,7 @@ class BaseConnection:
                     method=request.method,
                     url=self._url_prefixes[host_index] + request.endpoint,
                     params=request.params,
-                    data=self.normalize_data(request.data),
+                    data=data,
                     headers=request.headers,
                     auth=auth,
                 )
@@ -243,6 +260,10 @@ class BasicConnection(BaseConnection):
     :type password: str
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
+    :param: request_compression: The request compression algorithm.
+    :type request_compression: arango.http.RequestCompression | None
+    :param: response_compression: The response compression algorithm.
+    :type response_compression: str | None
     """
 
     def __init__(
@@ -256,6 +277,8 @@ class BasicConnection(BaseConnection):
         http_client: HTTPClient,
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
+        request_compression: Optional[RequestCompression] = None,
+        response_compression: Optional[str] = None,
     ) -> None:
         super().__init__(
             hosts,
@@ -265,6 +288,8 @@ class BasicConnection(BaseConnection):
             http_client,
             serializer,
             deserializer,
+            request_compression,
+            response_compression,
         )
         self._username = username
         self._auth = (username, password)
@@ -298,6 +323,10 @@ class JwtConnection(BaseConnection):
     :type password: str
     :param http_client: User-defined HTTP client.
     :type http_client: arango.http.HTTPClient
+    :param request_compression: The request compression algorithm.
+    :type request_compression: arango.http.RequestCompression | None
+    :param response_compression: The response compression algorithm.
+    :type response_compression: str | None
     """
 
     def __init__(
@@ -312,6 +341,8 @@ class JwtConnection(BaseConnection):
         username: Optional[str] = None,
         password: Optional[str] = None,
         user_token: Optional[str] = None,
+        request_compression: Optional[RequestCompression] = None,
+        response_compression: Optional[str] = None,
     ) -> None:
         super().__init__(
             hosts,
@@ -321,6 +352,8 @@ class JwtConnection(BaseConnection):
             http_client,
             serializer,
             deserializer,
+            request_compression,
+            response_compression,
         )
         self._username = username
         self._password = password
@@ -439,6 +472,10 @@ class JwtSuperuserConnection(BaseConnection):
     :type http_client: arango.http.HTTPClient
     :param superuser_token: User generated token for superuser access.
     :type superuser_token: str
+    :param request_compression: The request compression algorithm.
+    :type request_compression: arango.http.RequestCompression | None
+    :param response_compression: The response compression algorithm.
+    :type response_compression: str | None
     """
 
     def __init__(
@@ -451,6 +488,8 @@ class JwtSuperuserConnection(BaseConnection):
         serializer: Callable[..., str],
         deserializer: Callable[[str], Any],
         superuser_token: str,
+        request_compression: Optional[RequestCompression] = None,
+        response_compression: Optional[str] = None,
     ) -> None:
         super().__init__(
             hosts,
@@ -460,6 +499,8 @@ class JwtSuperuserConnection(BaseConnection):
             http_client,
             serializer,
             deserializer,
+            request_compression,
+            response_compression,
         )
         self._auth_header = f"bearer {superuser_token}"
 

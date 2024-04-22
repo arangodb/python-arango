@@ -2,7 +2,6 @@ import time
 import warnings
 
 import pytest
-from packaging import version
 
 from arango.errno import DATABASE_NOT_FOUND, FORBIDDEN
 from arango.exceptions import (
@@ -185,12 +184,9 @@ def test_cluster_server_count(db, bad_db, cluster):
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
 
 
-def test_cluster_rebalance(sys_db, bad_db, cluster, db_version):
+def test_cluster_rebalance(sys_db, bad_db, cluster):
     if not cluster:
         pytest.skip("Only tested in a cluster setup")
-
-    if db_version < version.parse("3.10.0"):
-        pytest.skip("Only tested on ArangoDB 3.10+")
 
     # Test imbalance retrieval
     imbalance = sys_db.cluster.calculate_imbalance()
