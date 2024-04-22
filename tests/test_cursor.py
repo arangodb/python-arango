@@ -1,5 +1,4 @@
 import pytest
-from packaging import version
 
 from arango.exceptions import (
     CursorCloseError,
@@ -263,7 +262,7 @@ def test_cursor_manual_fetch_and_pop(db, col, docs):
     assert err.value.message == "current batch is empty"
 
 
-def test_cursor_retry_disabled(db, col, docs, db_version):
+def test_cursor_retry_disabled(db, col, docs):
     cursor = db.aql.execute(
         f"FOR d IN {col.name} SORT d._key RETURN d",
         count=True,
@@ -282,8 +281,7 @@ def test_cursor_retry_disabled(db, col, docs, db_version):
     # The next batch ID should have no effect
     cursor._next_batch_id = "2"
     result = cursor.fetch()
-    if db_version >= version.parse("3.11.1"):
-        assert result["next_batch_id"] == "4"
+    assert result["next_batch_id"] == "4"
     doc = cursor.pop()
     assert clean_doc(doc) == docs[2]
 
@@ -308,28 +306,25 @@ def test_cursor_retry(db, col, docs, db_version):
 
     result = cursor.fetch()
     assert result["id"] == cursor.id
-    if db_version >= version.parse("3.11.0"):
-        assert result["next_batch_id"] == "3"
+    assert result["next_batch_id"] == "3"
     doc = cursor.pop()
     assert clean_doc(doc) == docs[1]
     assert cursor.empty()
 
     # Decrease the next batch ID as if the previous fetch failed
-    if db_version >= version.parse("3.11.0"):
-        cursor._next_batch_id = "2"
-        result = cursor.fetch()
-        assert result["id"] == cursor.id
-        assert result["next_batch_id"] == "3"
-        doc = cursor.pop()
-        assert clean_doc(doc) == docs[1]
-        assert cursor.empty()
+    cursor._next_batch_id = "2"
+    result = cursor.fetch()
+    assert result["id"] == cursor.id
+    assert result["next_batch_id"] == "3"
+    doc = cursor.pop()
+    assert clean_doc(doc) == docs[1]
+    assert cursor.empty()
 
     # Fetch the next batches normally
     for batch in range(2, 5):
         result = cursor.fetch()
         assert result["id"] == cursor.id
-        if db_version >= version.parse("3.11.0"):
-            assert result["next_batch_id"] == str(batch + 2)
+        assert result["next_batch_id"] == str(batch + 2)
         doc = cursor.pop()
         assert clean_doc(doc) == docs[batch]
 
@@ -340,17 +335,12 @@ def test_cursor_retry(db, col, docs, db_version):
     doc = cursor.pop()
     assert clean_doc(doc) == docs[-1]
 
-    if db_version >= version.parse("3.11.0"):
-        # We should be able to fetch the last batch again
-        cursor.fetch()
-        doc = cursor.pop()
-        assert clean_doc(doc) == docs[-1]
+    # We should be able to fetch the last batch again
+    cursor.fetch()
+    doc = cursor.pop()
+    assert clean_doc(doc) == docs[-1]
 
-    if db_version >= version.parse("3.11.0"):
-        assert cursor.close()
-    else:
-        with pytest.raises(CursorCloseError):
-            cursor.close()
+    assert cursor.close()
 
 
 def test_cursor_no_count(db, col):

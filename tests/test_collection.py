@@ -1,5 +1,4 @@
 import pytest
-from packaging import version
 
 from arango.client import ArangoClient
 from arango.collection import StandardCollection
@@ -316,21 +315,15 @@ def special_db_names(sys_db):
             pass
 
 
-def test_collection_utf8(db, db_version, special_collection_names):
-    if db_version < version.parse("3.11.0"):
-        pytest.skip("UTF8 collection names require ArangoDB 3.11+")
-
+def test_collection_utf8(db, special_collection_names):
     for name in special_collection_names:
         create_and_delete_collection(db, name)
 
 
 # Not sure if this belongs in here or in `test_database.py`...
 def test_database_and_collection_utf8(
-    sys_db, db_version, special_collection_names, special_db_names
+    sys_db, special_collection_names, special_db_names
 ):
-    if db_version < version.parse("3.11.0"):
-        pytest.skip("UTF8 collection names require ArangoDB 3.11+")
-
     client = ArangoClient(hosts="http://127.0.0.1:8529")
     for db_name in special_db_names:
         username = generate_username()

@@ -75,6 +75,16 @@ logical unit of work (ACID compliant).
     assert 'Lily' not in col
     assert len(col) == 3  # transaction is aborted so txn_col cannot be used
 
+    # Fetch an existing transaction. Useful if you have received a Transaction ID
+    # from some other part of your system or an external system.
+    original_txn = db.begin_transaction(write='students')
+    txn_col = original_txn.collection('students')
+    assert '_rev' in txn_col.insert({'_key': 'Chip'})
+    txn_db = db.fetch_transaction(original_txn.transaction_id)
+    txn_col = txn_db.collection('students')
+    assert '_rev' in txn_col.insert({'_key': 'Alya'})
+    txn_db.abort_transaction()
+
 See :ref:`TransactionDatabase` for API specification.
 
 Alternatively, you can use

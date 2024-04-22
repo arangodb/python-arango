@@ -1,6 +1,10 @@
 Pregel
 ------
 
+.. warning::
+    Starting from ArangoDB 3.12, the Pregel API has been dropped.
+    Currently, the driver still supports it for the 3.10 and 3.11 versions, but note that it will be dropped eventually.
+
 Python-arango provides support for **Pregel**, ArangoDB module for distributed
 iterative graph processing. For more information, refer to `ArangoDB manual`_.
 
@@ -8,7 +12,7 @@ iterative graph processing. For more information, refer to `ArangoDB manual`_.
 
 **Example:**
 
-.. testcode::
+.. code-block:: python
 
     from arango import ArangoClient
 
