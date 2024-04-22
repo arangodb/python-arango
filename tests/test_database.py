@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import pytest
-from packaging import version
 
 from arango.aql import AQL
 from arango.backup import Backup
@@ -416,10 +415,7 @@ def special_db_names(sys_db):
             pass
 
 
-def test_database_utf8(sys_db, db_version, special_db_names):
-    if db_version < version.parse("3.11.0"):
-        pytest.skip("UTF8 collection names require ArangoDB 3.11+")
-
+def test_database_utf8(sys_db, special_db_names):
     for name in special_db_names:
         assert sys_db.create_database(name)
         assert sys_db.has_database(name)

@@ -220,10 +220,7 @@ def test_add_ttl_index(icol):
     icol.delete_index(result["id"])
 
 
-def test_add_inverted_index(icol, enterprise, db_version):
-    if db_version < version.parse("3.10.0"):
-        pytest.skip("Inverted indexes are not supported before 3.10.0")
-
+def test_add_inverted_index(icol, enterprise):
     parameters = dict(
         fields=[{"name": "attr1", "cache": True}],
         name="c0_cached",
@@ -234,7 +231,7 @@ def test_add_inverted_index(icol, enterprise, db_version):
     )
     expected_keys = ["primary_sort", "analyzer", "include_all_fields", "search_field"]
 
-    if enterprise and db_version >= version.parse("3.10.2"):
+    if enterprise:
         parameters["cache"] = True
         parameters["primaryKeyCache"] = True
         expected_keys.extend(["cache", "primaryKeyCache"])
