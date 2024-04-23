@@ -12,8 +12,13 @@ from arango.connection import (
     JwtSuperuserConnection,
 )
 from arango.database import StandardDatabase
-from arango.exceptions import ServerConnectionError
-from arango.http import DEFAULT_REQUEST_TIMEOUT, DefaultHTTPClient, HTTPClient
+from arango.exceptions import ArangoClientError, ServerConnectionError
+from arango.http import (
+    DEFAULT_REQUEST_TIMEOUT,
+    DefaultHTTPClient,
+    HTTPClient,
+    RequestCompression,
+)
 from arango.resolver import (
     FallbackHostResolver,
     HostResolver,
@@ -33,7 +38,7 @@ def default_serializer(x: Any) -> str:
     :return: The object serialized as a JSON string
     :rtype: str
     """
-    return dumps(x)
+    return dumps(x, separators=(",", ":"))
 
 
 def default_deserializer(x: str) -> Any:
@@ -85,6 +90,12 @@ class ArangoClient:
        None: No timeout.
        int: Timeout value in seconds.
     :type request_timeout: int | float
+    :param request_compression: Will compress requests to the server according to
+        the given algorithm. No compression happens by default.
+    :type request_compression: arango.http.RequestCompression | None
+    :param response_compression: Tells the server what compression algorithm is
+        acceptable for the response. No compression happens by default.
+    :type response_compression: str | None
     """
 
     def __init__(
@@ -97,6 +108,8 @@ class ArangoClient:
         deserializer: Callable[[str], Any] = default_deserializer,
         verify_override: Union[bool, str, None] = None,
         request_timeout: Union[int, float, None] = DEFAULT_REQUEST_TIMEOUT,
+        request_compression: Optional[RequestCompression] = None,
+        response_compression: Optional[str] = None,
     ) -> None:
         if isinstance(hosts, str):
             self._hosts = [host.strip("/") for host in hosts.split(",")]
@@ -132,6 +145,9 @@ class ArangoClient:
         if verify_override is not None:
             for session in self._sessions:
                 session.verify = verify_override
+
+        self._request_compression = request_compression
+        self._response_compression = response_compression
 
     def __repr__(self) -> str:
         return f"<ArangoClient {','.join(self._hosts)}>"
@@ -231,6 +247,8 @@ class ArangoClient:
                 serializer=self._serializer,
                 deserializer=self._deserializer,
                 superuser_token=superuser_token,
+                request_compression=self._request_compression,
+                response_compression=self._response_compression,
             )
         elif user_token is not None:
             connection = JwtConnection(
@@ -242,6 +260,8 @@ class ArangoClient:
                 serializer=self._serializer,
                 deserializer=self._deserializer,
                 user_token=user_token,
+                request_compression=self._request_compression,
+                response_compression=self._response_compression,
             )
         elif auth_method.lower() == "basic":
             connection = BasicConnection(
@@ -254,6 +274,8 @@ class ArangoClient:
                 http_client=self._http,
                 serializer=self._serializer,
                 deserializer=self._deserializer,
+                request_compression=self._request_compression,
+                response_compression=self._response_compression,
             )
         elif auth_method.lower() == "jwt":
             connection = JwtConnection(
@@ -266,6 +288,8 @@ class ArangoClient:
                 http_client=self._http,
                 serializer=self._serializer,
                 deserializer=self._deserializer,
+                request_compression=self._request_compression,
+                response_compression=self._response_compression,
             )
         else:
             raise ValueError(f"invalid auth_method: {auth_method}")
@@ -276,6 +300,6 @@ class ArangoClient:
             except ServerConnectionError as err:
                 raise err
             except Exception as err:
-                raise ServerConnectionError(f"bad connection: {err}")
+                raise ArangoClientError(f"bad connection: {err}")
 
         return StandardDatabase(connection)

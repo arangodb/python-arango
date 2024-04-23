@@ -614,7 +614,7 @@ class PregelJobDeleteError(ArangoServerError):
 #####################
 
 
-class ServerConnectionError(ArangoClientError):
+class ServerConnectionError(ArangoServerError):
     """Failed to connect to ArangoDB server."""
 
 
@@ -770,6 +770,10 @@ class TransactionCommitError(ArangoServerError):
 
 class TransactionAbortError(ArangoServerError):
     """Failed to abort transaction."""
+
+
+class TransactionFetchError(ArangoServerError):
+    """Failed to fetch existing transaction."""
 
 
 class TransactionListError(ArangoServerError):

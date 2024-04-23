@@ -1,5 +1,3 @@
-from packaging import version
-
 from arango.exceptions import (
     ViewCreateError,
     ViewDeleteError,
@@ -193,7 +191,7 @@ def test_arangosearch_view_management(db, bad_db, cluster):
     assert db.delete_view(view_name, ignore_missing=False) is True
 
 
-def test_arangosearch_view_properties(db, col, enterprise, db_version):
+def test_arangosearch_view_properties(db, col, enterprise):
     view_name = generate_view_name()
     params = {"consolidationIntervalMsec": 50000}
 
@@ -212,10 +210,8 @@ def test_arangosearch_view_properties(db, col, enterprise, db_version):
             }
         )
 
-        if db_version >= version.parse("3.9.6"):
-            params.update({"primarySortCache": True, "primaryKeyCache": True})
-        if db_version >= version.parse("3.10.3"):
-            params.update({"storedValues": ["attr1", "attr2"]})
+        params.update({"primarySortCache": True, "primaryKeyCache": True})
+        params.update({"storedValues": ["attr1", "attr2"]})
 
     result = db.create_arangosearch_view(view_name, properties=params)
     assert "id" in result

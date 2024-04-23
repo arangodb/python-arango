@@ -10,7 +10,7 @@ Welcome to the documentation for **python-arango**, a Python driver for ArangoDB
 Requirements
 =============
 
-- ArangoDB version 3.9+
+- ArangoDB version 3.11+
 - Python version 3.8+
 
 Installation
@@ -80,6 +80,7 @@ Miscellaneous
     logging
     auth
     http
+    compression
     serializer
     schema
     cursor
