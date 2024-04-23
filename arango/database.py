@@ -1442,10 +1442,11 @@ class Database(ApiGroup):
         :raise arango.exceptions.CollectionCreateError: If create fails.
         """
         key_options: Json = {"type": key_generator, "allowUserKeys": user_keys}
-        if key_increment is not None:
-            key_options["increment"] = key_increment
-        if key_offset is not None:
-            key_options["offset"] = key_offset
+        if key_generator == "autoincrement":
+            if key_increment is not None:
+                key_options["increment"] = key_increment
+            if key_offset is not None:
+                key_options["offset"] = key_offset
 
         data: Json = {
             "name": name,
