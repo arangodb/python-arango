@@ -614,7 +614,7 @@ class PregelJobDeleteError(ArangoServerError):
 #####################
 
 
-class ServerConnectionError(ArangoClientError):
+class ServerConnectionError(ArangoServerError):
     """Failed to connect to ArangoDB server."""
 
 

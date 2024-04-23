@@ -191,13 +191,20 @@ def test_collection_management(db, bad_db, cluster):
     ]
 
     col = db.create_collection(
+        name=col_name, key_generator="autoincrement", key_increment=9, key_offset=100
+    )
+    key_options = col.properties()["key_options"]
+    assert key_options["key_generator"] == "autoincrement"
+    assert key_options["key_increment"] == 9
+    assert key_options["key_offset"] == 100
+    db.delete_collection(col_name)
+
+    col = db.create_collection(
         name=col_name,
         sync=True,
         system=False,
         key_generator="traditional",
         user_keys=False,
-        key_increment=9,
-        key_offset=100,
         edge=True,
         shard_count=2,
         shard_fields=["test_attr:"],

@@ -113,12 +113,13 @@ edges.insert({"_from": "students/02", "_to": "lectures/MAT101"})
 edges.insert({"_from": "students/02", "_to": "lectures/STA101"})
 edges.insert({"_from": "students/03", "_to": "lectures/CSC101"})
 
-# Traverse the graph in outbound direction, breadth-first.
-result = graph.traverse(
-    start_vertex="students/01",
-    direction="outbound",
-    strategy="breadthfirst"
-)
+# Traverse the graph in outbound direction, breath-first.
+query = """
+    FOR v, e, p IN 1..3 OUTBOUND 'students/01' GRAPH 'school'
+    OPTIONS { bfs: true, uniqueVertices: 'global' }
+    RETURN {vertex: v, edge: e, path: p}
+    """
+cursor = db.aql.execute(query)
 ```
 
 Please see the [documentation](https://docs.python-arango.com) for more details.
