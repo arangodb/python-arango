@@ -12,7 +12,7 @@ from arango.connection import (
     JwtSuperuserConnection,
 )
 from arango.database import StandardDatabase
-from arango.exceptions import ServerConnectionError
+from arango.exceptions import ArangoClientError, ServerConnectionError
 from arango.http import (
     DEFAULT_REQUEST_TIMEOUT,
     DefaultHTTPClient,
@@ -300,6 +300,6 @@ class ArangoClient:
             except ServerConnectionError as err:
                 raise err
             except Exception as err:
-                raise ServerConnectionError(f"bad connection: {err}")
+                raise ArangoClientError(f"bad connection: {err}")
 
         return StandardDatabase(connection)

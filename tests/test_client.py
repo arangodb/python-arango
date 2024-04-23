@@ -8,7 +8,7 @@ from requests import Session
 
 from arango.client import ArangoClient
 from arango.database import StandardDatabase
-from arango.exceptions import ServerConnectionError
+from arango.exceptions import ArangoClientError, ServerConnectionError
 from arango.http import DefaultHTTPClient, DeflateRequestCompression
 from arango.resolver import FallbackHostResolver, RandomHostResolver, SingleHostResolver
 from tests.helpers import (
@@ -89,7 +89,7 @@ def test_client_bad_connection(db, username, password, cluster):
 
     # Test connection with invalid host URL
     client = ArangoClient(hosts="http://127.0.0.1:8500")
-    with pytest.raises(ServerConnectionError) as err:
+    with pytest.raises(ArangoClientError) as err:
         client.db(db.name, username, password, verify=True)
     assert "bad connection" in str(err.value)
 
