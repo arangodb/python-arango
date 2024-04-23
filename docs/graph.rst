@@ -318,8 +318,10 @@ See :ref:`Graph` and :ref:`EdgeCollection` for API specification.
 Graph Traversals
 ================
 
-**Graph traversals** are executed via the :func:`arango.graph.Graph.traverse`
-method. Each traversal can span across multiple vertex collections, and walk
+**Graph traversals** are executed via AQL. The old
+:func:`arango.graph.Graph.traverse` has been deprecated and can no longer be
+used with ArangoDB 3.12 or later.
+Each traversal can span across multiple vertex collections, and walk
 over edges and vertices using various algorithms.
 
 **Example:**
@@ -371,13 +373,12 @@ over edges and vertices using various algorithms.
     teach.insert({'_from': 'teachers/jon', '_to': 'lectures/STA201'})
     teach.insert({'_from': 'teachers/jon', '_to': 'lectures/MAT223'})
 
-    # Traverse the graph in outbound direction, breath-first.
-    school.traverse(
-        start_vertex='teachers/jon',
-        direction='outbound',
-        strategy='bfs',
-        edge_uniqueness='global',
-        vertex_uniqueness='global',
-    )
+    # AQL to perform a graph traversal
+    query = """
+    FOR v, e, p IN 1..3 OUTBOUND 'teachers/jon' GRAPH 'school'
+    OPTIONS { bfs: true, uniqueVertices: 'global' }
+    RETURN {vertex: v, edge: e, path: p}
+    """
 
-See :func:`arango.graph.Graph.traverse` for API specification.
+    # Traverse the graph in outbound direction, breath-first.
+    cursor = db.aql.execute(query)
