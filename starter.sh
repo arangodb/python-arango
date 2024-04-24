@@ -34,8 +34,10 @@ fi
 
 if [ "$version" == "latest" ]; then
     conf_file="${setup}-3.12"
+elif [[ "$version" == *.*.* ]]; then
+    conf_file="${setup}-${version%.*}"
 else
-    conf_file="${setup}-${version%.*.*}"
+    conf_file="${setup}-${version}"
 fi
 
 docker run -d \
