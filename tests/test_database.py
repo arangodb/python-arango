@@ -1,6 +1,7 @@
 from datetime import datetime
 
 import pytest
+from packaging import version
 
 from arango.aql import AQL
 from arango.backup import Backup
@@ -438,3 +439,12 @@ def test_license(sys_db, enterprise):
         assert license == {"license": "none"}
         with pytest.raises(ServerLicenseSetError):
             sys_db.set_license("abc")
+
+
+def test_options(sys_db, db_version):
+    # Skip if below 3.12
+    if db_version < version.parse("3.12.0"):
+        pytest.skip("Database options require ArangoDB 3.12+")
+
+    assert sys_db.options()
+    assert sys_db.options_available()
