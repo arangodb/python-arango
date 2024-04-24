@@ -32,11 +32,10 @@ else
     exit 1
 fi
 
-conf_file=""
-if [[ "${version%.*}" == "3.10" ]]; then
-    conf_file="${setup}-3.10"
+if [ "$version" == "latest" ]; then
+    conf_file="${setup}-3.12"
 else
-    conf_file="${setup}"
+    conf_file="${setup}-${version%.*.*}"
 fi
 
 docker run -d \
