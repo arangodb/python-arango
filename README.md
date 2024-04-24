@@ -52,8 +52,8 @@ db = client.db("test", username="root", password="passwd")
 # Create a new collection named "students".
 students = db.create_collection("students")
 
-# Add a hash index to the collection.
-students.add_hash_index(fields=["name"], unique=True)
+# Add a persistent index to the collection.
+students.add_persistent_index(fields=["name"], unique=True)
 
 # Insert new documents into the collection.
 students.insert({"name": "jane", "age": 39})
