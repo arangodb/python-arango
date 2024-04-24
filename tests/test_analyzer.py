@@ -93,3 +93,10 @@ def test_analyzer_management(db, bad_db, cluster, enterprise, db_version):
         assert result["type"] == "multi_delimiter"
         assert result["properties"] == {"delimiters": [",", "."]}
         assert result["features"] == []
+
+    if db_version >= version.parse("3.12.0"):
+        analyzer_name = generate_analyzer_name()
+        result = db.create_analyzer(analyzer_name, "wildcard", {"ngramSize": 4})
+        assert result["type"] == "wildcard"
+        assert result["features"] == []
+        assert result["properties"] == {"ngramSize": 4}
