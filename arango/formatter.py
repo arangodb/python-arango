@@ -104,6 +104,10 @@ def format_index(body: Json) -> Json:
     if "fieldValueTypes" in body:
         result["field_value_types"] = body["fieldValueTypes"]
 
+    # Introduced in 3.12 EE
+    if "optimizeTopK" in body:
+        result["optimizeTopK"] = body["optimizeTopK"]
+
     return verify_format(body, result)
 
 
