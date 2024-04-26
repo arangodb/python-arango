@@ -97,7 +97,7 @@ def test_transaction_commit(db, col, docs):
         sync=True,
         allow_implicit=False,
         lock_timeout=1000,
-        max_size=10000,
+        max_size=1024 * 1024,  # 1MB
     )
     txn_col = txn_db.collection(col.name)
 
@@ -126,7 +126,7 @@ def test_transaction_fetch_existing(db, col, docs):
         sync=True,
         allow_implicit=False,
         lock_timeout=1000,
-        max_size=10000,
+        max_size=1024 * 1024,  # 1MB
     )
     txn_col = original_txn.collection(col.name)
 

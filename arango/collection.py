@@ -1293,6 +1293,13 @@ class Collection(ApiGroup):
     ) -> Result[Json]:
         """Create a new hash index.
 
+        .. warning::
+
+            The index types `hash` and `skiplist` are aliases for the persistent
+            index type and should no longer be used to create new indexes. The
+            aliases will be removed in a future version. Use
+            :func:`arango.collection.Collection.add_persistent_index` instead.
+
         :param fields: Document fields to index.
         :type fields: [str]
         :param unique: Whether the index is unique.
@@ -1336,6 +1343,13 @@ class Collection(ApiGroup):
         in_background: Optional[bool] = None,
     ) -> Result[Json]:
         """Create a new skiplist index.
+
+        .. warning::
+
+            The index types `hash` and `skiplist` are aliases for the persistent
+            index type and should no longer be used to create new indexes. The
+            aliases will be removed in a future version. Use
+            :func:`arango.collection.Collection.add_persistent_index` instead.
 
         :param fields: Document fields to index.
         :type fields: [str]

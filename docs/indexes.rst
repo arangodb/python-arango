@@ -27,15 +27,15 @@ on fields ``_from`` and ``_to``. For more information on indexes, refer to
     # List the indexes in the collection.
     cities.indexes()
 
-    # Add a new hash index on document fields "continent" and "country".
-    index = cities.add_hash_index(fields=['continent', 'country'], unique=True)
+    # Add a new persistent index on document fields "continent" and "country".
+    index = cities.add_persistent_index(fields=['continent', 'country'], unique=True)
 
     # Add new fulltext indexes on fields "continent" and "country".
     index = cities.add_fulltext_index(fields=['continent'])
     index = cities.add_fulltext_index(fields=['country'])
 
-    # Add a new skiplist index on field 'population'.
-    index = cities.add_skiplist_index(fields=['population'], sparse=False)
+    # Add a new persistent index on field 'population'.
+    index = cities.add_persistent_index(fields=['population'], sparse=False)
 
     # Add a new geo-spatial index on field 'coordinates'.
     index = cities.add_geo_index(fields=['coordinates'])
@@ -47,7 +47,7 @@ on fields ``_from`` and ``_to``. For more information on indexes, refer to
     index = cities.add_ttl_index(fields=['currency'], expiry_time=200)
 
     # Indexes may be added with a name that can be referred to in AQL queries.
-    index = cities.add_hash_index(fields=['country'], name='my_hash_index')
+    index = cities.add_persistent_index(fields=['country'], name='my_persistent_index')
 
     # Delete the last index from the collection.
     cities.delete_index(index['id'])
