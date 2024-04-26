@@ -1,3 +1,5 @@
+from packaging import version
+
 from arango.exceptions import (
     ViewCreateError,
     ViewDeleteError,
