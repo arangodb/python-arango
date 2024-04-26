@@ -136,6 +136,7 @@ def test_view_management(db, bad_db, col, cluster, db_version):
             },
         )
         assert "optimizeTopK" in res
+        db.delete_view(view_name)
 
 
 def test_arangosearch_view_management(db, bad_db, cluster):
