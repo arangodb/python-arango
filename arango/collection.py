@@ -1867,6 +1867,7 @@ class Collection(ApiGroup):
                         body["_old_rev"] = body.pop("_oldRev")
                     results.append(body)
                 else:
+                    print(body)
                     sub_resp = self._conn.prep_bulk_err_response(resp, body)
                     results.append(DocumentInsertError(sub_resp, request))
 
