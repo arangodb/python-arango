@@ -124,7 +124,7 @@ def test_view_management(db, bad_db, col, cluster, db_version):
     # Test delete missing view with ignore_missing set to True
     assert db.delete_view(view_name, ignore_missing=True) is False
 
-    if db_version >= version.parse("3.11"):
+    if db_version >= version.parse("3.12"):
         res = db.create_view(
             view_name,
             view_type,
