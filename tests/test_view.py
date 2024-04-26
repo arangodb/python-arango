@@ -12,7 +12,7 @@ from arango.exceptions import (
 from tests.helpers import assert_raises, generate_view_name
 
 
-def test_view_management(db, bad_db, col, cluster, db_version):
+def test_view_management(db, bad_db, col, cluster, db_version, enterprise):
     # Test create view
     view_name = generate_view_name()
     bad_view_name = generate_view_name()
@@ -124,7 +124,7 @@ def test_view_management(db, bad_db, col, cluster, db_version):
     # Test delete missing view with ignore_missing set to True
     assert db.delete_view(view_name, ignore_missing=True) is False
 
-    if db_version >= version.parse("3.12"):
+    if enterprise and db_version >= version.parse("3.12"):
         res = db.create_view(
             view_name,
             view_type,
