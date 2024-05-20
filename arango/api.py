@@ -1,6 +1,6 @@
 __all__ = ["ApiGroup"]
 
-from typing import Callable, Optional, TypeVar
+from typing import Any, Callable, Optional, TypeVar
 
 from arango.connection import Connection
 from arango.executor import ApiExecutor

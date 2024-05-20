@@ -6,42 +6,45 @@ __all__ = [
 ]
 
 from json import dumps, loads
-from typing import Any, Generic, TypeVar
+from typing import Generic, Sequence, TypeVar, Union
+
+from arango.typings import DataTypes, Json
 
 T = TypeVar("T")
 
 
 class Serializer(Generic[T]):
     """
-    Serializer interface
+    Serializer interface.
+    For the use of bulk operations, it must also support List[T].
     """
 
-    def __call__(self, data: T) -> str:
+    def __call__(self, obj: Union[T, Sequence[T]]) -> str:
         raise NotImplementedError
 
 
-class Deserializer:
+class Deserializer(Generic[T]):
     """
     De-serializer interface
     """
 
-    def __call__(self, data: str) -> Any:
+    def __call__(self, s: str) -> T:
         raise NotImplementedError
 
 
-class JsonSerializer(Serializer[Any]):
+class JsonSerializer(Serializer[Json]):
     """
     Default JSON serializer
     """
 
-    def __call__(self, data: Any) -> str:
-        return dumps(data, separators=(",", ":"))
+    def __call__(self, obj: Union[Json, Sequence[Json]]) -> str:
+        return dumps(obj, separators=(",", ":"))
 
 
-class JsonDeserializer(Deserializer):
+class JsonDeserializer(Deserializer[DataTypes]):
     """
     Default JSON de-serializer
     """
 
-    def __call__(self, data: str) -> Any:
-        return loads(data)
+    def __call__(self, s: str) -> DataTypes:
+        return loads(s)

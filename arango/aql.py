@@ -1,7 +1,7 @@
 __all__ = ["AQL", "AQLQueryCache"]
 
 from numbers import Number
-from typing import MutableMapping, Optional, Sequence, Union
+from typing import Generic, MutableMapping, Optional, Sequence, TypeVar, Union
 
 from arango.api import ApiGroup
 from arango.connection import Connection
@@ -145,14 +145,17 @@ class AQLQueryCache(ApiGroup):
         return self._execute(request, response_handler)
 
 
-class AQL(ApiGroup):
+T = TypeVar("T")
+
+
+class AQL(ApiGroup, Generic[T]):
     """AQL (ArangoDB Query Language) API wrapper.
 
     :param connection: HTTP connection.
     :param executor: API executor.
     """
 
-    def __init__(self, connection: Connection, executor: ApiExecutor) -> None:
+    def __init__(self, connection: Connection[T], executor: ApiExecutor) -> None:
         super().__init__(connection, executor)
 
     def __repr__(self) -> str:
@@ -173,7 +176,7 @@ class AQL(ApiGroup):
         all_plans: bool = False,
         max_plans: Optional[int] = None,
         opt_rules: Optional[Sequence[str]] = None,
-        bind_vars: Optional[MutableMapping[str, DataTypes]] = None,
+        bind_vars: Optional[MutableMapping[str, Union[DataTypes, T]]] = None,
     ) -> Result[Union[Json, Jsons]]:
         """Inspect the query and return its metadata without executing it.
 
@@ -257,7 +260,7 @@ class AQL(ApiGroup):
         count: bool = False,
         batch_size: Optional[int] = None,
         ttl: Optional[Number] = None,
-        bind_vars: Optional[MutableMapping[str, DataTypes]] = None,
+        bind_vars: Optional[MutableMapping[str, Union[DataTypes, T]]] = None,
         full_count: Optional[bool] = None,
         max_plans: Optional[int] = None,
         optimizer_rules: Optional[Sequence[str]] = None,

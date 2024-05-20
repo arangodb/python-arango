@@ -8,7 +8,7 @@ __all__ = [
 
 from datetime import datetime
 from numbers import Number
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, Generic, List, Optional, Sequence, TypeVar, Union
 from warnings import warn
 
 from arango.api import ApiGroup
@@ -117,8 +117,10 @@ from arango.typings import Json, Jsons, Params
 from arango.utils import get_col_name
 from arango.wal import WAL
 
+T = TypeVar("T")
 
-class Database(ApiGroup):
+
+class Database(ApiGroup, Generic[T]):
     """Base class for Database API wrappers."""
 
     def __getitem__(self, name: str) -> StandardCollection:
@@ -152,7 +154,7 @@ class Database(ApiGroup):
         return self.db_name
 
     @property
-    def aql(self) -> AQL:
+    def aql(self) -> AQL[T]:
         """Return AQL (ArangoDB Query Language) API wrapper.
 
         :return: AQL API wrapper.
@@ -1335,7 +1337,7 @@ class Database(ApiGroup):
     # Collection Management #
     #########################
 
-    def collection(self, name: str) -> StandardCollection:
+    def collection(self, name: str) -> StandardCollection[T]:
         """Return the standard collection API wrapper.
 
         :param name: Collection name.
@@ -1408,7 +1410,7 @@ class Database(ApiGroup):
         write_concern: Optional[int] = None,
         schema: Optional[Json] = None,
         computedValues: Optional[Jsons] = None,
-    ) -> Result[StandardCollection]:
+    ) -> Result[StandardCollection[T]]:
         """Create a new collection.
 
         :param name: Collection name.
@@ -1793,7 +1795,10 @@ class Database(ApiGroup):
     #######################
 
     def has_document(
-        self, document: Json, rev: Optional[str] = None, check_rev: bool = True
+        self,
+        document: Union[str, Json, T],
+        rev: Optional[str] = None,
+        check_rev: bool = True,
     ) -> Result[bool]:
         """Check if a document exists.
 
@@ -1815,7 +1820,10 @@ class Database(ApiGroup):
         )
 
     def document(
-        self, document: Json, rev: Optional[str] = None, check_rev: bool = True
+        self,
+        document: Union[str, Json, T],
+        rev: Optional[str] = None,
+        check_rev: bool = True,
     ) -> Result[Optional[Json]]:
         """Return a document.
 
@@ -1839,7 +1847,7 @@ class Database(ApiGroup):
     def insert_document(
         self,
         collection: str,
-        document: Json,
+        document: T,
         return_new: bool = False,
         sync: Optional[bool] = None,
         silent: bool = False,
@@ -1903,7 +1911,7 @@ class Database(ApiGroup):
 
     def update_document(
         self,
-        document: Json,
+        document: Union[Json, T],
         check_rev: bool = True,
         merge: bool = True,
         keep_none: bool = True,
@@ -1954,7 +1962,7 @@ class Database(ApiGroup):
 
     def replace_document(
         self,
-        document: Json,
+        document: T,
         check_rev: bool = True,
         return_new: bool = False,
         return_old: bool = False,
@@ -1996,7 +2004,7 @@ class Database(ApiGroup):
 
     def delete_document(
         self,
-        document: Union[str, Json],
+        document: Union[str, Json, T],
         rev: Optional[str] = None,
         check_rev: bool = True,
         ignore_missing: bool = False,
@@ -2948,10 +2956,10 @@ class Database(ApiGroup):
         return self._execute(request, response_handler)
 
 
-class StandardDatabase(Database):
+class StandardDatabase(Database[T]):
     """Standard database API wrapper."""
 
-    def __init__(self, connection: Connection) -> None:
+    def __init__(self, connection: Connection[T]) -> None:
         super().__init__(connection=connection, executor=DefaultApiExecutor(connection))
 
     def __repr__(self) -> str:
@@ -3071,7 +3079,7 @@ class StandardDatabase(Database):
         return OverloadControlDatabase(self._conn, max_queue_time_seconds)
 
 
-class AsyncDatabase(Database):
+class AsyncDatabase(Database[T]):
     """Database API wrapper tailored specifically for async execution.
 
     See :func:`arango.database.StandardDatabase.begin_async_execution`.
@@ -3094,7 +3102,7 @@ class AsyncDatabase(Database):
         return f"<AsyncDatabase {self.name}>"
 
 
-class BatchDatabase(Database):
+class BatchDatabase(Database[T]):
     """Database API wrapper tailored specifically for batch execution.
 
     .. note::
@@ -3163,7 +3171,7 @@ class BatchDatabase(Database):
         return self._executor.commit()
 
 
-class TransactionDatabase(Database):
+class TransactionDatabase(Database[T]):
     """Database API wrapper tailored specifically for transactions.
 
     See :func:`arango.database.StandardDatabase.begin_transaction`.
@@ -3261,7 +3269,7 @@ class TransactionDatabase(Database):
         return self._executor.abort()
 
 
-class OverloadControlDatabase(Database):
+class OverloadControlDatabase(Database[T]):
     """Database API wrapper tailored to gracefully handle server overload scenarios.
 
     See :func:`arango.database.StandardDatabase.begin_controlled_execution`.

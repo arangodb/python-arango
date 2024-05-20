@@ -10,7 +10,8 @@ import logging
 import sys
 import time
 from abc import abstractmethod
-from typing import Any, Callable, Optional, Sequence, Set, Tuple, Union
+from json import dumps, loads
+from typing import Generic, List, Optional, Sequence, Set, Tuple, TypeVar, Union
 
 import jwt
 from jwt.exceptions import ExpiredSignatureError
@@ -27,12 +28,15 @@ from arango.http import HTTPClient, RequestCompression
 from arango.request import Request
 from arango.resolver import HostResolver
 from arango.response import Response
-from arango.typings import Fields, Json
+from arango.serializer import Deserializer, Serializer
+from arango.typings import DataTypes, Fields, Json
 
 Connection = Union["BasicConnection", "JwtConnection", "JwtSuperuserConnection"]
 
+T = TypeVar("T")
 
-class BaseConnection:
+
+class BaseConnection(Generic[T]):
     """Base connection to a specific ArangoDB database."""
 
     def __init__(
@@ -42,8 +46,8 @@ class BaseConnection:
         sessions: Sequence[Session],
         db_name: str,
         http_client: HTTPClient,
-        serializer: Callable[..., str],
-        deserializer: Callable[[str], Any],
+        serializer: Serializer[T],
+        deserializer: Deserializer[DataTypes],
         request_compression: Optional[RequestCompression] = None,
         response_compression: Optional[str] = None,
     ) -> None:
@@ -76,7 +80,7 @@ class BaseConnection:
         """
         return self._username
 
-    def serialize(self, obj: Any) -> str:
+    def serialize(self, obj: Union[T, Sequence[T]]) -> str:
         """Serialize the given object.
 
         :param obj: JSON object to serialize.
@@ -86,7 +90,7 @@ class BaseConnection:
         """
         return self._serializer(obj)
 
-    def deserialize(self, string: str) -> Any:
+    def deserialize(self, string: str) -> DataTypes:
         """De-serialize the string and return the object.
 
         :param string: String to de-serialize.
@@ -194,7 +198,7 @@ class BaseConnection:
             headers=parent_response.headers,
             status_code=parent_response.status_code,
             status_text=parent_response.status_text,
-            raw_body=self.serialize(body),
+            raw_body=dumps(body, separators=(",", ":")),
         )
         resp.body = body
         resp.error_code = body["errorNum"]
@@ -202,7 +206,9 @@ class BaseConnection:
         resp.is_success = False
         return resp
 
-    def normalize_data(self, data: Any) -> Union[str, MultipartEncoder, None]:
+    def normalize_data(
+        self, data: Union[str, MultipartEncoder, T, List[T], None]
+    ) -> Union[str, MultipartEncoder, None]:
         """Normalize request data.
 
         :param data: Request data.
@@ -247,7 +253,7 @@ class BaseConnection:
         raise NotImplementedError
 
 
-class BasicConnection(BaseConnection):
+class BasicConnection(BaseConnection[T]):
     """Connection to specific ArangoDB database using basic authentication.
 
     :param hosts: Host URL or list of URLs (coordinators in a cluster).
@@ -279,8 +285,8 @@ class BasicConnection(BaseConnection):
         username: str,
         password: str,
         http_client: HTTPClient,
-        serializer: Callable[..., str],
-        deserializer: Callable[[str], Any],
+        serializer: Serializer[T],
+        deserializer: Deserializer[DataTypes],
         request_compression: Optional[RequestCompression] = None,
         response_compression: Optional[str] = None,
     ) -> None:
@@ -310,7 +316,7 @@ class BasicConnection(BaseConnection):
         return self.process_request(host_index, request, auth=self._auth)
 
 
-class JwtConnection(BaseConnection):
+class JwtConnection(BaseConnection[T]):
     """Connection to specific ArangoDB database using JWT authentication.
 
     :param hosts: Host URL or list of URLs (coordinators in a cluster).
@@ -340,8 +346,8 @@ class JwtConnection(BaseConnection):
         sessions: Sequence[Session],
         db_name: str,
         http_client: HTTPClient,
-        serializer: Callable[..., str],
-        deserializer: Callable[[str], Any],
+        serializer: Serializer[T],
+        deserializer: Deserializer[DataTypes],
         username: Optional[str] = None,
         password: Optional[str] = None,
         user_token: Optional[str] = None,
@@ -420,6 +426,7 @@ class JwtConnection(BaseConnection):
             method="post",
             endpoint="/_open/auth",
             data={"username": self._username, "password": self._password},
+            deserialize=False,
         )
 
         host_index = self._host_resolver.get_host_index()
@@ -428,6 +435,10 @@ class JwtConnection(BaseConnection):
 
         if not resp.is_success:
             raise JWTAuthError(resp, request)
+
+        resp.body = loads(resp.raw_body)
+        if "jwt" not in resp.body:
+            raise JWTRefreshError(f"JWT token not found in response body: {resp.body}")
 
         self.set_token(resp.body["jwt"])
 
@@ -461,7 +472,7 @@ class JwtConnection(BaseConnection):
         self._auth_header = f"bearer {self._token}"
 
 
-class JwtSuperuserConnection(BaseConnection):
+class JwtSuperuserConnection(BaseConnection[T]):
     """Connection to specific ArangoDB database using superuser JWT.
 
     :param hosts: Host URL or list of URLs (coordinators in a cluster).
@@ -489,9 +500,9 @@ class JwtSuperuserConnection(BaseConnection):
         sessions: Sequence[Session],
         db_name: str,
         http_client: HTTPClient,
-        serializer: Callable[..., str],
-        deserializer: Callable[[str], Any],
         superuser_token: str,
+        serializer: Serializer[T],
+        deserializer: Deserializer[DataTypes],
         request_compression: Optional[RequestCompression] = None,
         response_compression: Optional[str] = None,
     ) -> None:

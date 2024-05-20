@@ -1,7 +1,6 @@
 __all__ = ["ArangoClient"]
 
-from json import dumps, loads
-from typing import Any, Callable, Optional, Sequence, Union
+from typing import Any, Generic, Optional, Sequence, TypeVar, Union
 
 import importlib_metadata
 
@@ -27,33 +26,13 @@ from arango.resolver import (
     RoundRobinHostResolver,
     SingleHostResolver,
 )
+from arango.serializer import Deserializer, JsonDeserializer, JsonSerializer, Serializer
+from arango.typings import DataTypes
+
+T = TypeVar("T")
 
 
-def default_serializer(x: Any) -> str:
-    """
-    Default JSON serializer
-
-    :param x: A JSON data type object to serialize
-    :type x: Any
-    :return: The object serialized as a JSON string
-    :rtype: str
-    """
-    return dumps(x, separators=(",", ":"))
-
-
-def default_deserializer(x: str) -> Any:
-    """
-    Default JSON de-serializer
-
-    :param x: A JSON string to deserialize
-    :type x: str
-    :return: The de-serialized JSON object
-    :rtype: Any
-    """
-    return loads(x)
-
-
-class ArangoClient:
+class ArangoClient(Generic[T]):
     """ArangoDB client.
 
     :param hosts: Host URL or list of URLs (coordinators in a cluster).
@@ -104,8 +83,8 @@ class ArangoClient:
         host_resolver: Union[str, HostResolver] = "fallback",
         resolver_max_tries: Optional[int] = None,
         http_client: Optional[HTTPClient] = None,
-        serializer: Callable[..., str] = default_serializer,
-        deserializer: Callable[[str], Any] = default_deserializer,
+        serializer: Serializer[T] = JsonSerializer(),
+        deserializer: Deserializer[DataTypes] = JsonDeserializer(),
         verify_override: Union[bool, str, None] = None,
         request_timeout: Union[int, float, None] = DEFAULT_REQUEST_TIMEOUT,
         request_compression: Optional[RequestCompression] = None,
@@ -199,8 +178,7 @@ class ArangoClient:
         auth_method: str = "basic",
         user_token: Optional[str] = None,
         superuser_token: Optional[str] = None,
-        verify_certificate: bool = True,
-    ) -> StandardDatabase:
+    ) -> StandardDatabase[T]:
         """Connect to an ArangoDB database and return the database API wrapper.
 
         :param name: Database name.
@@ -228,14 +206,12 @@ class ArangoClient:
             are ignored. This token is not refreshed automatically. Token
             expiry will not be checked.
         :type superuser_token: str
-        :param verify_certificate: Verify TLS certificates.
-        :type verify_certificate: bool
         :return: Standard database API wrapper.
         :rtype: arango.database.StandardDatabase
         :raise arango.exceptions.ServerConnectionError: If **verify** was set
             to True and the connection fails.
         """
-        connection: Connection
+        connection: Connection[T]
 
         if superuser_token is not None:
             connection = JwtSuperuserConnection(

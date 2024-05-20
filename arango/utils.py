@@ -96,12 +96,12 @@ def is_none_or_bool(obj: Any) -> bool:
     return obj is None or isinstance(obj, bool)
 
 
-def get_batches(elements: Sequence[Json], batch_size: int) -> Iterator[Sequence[Json]]:
+def get_batches(elements: Sequence[Any], batch_size: int) -> Iterator[Sequence[Any]]:
     """Generator to split a list in batches
         of (maximum) **batch_size** elements each.
 
     :param elements: The list of elements.
-    :type elements: Sequence[Json]
+    :type elements: Sequence[Any]
     :param batch_size: Max number of elements per batch.
     :type batch_size: int
     """

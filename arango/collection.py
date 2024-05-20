@@ -1,7 +1,7 @@
 __all__ = ["StandardCollection", "VertexCollection", "EdgeCollection"]
 
 from numbers import Number
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Any, Generic, List, Optional, Sequence, Tuple, TypeVar, Union
 
 from arango.api import ApiGroup
 from arango.connection import Connection
@@ -56,8 +56,10 @@ from arango.utils import (
     is_none_or_str,
 )
 
+T = TypeVar("T", bound=dict[Any, Any])
 
-class Collection(ApiGroup):
+
+class Collection(ApiGroup, Generic[T]):
     """Base class for collection API wrappers.
 
     :param connection: HTTP connection.
@@ -149,7 +151,7 @@ class Collection(ApiGroup):
         return doc_id, {"If-Match": document["_rev"]}
 
     def _prep_from_doc(
-        self, document: Union[str, Json], rev: Optional[str], check_rev: bool
+        self, document: Any, rev: Optional[str], check_rev: bool
     ) -> Tuple[str, Union[str, Json], Json]:
         """Prepare document ID, body and request headers.
 
@@ -199,7 +201,7 @@ class Collection(ApiGroup):
             return body
         raise DocumentParseError('field "_key" or "_id" required')
 
-    def _ensure_key_from_id(self, body: Json) -> Json:
+    def _ensure_key_from_id(self, body: T) -> T:
         """Return the body with "_key" field if it has "_id" field.
 
         :param body: Document body.
@@ -600,7 +602,7 @@ class Collection(ApiGroup):
 
     def has(
         self,
-        document: Union[str, Json],
+        document: Union[str, Json, T],
         rev: Optional[str] = None,
         check_rev: bool = True,
         allow_dirty_read: bool = False,
@@ -1762,7 +1764,7 @@ class Collection(ApiGroup):
 
     def insert_many(
         self,
-        documents: Sequence[Json],
+        documents: Sequence[T],
         return_new: bool = False,
         sync: Optional[bool] = None,
         silent: bool = False,
@@ -1890,7 +1892,7 @@ class Collection(ApiGroup):
 
     def update_many(
         self,
-        documents: Sequence[Json],
+        documents: Sequence[T],
         check_rev: bool = True,
         merge: bool = True,
         keep_none: bool = True,
@@ -2023,7 +2025,7 @@ class Collection(ApiGroup):
     def update_match(
         self,
         filters: Json,
-        body: Json,
+        body: Union[Json, T],
         limit: Optional[int] = None,
         keep_none: bool = True,
         sync: Optional[bool] = None,
@@ -2103,7 +2105,7 @@ class Collection(ApiGroup):
 
     def replace_many(
         self,
-        documents: Sequence[Json],
+        documents: Sequence[T],
         check_rev: bool = True,
         return_new: bool = False,
         return_old: bool = False,
@@ -2217,7 +2219,7 @@ class Collection(ApiGroup):
     def replace_match(
         self,
         filters: Json,
-        body: Json,
+        body: T,
         limit: Optional[int] = None,
         sync: Optional[bool] = None,
         allow_dirty_read: bool = False,
@@ -2283,7 +2285,7 @@ class Collection(ApiGroup):
 
     def delete_many(
         self,
-        documents: Sequence[Json],
+        documents: Sequence[Union[T, Json]],
         return_old: bool = False,
         check_rev: bool = True,
         sync: Optional[bool] = None,
@@ -2448,7 +2450,7 @@ class Collection(ApiGroup):
 
     def import_bulk(
         self,
-        documents: Sequence[Json],
+        documents: Sequence[T],
         halt_on_error: bool = True,
         details: bool = True,
         from_prefix: Optional[str] = None,
@@ -2585,7 +2587,7 @@ class StandardCollection(Collection):
 
     def get(
         self,
-        document: Union[str, Json],
+        document: Union[str, Json, T],
         rev: Optional[str] = None,
         check_rev: bool = True,
         allow_dirty_read: bool = False,
@@ -2635,7 +2637,7 @@ class StandardCollection(Collection):
 
     def insert(
         self,
-        document: Json,
+        document: T,
         return_new: bool = False,
         sync: Optional[bool] = None,
         silent: bool = False,
@@ -2739,7 +2741,7 @@ class StandardCollection(Collection):
 
     def update(
         self,
-        document: Json,
+        document: Union[Json, T],
         check_rev: bool = True,
         merge: bool = True,
         keep_none: bool = True,
@@ -2831,7 +2833,7 @@ class StandardCollection(Collection):
 
     def replace(
         self,
-        document: Json,
+        document: T,
         check_rev: bool = True,
         return_new: bool = False,
         return_old: bool = False,
@@ -2916,7 +2918,7 @@ class StandardCollection(Collection):
 
     def delete(
         self,
-        document: Union[str, Json],
+        document: Union[str, Json, T],
         rev: Optional[str] = None,
         check_rev: bool = True,
         ignore_missing: bool = False,
@@ -2995,7 +2997,7 @@ class StandardCollection(Collection):
         return self._execute(request, response_handler)
 
 
-class VertexCollection(Collection):
+class VertexCollection(Collection[T]):
     """Vertex collection API wrapper.
 
     :param connection: HTTP connection.
@@ -3005,7 +3007,7 @@ class VertexCollection(Collection):
     """
 
     def __init__(
-        self, connection: Connection, executor: ApiExecutor, graph: str, name: str
+        self, connection: Connection[T], executor: ApiExecutor, graph: str, name: str
     ) -> None:
         super().__init__(connection, executor, name)
         self._graph = graph
@@ -3070,7 +3072,7 @@ class VertexCollection(Collection):
 
     def insert(
         self,
-        vertex: Json,
+        vertex: T,
         sync: Optional[bool] = None,
         silent: bool = False,
         return_new: bool = False,
@@ -3119,7 +3121,7 @@ class VertexCollection(Collection):
 
     def update(
         self,
-        vertex: Json,
+        vertex: Union[Json, T],
         check_rev: bool = True,
         keep_none: bool = True,
         sync: Optional[bool] = None,
@@ -3189,7 +3191,7 @@ class VertexCollection(Collection):
 
     def replace(
         self,
-        vertex: Json,
+        vertex: T,
         check_rev: bool = True,
         sync: Optional[bool] = None,
         silent: bool = False,
@@ -3253,7 +3255,7 @@ class VertexCollection(Collection):
 
     def delete(
         self,
-        vertex: Union[str, Json],
+        vertex: Union[str, Json, T],
         rev: Optional[str] = None,
         check_rev: bool = True,
         ignore_missing: bool = False,
@@ -3315,7 +3317,7 @@ class VertexCollection(Collection):
         return self._execute(request, response_handler)
 
 
-class EdgeCollection(Collection):
+class EdgeCollection(Collection[T]):
     """ArangoDB edge collection API wrapper.
 
     :param connection: HTTP connection.
@@ -3388,7 +3390,7 @@ class EdgeCollection(Collection):
 
     def insert(
         self,
-        edge: Json,
+        edge: T,
         sync: Optional[bool] = None,
         silent: bool = False,
         return_new: bool = False,
@@ -3438,7 +3440,7 @@ class EdgeCollection(Collection):
 
     def update(
         self,
-        edge: Json,
+        edge: Union[Json, T],
         check_rev: bool = True,
         keep_none: bool = True,
         sync: Optional[bool] = None,
@@ -3508,7 +3510,7 @@ class EdgeCollection(Collection):
 
     def replace(
         self,
-        edge: Json,
+        edge: T,
         check_rev: bool = True,
         sync: Optional[bool] = None,
         silent: bool = False,
@@ -3573,7 +3575,7 @@ class EdgeCollection(Collection):
 
     def delete(
         self,
-        edge: Union[str, Json],
+        edge: Union[str, Json, T],
         rev: Optional[str] = None,
         check_rev: bool = True,
         ignore_missing: bool = False,
@@ -3635,8 +3637,8 @@ class EdgeCollection(Collection):
 
     def link(
         self,
-        from_vertex: Union[str, Json],
-        to_vertex: Union[str, Json],
+        from_vertex: Union[str, Json, T],
+        to_vertex: Union[str, Json, T],
         data: Optional[Json] = None,
         sync: Optional[bool] = None,
         silent: bool = False,
@@ -3672,7 +3674,7 @@ class EdgeCollection(Collection):
 
     def edges(
         self,
-        vertex: Union[str, Json],
+        vertex: Union[str, Json, T],
         direction: Optional[str] = None,
         allow_dirty_read: bool = False,
     ) -> Result[Json]:

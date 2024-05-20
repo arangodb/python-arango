@@ -50,7 +50,7 @@ class Cursor:
 
     def __init__(
         self,
-        connection: BaseConnection,
+        connection: BaseConnection[Any],
         init_data: Json,
         cursor_type: str = "cursor",
         allow_retry: bool = False,
