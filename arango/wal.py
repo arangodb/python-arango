@@ -1,5 +1,6 @@
 __all__ = ["WAL"]
 
+from json import loads
 from typing import Optional
 
 from arango.api import ApiGroup
@@ -269,11 +270,7 @@ class WAL(ApiGroup):  # pragma: no cover
             if resp.is_success:
                 result = format_replication_header(resp.headers)
                 result["content"] = (
-                    [
-                        self._conn.deserialize(line)
-                        for line in resp.body.split("\n")
-                        if line
-                    ]
+                    [loads(line) for line in resp.body.split("\n") if line]
                     if deserialize
                     else resp.body
                 )

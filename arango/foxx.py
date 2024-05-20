@@ -1,6 +1,7 @@
 __all__ = ["Foxx"]
 
 import os
+from json import dumps
 from typing import Any, BinaryIO, Dict, Optional, Tuple, Union
 
 from requests_toolbelt import MultipartEncoder
@@ -72,10 +73,10 @@ class Foxx(ApiGroup):
         }
 
         if config is not None:
-            fields["configuration"] = self._conn.serialize(config).encode("utf-8")
+            fields["configuration"] = dumps(config).encode("utf-8")
 
         if dependencies is not None:
-            fields["dependencies"] = self._conn.serialize(dependencies).encode("utf-8")
+            fields["dependencies"] = dumps(dependencies).encode("utf-8")
 
         return MultipartEncoder(fields=fields)
 
