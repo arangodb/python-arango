@@ -1442,9 +1442,11 @@ class Collection(ApiGroup):
         name: Optional[str] = None,
         in_background: Optional[bool] = None,
     ) -> Result[Json]:
-        """Create a new fulltext index. This method is deprecated
-            in ArangoDB 3.10 and will be removed in a future version
-            of the driver.
+        """Create a new fulltext index.
+
+        .. warning::
+            This method is deprecated since ArangoDB 3.10 and will be removed
+            in a future version of the driver.
 
         :param fields: Document fields to index.
         :type fields: [str]

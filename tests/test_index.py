@@ -58,7 +58,7 @@ def test_add_hash_index(icol):
             "sparse": True,
             "deduplicate": True,
             "name": "hash_index",
-            "in_background": False,
+            "inBackground": False,
         }
     )
 
@@ -89,7 +89,7 @@ def test_add_skiplist_index(icol):
             "sparse": True,
             "deduplicate": True,
             "name": "skiplist_index",
-            "in_background": False,
+            "inBackground": False,
         }
     )
 
@@ -116,9 +116,9 @@ def test_add_geo_index(icol):
         {
             "type": "geo",
             "fields": ["attr1"],
-            "geo_json": True,
+            "geoJson": True,
             "name": "geo_index",
-            "in_background": True,
+            "inBackground": True,
         }
     )
 
@@ -140,7 +140,7 @@ def test_add_geo_index(icol):
         {
             "type": "geo",
             "fields": ["attr1", "attr2"],
-            "geo_json": False,
+            "geoJson": False,
         }
     )
     expected_index = {
@@ -169,9 +169,9 @@ def test_add_fulltext_index(icol):
         {
             "type": "fulltext",
             "fields": ["attr1"],
-            "min_length": 10,
+            "minLength": 10,
             "name": "fulltext_index",
-            "in_background": True,
+            "inBackground": True,
         }
     )
     expected_index = {
@@ -205,7 +205,7 @@ def test_add_persistent_index(icol):
             "unique": True,
             "sparse": True,
             "name": "persistent_index",
-            "in_background": True,
+            "inBackground": True,
         }
     )
     expected_index = {
@@ -230,9 +230,9 @@ def test_add_ttl_index(icol):
         {
             "type": "ttl",
             "fields": ["attr1"],
-            "expiry_time": 1000,
+            "expireAfter": 1000,
             "name": "ttl_index",
-            "in_background": True,
+            "inBackground": True,
         }
     )
     expected_index = {
@@ -280,9 +280,9 @@ def test_add_zkd_index(icol, db_version):
         {
             "type": "zkd",
             "fields": ["x", "y", "z"],
-            "field_value_types": "double",
+            "fieldValueTypes": "double",
             "name": "zkd_index",
-            "in_background": False,
+            "inBackground": False,
             "unique": False,
         }
     )
@@ -301,7 +301,9 @@ def test_add_zkd_index(icol, db_version):
     assert result["id"] in extract("id", icol.indexes())
 
     with assert_raises(IndexCreateError) as err:
-        icol.add_zkd_index(field_value_types="integer", fields=["x", "y", "z"])
+        icol.add_index(
+            {"type": "zkd", "fieldValueTypes": "integer", "fields": ["x", "y", "z"]}
+        )
     assert err.value.error_code == 10
 
     icol.delete_index(result["id"])
@@ -315,9 +317,9 @@ def test_add_mdi_index(icol, db_version):
         {
             "type": "mdi",
             "fields": ["x", "y", "z"],
-            "field_value_types": "double",
+            "fieldValueTypes": "double",
             "name": "mdi_index",
-            "in_background": False,
+            "inBackground": False,
             "unique": True,
         }
     )
@@ -336,7 +338,13 @@ def test_add_mdi_index(icol, db_version):
     assert result["id"] in extract("id", icol.indexes())
 
     with assert_raises(IndexCreateError) as err:
-        icol.add_mdi_index(field_value_types="integer", fields=["x", "y", "z"])
+        icol.add_index(
+            {
+                "type": "mdi",
+                "fieldValueTypes": "integer",
+                "fields": ["x", "y", "z"],
+            }
+        )
     assert err.value.error_code == 10
 
     icol.delete_index(result["id"])
