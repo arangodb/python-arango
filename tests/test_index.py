@@ -83,6 +83,7 @@ def test_add_skiplist_index(icol):
     fields = ["attr1", "attr2"]
     result = icol.add_index(
         {
+            "type": "skiplist",
             "fields": fields,
             "unique": True,
             "sparse": True,
