@@ -1075,7 +1075,7 @@ class Collection(ApiGroup):
                 FILTER GEO_CONTAINS(rect, {coord_str})
                 LIMIT {skip_val}, {limit_val}
                 RETURN doc
-        """
+        """  # noqa: E201 E202
 
         bind_vars = {"@collection": self.name}
 
@@ -1263,8 +1263,7 @@ class Collection(ApiGroup):
     def add_index(self, data: Json) -> Result[Json]:
         """Create an index.
 
-        :param data: Index data. Must contain a "type" field
-            with the index type.
+        :param data: Index data. Must contain a "type" and "fields" attribute.
         :type data: dict
         :return: New index details.
         :rtype: dict
@@ -1295,6 +1294,12 @@ class Collection(ApiGroup):
     ) -> Result[Json]:
         """Create a new hash index.
 
+        .. warning::
+
+            The index types `hash` and `skiplist` are aliases for the persistent
+            index type and should no longer be used to create new indexes. The
+            aliases will be removed in a future version.
+
         :param fields: Document fields to index.
         :type fields: [str]
         :param unique: Whether the index is unique.
@@ -1313,7 +1318,7 @@ class Collection(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
-        m = "add_hash_index is deprecated. Using add_index with {'type': 'hash'} instead."  # noqa: E501
+        m = "add_hash_index is deprecated. Using add_index with {'type': 'persistent'} instead."  # noqa: E501
         warn(m, DeprecationWarning, stacklevel=2)
 
         data: Json = {"type": "hash", "fields": fields}
@@ -1342,6 +1347,12 @@ class Collection(ApiGroup):
     ) -> Result[Json]:
         """Create a new skiplist index.
 
+        .. warning::
+
+            The index types `hash` and `skiplist` are aliases for the persistent
+            index type and should no longer be used to create new indexes. The
+            aliases will be removed in a future version.
+
         :param fields: Document fields to index.
         :type fields: [str]
         :param unique: Whether the index is unique.
@@ -1360,7 +1371,7 @@ class Collection(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
-        m = "add_skiplist_index is deprecated. Using add_index with {'type': 'skiplist'} instead."  # noqa: E501
+        m = "add_skiplist_index is deprecated. Using add_index with {'type': 'persistent'} instead."  # noqa: E501
         warn(m, DeprecationWarning, stacklevel=2)
 
         data: Json = {"type": "skiplist", "fields": fields}
@@ -1698,6 +1709,7 @@ class Collection(ApiGroup):
         keep_none: Optional[bool] = None,
         merge: Optional[bool] = None,
         refill_index_caches: Optional[bool] = None,
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Insert multiple documents.
 
@@ -1752,6 +1764,9 @@ class Collection(ApiGroup):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
+        :param version_attribute: support for simple external versioning to
+            document operations.
+        :type version_attribute: str
         :return: List of document metadata (e.g. document keys, revisions) and
             any exception, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoServerError] | bool
@@ -1774,6 +1789,8 @@ class Collection(ApiGroup):
             params["keepNull"] = keep_none
         if merge is not None:
             params["mergeObjects"] = merge
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
@@ -1820,6 +1837,7 @@ class Collection(ApiGroup):
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
         raise_on_document_error: bool = False,
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Update multiple documents.
 
@@ -1872,6 +1890,9 @@ class Collection(ApiGroup):
             as opposed to returning the error as an object in the result list.
             Defaults to False.
         :type raise_on_document_error: bool
+        :param version_attribute: support for simple external versioning to
+            document operations.
+        :type version_attribute: str
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoError] | bool
@@ -1888,6 +1909,8 @@ class Collection(ApiGroup):
         }
         if sync is not None:
             params["waitForSync"] = sync
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
@@ -1990,7 +2013,7 @@ class Collection(ApiGroup):
                 {f"LIMIT {limit}" if limit is not None else ""}
                 UPDATE doc WITH @body IN @@collection
                 OPTIONS {{ keepNull: @keep_none, mergeObjects: @merge {sync_val} }}
-        """
+        """  # noqa: E201 E202
 
         bind_vars = {
             "@collection": self.name,
@@ -2024,6 +2047,7 @@ class Collection(ApiGroup):
         sync: Optional[bool] = None,
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Replace multiple documents.
 
@@ -2065,6 +2089,9 @@ class Collection(ApiGroup):
             index caches if document operations affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
+        :param version_attribute: support for simple external versioning to
+            document operations.
+        :type version_attribute: str
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoServerError] | bool
@@ -2079,6 +2106,8 @@ class Collection(ApiGroup):
         }
         if sync is not None:
             params["waitForSync"] = sync
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
@@ -2169,7 +2198,7 @@ class Collection(ApiGroup):
                 {f"LIMIT {limit}" if limit is not None else ""}
                 REPLACE doc WITH @body IN @@collection
                 {f"OPTIONS {{ {sync_val} }}" if sync_val else ""}
-        """
+        """  # noqa: E201 E202
 
         bind_vars = {"@collection": self.name, "body": body}
 
@@ -2334,7 +2363,7 @@ class Collection(ApiGroup):
                 {f"LIMIT {limit}" if limit is not None else ""}
                 REMOVE doc IN @@collection
                 {f"OPTIONS {{ {sync_val} }}" if sync_val else ""}
-        """
+        """  # noqa: E201 E202
 
         bind_vars = {"@collection": self.name}
 
@@ -2553,6 +2582,7 @@ class StandardCollection(Collection):
         keep_none: Optional[bool] = None,
         merge: Optional[bool] = None,
         refill_index_caches: Optional[bool] = None,
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, Json]]:
         """Insert a new document.
 
@@ -2591,6 +2621,9 @@ class StandardCollection(Collection):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
+        :param version_attribute: support for simple external versioning to
+            document operations.
+        :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2612,6 +2645,8 @@ class StandardCollection(Collection):
             params["keepNull"] = keep_none
         if merge is not None:
             params["mergeObjects"] = merge
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
@@ -2650,6 +2685,7 @@ class StandardCollection(Collection):
         sync: Optional[bool] = None,
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, Json]]:
         """Update a document.
 
@@ -2680,6 +2716,9 @@ class StandardCollection(Collection):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
+        :param version_attribute: support for simple external versioning
+            to document operations.
+        :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2697,6 +2736,9 @@ class StandardCollection(Collection):
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
@@ -2733,6 +2775,7 @@ class StandardCollection(Collection):
         sync: Optional[bool] = None,
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
+        version_attribute: Optional[str] = None,
     ) -> Result[Union[bool, Json]]:
         """Replace a document.
 
@@ -2758,6 +2801,9 @@ class StandardCollection(Collection):
             index caches if document insertions affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
+        :param version_attribute: support for simple external versioning to
+            document operations.
+        :type version_attribute: str
         :return: Document metadata (e.g. document key, revision) or True if
             parameter **silent** was set to True.
         :rtype: bool | dict
@@ -2773,6 +2819,9 @@ class StandardCollection(Collection):
         }
         if sync is not None:
             params["waitForSync"] = sync
+
+        if version_attribute is not None:
+            params["versionAttribute"] = version_attribute
 
         # New in ArangoDB 3.9.6 and 3.10.2
         if refill_index_caches is not None:
