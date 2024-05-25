@@ -614,7 +614,7 @@ class PregelJobDeleteError(ArangoServerError):
 #####################
 
 
-class ServerConnectionError(ArangoClientError):
+class ServerConnectionError(ArangoServerError):
     """Failed to connect to ArangoDB server."""
 
 
@@ -722,6 +722,14 @@ class ServerEncryptionError(ArangoServerError):
     """Failed to reload user-defined encryption keys."""
 
 
+class ServerCurrentOptionsGetError(ArangoServerError):
+    """Failed to retrieve currently-set server options."""
+
+
+class ServerAvailableOptionsGetError(ArangoServerError):
+    """Failed to retrieve available server options."""
+
+
 class ServerExecuteError(ArangoServerError):
     """Failed to execute raw JavaScript command."""
 
@@ -770,6 +778,10 @@ class TransactionCommitError(ArangoServerError):
 
 class TransactionAbortError(ArangoServerError):
     """Failed to abort transaction."""
+
+
+class TransactionFetchError(ArangoServerError):
+    """Failed to fetch existing transaction."""
 
 
 class TransactionListError(ArangoServerError):

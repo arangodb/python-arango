@@ -12,7 +12,7 @@ from arango.exceptions import (
 from tests.helpers import assert_raises, generate_view_name
 
 
-def test_view_management(db, bad_db, col, cluster):
+def test_view_management(db, bad_db, col, cluster, db_version, enterprise):
     # Test create view
     view_name = generate_view_name()
     bad_view_name = generate_view_name()
@@ -124,6 +124,20 @@ def test_view_management(db, bad_db, col, cluster):
     # Test delete missing view with ignore_missing set to True
     assert db.delete_view(view_name, ignore_missing=True) is False
 
+    if enterprise and db_version >= version.parse("3.12"):
+        res = db.create_view(
+            view_name,
+            view_type,
+            properties={
+                "links": {col.name: {"fields": {}}},
+                "optimizeTopK": [
+                    "BM25(@doc) DESC",
+                ],
+            },
+        )
+        assert "optimizeTopK" in res
+        db.delete_view(view_name)
+
 
 def test_arangosearch_view_management(db, bad_db, cluster):
     # Test create arangosearch view
@@ -180,7 +194,7 @@ def test_arangosearch_view_management(db, bad_db, cluster):
     assert db.delete_view(view_name, ignore_missing=False) is True
 
 
-def test_arangosearch_view_properties(db, col, enterprise, db_version):
+def test_arangosearch_view_properties(db, col, enterprise):
     view_name = generate_view_name()
     params = {"consolidationIntervalMsec": 50000}
 
@@ -199,10 +213,8 @@ def test_arangosearch_view_properties(db, col, enterprise, db_version):
             }
         )
 
-        if db_version >= version.parse("3.9.6"):
-            params.update({"primarySortCache": True, "primaryKeyCache": True})
-        if db_version >= version.parse("3.10.3"):
-            params.update({"storedValues": ["attr1", "attr2"]})
+        params.update({"primarySortCache": True, "primaryKeyCache": True})
+        params.update({"storedValues": ["attr1", "attr2"]})
 
     result = db.create_arangosearch_view(view_name, properties=params)
     assert "id" in result

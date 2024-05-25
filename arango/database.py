@@ -42,6 +42,8 @@ from arango.exceptions import (
     PermissionListError,
     PermissionResetError,
     PermissionUpdateError,
+    ServerAvailableOptionsGetError,
+    ServerCurrentOptionsGetError,
     ServerDetailsError,
     ServerEchoError,
     ServerEncryptionError,
@@ -1118,6 +1120,58 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def options(self) -> Result[Json]:
+        """Return the currently-set server options (ArangoDB 3.12+)
+
+        As this API may reveal sensitive data about the deployment, it can only
+        be accessed from inside the _system database. In addition, there is a
+        policy control startup option --server.options-api that determines if and
+        to whom the API is made available. This option can have the following
+        values:
+        - disabled: API is disabled.
+        - jwt: API can only be accessed via superuser JWT.
+        - admin: API can be accessed by admin users in the _system database only.
+        - public: everyone with access to _system database can access the API.
+
+        :return: Server options.
+        :rtype: dict
+        """
+        request = Request(method="get", endpoint="/_admin/options")
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body
+                return result
+            raise ServerCurrentOptionsGetError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def options_available(self) -> Result[Json]:
+        """Return a description of all available server options (ArangoDB 3.12+)
+
+        As this API may reveal sensitive data about the deployment, it can only
+        be accessed from inside the _system database. In addition, there is a
+        policy control startup option --server.options-api that determines if and
+        to whom the API is made available. This option can have the following
+        values:
+        - disabled: API is disabled.
+        - jwt: API can only be accessed via superuser JWT.
+        - admin: API can be accessed by admin users in the _system database only.
+        - public: everyone with access to _system database can access the options API.
+
+        :return: Server options.
+        :rtype: dict
+        """
+        request = Request(method="get", endpoint="/_admin/options-description")
+
+        def response_handler(resp: Response) -> Json:
+            if resp.is_success:
+                result: Json = resp.body
+                return result
+            raise ServerAvailableOptionsGetError(resp, request)
+
+        return self._execute(request, response_handler)
+
     #######################
     # Database Management #
     #######################
@@ -1442,10 +1496,11 @@ class Database(ApiGroup):
         :raise arango.exceptions.CollectionCreateError: If create fails.
         """
         key_options: Json = {"type": key_generator, "allowUserKeys": user_keys}
-        if key_increment is not None:
-            key_options["increment"] = key_increment
-        if key_offset is not None:
-            key_options["offset"] = key_offset
+        if key_generator == "autoincrement":
+            if key_increment is not None:
+                key_options["increment"] = key_increment
+            if key_offset is not None:
+                key_options["offset"] = key_offset
 
         data: Json = {
             "name": name,
@@ -2948,6 +3003,14 @@ class StandardDatabase(Database):
         """
         return BatchDatabase(self._conn, return_result, max_workers)
 
+    def fetch_transaction(self, transaction_id: str) -> "TransactionDatabase":
+        """Fetch an existing transaction.
+
+        :param transaction_id: The ID of the existing transaction.
+        :type transaction_id: str
+        """
+        return TransactionDatabase(connection=self._conn, transaction_id=transaction_id)
+
     def begin_transaction(
         self,
         read: Union[str, Sequence[str], None] = None,
@@ -3125,6 +3188,9 @@ class TransactionDatabase(Database):
     :type lock_timeout: int | None
     :param max_size: Max transaction size in bytes.
     :type max_size: int | None
+    :param transaction_id: Initialize using an existing transaction instead of creating
+        a new transaction.
+    :type transaction_id: str | None
     """
 
     def __init__(
@@ -3137,6 +3203,7 @@ class TransactionDatabase(Database):
         allow_implicit: Optional[bool] = None,
         lock_timeout: Optional[int] = None,
         max_size: Optional[int] = None,
+        transaction_id: Optional[str] = None,
     ) -> None:
         self._executor: TransactionApiExecutor
         super().__init__(
@@ -3150,6 +3217,7 @@ class TransactionDatabase(Database):
                 allow_implicit=allow_implicit,
                 lock_timeout=lock_timeout,
                 max_size=max_size,
+                transaction_id=transaction_id,
             ),
         )
 

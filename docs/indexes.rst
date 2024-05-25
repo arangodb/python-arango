@@ -27,17 +27,17 @@ on fields ``_from`` and ``_to``. For more information on indexes, refer to
     # List the indexes in the collection.
     cities.indexes()
 
-    # Add a new hash index on document fields "continent" and "country".
-    hash_index = {'type': 'hash', 'fields': ['continent', 'country'], 'unique': True}
-    index = cities.add_index(hash_index)
+    # Add a new persistent index on document fields "continent" and "country".
+    persistent_index = {'type': 'persistent', 'fields': ['continent', 'country'], 'unique': True}
+    index = cities.add_index(persistent_index)
 
     # Add new fulltext indexes on fields "continent" and "country".
     index = cities.add_index({'type': 'fulltext', 'fields': ['continent']})
     index = cities.add_index({'type': 'fulltext', 'fields': ['country']})
 
-    # Add a new skiplist index on field 'population'.
-    skiplist_index = {'type': 'skiplist', 'fields': ['population'], 'sparse': False}
-    index = cities.add_index(skiplist_index)
+    # Add a new persistent index on field 'population'.
+    persistent_index = {'type': 'persistent', 'fields': ['population'], 'sparse': False}
+    index = cities.add_index(persistent_index)
 
     # Add a new geo-spatial index on field 'coordinates'.
     geo_index = {'type': 'geo', 'fields': ['coordinates']}
@@ -53,11 +53,11 @@ on fields ``_from`` and ``_to``. For more information on indexes, refer to
 
     # Add MDI (multi-dimensional) index on field 'x' and 'y'.
     mdi_index = {'type': 'mdi', 'fields': ['x', 'y'], 'field_value_types': ['double']}
-    index = cities.add_index(mdi_index) 
+    index = cities.add_index(mdi_index)
 
     # Indexes may be added with a name that can be referred to in AQL queries.
-    hash_index = {'type': 'hash', 'fields': ['country'], 'unique': True, 'name': 'my_hash_index'}
-    index = cities.add_index(hash_index)
+    persistent_index = {'type': 'persistent', 'fields': ['country'], 'unique': True, 'name': 'my_hash_index'}
+    index = cities.add_index(persistent_index)
 
     # Delete the last index from the collection.
     cities.delete_index(index['id'])

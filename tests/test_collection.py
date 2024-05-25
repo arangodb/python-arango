@@ -1,5 +1,4 @@
 import pytest
-from packaging import version
 
 from arango.client import ArangoClient
 from arango.collection import StandardCollection
@@ -192,18 +191,24 @@ def test_collection_management(db, bad_db, cluster):
     ]
 
     col = db.create_collection(
+        name=col_name, key_generator="autoincrement", key_increment=9, key_offset=100
+    )
+    key_options = col.properties()["key_options"]
+    assert key_options["key_generator"] == "autoincrement"
+    assert key_options["key_increment"] == 9
+    assert key_options["key_offset"] == 100
+    db.delete_collection(col_name)
+
+    col = db.create_collection(
         name=col_name,
         sync=True,
         system=False,
         key_generator="traditional",
         user_keys=False,
-        key_increment=9,
-        key_offset=100,
         edge=True,
         shard_count=2,
         shard_fields=["test_attr:"],
         replication_factor=1,
-        shard_like="",
         sync_replication=False,
         enforce_replication_factor=False,
         sharding_strategy="community-compat",
@@ -229,6 +234,14 @@ def test_collection_management(db, bad_db, cluster):
     assert properties["system"] is False
     assert properties["computedValues"] == computed_values
     col.configure(computed_values=[])
+
+    if cluster:
+        # Create distribute-shards-like collection
+        shard_like_name = col_name + "_shards_like"
+        shard_like_col = db.create_collection(name=shard_like_name, shard_like=col_name)
+        assert shard_like_col.properties()["shard_like"] == col_name
+        assert db.has_collection(shard_like_name) is True
+        assert db.delete_collection(shard_like_name, system=False) is True
 
     # Test create duplicate collection
     with assert_raises(CollectionCreateError) as err:
@@ -316,21 +329,15 @@ def special_db_names(sys_db):
             pass
 
 
-def test_collection_utf8(db, db_version, special_collection_names):
-    if db_version < version.parse("3.11.0"):
-        pytest.skip("UTF8 collection names require ArangoDB 3.11+")
-
+def test_collection_utf8(db, special_collection_names):
     for name in special_collection_names:
         create_and_delete_collection(db, name)
 
 
 # Not sure if this belongs in here or in `test_database.py`...
 def test_database_and_collection_utf8(
-    sys_db, db_version, special_collection_names, special_db_names
+    sys_db, special_collection_names, special_db_names
 ):
-    if db_version < version.parse("3.11.0"):
-        pytest.skip("UTF8 collection names require ArangoDB 3.11+")
-
     client = ArangoClient(hosts="http://127.0.0.1:8529")
     for db_name in special_db_names:
         username = generate_username()

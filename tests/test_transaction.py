@@ -5,6 +5,7 @@ from arango.exceptions import (
     TransactionAbortError,
     TransactionCommitError,
     TransactionExecuteError,
+    TransactionFetchError,
     TransactionInitError,
     TransactionStatusError,
 )
@@ -96,7 +97,7 @@ def test_transaction_commit(db, col, docs):
         sync=True,
         allow_implicit=False,
         lock_timeout=1000,
-        max_size=10000,
+        max_size=1024 * 1024,  # 1MB
     )
     txn_col = txn_db.collection(col.name)
 
@@ -114,6 +115,38 @@ def test_transaction_commit(db, col, docs):
     txn_db._executor._id = "illegal"
     with pytest.raises(TransactionCommitError) as err:
         txn_db.commit_transaction()
+    assert err.value.error_code in {10, 1655}
+
+
+def test_transaction_fetch_existing(db, col, docs):
+    original_txn = db.begin_transaction(
+        read=col.name,
+        write=col.name,
+        exclusive=[],
+        sync=True,
+        allow_implicit=False,
+        lock_timeout=1000,
+        max_size=1024 * 1024,  # 1MB
+    )
+    txn_col = original_txn.collection(col.name)
+
+    assert "_rev" in txn_col.insert(docs[0])
+    assert "_rev" in txn_col.delete(docs[0])
+
+    txn_db = db.fetch_transaction(transaction_id=original_txn.transaction_id)
+
+    txn_col = txn_db.collection(col.name)
+    assert "_rev" in txn_col.insert(docs[1])
+    assert "_rev" in txn_col.delete(docs[1])
+
+    txn_db.commit_transaction()
+    assert txn_db.transaction_status() == "committed"
+    assert original_txn.transaction_status() == "committed"
+    assert txn_db.transaction_id == original_txn.transaction_id
+
+    # Test fetch transaction that does not exist
+    with pytest.raises(TransactionFetchError) as err:
+        db.fetch_transaction(transaction_id="illegal")
     assert err.value.error_code in {10, 1655}
 
 

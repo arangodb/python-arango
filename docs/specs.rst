@@ -103,6 +103,12 @@ DefaultHTTPClient
 .. autoclass:: arango.http.DefaultHTTPClient
     :members:
 
+DeflateRequestCompression
+=========================
+
+.. autoclass:: arango.http.DeflateRequestCompression
+    :members:
+
 .. _EdgeCollection:
 
 EdgeCollection
