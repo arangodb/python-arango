@@ -1260,11 +1260,14 @@ class Collection(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def add_index(self, data: Json) -> Result[Json]:
+    def add_index(self, data: Json, formatter: bool = False) -> Result[Json]:
         """Create an index.
 
         :param data: Index data. Must contain a "type" and "fields" attribute.
         :type data: dict
+        :param formatter: If set to True, apply formatting to the returned result.
+            Most keys will be converted to snake case.
+        :type formatter: bool
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
@@ -1279,7 +1282,7 @@ class Collection(ApiGroup):
         def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise IndexCreateError(resp, request)
-            return format_index(resp.body)
+            return format_index(resp.body, formatter)
 
         return self._execute(request, response_handler)
 
@@ -1334,7 +1337,7 @@ class Collection(ApiGroup):
         if in_background is not None:
             data["inBackground"] = in_background
 
-        return self.add_index(data)
+        return self.add_index(data, formatter=True)
 
     def add_skiplist_index(
         self,
@@ -1387,7 +1390,7 @@ class Collection(ApiGroup):
         if in_background is not None:
             data["inBackground"] = in_background
 
-        return self.add_index(data)
+        return self.add_index(data, formatter=True)
 
     def add_geo_index(
         self,
@@ -1433,7 +1436,7 @@ class Collection(ApiGroup):
         if legacyPolygons is not None:
             data["legacyPolygons"] = legacyPolygons
 
-        return self.add_index(data)
+        return self.add_index(data, formatter=True)
 
     def add_fulltext_index(
         self,
@@ -1472,7 +1475,7 @@ class Collection(ApiGroup):
         if in_background is not None:
             data["inBackground"] = in_background
 
-        return self.add_index(data)
+        return self.add_index(data, formatter=True)
 
     def add_persistent_index(
         self,
@@ -1533,7 +1536,7 @@ class Collection(ApiGroup):
         if cacheEnabled is not None:
             data["cacheEnabled"] = cacheEnabled
 
-        return self.add_index(data)
+        return self.add_index(data, formatter=True)
 
     def add_ttl_index(
         self,
@@ -1566,7 +1569,7 @@ class Collection(ApiGroup):
         if in_background is not None:
             data["inBackground"] = in_background
 
-        return self.add_index(data)
+        return self.add_index(data, formatter=True)
 
     def add_inverted_index(
         self,
@@ -1653,7 +1656,7 @@ class Collection(ApiGroup):
         if cache is not None:
             data["cache"] = cache
 
-        return self.add_index(data)
+        return self.add_index(data, formatter=True)
 
     def delete_index(self, index_id: str, ignore_missing: bool = False) -> Result[bool]:
         """Delete an index.

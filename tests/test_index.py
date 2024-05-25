@@ -127,7 +127,7 @@ def test_add_geo_index(icol):
         "type": "geo",
         "fields": ["attr1"],
         "unique": False,
-        "geo_json": True,
+        "geoJson": True,
         "name": "geo_index",
     }
     for key, value in expected_index.items():
@@ -178,7 +178,7 @@ def test_add_fulltext_index(icol):
         "sparse": True,
         "type": "fulltext",
         "fields": ["attr1"],
-        "min_length": 10,
+        "minLength": 10,
         "unique": False,
         "name": "fulltext_index",
     }
@@ -238,7 +238,7 @@ def test_add_ttl_index(icol):
     expected_index = {
         "type": "ttl",
         "fields": ["attr1"],
-        "expiry_time": 1000,
+        "expireAfter": 1000,
         "name": "ttl_index",
     }
     for key, value in expected_index.items():
@@ -259,7 +259,7 @@ def test_add_inverted_index(icol, enterprise):
         analyzer="identity",
         primarySort={"cache": True, "fields": [{"field": "a", "direction": "asc"}]},
     )
-    expected_keys = ["primary_sort", "analyzer", "include_all_fields", "search_field"]
+    expected_keys = ["primarySort", "analyzer", "includeAllFields", "searchField"]
 
     if enterprise:
         parameters["cache"] = True
@@ -291,7 +291,7 @@ def test_add_zkd_index(icol, db_version):
         "name": "zkd_index",
         "type": "zkd",
         "fields": ["x", "y", "z"],
-        "new": True,
+        "isNewlyCreated": True,
         "unique": False,
     }
 
@@ -328,7 +328,7 @@ def test_add_mdi_index(icol, db_version):
         "name": "mdi_index",
         "type": "mdi",
         "fields": ["x", "y", "z"],
-        "new": True,
+        "isNewlyCreated": True,
         "unique": True,
     }
 

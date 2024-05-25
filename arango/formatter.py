@@ -20,14 +20,22 @@ def format_body(body: Json) -> Json:
     return body
 
 
-def format_index(body: Json) -> Json:
+def format_index(body: Json, formatter: bool = True) -> Json:
     """Format index data.
 
     :param body: Input body.
     :type body: dict
+    :param formatter: Convert (most) keys to snake_case.
+    :type formatter: bool
     :return: Formatted body.
     :rtype: dict
     """
+    if not formatter:
+        body.pop("code")
+        body.pop("error")
+        body["id"] = body["id"].split("/", 1)[-1]
+        return body
+
     result = {"id": body["id"].split("/", 1)[-1], "fields": body["fields"]}
     if "type" in body:
         result["type"] = body["type"]
