@@ -52,7 +52,7 @@ on fields ``_from`` and ``_to``. For more information on indexes, refer to
     index = cities.add_index(ttl_index)
 
     # Add MDI (multi-dimensional) index on field 'x' and 'y'.
-    mdi_index = {'type': 'mdi', 'fields': ['x', 'y'], 'field_value_types': ['double']}
+    mdi_index = {'type': 'mdi', 'fields': ['x', 'y'], 'fieldValueTypes': ['double']}
     index = cities.add_index(mdi_index)
 
     # Indexes may be added with a name that can be referred to in AQL queries.
