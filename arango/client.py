@@ -199,7 +199,6 @@ class ArangoClient:
         auth_method: str = "basic",
         user_token: Optional[str] = None,
         superuser_token: Optional[str] = None,
-        verify_certificate: bool = True,
     ) -> StandardDatabase:
         """Connect to an ArangoDB database and return the database API wrapper.
 
@@ -228,8 +227,6 @@ class ArangoClient:
             are ignored. This token is not refreshed automatically. Token
             expiry will not be checked.
         :type superuser_token: str
-        :param verify_certificate: Verify TLS certificates.
-        :type verify_certificate: bool
         :return: Standard database API wrapper.
         :rtype: arango.database.StandardDatabase
         :raise arango.exceptions.ServerConnectionError: If **verify** was set
