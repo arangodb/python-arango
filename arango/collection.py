@@ -1263,10 +1263,23 @@ class Collection(ApiGroup):
     def add_index(self, data: Json, formatter: bool = False) -> Result[Json]:
         """Create an index.
 
+        .. note::
+
+            As the `add_index` method was made available starting with driver
+            version 8, we have decided to depreciate the other `add_*_index`
+            methods, making this the official way to create indexes. While
+            the other methods still work, we recommend using this one instead.
+            Note that the other methods would use a formatter by default,
+            processing the index attributes returned by the server (for the
+            most part, it does a snake case conversion). This method skips that,
+            returning the raw index, except for the `id` attribute. However,
+            if you want the formatter to be applied for backwards compatibility,
+            you can set the `formatter` parameter to `True`.
+
         :param data: Index data. Must contain a "type" and "fields" attribute.
         :type data: dict
         :param formatter: If set to True, apply formatting to the returned result.
-            Most keys will be converted to snake case.
+            Should only be used for backwards compatibility.
         :type formatter: bool
         :return: New index details.
         :rtype: dict
