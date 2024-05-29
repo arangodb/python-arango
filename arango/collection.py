@@ -1334,7 +1334,7 @@ class Collection(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
-        m = "add_hash_index is deprecated. Using add_index with {'type': 'persistent'} instead."  # noqa: E501
+        m = "add_hash_index is deprecated. Using add_index with {'type': 'hash'} instead."  # noqa: E501
         warn(m, DeprecationWarning, stacklevel=2)
 
         data: Json = {"type": "hash", "fields": fields}
