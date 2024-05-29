@@ -1266,7 +1266,7 @@ class Collection(ApiGroup):
         .. note::
 
             As the `add_index` method was made available starting with driver
-            version 8, we have decided to depreciate the other `add_*_index`
+            version 8, we have decided to deprecate the other `add_*_index`
             methods, making this the official way to create indexes. While
             the other methods still work, we recommend using this one instead.
             Note that the other methods would use a formatter by default,
