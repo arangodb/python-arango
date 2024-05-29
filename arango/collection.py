@@ -1387,7 +1387,7 @@ class Collection(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
-        m = "add_skiplist_index is deprecated. Using add_index with {'type': 'persistent'} instead."  # noqa: E501
+        m = "add_skiplist_index is deprecated. Using add_index with {'type': 'skiplist'} instead."  # noqa: E501
         warn(m, DeprecationWarning, stacklevel=2)
 
         data: Json = {"type": "skiplist", "fields": fields}
