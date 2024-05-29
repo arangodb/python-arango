@@ -11,7 +11,7 @@ description = "Python Driver for ArangoDB"
 authors = [ {name= "Joohwan Oh", email = "joohwan.oh@outlook.com" }]
 maintainers = [
     {name = "Joohwan Oh", email = "joohwan.oh@outlook.com"},
-    {name = "Alexandru Petenchea", email = "alexandru.petenchea@arangodb.com"},
+    {name = "Alexandru Petenchea", email = "alex.petenchea@gmail.com"},
     {name = "Anthony Mahanna", email = "anthony.mahanna@arangodb.com"}
 ]
 keywords = ["arangodb", "python", "driver"]

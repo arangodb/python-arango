@@ -28,26 +28,36 @@ on fields ``_from`` and ``_to``. For more information on indexes, refer to
     cities.indexes()
 
     # Add a new persistent index on document fields "continent" and "country".
-    index = cities.add_persistent_index(fields=['continent', 'country'], unique=True)
+    persistent_index = {'type': 'persistent', 'fields': ['continent', 'country'], 'unique': True}
+    index = cities.add_index(persistent_index)
 
     # Add new fulltext indexes on fields "continent" and "country".
-    index = cities.add_fulltext_index(fields=['continent'])
-    index = cities.add_fulltext_index(fields=['country'])
+    index = cities.add_index({'type': 'fulltext', 'fields': ['continent']})
+    index = cities.add_index({'type': 'fulltext', 'fields': ['country']})
 
     # Add a new persistent index on field 'population'.
-    index = cities.add_persistent_index(fields=['population'], sparse=False)
+    persistent_index = {'type': 'persistent', 'fields': ['population'], 'sparse': False}
+    index = cities.add_index(persistent_index)
 
     # Add a new geo-spatial index on field 'coordinates'.
-    index = cities.add_geo_index(fields=['coordinates'])
+    geo_index = {'type': 'geo', 'fields': ['coordinates']}
+    index = cities.add_index(geo_index)
 
     # Add a new persistent index on field 'currency'.
-    index = cities.add_persistent_index(fields=['currency'], sparse=True)
+    persistent_index = {'type': 'persistent', 'fields': ['currency'], 'sparse': True}
+    index = cities.add_index(persistent_index)
 
     # Add a new TTL (time-to-live) index on field 'currency'.
-    index = cities.add_ttl_index(fields=['currency'], expiry_time=200)
+    ttl_index = {'type': 'ttl', 'fields': ['currency'], 'expireAfter': 200}
+    index = cities.add_index(ttl_index)
+
+    # Add MDI (multi-dimensional) index on field 'x' and 'y'.
+    mdi_index = {'type': 'mdi', 'fields': ['x', 'y'], 'fieldValueTypes': 'double'}
+    index = cities.add_index(mdi_index)
 
     # Indexes may be added with a name that can be referred to in AQL queries.
-    index = cities.add_persistent_index(fields=['country'], name='my_persistent_index')
+    persistent_index = {'type': 'persistent', 'fields': ['country'], 'unique': True, 'name': 'my_hash_index'}
+    index = cities.add_index(persistent_index)
 
     # Delete the last index from the collection.
     cities.delete_index(index['id'])

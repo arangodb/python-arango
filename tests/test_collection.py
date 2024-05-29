@@ -369,7 +369,8 @@ def create_and_delete_collection(db, name):
     assert col.name == name
     assert db.has_collection(name) is True
 
-    index_id = col.add_hash_index(fields=["foo"])["name"]
+    persistent_index = {"type": "persistent", "fields": ["foo"]}
+    index_id = col.add_index(persistent_index)["name"]
     assert index_id == col.indexes()[-1]["name"]
     assert col.delete_index(index_id) is True
 

@@ -2,6 +2,7 @@ __all__ = ["StandardCollection", "VertexCollection", "EdgeCollection"]
 
 from numbers import Number
 from typing import List, Optional, Sequence, Tuple, Union
+from warnings import warn
 
 from arango.api import ApiGroup
 from arango.connection import Connection
@@ -1074,7 +1075,7 @@ class Collection(ApiGroup):
                 FILTER GEO_CONTAINS(rect, {coord_str})
                 LIMIT {skip_val}, {limit_val}
                 RETURN doc
-        """
+        """  # noqa: E201 E202
 
         bind_vars = {"@collection": self.name}
 
@@ -1259,11 +1260,27 @@ class Collection(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def _add_index(self, data: Json) -> Result[Json]:
-        """Helper method for creating a new index.
+    def add_index(self, data: Json, formatter: bool = False) -> Result[Json]:
+        """Create an index.
 
-        :param data: Index data.
+        .. note::
+
+            As the `add_index` method was made available starting with driver
+            version 8, we have decided to deprecate the other `add_*_index`
+            methods, making this the official way to create indexes. While
+            the other methods still work, we recommend using this one instead.
+            Note that the other methods would use a formatter by default,
+            processing the index attributes returned by the server (for the
+            most part, it does a snake case conversion). This method skips that,
+            returning the raw index, except for the `id` attribute. However,
+            if you want the formatter to be applied for backwards compatibility,
+            you can set the `formatter` parameter to `True`.
+
+        :param data: Index data. Must contain a "type" and "fields" attribute.
         :type data: dict
+        :param formatter: If set to True, apply formatting to the returned result.
+            Should only be used for backwards compatibility.
+        :type formatter: bool
         :return: New index details.
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
@@ -1278,7 +1295,7 @@ class Collection(ApiGroup):
         def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise IndexCreateError(resp, request)
-            return format_index(resp.body)
+            return format_index(resp.body, formatter)
 
         return self._execute(request, response_handler)
 
@@ -1297,8 +1314,7 @@ class Collection(ApiGroup):
 
             The index types `hash` and `skiplist` are aliases for the persistent
             index type and should no longer be used to create new indexes. The
-            aliases will be removed in a future version. Use
-            :func:`arango.collection.Collection.add_persistent_index` instead.
+            aliases will be removed in a future version.
 
         :param fields: Document fields to index.
         :type fields: [str]
@@ -1318,6 +1334,9 @@ class Collection(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
+        m = "add_hash_index is deprecated. Using add_index with {'type': 'hash'} instead."  # noqa: E501
+        warn(m, DeprecationWarning, stacklevel=2)
+
         data: Json = {"type": "hash", "fields": fields}
 
         if unique is not None:
@@ -1331,7 +1350,7 @@ class Collection(ApiGroup):
         if in_background is not None:
             data["inBackground"] = in_background
 
-        return self._add_index(data)
+        return self.add_index(data, formatter=True)
 
     def add_skiplist_index(
         self,
@@ -1348,8 +1367,7 @@ class Collection(ApiGroup):
 
             The index types `hash` and `skiplist` are aliases for the persistent
             index type and should no longer be used to create new indexes. The
-            aliases will be removed in a future version. Use
-            :func:`arango.collection.Collection.add_persistent_index` instead.
+            aliases will be removed in a future version.
 
         :param fields: Document fields to index.
         :type fields: [str]
@@ -1369,6 +1387,9 @@ class Collection(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
+        m = "add_skiplist_index is deprecated. Using add_index with {'type': 'skiplist'} instead."  # noqa: E501
+        warn(m, DeprecationWarning, stacklevel=2)
+
         data: Json = {"type": "skiplist", "fields": fields}
 
         if unique is not None:
@@ -1382,7 +1403,7 @@ class Collection(ApiGroup):
         if in_background is not None:
             data["inBackground"] = in_background
 
-        return self._add_index(data)
+        return self.add_index(data, formatter=True)
 
     def add_geo_index(
         self,
@@ -1414,6 +1435,9 @@ class Collection(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
+        m = "add_geo_index is deprecated. Using add_index with {'type': 'geo'} instead."  # noqa: E501
+        warn(m, DeprecationWarning, stacklevel=2)
+
         data: Json = {"type": "geo", "fields": fields}
 
         if geo_json is not None:
@@ -1425,7 +1449,7 @@ class Collection(ApiGroup):
         if legacyPolygons is not None:
             data["legacyPolygons"] = legacyPolygons
 
-        return self._add_index(data)
+        return self.add_index(data, formatter=True)
 
     def add_fulltext_index(
         self,
@@ -1434,9 +1458,11 @@ class Collection(ApiGroup):
         name: Optional[str] = None,
         in_background: Optional[bool] = None,
     ) -> Result[Json]:
-        """Create a new fulltext index. This method is deprecated
-            in ArangoDB 3.10 and will be removed in a future version
-            of the driver.
+        """Create a new fulltext index.
+
+        .. warning::
+            This method is deprecated since ArangoDB 3.10 and will be removed
+            in a future version of the driver.
 
         :param fields: Document fields to index.
         :type fields: [str]
@@ -1450,6 +1476,9 @@ class Collection(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
+        m = "add_fulltext_index is deprecated. Using add_index with {'type': 'fulltext'} instead."  # noqa: E501
+        warn(m, DeprecationWarning, stacklevel=2)
+
         data: Json = {"type": "fulltext", "fields": fields}
 
         if min_length is not None:
@@ -1459,7 +1488,7 @@ class Collection(ApiGroup):
         if in_background is not None:
             data["inBackground"] = in_background
 
-        return self._add_index(data)
+        return self.add_index(data, formatter=True)
 
     def add_persistent_index(
         self,
@@ -1502,6 +1531,9 @@ class Collection(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
+        m = "add_persistent_index is deprecated. Using add_index with {'type': 'persistent'} instead."  # noqa: E501
+        warn(m, DeprecationWarning, stacklevel=2)
+
         data: Json = {"type": "persistent", "fields": fields}
 
         if unique is not None:
@@ -1517,7 +1549,7 @@ class Collection(ApiGroup):
         if cacheEnabled is not None:
             data["cacheEnabled"] = cacheEnabled
 
-        return self._add_index(data)
+        return self.add_index(data, formatter=True)
 
     def add_ttl_index(
         self,
@@ -1540,6 +1572,9 @@ class Collection(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
+        m = "add_ttl_index is deprecated. Using add_index with {'type': 'ttl'} instead."  # noqa: E501
+        warn(m, DeprecationWarning, stacklevel=2)
+
         data: Json = {"type": "ttl", "fields": fields, "expireAfter": expiry_time}
 
         if name is not None:
@@ -1547,7 +1582,7 @@ class Collection(ApiGroup):
         if in_background is not None:
             data["inBackground"] = in_background
 
-        return self._add_index(data)
+        return self.add_index(data, formatter=True)
 
     def add_inverted_index(
         self,
@@ -1602,6 +1637,9 @@ class Collection(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.IndexCreateError: If create fails.
         """
+        m = "add_inverted_index is deprecated. Using add_index with {'type': 'inverted'} instead."  # noqa: E501
+        warn(m, DeprecationWarning, stacklevel=2)
+
         data: Json = {"type": "inverted", "fields": fields}
 
         if name is not None:
@@ -1631,90 +1669,7 @@ class Collection(ApiGroup):
         if cache is not None:
             data["cache"] = cache
 
-        return self._add_index(data)
-
-    def add_zkd_index(
-        self,
-        fields: Sequence[str],
-        field_value_types: str = "double",
-        name: Optional[str] = None,
-        unique: Optional[bool] = None,
-        in_background: Optional[bool] = None,
-    ) -> Result[Json]:
-        """Create a new ZKD Index.
-
-        :param fields: Document fields to index. Unlike for other indexes the
-            order of the fields does not matter.
-        :type fields: Sequence[str]
-        :param field_value_types: The type of the field values. The only allowed
-            value is "double" at the moment. Defaults to "double".
-        :type field_value_types: str
-        :param name: Optional name for the index.
-        :type name: str | None
-        :param unique: Whether the index is unique.
-        :type unique: bool | None
-        :param in_background: Do not hold the collection lock.
-        :type in_background: bool | None
-        :return: New index details.
-        :rtype: dict
-        :raise arango.exceptions.IndexCreateError: If create fails.
-        """
-        data: Json = {
-            "type": "zkd",
-            "fields": fields,
-            "fieldValueTypes": field_value_types,
-        }
-
-        if unique is not None:
-            data["unique"] = unique
-        if name is not None:
-            data["name"] = name
-        if in_background is not None:
-            data["inBackground"] = in_background
-
-        return self._add_index(data)
-
-    def add_mdi_index(
-        self,
-        fields: Sequence[str],
-        field_value_types: str = "double",
-        name: Optional[str] = None,
-        unique: Optional[bool] = None,
-        in_background: Optional[bool] = None,
-    ) -> Result[Json]:
-        """Create a new MDI index, previously known as ZKD index. This method
-            is only usable with ArangoDB 3.12 and later.
-
-        :param fields: Document fields to index. Unlike for other indexes the
-            order of the fields does not matter.
-        :type fields: Sequence[str]
-        :param field_value_types: The type of the field values. The only allowed
-            value is "double" at the moment. Defaults to "double".
-        :type field_value_types: str
-        :param name: Optional name for the index.
-        :type name: str | None
-        :param unique: Whether the index is unique.
-        :type unique: bool | None
-        :param in_background: Do not hold the collection lock.
-        :type in_background: bool | None
-        :return: New index details.
-        :rtype: dict
-        :raise arango.exceptions.IndexCreateError: If create fails.
-        """
-        data: Json = {
-            "type": "mdi",
-            "fields": fields,
-            "fieldValueTypes": field_value_types,
-        }
-
-        if unique is not None:
-            data["unique"] = unique
-        if name is not None:
-            data["name"] = name
-        if in_background is not None:
-            data["inBackground"] = in_background
-
-        return self._add_index(data)
+        return self.add_index(data, formatter=True)
 
     def delete_index(self, index_id: str, ignore_missing: bool = False) -> Result[bool]:
         """Delete an index.
@@ -2076,7 +2031,7 @@ class Collection(ApiGroup):
                 {f"LIMIT {limit}" if limit is not None else ""}
                 UPDATE doc WITH @body IN @@collection
                 OPTIONS {{ keepNull: @keep_none, mergeObjects: @merge {sync_val} }}
-        """
+        """  # noqa: E201 E202
 
         bind_vars = {
             "@collection": self.name,
@@ -2261,7 +2216,7 @@ class Collection(ApiGroup):
                 {f"LIMIT {limit}" if limit is not None else ""}
                 REPLACE doc WITH @body IN @@collection
                 {f"OPTIONS {{ {sync_val} }}" if sync_val else ""}
-        """
+        """  # noqa: E201 E202
 
         bind_vars = {"@collection": self.name, "body": body}
 
@@ -2426,7 +2381,7 @@ class Collection(ApiGroup):
                 {f"LIMIT {limit}" if limit is not None else ""}
                 REMOVE doc IN @@collection
                 {f"OPTIONS {{ {sync_val} }}" if sync_val else ""}
-        """
+        """  # noqa: E201 E202
 
         bind_vars = {"@collection": self.name}
 
