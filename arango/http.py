@@ -154,9 +154,11 @@ class DefaultHTTPClient(HTTPClient):
     :type pool_timeout: int | float | None
     """
 
+    REQUEST_TIMEOUT = DEFAULT_REQUEST_TIMEOUT
+
     def __init__(
         self,
-        request_timeout: Union[int, float, None] = DEFAULT_REQUEST_TIMEOUT,
+        request_timeout: Union[int, float, None] = REQUEST_TIMEOUT,
         retry_attempts: int = 3,
         backoff_factor: float = 1.0,
         pool_connections: int = 10,

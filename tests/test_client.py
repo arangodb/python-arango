@@ -110,6 +110,31 @@ def test_client_http_client_attributes(db, username, password):
     assert http_client.request_timeout == 80
     assert client.request_timeout == http_client.request_timeout
 
+    client_no_timeout = ArangoClient(
+        hosts="http://127.0.0.1:8529", request_timeout=None
+    )
+
+    assert client_no_timeout.request_timeout is None
+
+    client_no_timeout = ArangoClient(
+        hosts="http://127.0.0.1:8529",
+        http_client=DefaultHTTPClient(request_timeout=None),
+    )
+
+    assert client_no_timeout.request_timeout is None
+
+    class NoTimeoutHTTPClient(DefaultHTTPClient):
+        REQUEST_TIMEOUT = None
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(request_timeout=self.REQUEST_TIMEOUT, *args, **kwargs)
+
+    client_no_timeout = ArangoClient(
+        hosts="http://127.0.0.1:8529", http_client=NoTimeoutHTTPClient()
+    )
+
+    assert client_no_timeout.request_timeout is None
+
 
 def test_client_custom_http_client(db, username, password):
     # Define custom HTTP client which increments the counter on any API call.
