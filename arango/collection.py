@@ -637,8 +637,6 @@ class Collection(ApiGroup):
         )
 
         def response_handler(resp: Response) -> bool:
-            if resp.error_code == 1202:
-                return False
             if resp.status_code == 412:
                 raise DocumentRevisionError(resp, request)
             if resp.status_code == 404:
