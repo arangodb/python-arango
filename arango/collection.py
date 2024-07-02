@@ -630,20 +630,20 @@ class Collection(ApiGroup):
             headers["x-arango-allow-dirty-read"] = "true"
 
         request = Request(
-            method="get",
+            method="head",
             endpoint=f"/_api/document/{handle}",
             headers=headers,
             read=self.name,
         )
 
         def response_handler(resp: Response) -> bool:
-            if resp.error_code == 1202:
-                return False
             if resp.status_code == 412:
                 raise DocumentRevisionError(resp, request)
+            if resp.status_code == 404:
+                return False
             if not resp.is_success:
                 raise DocumentInError(resp, request)
-            return bool(resp.body)
+            return True
 
         return self._execute(request, response_handler)
 

@@ -1554,7 +1554,7 @@ def test_document_has(col, bad_col, docs):
 
         with assert_raises(DocumentRevisionError) as err:
             col.has(doc_input, rev=bad_rev, check_rev=True)
-        assert err.value.error_code == 1200
+        assert err.value.error_code == 412
 
     # Test existing documents with bad revision
     for doc_input in [
@@ -1564,15 +1564,15 @@ def test_document_has(col, bad_col, docs):
     ]:
         with assert_raises(DocumentRevisionError) as err:
             col.has(doc_input)
-        assert err.value.error_code == 1200
+        assert err.value.error_code == 412
 
         with assert_raises(DocumentRevisionError) as err:
             col.has(doc_input, rev=bad_rev)
-        assert err.value.error_code == 1200
+        assert err.value.error_code == 412
 
         with assert_raises(DocumentRevisionError) as err:
             col.has(doc_input, rev=bad_rev, check_rev=True)
-        assert err.value.error_code == 1200
+        assert err.value.error_code == 412
 
         assert doc_input in col
         assert col.has(doc_input, rev=rev, check_rev=True) is True
@@ -1651,12 +1651,12 @@ def test_document_has(col, bad_col, docs):
     # Test get with bad database
     with assert_raises(DocumentInError) as err:
         bad_col.has(doc_key)
-    assert err.value.error_code in {11, 1228}
+    assert err.value.error_code == 401
 
     # Test contains with bad database
     with assert_raises(DocumentInError) as err:
         assert doc_key in bad_col
-    assert err.value.error_code in {11, 1228}
+    assert err.value.error_code == 401
 
 
 def test_document_get(col, bad_col, docs):
