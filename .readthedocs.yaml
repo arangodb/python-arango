@@ -9,6 +9,8 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.11"
+  commands:
+    - python -m sphinx -b html -W docs $READTHEDOCS_OUTPUT/html
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
