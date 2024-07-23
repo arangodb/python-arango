@@ -17,6 +17,9 @@ html_static_path = ["static"]
 html_theme = "sphinx_rtd_theme"
 master_doc = "index"
 
+# Set canonical URL from the Read the Docs Domain
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "docs.python-arango.com")
+
 autodoc_member_order = "bysource"
 
 doctest_global_setup = """
