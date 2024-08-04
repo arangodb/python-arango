@@ -57,7 +57,6 @@ dev = [
     "pytest-cov>=3.0.0",
     "sphinx",
     "sphinx_rtd_theme",
-    "types-pkg_resources",
     "types-requests",
     "types-setuptools",
 ]
