@@ -245,6 +245,8 @@ class TransactionApiExecutor:
     :param transaction_id: Initialize using an existing transaction instead of starting
         a new transaction.
     :type transaction_id: str | None
+    :param skip_fast_lock_round: Whether to disable fast locking for write operations.
+    :type skip_fast_lock_round: bool | None
     """
 
     def __init__(
@@ -259,6 +261,7 @@ class TransactionApiExecutor:
         max_size: Optional[int] = None,
         allow_dirty_read: bool = False,
         transaction_id: Optional[str] = None,
+        skip_fast_lock_round: Optional[bool] = False,
     ) -> None:
         self._conn = connection
 
@@ -279,6 +282,8 @@ class TransactionApiExecutor:
             data["lockTimeout"] = lock_timeout
         if max_size is not None:
             data["maxTransactionSize"] = max_size
+        if skip_fast_lock_round is not None:
+            data["skipFastLockRound"] = skip_fast_lock_round
 
         if transaction_id is None:
             request = Request(

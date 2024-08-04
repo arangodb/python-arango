@@ -3020,6 +3020,7 @@ class StandardDatabase(Database):
         allow_implicit: Optional[bool] = None,
         lock_timeout: Optional[int] = None,
         max_size: Optional[int] = None,
+        skip_fast_lock_round: Optional[bool] = None,
     ) -> "TransactionDatabase":
         """Begin a transaction.
 
@@ -3043,6 +3044,9 @@ class StandardDatabase(Database):
         :type lock_timeout: int | None
         :param max_size: Max transaction size in bytes.
         :type max_size: int | None
+        :param skip_fast_lock_round: Whether to disable fast locking for write
+            operations.
+        :type skip_fast_lock_round: bool | None
         :return: Database API wrapper object specifically for transactions.
         :rtype: arango.database.TransactionDatabase
         """
@@ -3055,6 +3059,7 @@ class StandardDatabase(Database):
             allow_implicit=allow_implicit,
             lock_timeout=lock_timeout,
             max_size=max_size,
+            skip_fast_lock_round=skip_fast_lock_round,
         )
 
     def begin_controlled_execution(
@@ -3191,6 +3196,8 @@ class TransactionDatabase(Database):
     :param transaction_id: Initialize using an existing transaction instead of creating
         a new transaction.
     :type transaction_id: str | None
+    :param skip_fast_lock_round: Whether to disable fast locking for write operations.
+    :type skip_fast_lock_round: bool | None
     """
 
     def __init__(
@@ -3204,6 +3211,7 @@ class TransactionDatabase(Database):
         lock_timeout: Optional[int] = None,
         max_size: Optional[int] = None,
         transaction_id: Optional[str] = None,
+        skip_fast_lock_round: Optional[bool] = False,
     ) -> None:
         self._executor: TransactionApiExecutor
         super().__init__(
@@ -3218,6 +3226,7 @@ class TransactionDatabase(Database):
                 lock_timeout=lock_timeout,
                 max_size=max_size,
                 transaction_id=transaction_id,
+                skip_fast_lock_round=skip_fast_lock_round,
             ),
         )
 
