@@ -261,7 +261,7 @@ class TransactionApiExecutor:
         max_size: Optional[int] = None,
         allow_dirty_read: bool = False,
         transaction_id: Optional[str] = None,
-        skip_fast_lock_round: Optional[bool] = False,
+        skip_fast_lock_round: Optional[bool] = None,
     ) -> None:
         self._conn = connection
 

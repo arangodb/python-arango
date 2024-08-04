@@ -3241,7 +3241,7 @@ class TransactionDatabase(Database):
         lock_timeout: Optional[int] = None,
         max_size: Optional[int] = None,
         transaction_id: Optional[str] = None,
-        skip_fast_lock_round: Optional[bool] = False,
+        skip_fast_lock_round: Optional[bool] = None,
     ) -> None:
         self._executor: TransactionApiExecutor
         super().__init__(
