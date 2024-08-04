@@ -674,6 +674,10 @@ class ServerLogLevelError(ArangoServerError):
     """Failed to retrieve server log levels."""
 
 
+class ServerLogLevelResetError(ArangoServerError):
+    """Failed to reset server log levels."""
+
+
 class ServerLogSettingError(ArangoServerError):
     """Failed to retrieve server log settings."""
 

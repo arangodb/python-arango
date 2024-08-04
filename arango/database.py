@@ -52,6 +52,7 @@ from arango.exceptions import (
     ServerLicenseGetError,
     ServerLicenseSetError,
     ServerLogLevelError,
+    ServerLogLevelResetError,
     ServerLogLevelSetError,
     ServerLogSettingError,
     ServerLogSettingSetError,
@@ -998,6 +999,35 @@ class Database(ApiGroup):
         def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise ServerLogLevelSetError(resp, request)
+            result: Json = resp.body
+            return result
+
+        return self._execute(request, response_handler)
+
+    def reset_log_levels(self, server_id: Optional[str] = None) -> Result[Json]:
+        """Reset the logging levels.
+
+        Revert the server’s log level settings to the values they had at startup,
+        as determined by the startup options specified on the command-line,
+        a configuration file, and the factory defaults.
+
+        :param server_id: Forward log level to a specific server. This makes it
+            easier to adjust the log levels in clusters because DB-Servers require
+            JWT authentication whereas Coordinators also support authentication
+            using usernames and passwords.
+        :type server_id: str | None
+        :return: New logging levels.
+        :rtype: dict
+        """
+        params: Params = {}
+        if server_id is not None:
+            params["serverId"] = server_id
+
+        request = Request(method="delete", endpoint="/_admin/log/level", params=params)
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ServerLogLevelResetError(resp, request)
             result: Json = resp.body
             return result
 
