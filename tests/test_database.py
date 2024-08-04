@@ -300,6 +300,10 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
 
     # Reset Log Settings
     if db.version() >= "3.12.1":
+        if cluster:
+            server_id = sys_db.cluster.server_id()
+            assert isinstance(sys_db.reset_log_levels(server_id), dict)
+
         result = sys_db.reset_log_levels()
         assert result == default_log_levels
         with assert_raises(ServerLogLevelResetError):
