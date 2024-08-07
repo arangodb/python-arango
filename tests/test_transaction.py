@@ -1,4 +1,5 @@
 import pytest
+from packaging import version
 
 from arango.database import TransactionDatabase
 from arango.exceptions import (
@@ -16,14 +17,15 @@ def test_transaction_execute_raw(db, col, docs):
     # Test execute raw transaction
     doc = docs[0]
     key = doc["_key"]
-    result = db.execute_transaction(
-        command=f"""
+    command = f"""
         function (params) {{
             var db = require('internal').db;
             db.{col.name}.save({{'_key': params.key, 'val': 1}});
             return true;
         }}
-        """,
+    """  # noqa: E702 E231 E272 E202
+    result = db.execute_transaction(
+        command=command,
         params={"key": key},
         write=[col.name],
         read=[col.name],
@@ -43,7 +45,7 @@ def test_transaction_execute_raw(db, col, docs):
     assert err.value.error_code == 10
 
 
-def test_transaction_init(db, bad_db, col, username):
+def test_transaction_init(db, db_version, bad_db, col, username):
     txn_db = db.begin_transaction()
 
     assert isinstance(txn_db, TransactionDatabase)
@@ -67,6 +69,22 @@ def test_transaction_init(db, bad_db, col, username):
     with pytest.raises(TransactionInitError) as err:
         bad_db.begin_transaction()
     assert err.value.error_code in {11, 1228}
+
+    # Test all options
+    kwargs = dict(
+        read=col.name,
+        write=col.name,
+        exclusive=[],
+        sync=True,
+        allow_implicit=False,
+        lock_timeout=1000,
+        max_size=1024 * 1024,
+    )
+    if db_version >= version.parse("3.12.1"):
+        kwargs["skip_fast_lock_round"] = True
+    txn_db = db.begin_transaction(**kwargs)
+    assert isinstance(txn_db, TransactionDatabase)
+    assert txn_db.transaction_id is not None
 
 
 def test_transaction_status(db, col, docs):

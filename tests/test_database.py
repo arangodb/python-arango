@@ -24,6 +24,7 @@ from arango.exceptions import (
     ServerEngineError,
     ServerLicenseSetError,
     ServerLogLevelError,
+    ServerLogLevelResetError,
     ServerLogLevelSetError,
     ServerMetricsError,
     ServerModeSetError,
@@ -65,7 +66,7 @@ def test_database_attributes(db, username):
     assert isinstance(db.wal, WAL)
 
 
-def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret):
+def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_version):
     # Test get properties
     properties = db.properties()
     assert "id" in properties
@@ -249,7 +250,8 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret):
     assert err.value.error_code in {11, 1228}
 
     # Test get log levels
-    assert isinstance(sys_db.log_levels(), dict)
+    default_log_levels = sys_db.log_levels()
+    assert isinstance(default_log_levels, dict)
 
     # Test get log levels with bad database
     with assert_raises(ServerLogLevelError) as err:
@@ -295,6 +297,17 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret):
     assert "url" in result_1
     assert "username" not in result_1
     assert result_1 == result_2
+
+    # Reset Log Settings
+    if db.version() >= "3.12.1":
+        if cluster:
+            server_id = sys_db.cluster.server_id()
+            assert isinstance(sys_db.reset_log_levels(server_id), dict)
+
+        result = sys_db.reset_log_levels()
+        assert result == default_log_levels
+        with assert_raises(ServerLogLevelResetError):
+            bad_db.reset_log_levels()
 
     # Test get storage engine
     engine = db.engine()

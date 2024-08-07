@@ -52,6 +52,7 @@ from arango.exceptions import (
     ServerLicenseGetError,
     ServerLicenseSetError,
     ServerLogLevelError,
+    ServerLogLevelResetError,
     ServerLogLevelSetError,
     ServerLogSettingError,
     ServerLogSettingSetError,
@@ -998,6 +999,35 @@ class Database(ApiGroup):
         def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise ServerLogLevelSetError(resp, request)
+            result: Json = resp.body
+            return result
+
+        return self._execute(request, response_handler)
+
+    def reset_log_levels(self, server_id: Optional[str] = None) -> Result[Json]:
+        """Reset the logging levels.
+
+        Revert the server’s log level settings to the values they had at startup,
+        as determined by the startup options specified on the command-line,
+        a configuration file, and the factory defaults.
+
+        :param server_id: Forward log level to a specific server. This makes it
+            easier to adjust the log levels in clusters because DB-Servers require
+            JWT authentication whereas Coordinators also support authentication
+            using usernames and passwords.
+        :type server_id: str | None
+        :return: New logging levels.
+        :rtype: dict
+        """
+        params: Params = {}
+        if server_id is not None:
+            params["serverId"] = server_id
+
+        request = Request(method="delete", endpoint="/_admin/log/level", params=params)
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ServerLogLevelResetError(resp, request)
             result: Json = resp.body
             return result
 
@@ -3020,6 +3050,7 @@ class StandardDatabase(Database):
         allow_implicit: Optional[bool] = None,
         lock_timeout: Optional[int] = None,
         max_size: Optional[int] = None,
+        skip_fast_lock_round: Optional[bool] = None,
     ) -> "TransactionDatabase":
         """Begin a transaction.
 
@@ -3043,6 +3074,9 @@ class StandardDatabase(Database):
         :type lock_timeout: int | None
         :param max_size: Max transaction size in bytes.
         :type max_size: int | None
+        :param skip_fast_lock_round: Whether to disable fast locking for write
+            operations.
+        :type skip_fast_lock_round: bool | None
         :return: Database API wrapper object specifically for transactions.
         :rtype: arango.database.TransactionDatabase
         """
@@ -3055,6 +3089,7 @@ class StandardDatabase(Database):
             allow_implicit=allow_implicit,
             lock_timeout=lock_timeout,
             max_size=max_size,
+            skip_fast_lock_round=skip_fast_lock_round,
         )
 
     def begin_controlled_execution(
@@ -3191,6 +3226,8 @@ class TransactionDatabase(Database):
     :param transaction_id: Initialize using an existing transaction instead of creating
         a new transaction.
     :type transaction_id: str | None
+    :param skip_fast_lock_round: Whether to disable fast locking for write operations.
+    :type skip_fast_lock_round: bool | None
     """
 
     def __init__(
@@ -3204,6 +3241,7 @@ class TransactionDatabase(Database):
         lock_timeout: Optional[int] = None,
         max_size: Optional[int] = None,
         transaction_id: Optional[str] = None,
+        skip_fast_lock_round: Optional[bool] = None,
     ) -> None:
         self._executor: TransactionApiExecutor
         super().__init__(
@@ -3218,6 +3256,7 @@ class TransactionDatabase(Database):
                 lock_timeout=lock_timeout,
                 max_size=max_size,
                 transaction_id=transaction_id,
+                skip_fast_lock_round=skip_fast_lock_round,
             ),
         )
 
