@@ -1047,6 +1047,10 @@ class ClusterRebalanceError(ArangoServerError):
     """Failed to execute cluster re-balancing operation (load/set)."""
 
 
+class ClusterVpackSortMigrationError(ArangoServerError):
+    """Failed to execute vpack sort migration request."""
+
+
 ##################
 # JWT Exceptions #
 ##################

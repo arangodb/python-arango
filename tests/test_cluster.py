@@ -2,6 +2,7 @@ import time
 import warnings
 
 import pytest
+from packaging import version
 
 from arango.errno import DATABASE_NOT_FOUND, FORBIDDEN
 from arango.exceptions import (
@@ -16,6 +17,7 @@ from arango.exceptions import (
     ClusterServerRoleError,
     ClusterServerStatisticsError,
     ClusterServerVersionError,
+    ClusterVpackSortMigrationError,
 )
 from tests.helpers import assert_raises
 
@@ -234,4 +236,26 @@ def test_cluster_rebalance(sys_db, bad_db, cluster):
 
     with assert_raises(ClusterRebalanceError) as err:
         bad_db.cluster.rebalance()
+    assert err.value.error_code == FORBIDDEN
+
+
+def test_vpack_sort_migration(sys_db, bad_db, db_version, cluster):
+    if not cluster:
+        pytest.skip("Only tested in a cluster setup")
+    if db_version < version.parse("3.12.2"):
+        pytest.skip("vpackSortMigration is only tested in 3.12.2+")
+
+    sys_db.cluster.vpack_sort_migration_status()
+    with assert_raises(ClusterVpackSortMigrationError) as err:
+        bad_db.cluster.vpack_sort_migration_status()
+    assert err.value.error_code == FORBIDDEN
+
+    sys_db.cluster.vpack_sort_migration_index_check()
+    with assert_raises(ClusterVpackSortMigrationError) as err:
+        bad_db.cluster.vpack_sort_migration_index_check()
+    assert err.value.error_code == FORBIDDEN
+
+    sys_db.cluster.migrate_vpack_sorting()
+    with assert_raises(ClusterVpackSortMigrationError) as err:
+        bad_db.cluster.migrate_vpack_sorting()
     assert err.value.error_code == FORBIDDEN

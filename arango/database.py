@@ -935,7 +935,9 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def log_levels(self, server_id: Optional[str] = None) -> Result[Json]:
+    def log_levels(
+        self, server_id: Optional[str] = None, with_appenders: Optional[bool] = None
+    ) -> Result[Json]:
         """Return current logging levels.
 
         :param server_id: Forward log level to a specific server. This makes it
@@ -943,12 +945,16 @@ class Database(ApiGroup):
             JWT authentication whereas Coordinators also support authentication
             using usernames and passwords.
         :type server_id: str
+        :param with_appenders: Include appenders in the response.
+        :type with_appenders: bool
         :return: Current logging levels.
         :rtype: dict
         """
         params: Params = {}
         if server_id is not None:
             params["serverId"] = server_id
+        if with_appenders is not None:
+            params["withAppenders"] = with_appenders
 
         request = Request(method="get", endpoint="/_admin/log/level", params=params)
 
@@ -961,7 +967,10 @@ class Database(ApiGroup):
         return self._execute(request, response_handler)
 
     def set_log_levels(
-        self, server_id: Optional[str] = None, **kwargs: Dict[str, Any]
+        self,
+        server_id: Optional[str] = None,
+        with_appenders: Optional[bool] = None,
+        **kwargs: Dict[str, Any],
     ) -> Result[Json]:
         """Set the logging levels.
 
@@ -983,6 +992,8 @@ class Database(ApiGroup):
             JWT authentication whereas Coordinators also support authentication
             using usernames and passwords.
         :type server_id: str | None
+        :param with_appenders: Include appenders in the request.
+        :type with_appenders: bool | None
         :param kwargs: Logging levels.
         :type kwargs: Dict[str, Any]
         :return: New logging levels.
@@ -991,6 +1002,8 @@ class Database(ApiGroup):
         params: Params = {}
         if server_id is not None:
             params["serverId"] = server_id
+        if with_appenders is not None:
+            params["withAppenders"] = with_appenders
 
         request = Request(
             method="put", endpoint="/_admin/log/level", params=params, data=kwargs
