@@ -60,7 +60,7 @@ database.
     # Set the log .
     sys_db.set_log_levels(
         agency='DEBUG',
-        collector='INFO',
+        deprecation='INFO',
         threads='WARNING'
     )
 
