@@ -1299,6 +1299,34 @@ class Collection(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def get_indexes(self, with_stats: bool, with_hidden: bool) -> Result[Json]:
+        """Return collection indexes.
+        :param with_stats: Include index statistics.
+        :type with_stats:bool 
+        :param with_hidden: Include hidden indexes.
+        :type with_hidden:bool 
+        :return: Index details
+        :rtype: dict
+        :raise serene.exceptions.IndexGetError: If retrieval fails.
+        """
+        request = Request(
+            method="get",
+            endpoint=f"/_api/index",
+            params={
+                "collection": self.name,
+                "withStats": with_stats,
+                "withHidden": with_hidden
+            }
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise IndexGetError(resp, request)
+
+            return resp.body
+
+        return self._execute(request, response_handler)
+
     def add_hash_index(
         self,
         fields: Sequence[str],
