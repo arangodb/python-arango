@@ -99,8 +99,8 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
     assert err.value.error_code in {11, 1228}
 
     # Test get server required database version
-    version = db.required_db_version()
-    assert isinstance(version, str)
+    required_version = db.required_db_version()
+    assert isinstance(required_version, str)
 
     # Test get server target version with bad database
     with assert_raises(ServerRequiredDBVersionError):
@@ -252,6 +252,9 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
     # Test get log levels
     default_log_levels = sys_db.log_levels()
     assert isinstance(default_log_levels, dict)
+    if db_version >= version.parse("3.12.2"):
+        log_levels_with_appenders = sys_db.log_levels(with_appenders=True)
+        assert isinstance(log_levels_with_appenders, dict)
 
     # Test get log levels with bad database
     with assert_raises(ServerLogLevelError) as err:

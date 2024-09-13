@@ -365,6 +365,12 @@ def format_aql_query(body: Json) -> Json:
     # New in 3.11
     if "peakMemoryUsage" in body:
         result["peak_memory_usage"] = body["peakMemoryUsage"]
+
+    # New in 3.12.2
+    if "modificationQuery" in body:
+        result["modification_query"] = body["modificationQuery"]
+    if "warnings" in body:
+        result["warnings"] = body["warnings"]
     return verify_format(body, result)
 
 

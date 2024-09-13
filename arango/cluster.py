@@ -15,6 +15,7 @@ from arango.exceptions import (
     ClusterServerRoleError,
     ClusterServerStatisticsError,
     ClusterServerVersionError,
+    ClusterVpackSortMigrationError,
 )
 from arango.formatter import format_body
 from arango.request import Request
@@ -441,6 +442,60 @@ class Cluster(ApiGroup):  # pragma: no cover
             if not resp.is_success:
                 raise ClusterRebalanceError(resp, request)
             result: bool = resp.body["code"] == 202
+            return result
+
+        return self._execute(request, response_handler)
+
+    def vpack_sort_migration_status(self) -> Result[Json]:
+        """Query the status of the vpack sorting migration.
+
+        :return: Status of the VPack sort migration.
+        :rtype: dict
+        """
+        request = Request(
+            method="get", endpoint="/_admin/cluster/vpackSortMigration/status"
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ClusterVpackSortMigrationError(resp, request)
+            result: Json = resp.body["result"]
+            return result
+
+        return self._execute(request, response_handler)
+
+    def vpack_sort_migration_index_check(self) -> Result[Json]:
+        """Check for indexes impacted by the sorting behavior before 3.12.2.
+
+        :return: Status of indexes.
+        :rtype: dict
+        """
+        request = Request(
+            method="get", endpoint="/_admin/cluster/vpackSortMigration/check"
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ClusterVpackSortMigrationError(resp, request)
+            result: Json = resp.body["result"]
+            return result
+
+        return self._execute(request, response_handler)
+
+    def migrate_vpack_sorting(self) -> Result[Json]:
+        """Migrate instances to the new VPack sorting behavior.
+
+        :return: Status of the VPack sort migration.
+        :rtype: dict
+        """
+        request = Request(
+            method="put", endpoint="/_admin/cluster/vpackSortMigration/migrate"
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ClusterVpackSortMigrationError(resp, request)
+            result: Json = resp.body["result"]
             return result
 
         return self._execute(request, response_handler)
