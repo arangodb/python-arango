@@ -1261,6 +1261,8 @@ def format_graph_properties(body: Json) -> Json:
     }
     if "isSmart" in body:
         result["smart"] = body["isSmart"]
+    if "isDisjoint" in body:
+        result["disjoint"] = body["isDisjoint"]
     if "isSatellite" in body:
         result["is_satellite"] = body["isSatellite"]
     if "smartGraphAttribute" in body:
