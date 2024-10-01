@@ -1697,6 +1697,7 @@ class Database(ApiGroup):
         shard_count: Optional[int] = None,
         replication_factor: Optional[int] = None,
         write_concern: Optional[int] = None,
+        satellite_collections: Optional[Sequence[str]] = None,
     ) -> Result[Graph]:
         """Create a new graph.
 
@@ -1721,7 +1722,8 @@ class Database(ApiGroup):
         :param smart_field: Document field used to shard the vertices of the
             graph. To use this, parameter **smart** must be set to True and
             every vertex in the graph must have the smart field. Applies only
-            to enterprise version of ArangoDB.
+            to enterprise version of ArangoDB. NOTE: If this field is
+            None and **smart** is True, an Enterprise Graph will be created.
         :type smart_field: str | None
         :param shard_count: Number of shards used for every collection in the
             graph. To use this, parameter **smart** must be set to True and
@@ -1744,6 +1746,12 @@ class Database(ApiGroup):
             parameter cannot be larger than that of **replication_factor**.
             Default value is 1. Used for clusters only.
         :type write_concern: int
+        :param satellite_collections: An array of collection names that is
+            used to create SatelliteCollections for a (Disjoint) SmartGraph
+            using SatelliteCollections (Enterprise Edition only). Each array
+            element must be a string and a valid collection name. The
+            collection type cannot be modified later.
+        :type satellite_collections: [str] | None
         :return: Graph API wrapper.
         :rtype: arango.graph.Graph
         :raise arango.exceptions.GraphCreateError: If create fails.
@@ -1784,6 +1792,8 @@ class Database(ApiGroup):
             data["options"]["replicationFactor"] = replication_factor
         if write_concern is not None:  # pragma: no cover
             data["options"]["writeConcern"] = write_concern
+        if satellite_collections is not None:  # pragma: no cover
+            data["options"]["satellites"] = satellite_collections
 
         request = Request(method="post", endpoint="/_api/gharial", data=data)
 
