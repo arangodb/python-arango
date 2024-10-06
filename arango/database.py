@@ -1284,8 +1284,9 @@ class Database(ApiGroup):
         :type name: str
         :param users: List of users with access to the new database, where each
             user is a dictionary with fields "username", "password", "active"
-            and "extra" (see below for example). If not set, only the admin and
-            current user are granted access.
+            and "extra" (see below for example). If not set, the default user root
+            will be used to ensure that the new database will be accessible after
+            it is created.
         :type users: [dict]
         :param replication_factor: Default replication factor for collections
             created in this database. Special values include "satellite" which
