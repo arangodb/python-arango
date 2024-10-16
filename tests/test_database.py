@@ -454,7 +454,7 @@ def test_license(sys_db, enterprise):
     else:
         assert license == {"license": "none"}
         with pytest.raises(ServerLicenseSetError):
-            sys_db.set_license("abc")
+            sys_db.set_license('"abc"')
 
 
 def test_options(sys_db, db_version):

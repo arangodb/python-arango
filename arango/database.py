@@ -436,7 +436,7 @@ class Database(ApiGroup):
         instance. Can be called on single servers, Coordinators,
         and DB-Servers.
 
-        :param license: The Base64-encoded license string.
+        :param license: The Base64-encoded license string, wrapped in double-quotes.
         :type license: str
         :param force: If set to True, the new license will be set even if
             it expires sooner than the current license.
