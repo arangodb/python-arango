@@ -35,7 +35,7 @@ pip install python-arango --upgrade
 Here is a simple usage example:
 
 ```python
-from arango import ArangoClient
+from arango.client import ArangoClient
 
 # Initialize the client for ArangoDB.
 client = ArangoClient(hosts="http://localhost:8529")
