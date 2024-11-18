@@ -1241,6 +1241,10 @@ def test_document_find(col, bad_col, docs):
     col.insert({"foo bar": "baz"})
     assert len(list(col.find({"foo bar": "baz"}))) == 1
 
+    # Test find by nested attribute
+    col.insert({"foo": {"bar": "baz"}})
+    assert len(list(col.find({"foo.bar": "baz"}))) == 1
+
 
 def test_document_find_near(col, bad_col, docs):
     col.import_bulk(docs)
