@@ -47,6 +47,7 @@ class BaseConnection:
         request_compression: Optional[RequestCompression] = None,
         response_compression: Optional[str] = None,
     ) -> None:
+        self._hosts = hosts
         self._url_prefixes = [f"{host}/_db/{db_name}" for host in hosts]
         self._host_resolver = host_resolver
         self._sessions = sessions
@@ -57,7 +58,6 @@ class BaseConnection:
         self._username: Optional[str] = None
         self._request_compression = request_compression
         self._response_compression = response_compression
-        self._hosts = hosts
 
     @property
     def db_name(self) -> str:
