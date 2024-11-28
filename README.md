@@ -4,12 +4,12 @@
 [![CodeQL](https://github.com/arangodb/python-arango/actions/workflows/codeql.yaml/badge.svg)](https://github.com/arangodb/python-arango/actions/workflows/codeql.yaml)
 [![Docs](https://github.com/arangodb/python-arango/actions/workflows/docs.yaml/badge.svg)](https://github.com/arangodb/python-arango/actions/workflows/docs.yaml)
 [![Coverage Status](https://codecov.io/gh/arangodb/python-arango/branch/main/graph/badge.svg?token=M8zrjrzsUY)](https://codecov.io/gh/arangodb/python-arango)
-[![Last commit](https://img.shields.io/github/last-commit/arangodb/python-arango)](https://github.com/arangodb/python-arango/commits/master)
+[![Last commit](https://img.shields.io/github/last-commit/arangodb/python-arango)](https://github.com/arangodb/python-arango/commits/main)
 
 [![PyPI version badge](https://img.shields.io/pypi/v/python-arango?color=3775A9&style=for-the-badge&logo=pypi&logoColor=FFD43B)](https://pypi.org/project/python-arango/)
 [![Python versions badge](https://img.shields.io/badge/3.8%2B-3776AB?style=for-the-badge&logo=python&logoColor=FFD43B&label=Python)](https://pypi.org/project/python-arango/)
 
-[![License](https://img.shields.io/github/license/arangodb/python-arango?color=9E2165&style=for-the-badge)](https://github.com/arangodb/python-arango/blob/master/LICENSE)
+[![License](https://img.shields.io/github/license/arangodb/python-arango?color=9E2165&style=for-the-badge)](https://github.com/arangodb/python-arango/blob/main/LICENSE)
 [![Code style: black](https://img.shields.io/static/v1?style=for-the-badge&label=code%20style&message=black&color=black)](https://github.com/psf/black)
 [![Downloads](https://img.shields.io/pepy/dt/python-arango?style=for-the-badge&color=282661
 )](https://pepy.tech/project/python-arango)
