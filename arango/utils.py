@@ -120,5 +120,9 @@ def build_filter_conditions(filters: Json) -> str:
     if not filters:
         return ""
 
-    conditions = [f"doc.`{k}` == {json.dumps(v)}" for k, v in filters.items()]
+    conditions = []
+    for k, v in filters.items():
+        field = k if "." in k else f"`{k}`"
+        conditions.append(f"doc.{field} == {json.dumps(v)}")
+
     return "FILTER " + " AND ".join(conditions)
