@@ -264,7 +264,7 @@ class AQL(ApiGroup):
         cache: Optional[bool] = None,
         memory_limit: int = 0,
         fail_on_warning: Optional[bool] = None,
-        profile: Optional[bool | int] = None,
+        profile: Optional[Union[bool, int]] = None,
         max_transaction_size: Optional[int] = None,
         max_warning_count: Optional[int] = None,
         intermediate_commit_count: Optional[int] = None,
