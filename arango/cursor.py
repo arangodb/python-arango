@@ -40,6 +40,7 @@ class Cursor:
         "_count",
         "_cached",
         "_stats",
+        "_plan",
         "_profile",
         "_warnings",
         "_has_more",
@@ -63,6 +64,7 @@ class Cursor:
         self._count: Optional[int] = None
         self._cached = None
         self._stats = None
+        self._plan = None
         self._profile = None
         self._warnings = None
         self._next_batch_id: Optional[str] = None
@@ -132,12 +134,18 @@ class Cursor:
                 self._warnings = extra["warnings"]
                 result["warnings"] = extra["warnings"]
 
+            if "plan" in extra:
+                self._plan = extra["plan"]
+                result["plan"] = extra["plan"]
+
             if "stats" in extra:
                 stats = extra["stats"]
                 if "writesExecuted" in stats:
                     stats["modified"] = stats.pop("writesExecuted")
                 if "writesIgnored" in stats:
                     stats["ignored"] = stats.pop("writesIgnored")
+                if "documentLookups" in stats:
+                    stats["lookups"] = stats.pop("documentLookups")
                 if "scannedFull" in stats:
                     stats["scanned_full"] = stats.pop("scannedFull")
                 if "scannedIndex" in stats:
@@ -158,6 +166,9 @@ class Cursor:
                 # New in 3.11
                 if "peakMemoryUsage" in stats:
                     stats["peak_memory_usage"] = stats.pop("peakMemoryUsage")
+
+                if "intermediateCommits" in stats:
+                    stats["intermediate_commits"] = stats.pop("intermediateCommits")
 
                 self._stats = stats
                 result["statistics"] = stats
@@ -238,6 +249,14 @@ class Cursor:
         :rtype: [str]
         """
         return self._warnings
+
+    def plan(self) -> Optional[Json]:
+        """Return query execution plan.
+
+        :return: Query execution plan.
+        :rtype: dict
+        """
+        return self._plan
 
     def empty(self) -> bool:
         """Check if the current batch is empty.

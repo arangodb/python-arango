@@ -22,7 +22,7 @@ def test_cursor_from_execute_query(db, col, docs):
         batch_size=2,
         ttl=1000,
         optimizer_rules=["+all"],
-        profile=True,
+        profile=2,
     )
     cursor_id = cursor.id
     assert "Cursor" in repr(cursor)
@@ -41,11 +41,24 @@ def test_cursor_from_execute_query(db, col, docs):
     assert "http_requests" in statistics
     assert "scanned_full" in statistics
     assert "scanned_index" in statistics
+    assert "nodes" in statistics
+
     assert cursor.warnings() == []
 
     profile = cursor.profile()
     assert profile["initializing"] > 0
     assert profile["parsing"] > 0
+
+    plan = cursor.plan()
+    assert set(plan.keys()) == {
+        "nodes",
+        "rules",
+        "collections",
+        "variables",
+        "estimatedCost",
+        "estimatedNrItems",
+        "isModificationQuery",
+    }
 
     assert clean_doc(cursor.next()) == docs[0]
     assert cursor.id == cursor_id
@@ -106,7 +119,7 @@ def test_cursor_write_query(db, col, docs):
         batch_size=1,
         ttl=1000,
         optimizer_rules=["+all"],
-        profile=True,
+        profile=1,
         max_runtime=0.0,
     )
     cursor_id = cursor.id

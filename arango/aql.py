@@ -264,7 +264,7 @@ class AQL(ApiGroup):
         cache: Optional[bool] = None,
         memory_limit: int = 0,
         fail_on_warning: Optional[bool] = None,
-        profile: Optional[bool] = None,
+        profile: Optional[Union[bool, int]] = None,
         max_transaction_size: Optional[int] = None,
         max_warning_count: Optional[int] = None,
         intermediate_commit_count: Optional[int] = None,
@@ -317,8 +317,12 @@ class AQL(ApiGroup):
             this behaviour, so it does not need to be set per-query.
         :type fail_on_warning: bool
         :param profile: Return additional profiling details in the cursor,
-            unless the query cache is used.
-        :type profile: bool
+            unless the query cache is used. If set to True or 1, then query profiling
+            information can be fetched with `cursor.profile()`. If set to 2, additional
+            execution stats per query plan node are included via "nodes" in
+            `cursor.statistics()`, as well as a the query plan which can be fetched
+            with `cursor.plan()`.
+        :type profile: bool | int
         :param max_transaction_size: Transaction size limit in bytes.
         :type max_transaction_size: int
         :param max_warning_count: Max number of warnings returned.
