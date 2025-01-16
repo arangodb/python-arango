@@ -332,7 +332,6 @@ class Cursor:
             smaller than the batch size).
         :rtype: bool | None
         :raise arango.exceptions.CursorCloseError: If operation fails.
-        :raise arango.exceptions.CursorStateError: If cursor ID is not set.
         """
         if self._id is None:
             return None
