@@ -756,7 +756,7 @@ class Collection(ApiGroup):
         skip: Optional[int] = None,
         limit: Optional[int] = None,
         allow_dirty_read: bool = False,
-        sort: Jsons = [],
+        sort: Optional[Jsons] = None,
     ) -> Result[Cursor]:
         """Return all documents that match the given filters.
 
