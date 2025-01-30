@@ -720,6 +720,7 @@ class Collection(ApiGroup):
         :return: Document cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
+        :raise arango.exceptions.SortValidationError: If sort parameters are invalid.
         """
         assert is_none_or_int(skip), "skip must be a non-negative int"
         assert is_none_or_int(limit), "limit must be a non-negative int"
@@ -755,7 +756,7 @@ class Collection(ApiGroup):
         skip: Optional[int] = None,
         limit: Optional[int] = None,
         allow_dirty_read: bool = False,
-        sort: Sequence[Json] = [],
+        sort: Jsons = [],
     ) -> Result[Cursor]:
         """Return all documents that match the given filters.
 
@@ -767,6 +768,8 @@ class Collection(ApiGroup):
         :type limit: int | None
         :param allow_dirty_read: Allow reads from followers in a cluster.
         :type allow_dirty_read: bool
+        :param sort: Document sort parameters
+        :type sort: Jsons
         :return: Document cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If retrieval fails.

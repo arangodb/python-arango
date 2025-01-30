@@ -12,7 +12,7 @@ from contextlib import contextmanager
 from typing import Any, Iterator, Sequence, Union
 
 from arango.exceptions import DocumentParseError
-from arango.typings import Json
+from arango.typings import Json, Jsons
 
 
 @contextmanager
@@ -148,11 +148,11 @@ def validate_sort_parameters(sort: Sequence[Json]) -> bool:
     return True
 
 
-def build_sort_expression(sort: Sequence[Json]) -> str:
+def build_sort_expression(sort: Jsons) -> str:
     """Build a sort condition for an AQL query.
 
     :param sort: Document sort parameters.
-    :type sort: Sequence[Json]
+    :type sort: Jsons
     :return: The complete AQL sort condition.
     :rtype: str
     """
