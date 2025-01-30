@@ -148,11 +148,11 @@ def validate_sort_parameters(sort: Sequence[Json]) -> bool:
     return True
 
 
-def build_sort_expression(sort: Jsons) -> str:
+def build_sort_expression(sort: Jsons | None) -> str:
     """Build a sort condition for an AQL query.
 
     :param sort: Document sort parameters.
-    :type sort: Jsons
+    :type sort: Jsons | None
     :return: The complete AQL sort condition.
     :rtype: str
     """
