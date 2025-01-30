@@ -769,7 +769,7 @@ class Collection(ApiGroup):
         :param allow_dirty_read: Allow reads from followers in a cluster.
         :type allow_dirty_read: bool
         :param sort: Document sort parameters
-        :type sort: Jsons
+        :type sort: Jsons | None
         :return: Document cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
