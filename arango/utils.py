@@ -11,7 +11,7 @@ import logging
 from contextlib import contextmanager
 from typing import Any, Iterator, Sequence, Union
 
-from arango.exceptions import DocumentParseError
+from arango.exceptions import DocumentParseError, SortValidationError
 from arango.typings import Json, Jsons
 
 
@@ -135,16 +135,16 @@ def validate_sort_parameters(sort: Sequence[Json]) -> bool:
     :type sort: Sequence[Json]
     :return: Validation success.
     :rtype: bool
-    :raise arango.exceptions.DocumentGetError: If sort parameters are invalid.
+    :raise arango.exceptions.SortValidationError: If sort parameters are invalid.
     """
     assert isinstance(sort, Sequence)
     for param in sort:
         if "sort_by" not in param or "sort_order" not in param:
-            raise DocumentParseError(
+            raise SortValidationError(
                 "Each sort parameter must have 'sort_by' and 'sort_order'."
             )
         if param["sort_order"].upper() not in ["ASC", "DESC"]:
-            raise DocumentParseError("'sort_order' must be either 'ASC' or 'DESC'")
+            raise SortValidationError("'sort_order' must be either 'ASC' or 'DESC'")
     return True
 
 
