@@ -1074,3 +1074,10 @@ class JWTRefreshError(ArangoClientError):
 
 class JWTExpiredError(ArangoClientError):
     """JWT token has expired."""
+
+
+###################################
+# Parameter Validation Exceptions #
+###################################
+class SortValidationError(ArangoClientError):
+    """Invalid sort parameters."""
