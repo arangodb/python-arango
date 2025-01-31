@@ -720,7 +720,6 @@ class Collection(ApiGroup):
         :return: Document cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.DocumentGetError: If retrieval fails.
-        :raise arango.exceptions.SortValidationError: If sort parameters are invalid.
         """
         assert is_none_or_int(skip), "skip must be a non-negative int"
         assert is_none_or_int(limit), "limit must be a non-negative int"
