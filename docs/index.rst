@@ -11,7 +11,7 @@ Requirements
 =============
 
 - ArangoDB version 3.11+
-- Python version 3.8+
+- Python version 3.9+
 
 Installation
 ============
