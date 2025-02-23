@@ -12,7 +12,7 @@ workflows:
           matrix:
             parameters:
               # TODO: Revisit why pyenv doesn't recognize 3.12
-              python_version: ["3.8", "3.9", "3.10", "3.11"] # "3.12"
+              python_version: ["3.9", "3.10", "3.11"] # "3.12"
               arangodb_config: ["single", "cluster"]
               arangodb_license: ["community", "enterprise"]
               arangodb_version: ["3.11", "latest"]
