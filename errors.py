@@ -13,6 +13,8 @@ def generate_section(line, output):
 def generate_error(line, output):
     text = line.split(",")
     err = text[0].strip()[6:]
+    if err.startswith("ARANGO_"):
+        err = err[7:]
     code = text[1].strip()
     cmt = text[2].strip('"')
     print(f"# {cmt}\n{err} = {code}\n", file=output)

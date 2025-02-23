@@ -90,7 +90,7 @@ ONLY_ENTERPRISE = 31
 RESOURCE_LIMIT = 32
 
 # icu error: %s
-ARANGO_ICU_ERROR = 33
+ICU_ERROR = 33
 
 # cannot read file
 CANNOT_READ_FILE = 34
@@ -177,154 +177,154 @@ HTTP_SUPERFLUOUS_SUFFICES = 601
 ####################################
 
 # illegal state
-ARANGO_ILLEGAL_STATE = 1000
+ILLEGAL_STATE = 1000
 
 # read only
-ARANGO_READ_ONLY = 1004
+READ_ONLY = 1004
 
 # duplicate identifier
-ARANGO_DUPLICATE_IDENTIFIER = 1005
+DUPLICATE_IDENTIFIER = 1005
 
 ####################################
 # External ArangoDB storage errors #
 ####################################
 
 # corrupted datafile
-ARANGO_CORRUPTED_DATAFILE = 1100
+CORRUPTED_DATAFILE = 1100
 
 # illegal or unreadable parameter file
-ARANGO_ILLEGAL_PARAMETER_FILE = 1101
+ILLEGAL_PARAMETER_FILE = 1101
 
 # corrupted collection
-ARANGO_CORRUPTED_COLLECTION = 1102
+CORRUPTED_COLLECTION = 1102
 
 # filesystem full
-ARANGO_FILESYSTEM_FULL = 1104
+FILESYSTEM_FULL = 1104
 
 # database directory is locked
-ARANGO_DATADIR_LOCKED = 1107
+DATADIR_LOCKED = 1107
 
 ###################################
 # General ArangoDB storage errors #
 ###################################
 
 # conflict
-ARANGO_CONFLICT = 1200
+CONFLICT = 1200
 
 # document not found
-ARANGO_DOCUMENT_NOT_FOUND = 1202
+DOCUMENT_NOT_FOUND = 1202
 
 # collection or view not found
-ARANGO_DATA_SOURCE_NOT_FOUND = 1203
+DATA_SOURCE_NOT_FOUND = 1203
 
 # parameter 'collection' not found
-ARANGO_COLLECTION_PARAMETER_MISSING = 1204
+COLLECTION_PARAMETER_MISSING = 1204
 
 # illegal document identifier
-ARANGO_DOCUMENT_HANDLE_BAD = 1205
+DOCUMENT_HANDLE_BAD = 1205
 
 # duplicate name
-ARANGO_DUPLICATE_NAME = 1207
+DUPLICATE_NAME = 1207
 
 # illegal name
-ARANGO_ILLEGAL_NAME = 1208
+ILLEGAL_NAME = 1208
 
 # no suitable index known
-ARANGO_NO_INDEX = 1209
+NO_INDEX = 1209
 
 # unique constraint violated
-ARANGO_UNIQUE_CONSTRAINT_VIOLATED = 1210
+UNIQUE_CONSTRAINT_VIOLATED = 1210
 
 # index not found
-ARANGO_INDEX_NOT_FOUND = 1212
+INDEX_NOT_FOUND = 1212
 
 # cross collection request not allowed
-ARANGO_CROSS_COLLECTION_REQUEST = 1213
+CROSS_COLLECTION_REQUEST = 1213
 
 # illegal index identifier
-ARANGO_INDEX_HANDLE_BAD = 1214
+INDEX_HANDLE_BAD = 1214
 
 # document too large
-ARANGO_DOCUMENT_TOO_LARGE = 1216
+DOCUMENT_TOO_LARGE = 1216
 
 # collection type invalid
-ARANGO_COLLECTION_TYPE_INVALID = 1218
+COLLECTION_TYPE_INVALID = 1218
 
 # parsing attribute name definition failed
-ARANGO_ATTRIBUTE_PARSER_FAILED = 1220
+ATTRIBUTE_PARSER_FAILED = 1220
 
 # illegal document key
-ARANGO_DOCUMENT_KEY_BAD = 1221
+DOCUMENT_KEY_BAD = 1221
 
 # unexpected document key
-ARANGO_DOCUMENT_KEY_UNEXPECTED = 1222
+DOCUMENT_KEY_UNEXPECTED = 1222
 
 # server database directory not writable
-ARANGO_DATADIR_NOT_WRITABLE = 1224
+DATADIR_NOT_WRITABLE = 1224
 
 # out of keys
-ARANGO_OUT_OF_KEYS = 1225
+OUT_OF_KEYS = 1225
 
 # missing document key
-ARANGO_DOCUMENT_KEY_MISSING = 1226
+DOCUMENT_KEY_MISSING = 1226
 
 # invalid document type
-ARANGO_DOCUMENT_TYPE_INVALID = 1227
+DOCUMENT_TYPE_INVALID = 1227
 
 # database not found
-ARANGO_DATABASE_NOT_FOUND = 1228
+DATABASE_NOT_FOUND = 1228
 
 # database name invalid
-ARANGO_DATABASE_NAME_INVALID = 1229
+DATABASE_NAME_INVALID = 1229
 
 # operation only allowed in system database
-ARANGO_USE_SYSTEM_DATABASE = 1230
+USE_SYSTEM_DATABASE = 1230
 
 # invalid key generator
-ARANGO_INVALID_KEY_GENERATOR = 1232
+INVALID_KEY_GENERATOR = 1232
 
 # expecting both `_from` and `_to` attributes to be defined in the edge document and have the format `<collectionName>/<vertexKey>`
-ARANGO_INVALID_EDGE_ATTRIBUTE = 1233
+INVALID_EDGE_ATTRIBUTE = 1233
 
 # index creation failed
-ARANGO_INDEX_CREATION_FAILED = 1235
+INDEX_CREATION_FAILED = 1235
 
 # collection type mismatch
-ARANGO_COLLECTION_TYPE_MISMATCH = 1237
+COLLECTION_TYPE_MISMATCH = 1237
 
 # collection not loaded
-ARANGO_COLLECTION_NOT_LOADED = 1238
+COLLECTION_NOT_LOADED = 1238
 
 # illegal document revision
-ARANGO_DOCUMENT_REV_BAD = 1239
+DOCUMENT_REV_BAD = 1239
 
 # incomplete read
-ARANGO_INCOMPLETE_READ = 1240
+INCOMPLETE_READ = 1240
 
 # not supported by old legacy data format
-ARANGO_OLD_ROCKSDB_FORMAT = 1241
+OLD_ROCKSDB_FORMAT = 1241
 
 # an index with legacy sorted keys has been found
-ARANGO_INDEX_HAS_LEGACY_SORTED_KEYS = 1242
+INDEX_HAS_LEGACY_SORTED_KEYS = 1242
 
 ###################################
 # Checked ArangoDB storage errors #
 ###################################
 
 # server database directory is empty
-ARANGO_EMPTY_DATADIR = 1301
+EMPTY_DATADIR = 1301
 
 # operation should be tried again
-ARANGO_TRY_AGAIN = 1302
+TRY_AGAIN = 1302
 
 # engine is busy
-ARANGO_BUSY = 1303
+BUSY = 1303
 
 # merge in progress
-ARANGO_MERGE_IN_PROGRESS = 1304
+MERGE_IN_PROGRESS = 1304
 
 # storage engine I/O error
-ARANGO_IO_ERROR = 1305
+IO_ERROR = 1305
 
 ###############################
 # ArangoDB replication errors #
