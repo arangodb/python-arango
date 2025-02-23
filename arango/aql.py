@@ -144,6 +144,36 @@ class AQLQueryCache(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def plan_entries(self) -> Result[Jsons]:
+        """Return a list of all AQL query plan cache entries.
+
+        :return: List of AQL query plan cache entries.
+        :rtype: list
+        :raise arango.exceptions.AQLCacheEntriesError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_api/query-plan-cache")
+
+        def response_handler(resp: Response) -> Jsons:
+            if not resp.is_success:
+                raise AQLCacheEntriesError(resp, request)
+            result: Jsons = resp.body
+            return result
+
+        return self._execute(request, response_handler)
+
+    def clear_plan(self) -> Result[None]:
+        """Clear the AQL query plan cache.
+
+        :raises arango.exceptions.AQLCacheClearError: If clearing the cache fails.
+        """
+        request = Request(method="delete", endpoint="/_api/query-plan-cache")
+
+        def response_handler(resp: Response) -> None:
+            if not resp.is_success:
+                raise AQLCacheClearError(resp, request)
+
+        return self._execute(request, response_handler)
+
 
 class AQL(ApiGroup):
     """AQL (ArangoDB Query Language) API wrapper.
@@ -277,6 +307,7 @@ class AQL(ApiGroup):
         allow_dirty_read: bool = False,
         allow_retry: bool = False,
         force_one_shard_attribute_value: Optional[str] = None,
+        use_plan_cache: Optional[bool] = None,
     ) -> Result[Cursor]:
         """Execute the query and return the result cursor.
 
@@ -388,6 +419,8 @@ class AQL(ApiGroup):
             shipped to a wrong DB server and may not return results
             (i.e. empty result set). Use at your own risk.
         :param force_one_shard_attribute_value: str | None
+        :param use_plan_cache: If set to True, the query plan cache is used.
+        :param use_plan_cache: bool | None
         :return: Result cursor.
         :rtype: arango.cursor.Cursor
         :raise arango.exceptions.AQLQueryExecuteError: If execute fails.
@@ -399,8 +432,6 @@ class AQL(ApiGroup):
             data["ttl"] = ttl
         if bind_vars is not None:
             data["bindVars"] = bind_vars
-        if cache is not None:
-            data["cache"] = cache
         if memory_limit is not None:
             data["memoryLimit"] = memory_limit
 
@@ -437,6 +468,10 @@ class AQL(ApiGroup):
             options["allowRetry"] = allow_retry
         if force_one_shard_attribute_value is not None:
             options["forceOneShardAttributeValue"] = force_one_shard_attribute_value
+        if cache is not None:
+            options["cache"] = cache
+        if use_plan_cache is not None:
+            options["usePlanCache"] = use_plan_cache
 
         if options:
             data["options"] = options

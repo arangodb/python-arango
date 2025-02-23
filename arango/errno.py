@@ -1,1339 +1,1168 @@
 ##################
-# General Errors #
+# General errors #
 ##################
 
-# No error occurred.
+# no error
 NO_ERROR = 0
 
-# General error occurred.
+# failed
 FAILED = 1
 
-# Operating system error occurred.
+# system error
 SYS_ERROR = 2
 
-# Out of memory.
+# out of memory
 OUT_OF_MEMORY = 3
 
-# Internal error occurred.
+# internal error
 INTERNAL = 4
 
-# Illegal number representation given.
+# illegal number
 ILLEGAL_NUMBER = 5
 
-# Numeric overflow occurred.
+# numeric overflow
 NUMERIC_OVERFLOW = 6
 
-# Unknown option supplied by user.
+# illegal option
 ILLEGAL_OPTION = 7
 
-# Detected PID without living process.
+# dead process identifier
 DEAD_PID = 8
 
-# Feature not implemented.
+# not implemented
 NOT_IMPLEMENTED = 9
 
-# Bad parameter.
+# bad parameter
 BAD_PARAMETER = 10
 
-# Missing permission.
+# forbidden
 FORBIDDEN = 11
 
-# Out of memory (mmap).
-OUT_OF_MEMORY_MMAP = 12
-
-# Corrupt CSV line.
+# csv is corrupt
 CORRUPTED_CSV = 13
 
-# File not found.
+# file not found
 FILE_NOT_FOUND = 14
 
-# Cannot write to file.
+# cannot write file
 CANNOT_WRITE_FILE = 15
 
-# Cannot overwrite file.
+# cannot overwrite file
 CANNOT_OVERWRITE_FILE = 16
 
-# Type error occurred.
+# type error
 TYPE_ERROR = 17
 
-# Timed out waiting for a lock.
+# lock timeout
 LOCK_TIMEOUT = 18
 
-# Cannot create a directory.
+# cannot create directory
 CANNOT_CREATE_DIRECTORY = 19
 
-# Cannot create a temporary file.
+# cannot create temporary file
 CANNOT_CREATE_TEMP_FILE = 20
 
-# Request cancelled by user.
+# canceled request
 REQUEST_CANCELED = 21
 
-# Raised for debugging.
+# intentional debug error
 DEBUG = 22
 
-# Invalid IP address.
+# IP address is invalid
 IP_ADDRESS_INVALID = 25
 
-# File exists already.
+# file exists
 FILE_EXISTS = 27
 
-# Locked resource or operation.
+# locked
 LOCKED = 28
 
-# Deadlock detected when accessing collections.
+# deadlock detected
 DEADLOCK = 29
 
-# Call failed as server shutdown is in progress.
+# shutdown in progress
 SHUTTING_DOWN = 30
 
-# Feature only for enterprise version of ArangoDB.
+# only enterprise version
 ONLY_ENTERPRISE = 31
 
-# Resource usage exceeded maximum value.
+# resource limit exceeded
 RESOURCE_LIMIT = 32
 
-# ICU operation failed.
+# icu error: %s
 ICU_ERROR = 33
 
-# Cannot read a file.
+# cannot read file
 CANNOT_READ_FILE = 34
 
-# Incompatible version of ArangoDB.
+# incompatible server version
 INCOMPATIBLE_VERSION = 35
 
-# Requested resource disabled.
+# disabled
 DISABLED = 36
 
-# JSON string could not be parsed.
+# malformed json
 MALFORMED_JSON = 37
 
-# Call cannot succeed because the server startup phase is still in progress.
+# startup ongoing
 STARTING_UP = 38
 
+# error during deserialization
+DESERIALIZE = 39
+
+# reached end of file
+END_OF_FILE = 40
+
 ###########################
-# HTTP Error Status Codes #
+# HTTP error status codes #
 ###########################
 
-# Bad HTTP parameter.
+# bad parameter
 HTTP_BAD_PARAMETER = 400
 
-# User unauthorized.
+# unauthorized
 HTTP_UNAUTHORIZED = 401
 
-# Operation forbidden.
+# forbidden
 HTTP_FORBIDDEN = 403
 
-# Unknown URI.
+# not found
 HTTP_NOT_FOUND = 404
 
-# HTTP method unknown.
+# method not supported
 HTTP_METHOD_NOT_ALLOWED = 405
 
-# HTTP content type not supported.
+# request not acceptable
 HTTP_NOT_ACCEPTABLE = 406
 
-# Timeout occurred.
+# request timeout
 HTTP_REQUEST_TIMEOUT = 408
 
-# Conflict occurred in an HTTP operation.
+# conflict
 HTTP_CONFLICT = 409
 
-# Requested content has been permanently deleted.
+# content permanently deleted
 HTTP_GONE = 410
 
-# Precondition not met.
+# precondition failed
 HTTP_PRECONDITION_FAILED = 412
 
-# Internal server error occurred.
+# enhance your calm
+HTTP_ENHANCE_YOUR_CALM = 420
+
+# internal server error
 HTTP_SERVER_ERROR = 500
 
-# API is not implemented.
+# not implemented
 HTTP_NOT_IMPLEMENTED = 501
 
-# Service temporarily unavailable.
+# service unavailable
 HTTP_SERVICE_UNAVAILABLE = 503
 
-# Service contacted by ArangoDB did not respond in time.
+# gateway timeout
 HTTP_GATEWAY_TIMEOUT = 504
 
 ##########################
-# HTTP Processing Errors #
+# HTTP processing errors #
 ##########################
 
-# Corrupted JSON string.
+# invalid JSON object
 HTTP_CORRUPTED_JSON = 600
 
-# URL contains superfluous suffices.
+# superfluous URL suffices
 HTTP_SUPERFLUOUS_SUFFICES = 601
 
 ####################################
-# Internal ArangoDB Storage Errors #
+# Internal ArangoDB storage errors #
 ####################################
 
-# Datafile in illegal state.
+# illegal state
 ILLEGAL_STATE = 1000
 
-# User attempted to write to a sealed datafile.
-DATAFILE_SEALED = 1002
-
-# Read-only datafile or collection.
+# read only
 READ_ONLY = 1004
 
-# Duplicate identifier detected.
+# duplicate identifier
 DUPLICATE_IDENTIFIER = 1005
 
-# Datafile unreadable.
-DATAFILE_UNREADABLE = 1006
-
-# Datafile empty.
-DATAFILE_EMPTY = 1007
-
-# Error occurred during WAL log file recovery.
-RECOVERY = 1008
-
-# Required datafile statistics object not found.
-DATAFILE_STATISTICS_NOT_FOUND = 1009
-
 ####################################
-# External ArangoDB Storage Errors #
+# External ArangoDB storage errors #
 ####################################
 
-# Datafile corrupted.
+# corrupted datafile
 CORRUPTED_DATAFILE = 1100
 
-# Parameter file corrupted or cannot be read.
+# illegal or unreadable parameter file
 ILLEGAL_PARAMETER_FILE = 1101
 
-# Collection contains one or more corrupted datafiles.
+# corrupted collection
 CORRUPTED_COLLECTION = 1102
 
-# System call mmap failed.
-MMAP_FAILED = 1103
-
-# Filesystem full.
+# filesystem full
 FILESYSTEM_FULL = 1104
 
-# Cannot create journal.
-NO_JOURNAL = 1105
-
-# Datafile of the same name already exists.
-DATAFILE_ALREADY_EXISTS = 1106
-
-# Database directory locked by another process.
+# database directory is locked
 DATADIR_LOCKED = 1107
 
-# Directory of the same name already exists.
-COLLECTION_DIRECTORY_ALREADY_EXISTS = 1108
-
-# System call msync failed.
-MSYNC_FAILED = 1109
-
-# Cannot lock the database directory on startup.
-DATADIR_UNLOCKABLE = 1110
-
-# Server waited too long for the datafile to be synced to disk.
-SYNC_TIMEOUT = 1111
-
 ###################################
-# General ArangoDB Storage Errors #
+# General ArangoDB storage errors #
 ###################################
 
-# Conflict detected while updating or deleting a document.
+# conflict
 CONFLICT = 1200
 
-# Database directory invalid.
-DATADIR_INVALID = 1201
-
-# Unknown document identifier or handle.
+# document not found
 DOCUMENT_NOT_FOUND = 1202
 
-# Collection with given identifier or name unknown.
+# collection or view not found
 DATA_SOURCE_NOT_FOUND = 1203
 
-# Missing collection parameter.
+# parameter 'collection' not found
 COLLECTION_PARAMETER_MISSING = 1204
 
-# Invalid document handle.
+# illegal document identifier
 DOCUMENT_HANDLE_BAD = 1205
 
-# Maximal journal size too small.
-MAXIMAL_SIZE_TOO_SMALL = 1206
-
-# Duplicate name detected.
+# duplicate name
 DUPLICATE_NAME = 1207
 
-# Illegal name detected.
+# illegal name
 ILLEGAL_NAME = 1208
 
-# No suitable index for query.
+# no suitable index known
 NO_INDEX = 1209
 
-# Unique constraint violation.
+# unique constraint violated
 UNIQUE_CONSTRAINT_VIOLATED = 1210
 
-# Index with unknown identifier.
+# index not found
 INDEX_NOT_FOUND = 1212
 
-# Cross-collection requested.
+# cross collection request not allowed
 CROSS_COLLECTION_REQUEST = 1213
 
-# Index handle corrupted.
+# illegal index identifier
 INDEX_HANDLE_BAD = 1214
 
-# Document too large to fit into any datafile.
+# document too large
 DOCUMENT_TOO_LARGE = 1216
 
-# Collection must be unloaded.
-COLLECTION_NOT_UNLOADED = 1217
-
-# Invalid collection type.
+# collection type invalid
 COLLECTION_TYPE_INVALID = 1218
 
-# Failed to parse an attribute name definition.
+# parsing attribute name definition failed
 ATTRIBUTE_PARSER_FAILED = 1220
 
-# Corrupted document key.
+# illegal document key
 DOCUMENT_KEY_BAD = 1221
 
-# User-defined document key supplied for collections with auto key generation.
+# unexpected document key
 DOCUMENT_KEY_UNEXPECTED = 1222
 
-# Database directory not writable for current user.
+# server database directory not writable
 DATADIR_NOT_WRITABLE = 1224
 
-# Key generator out of keys.
+# out of keys
 OUT_OF_KEYS = 1225
 
-# Document key missing.
+# missing document key
 DOCUMENT_KEY_MISSING = 1226
 
-# There was an attempt to create a document of invalid type.
+# invalid document type
 DOCUMENT_TYPE_INVALID = 1227
 
-# Non-existing database accessed.
+# database not found
 DATABASE_NOT_FOUND = 1228
 
-# Invalid database used.
+# database name invalid
 DATABASE_NAME_INVALID = 1229
 
-# Operation requested in non-system database.
+# operation only allowed in system database
 USE_SYSTEM_DATABASE = 1230
 
-# Invalid key generator.
+# invalid key generator
 INVALID_KEY_GENERATOR = 1232
 
-# Undefined or invalid "_from" or "_to" values in an edge document.
+# expecting both `_from` and `_to` attributes to be defined in the edge document and have the format `<collectionName>/<vertexKey>`
 INVALID_EDGE_ATTRIBUTE = 1233
 
-# Cannot create index.
+# index creation failed
 INDEX_CREATION_FAILED = 1235
 
-# Server is write-throttled and a write operation waited too long.
-WRITE_THROTTLE_TIMEOUT = 1236
-
-# Collection type mismatch.
+# collection type mismatch
 COLLECTION_TYPE_MISMATCH = 1237
 
-# Collection accessed but not yet loaded.
+# collection not loaded
 COLLECTION_NOT_LOADED = 1238
 
-# Document revision corrupt or missing.
+# illegal document revision
 DOCUMENT_REV_BAD = 1239
 
-# Read cannot be completed by storage engine.
+# incomplete read
 INCOMPLETE_READ = 1240
 
+# not supported by old legacy data format
+OLD_ROCKSDB_FORMAT = 1241
+
+# an index with legacy sorted keys has been found
+INDEX_HAS_LEGACY_SORTED_KEYS = 1242
+
 ###################################
-# Checked ArangoDB Storage Errors #
+# Checked ArangoDB storage errors #
 ###################################
 
-# Datafile full.
-DATAFILE_FULL = 1300
-
-# Server database directory empty.
+# server database directory is empty
 EMPTY_DATADIR = 1301
 
-# Operation needs to be retried.
+# operation should be tried again
 TRY_AGAIN = 1302
 
-# Storage engine busy.
+# engine is busy
 BUSY = 1303
 
-# Datafile merge in progress and the operation cannot be completed.
+# merge in progress
 MERGE_IN_PROGRESS = 1304
 
-# Storage engine encountered an I/O error.
+# storage engine I/O error
 IO_ERROR = 1305
 
 ###############################
-# ArangoDB Replication Errors #
+# ArangoDB replication errors #
 ###############################
 
-# Replication applier received no (or incomplete) response from master.
+# no response
 REPLICATION_NO_RESPONSE = 1400
 
-# Replication applier received an invalid response from master.
+# invalid response
 REPLICATION_INVALID_RESPONSE = 1401
 
-# Replication applier received a server error from master.
-REPLICATION_MASTER_ERROR = 1402
+# leader error
+REPLICATION_LEADER_ERROR = 1402
 
-# Replication applier tried to connect to master with incompatible version.
-REPLICATION_MASTER_INCOMPATIBLE = 1403
+# leader incompatible
+REPLICATION_LEADER_INCOMPATIBLE = 1403
 
-# Replication applier connected to a different master than before.
-REPLICATION_MASTER_CHANGE = 1404
+# leader change
+REPLICATION_LEADER_CHANGE = 1404
 
-# Replication applier was asked to connect to itself for replication.
+# loop detected
 REPLICATION_LOOP = 1405
 
-# Unexpected marker found in replication log stream.
+# unexpected marker
 REPLICATION_UNEXPECTED_MARKER = 1406
 
-# Found invalid replication applier state file.
+# invalid applier state
 REPLICATION_INVALID_APPLIER_STATE = 1407
 
-# Found unexpected transaction ID.
+# invalid transaction
 REPLICATION_UNEXPECTED_TRANSACTION = 1408
 
-# Synchronization of a shard takes longer than the configured timeout.
+# shard synchronization attempt timeout exceeded
 REPLICATION_SHARD_SYNC_ATTEMPT_TIMEOUT_EXCEEDED = 1409
 
-# Invalid replication applier configuration.
+# invalid replication applier configuration
 REPLICATION_INVALID_APPLIER_CONFIGURATION = 1410
 
-# Operation attempted while replication applier is running.
+# cannot perform operation while applier is running
 REPLICATION_RUNNING = 1411
 
-# Replication applier stopped by user.
+# replication stopped
 REPLICATION_APPLIER_STOPPED = 1412
 
-# Replication applier started without a known start tick value.
+# no start tick
 REPLICATION_NO_START_TICK = 1413
 
-# Replication applier started without a known start tick value.
+# start tick not present
 REPLICATION_START_TICK_NOT_PRESENT = 1414
 
-# Newborn follower submits a wrong checksum.
+# wrong checksum
 REPLICATION_WRONG_CHECKSUM = 1416
 
-# Shard is not empty and follower tries a shortcut.
+# shard not empty
 REPLICATION_SHARD_NONEMPTY = 1417
 
-# Specific replicated log is not found
+# replicated log {} not found
 REPLICATION_REPLICATED_LOG_NOT_FOUND = 1418
 
-# Participant of a replicated log is ordered to do something only the leader can do.
+# not the log leader
 REPLICATION_REPLICATED_LOG_NOT_THE_LEADER = 1419
 
-# Participant of a replicated log is ordered to do something only a follower can do.
+# not a log follower
 REPLICATION_REPLICATED_LOG_NOT_A_FOLLOWER = 1420
 
-# Follower of a replicated log rejects an append-entries request.
+# follower rejected append entries request
 REPLICATION_REPLICATED_LOG_APPEND_ENTRIES_REJECTED = 1421
 
-# Leader instance of a replicated log rejects a request because it just resigned.
-# This can also happen if the term changes (due to a configuration change).
+# a resigned leader instance rejected a request
 REPLICATION_REPLICATED_LOG_LEADER_RESIGNED = 1422
 
-# Follower instance of a replicated log rejects a request because it just resigned.
-# This can also happen if the term changes (due to a configuration change).
+# a resigned follower instance rejected a request
 REPLICATION_REPLICATED_LOG_FOLLOWER_RESIGNED = 1423
 
-# Participant instance of a replicated log is no longer available.
+# the replicated log of the participant is gone
 REPLICATION_REPLICATED_LOG_PARTICIPANT_GONE = 1424
 
-# Participant tries to change its term but found an invalid new term.
+# an invalid term was given
 REPLICATION_REPLICATED_LOG_INVALID_TERM = 1425
 
-# Participant is currently unconfigured.
+# log participant unconfigured
 REPLICATION_REPLICATED_LOG_UNCONFIGURED = 1426
 
-# Specific replicated state was not found.
+# replicated state {id:} of type {type:} not found
 REPLICATION_REPLICATED_STATE_NOT_FOUND = 1427
 
+# replicated state {id:} of type {type:} is unavailable
+REPLICATION_REPLICATED_STATE_NOT_AVAILABLE = 1428
+
+# not enough replicas for the configured write-concern are present
+REPLICATION_WRITE_CONCERN_NOT_FULFILLED = 1429
+
+# operation aborted because a previous operation failed
+REPLICATION_REPLICATED_LOG_SUBSEQUENT_FAULT = 1430
+
+# replicated state type {type:} is unavailable
+REPLICATION_REPLICATED_STATE_IMPLEMENTATION_NOT_FOUND = 1431
+
+# error in the replicated WAL subsystem
+REPLICATION_REPLICATED_WAL_ERROR = 1432
+
+# replicated WAL {file:} has an invalid or missing file header
+REPLICATION_REPLICATED_WAL_INVALID_FILE = 1433
+
+# replicated WAL {file:} is corrupt
+REPLICATION_REPLICATED_WAL_CORRUPT = 1434
+
 ###########################
-# ArangoDB Cluster Errors #
+# ArangoDB cluster errors #
 ###########################
 
-# Operation is sent to a non-following server.
+# not a follower
 CLUSTER_NOT_FOLLOWER = 1446
 
-# Follower transaction already performed an intermediate commit and must be rolled back.
+# follower transaction intermediate commit already performed
 CLUSTER_FOLLOWER_TRANSACTION_COMMIT_PERFORMED = 1447
 
-# Updating the plan on collection creation failed.
+# creating collection failed due to precondition
 CLUSTER_CREATE_COLLECTION_PRECONDITION_FAILED = 1448
 
-# Raised on some occasions when one server gets a request from another.
+# got a request from an unknown server
 CLUSTER_SERVER_UNKNOWN = 1449
 
-# Number of shards for a collection is higher than allowed.
+# too many shards
 CLUSTER_TOO_MANY_SHARDS = 1450
 
-# Coordinator cannot create a collection as the collection ID already exists.
-CLUSTER_COLLECTION_ID_EXISTS = 1453
-
-# Coordinator cannot create an entry for a new collection in Plan hierarchy.
+# could not create collection in plan
 CLUSTER_COULD_NOT_CREATE_COLLECTION_IN_PLAN = 1454
 
-# Coordinator sees DBServer issues when creating shards for a new collection.
+# could not create collection
 CLUSTER_COULD_NOT_CREATE_COLLECTION = 1456
 
-# Coordinator runs into a timeout for some cluster wide operation.
+# timeout in cluster operation
 CLUSTER_TIMEOUT = 1457
 
-# Coordinator cannot remove an entry for a collection in Plan hierarchy.
+# could not remove collection from plan
 CLUSTER_COULD_NOT_REMOVE_COLLECTION_IN_PLAN = 1458
 
-# Coordinator cannot remove an entry for a collection in Current hierarchy.
-CLUSTER_COULD_NOT_REMOVE_COLLECTION_IN_CURRENT = 1459
-
-# Coordinator cannot create an entry for a new database in the Plan hierarchy.
+# could not create database in plan
 CLUSTER_COULD_NOT_CREATE_DATABASE_IN_PLAN = 1460
 
-# Coordinator sees DBServer issues when creating databases for a new cluster.
+# could not create database
 CLUSTER_COULD_NOT_CREATE_DATABASE = 1461
 
-# Coordinator cannot remove an entry for a database in the Plan hierarchy.
+# could not remove database from plan
 CLUSTER_COULD_NOT_REMOVE_DATABASE_IN_PLAN = 1462
 
-# Coordinator cannot remove an entry for a database in the Current hierarchy.
+# could not remove database from current
 CLUSTER_COULD_NOT_REMOVE_DATABASE_IN_CURRENT = 1463
 
-# Coordinator cannot determine the shard responsible for a given document.
+# no responsible shard found
 CLUSTER_SHARD_GONE = 1464
 
-# Coordinator loses HTTP connection to a DBServer while transferring data.
+# cluster internal HTTP connection broken
 CLUSTER_CONNECTION_LOST = 1465
 
-# "_key" attribute specified in sharded collection which uses not only "_key"
-# as sharding attribute.
+# must not specify _key for this collection
 CLUSTER_MUST_NOT_SPECIFY_KEY = 1466
 
-# Coordinator gets conflicting results from different shards.
+# got contradicting answers from different shards
 CLUSTER_GOT_CONTRADICTING_ANSWERS = 1467
 
-# Coordinator tries to find out the shard responsible for a partial document.
+# not all sharding attributes given
 CLUSTER_NOT_ALL_SHARDING_ATTRIBUTES_GIVEN = 1468
 
-# Not allowed to update the value of a shard attribute.
+# must not change the value of a shard key attribute
 CLUSTER_MUST_NOT_CHANGE_SHARDING_ATTRIBUTES = 1469
 
-# Operation not supported in sharded collection.
+# unsupported operation or parameter for clusters
 CLUSTER_UNSUPPORTED = 1470
 
-# Operation is coordinator-only.
+# this operation is only valid on a coordinator in a cluster
 CLUSTER_ONLY_ON_COORDINATOR = 1471
 
-# Coordinator or DBServer cannot read the Plan.
+# error reading Plan in agency
 CLUSTER_READING_PLAN_AGENCY = 1472
 
-# Coordinator cannot truncate all shards of a cluster collection.
-CLUSTER_COULD_NOT_TRUNCATE_COLLECTION = 1473
-
-# Internal communication of the cluster for AQL produces an error.
+# error in cluster internal communication for AQL
 CLUSTER_AQL_COMMUNICATION = 1474
 
-# Operation is DBServer-only.
+# this operation is only valid on a DBserver in a cluster
 CLUSTER_ONLY_ON_DBSERVER = 1477
 
-# Cannot reach a required DBServer.
+# A cluster backend which was required for the operation could not be reached
 CLUSTER_BACKEND_UNAVAILABLE = 1478
 
-# Required collection out of sync during AQL execution.
+# collection/view is out of sync
 CLUSTER_AQL_COLLECTION_OUT_OF_SYNC = 1481
 
-# Coordinator cannot create an entry for a new index in Plan hierarchy.
+# could not create index in plan
 CLUSTER_COULD_NOT_CREATE_INDEX_IN_PLAN = 1482
 
-# Coordinator cannot remove an index from Plan hierarchy.
+# could not drop index in plan
 CLUSTER_COULD_NOT_DROP_INDEX_IN_PLAN = 1483
 
-# One tries to create a collection with "shards_like" attribute which points
-# to another collection that also has one.
+# chain of distributeShardsLike references
 CLUSTER_CHAIN_OF_DISTRIBUTESHARDSLIKE = 1484
 
-# One tries to drop a collection to which another collection points with its
-# "shard_like" attribute.
+# must not drop collection while another has a distributeShardsLike attribute pointing to it
 CLUSTER_MUST_NOT_DROP_COLL_OTHER_DISTRIBUTESHARDSLIKE = 1485
 
-# One tries to create a collection which points to an unknown collection in its
-# "shard_like" attribute.
+# must not have a distributeShardsLike attribute pointing to an unknown collection
 CLUSTER_UNKNOWN_DISTRIBUTESHARDSLIKE = 1486
 
-# One tries to create a collection with a "replication_factor" greater than the
-# available number of DBServers.
+# the number of current DB-Servers is lower than the requested replicationFactor/writeConcern
 CLUSTER_INSUFFICIENT_DBSERVERS = 1487
 
-# Cannot drop follower.
+# a follower could not be dropped in agency
 CLUSTER_COULD_NOT_DROP_FOLLOWER = 1488
 
-# Replication operation refused by a shard leader.
+# a shard leader refuses to perform a replication operation
 CLUSTER_SHARD_LEADER_REFUSES_REPLICATION = 1489
 
-# Non-replication operation refused by a shard follower.
+# a shard follower refuses to perform an operation
 CLUSTER_SHARD_FOLLOWER_REFUSES_OPERATION = 1490
 
-# Shard leader resigned in the meantime.
+# a (former) shard leader refuses to perform an operation
 CLUSTER_SHARD_LEADER_RESIGNED = 1491
 
-# Agency operation failed after various retries.
+# some agency operation failed
 CLUSTER_AGENCY_COMMUNICATION_FAILED = 1492
 
-# Servers currently competing for leadership.
+# leadership challenge is ongoing
 CLUSTER_LEADERSHIP_CHALLENGE_ONGOING = 1495
 
-# Operation sent to a non-leading server.
+# not a leader
 CLUSTER_NOT_LEADER = 1496
 
-# Coordinator cannot create an entry for a new view in Plan hierarchy.
+# could not create view in plan
 CLUSTER_COULD_NOT_CREATE_VIEW_IN_PLAN = 1497
 
-# Coordinator tries to create a view and the ID already exists.
+# view ID already exists
 CLUSTER_VIEW_ID_EXISTS = 1498
 
-# Coordinator cannot drop a collection entry in Plan hierarchy.
+# could not drop collection in plan
 CLUSTER_COULD_NOT_DROP_COLLECTION = 1499
 
 #########################
-# ArangoDB Query Errors #
+# ArangoDB query errors #
 #########################
 
-# Running query killed by an explicit admin command.
+# query killed
 QUERY_KILLED = 1500
 
-# Parsed query syntactically invalid.
+# %s
 QUERY_PARSE = 1501
 
-# Empty query specified.
+# query is empty
 QUERY_EMPTY = 1502
 
-# Runtime error caused by query.
+# runtime error '%s'
 QUERY_SCRIPT = 1503
 
-# Number out of range.
+# number out of range
 QUERY_NUMBER_OUT_OF_RANGE = 1504
 
-# Geo index coordinate invalid or out of range.
+# invalid geo coordinate value
 QUERY_INVALID_GEO_VALUE = 1505
 
-# Invalid variable name.
+# variable name '%s' has an invalid format
 QUERY_VARIABLE_NAME_INVALID = 1510
 
-# Variable redeclared in a query.
+# variable '%s' is assigned multiple times
 QUERY_VARIABLE_REDECLARED = 1511
 
-# Variable name unknown or undefined.
+# unknown variable '%s'
 QUERY_VARIABLE_NAME_UNKNOWN = 1512
 
-# Cannot acquire lock on collection.
+# unable to read-lock collection %s
 QUERY_COLLECTION_LOCK_FAILED = 1521
 
-# Too many collections or shards in a query.
+# too many collections/shards
 QUERY_TOO_MANY_COLLECTIONS = 1522
 
-# Document attribute redeclared.
-QUERY_DOCUMENT_ATTRIBUTE_REDECLARED = 1530
+# too much nesting or too many objects
+QUERY_TOO_MUCH_NESTING = 1524
 
-# Unknown attribute is used inside an OPTIONS clause.
+# unknown/invalid OPTIONS attribute used
 QUERY_INVALID_OPTIONS_ATTRIBUTE = 1539
 
-# Undefined function called.
+# usage of unknown function '%s()'
 QUERY_FUNCTION_NAME_UNKNOWN = 1540
 
-# Argument number mismatch.
+# invalid number of arguments for function '%s()'
 QUERY_FUNCTION_ARGUMENT_NUMBER_MISMATCH = 1541
 
-# Argument type mismatch.
+# invalid argument type in call to function '%s()'
 QUERY_FUNCTION_ARGUMENT_TYPE_MISMATCH = 1542
 
-# Invalid regex.
+# invalid regex value
 QUERY_INVALID_REGEX = 1543
 
-# Invalid bind parameters.
+# invalid structure of bind parameters
 QUERY_BIND_PARAMETERS_INVALID = 1550
 
-# Bind parameter missing.
+# no value specified for declared bind parameter '%s'
 QUERY_BIND_PARAMETER_MISSING = 1551
 
-# Bind parameter undeclared.
+# bind parameter '%s' was not declared in the query
 QUERY_BIND_PARAMETER_UNDECLARED = 1552
 
-# Invalid bind parameter value or type.
+# bind parameter '%s' has an invalid value or type
 QUERY_BIND_PARAMETER_TYPE = 1553
 
-# Non-boolean value used in logical operation.
-QUERY_INVALID_LOGICAL_VALUE = 1560
+# failed vector search
+QUERY_VECTOR_SEARCH_NOT_APPLIED = 1554
 
-# Non-numeric value used in arithmetic operation.
+# invalid arithmetic value
 QUERY_INVALID_ARITHMETIC_VALUE = 1561
 
-# Divide by zero.
+# division by zero
 QUERY_DIVISION_BY_ZERO = 1562
 
-# Non-list operand used when expecting a list operand.
+# array expected
 QUERY_ARRAY_EXPECTED = 1563
 
-# Collection is used as an operand in an AQL expression
+# collection '%s' used as expression operand
 QUERY_COLLECTION_USED_IN_EXPRESSION = 1568
 
-# Function "FAIL()" called inside a query.
+# FAIL(%s) called
 QUERY_FAIL_CALLED = 1569
 
-# Geo restriction specified but no suitable geo index found.
+# no suitable geo index found for geo restriction on '%s'
 QUERY_GEO_INDEX_MISSING = 1570
 
-# Fulltext query performed on a collection without suitable fulltext index.
+# no suitable fulltext index found for fulltext query on '%s'
 QUERY_FULLTEXT_INDEX_MISSING = 1571
 
-# Cannot convert value to a date.
+# invalid date value
 QUERY_INVALID_DATE_VALUE = 1572
 
-# Query contains more than one data-modifying operation.
+# multi-modify query
 QUERY_MULTI_MODIFY = 1573
 
-# Query contains an invalid aggregate expression.
+# invalid aggregate expression
 QUERY_INVALID_AGGREGATE_EXPRESSION = 1574
 
-# Query contains options that cannot be resolved at query compile time.
+# query options must be readable at query compile time
 QUERY_COMPILE_TIME_OPTIONS = 1575
 
-# Query contains an invalid options specification.
-QUERY_EXCEPTION_OPTIONS = 1576
+# FILTER/PRUNE condition complexity is too high
+QUERY_DNF_COMPLEXITY = 1576
 
-# Unusable index hint.
+# could not use forced index hint
 QUERY_FORCED_INDEX_HINT_UNUSABLE = 1577
 
-# Dynamic function not allowed.
+# disallowed dynamic call to '%s'
 QUERY_DISALLOWED_DYNAMIC_CALL = 1578
 
-# Collection data accessed after modification.
+# access after data-modification by %s
 QUERY_ACCESS_AFTER_MODIFICATION = 1579
 
 ############################
-# AQL User Function Errors #
+# AQL user function errors #
 ############################
 
-# User function registered with invalid name.
+# invalid user function name
 QUERY_FUNCTION_INVALID_NAME = 1580
 
-# User function registered with invalid code.
+# invalid user function code
 QUERY_FUNCTION_INVALID_CODE = 1581
 
-# User function not found.
+# user function '%s()' not found
 QUERY_FUNCTION_NOT_FOUND = 1582
 
-# Runtime exception raised by query function.
+# user function runtime error: %s
 QUERY_FUNCTION_RUNTIME_ERROR = 1583
 
+# query is not eligible for plan caching
+QUERY_NOT_ELIGIBLE_FOR_PLAN_CACHING = 1584
+
 #############################
-# AQL Query Registry Errors #
+# AQL query registry errors #
 #############################
 
-# Query received an invalid JSON.
+# bad execution plan JSON
 QUERY_BAD_JSON_PLAN = 1590
 
-# Query ID not found.
+# query ID not found
 QUERY_NOT_FOUND = 1591
 
-# User provided expression does not evaluate to true.
+# %s
 QUERY_USER_ASSERT = 1593
 
-# User provided expression does not evaluate to true.
+# %s
 QUERY_USER_WARN = 1594
 
-# Window node is created after a data-modification operation.
+# window operation after data-modification
 QUERY_WINDOW_AFTER_MODIFICATION = 1595
 
 ##########################
-# ArangoDB Cursor Errors #
+# ArangoDB cursor errors #
 ##########################
 
-# Cursor ID not found.
+# cursor not found
 CURSOR_NOT_FOUND = 1600
 
-# Concurrent request still using the cursor.
+# cursor is busy
 CURSOR_BUSY = 1601
 
-##############################
-# ArangoDB Validation Errors #
-##############################
+#####################################
+# ArangoDB schema validation errors #
+#####################################
 
-# Document does not pass schema validation.
+# schema validation failed
 VALIDATION_FAILED = 1620
 
-# Schema description is invalid.
+# invalid schema validation parameter
 VALIDATION_BAD_PARAMETER = 1621
 
 ###############################
-# ArangoDB Transaction Errors #
+# ArangoDB transaction errors #
 ###############################
 
-# Wrong usage of transactions. This is an internal error.
+# internal transaction error
 TRANSACTION_INTERNAL = 1650
 
-# Nested transactions.
+# nested transactions detected
 TRANSACTION_NESTED = 1651
 
-# Unregistered collection used in transaction.
+# unregistered collection used in transaction
 TRANSACTION_UNREGISTERED_COLLECTION = 1652
 
-# Disallowed operation in transaction.
+# disallowed operation inside transaction
 TRANSACTION_DISALLOWED_OPERATION = 1653
 
-# Transaction aborted.
+# transaction aborted
 TRANSACTION_ABORTED = 1654
 
-# Transaction not found.
+# transaction not found
 TRANSACTION_NOT_FOUND = 1655
 
 ##########################
-# User Management Errors #
+# User management errors #
 ##########################
 
-# Invalid username.
+# invalid user name
 USER_INVALID_NAME = 1700
 
-# Username already exists.
+# duplicate user
 USER_DUPLICATE = 1702
 
-# User not found.
+# user not found
 USER_NOT_FOUND = 1703
 
-# User authenticated by an external server.
+# user is external
 USER_EXTERNAL = 1705
 
 ######################################
-# Service Management Errors (Legacy) #
+# Service management errors (legacy) #
 ######################################
 
-# Cannot download service from central repository.
+# service download failed
 SERVICE_DOWNLOAD_FAILED = 1752
 
-# Service upload from the client to the ArangoDB server failed.
+# service upload failed
 SERVICE_UPLOAD_FAILED = 1753
 
 ###############
-# LDAP Errors #
+# Task errors #
 ###############
 
-# Cannot initialize an LDAP connection.
-LDAP_CANNOT_INIT = 1800
-
-# Cannot set an LDAP option.
-LDAP_CANNOT_SET_OPTION = 1801
-
-# Cannot bind to an LDAP server.
-LDAP_CANNOT_BIND = 1802
-
-# Cannot unbind from an LDAP server.
-LDAP_CANNOT_UNBIND = 1803
-
-# Cannot search the LDAP server.
-LDAP_CANNOT_SEARCH = 1804
-
-# Cannot start a TLS LDAP session.
-LDAP_CANNOT_START_TLS = 1805
-
-# LDAP did not find any objects with the specified search query.
-LDAP_FOUND_NO_OBJECTS = 1806
-
-# LDAP found zero or more than one user.
-LDAP_NOT_ONE_USER_FOUND = 1807
-
-# LDAP user not identified.
-LDAP_USER_NOT_IDENTIFIED = 1808
-
-# Cannot distinguish a valid mode for provided LDAP configuration.
-LDAP_INVALID_MODE = 1820
-
-###############
-# Task Errors #
-###############
-
-# Task created with an invalid ID.
+# invalid task id
 TASK_INVALID_ID = 1850
 
-# Task created with a duplicate ID.
+# duplicate task id
 TASK_DUPLICATE_ID = 1851
 
-# Task not found.
+# task not found
 TASK_NOT_FOUND = 1852
 
 ############################
-# Graph / Traversal Errors #
+# Graph / traversal errors #
 ############################
 
-# Invalid name passed to the server.
+# invalid graph
 GRAPH_INVALID_GRAPH = 1901
 
-# Invalid graph name passed to the server.
-GRAPH_COULD_NOT_CREATE_GRAPH = 1902
-
-# Invalid vertex ID passed to the server.
-GRAPH_INVALID_VERTEX = 1903
-
-# Vertex could not be created.
-GRAPH_COULD_NOT_CREATE_VERTEX = 1904
-
-# Vertex could not be changed.
-GRAPH_COULD_NOT_CHANGE_VERTEX = 1905
-
-# Invalid edge ID passed to the server.
+# invalid edge
 GRAPH_INVALID_EDGE = 1906
 
-# Edge could not be created.
-GRAPH_COULD_NOT_CREATE_EDGE = 1907
-
-# Edge could not be changed.
-GRAPH_COULD_NOT_CHANGE_EDGE = 1908
-
-# Too many iterations in graph traversal.
-GRAPH_TOO_MANY_ITERATIONS = 1909
-
-# Invalid filter result returned in graph traversal.
+# invalid filter result
 GRAPH_INVALID_FILTER_RESULT = 1910
 
-# Edge collection may only be used once in an edge definition.
+# multi use of edge collection in edge def
 GRAPH_COLLECTION_MULTI_USE = 1920
 
-# Collection already used by another graph in a different edge definition.
+# edge collection already used in edge def
 GRAPH_COLLECTION_USE_IN_MULTI_GRAPHS = 1921
 
-# Graph name missing.
+# missing graph name
 GRAPH_CREATE_MISSING_NAME = 1922
 
-# Edge definition malformed (must be a list of dicts).
+# malformed edge definition
 GRAPH_CREATE_MALFORMED_EDGE_DEFINITION = 1923
 
-# Graph not found.
+# graph '%s' not found
 GRAPH_NOT_FOUND = 1924
 
-# Graph name already exists.
+# graph already exists
 GRAPH_DUPLICATE = 1925
 
-# Vertex collection does not exist or is not part of the graph.
+# vertex collection does not exist or is not part of the graph
 GRAPH_VERTEX_COL_DOES_NOT_EXIST = 1926
 
-# Collection not a vertex collection.
+# collection not a vertex collection
 GRAPH_WRONG_COLLECTION_TYPE_VERTEX = 1927
 
-# Vertex collection not in orphan collections of the graph.
+# collection is not in list of orphan collections
 GRAPH_NOT_IN_ORPHAN_COLLECTION = 1928
 
-# Collection already used in an edge definition of the graph.
+# collection already used in edge def
 GRAPH_COLLECTION_USED_IN_EDGE_DEF = 1929
 
-# Edge collection not used in any edge definition of the graph.
+# edge collection not used in graph
 GRAPH_EDGE_COLLECTION_NOT_USED = 1930
 
-# Collection "_graphs" does not exist.
+# collection _graphs does not exist
 GRAPH_NO_GRAPH_COLLECTION = 1932
 
-# Invalid example array object string.
-GRAPH_INVALID_EXAMPLE_ARRAY_OBJECT_STRING = 1933
-
-# Invalid example type (must be a list or dict).
-GRAPH_INVALID_EXAMPLE_ARRAY_OBJECT = 1934
-
-# Invalid number of arguments.
+# Invalid number of arguments. Expected:
 GRAPH_INVALID_NUMBER_OF_ARGUMENTS = 1935
 
 # Invalid parameter type.
 GRAPH_INVALID_PARAMETER = 1936
 
-# Invalid ID.
-GRAPH_INVALID_ID = 1937
-
-# Collection already in orphans of the graph.
+# collection used in orphans
 GRAPH_COLLECTION_USED_IN_ORPHANS = 1938
 
-# Edge collection does not exist or is not part of the graph.
+# edge collection does not exist or is not part of the graph
 GRAPH_EDGE_COL_DOES_NOT_EXIST = 1939
 
-# Graph has no edge collections.
+# empty graph
 GRAPH_EMPTY = 1940
 
-# Invalid data in "_graphs" collection.
+# internal graph data corrupt
 GRAPH_INTERNAL_DATA_CORRUPT = 1941
 
-# Edge collection already defined.
-GRAPH_INTERNAL_EDGE_COLLECTION_ALREADY_SET = 1942
+# must not drop collection while part of graph
+GRAPH_MUST_NOT_DROP_COLLECTION = 1942
 
-# Orphan list argument malformed. Must be a list of strings.
+# malformed orphan list
 GRAPH_CREATE_MALFORMED_ORPHAN_LIST = 1943
 
-# Collection used as a relation exists.
+# edge definition collection is a document collection
 GRAPH_EDGE_DEFINITION_IS_DOCUMENT = 1944
 
-# The collection is used as the initial collection of this graph and is not allowed to
-# be removed manually.
+# initial collection is not allowed to be removed manually
 GRAPH_COLLECTION_IS_INITIAL = 1945
 
-# During the graph creation process no collection could be selected as the needed
-# initial collection. Happens if a distributeShardsLike or replicationFactor mismatch
-# was found.
+# no valid initial collection found
 GRAPH_NO_INITIAL_COLLECTION = 1946
 
-# The _from or _to collection specified for the edge refers to a vertex collection which
-# is not used in any edge definition of the graph.
-GRAPH_REFERENCED_VERTEX_COLLECTION_NOT_USED = 1947
+# referenced vertex collection is not part of the graph
+GRAPH_REFERENCED_VERTEX_COLLECTION_NOT_PART_OF_THE_GRAPH = 1947
 
-# Negative edge weight found during a weighted graph traversal or shortest path query.
+# negative edge weight found
 GRAPH_NEGATIVE_EDGE_WEIGHT = 1948
 
+# the given collection is not part of the graph
+GRAPH_COLLECTION_NOT_PART_OF_THE_GRAPH = 1949
+
 ##################
-# Session Errors #
+# Session errors #
 ##################
 
-# Invalid/unknown session ID passed to the server.
+# unknown session
 SESSION_UNKNOWN = 1950
 
-# Session expired.
+# session expired
 SESSION_EXPIRED = 1951
 
 ########################
-# Simple Client Errors #
+# Simple Client errors #
 ########################
 
-# This error should not happen.
+# unknown client error
 SIMPLE_CLIENT_UNKNOWN_ERROR = 2000
 
-# Client could not connect to server.
+# could not connect to server
 SIMPLE_CLIENT_COULD_NOT_CONNECT = 2001
 
-# Client could not write data.
+# could not write to server
 SIMPLE_CLIENT_COULD_NOT_WRITE = 2002
 
-# Client could not read data.
+# could not read from server
 SIMPLE_CLIENT_COULD_NOT_READ = 2003
 
-# Will be raised if was erlaube?!
+# was erlaube?!
 WAS_ERLAUBE = 2019
 
 #######################
-# Communicator Errors #
+# internal AQL errors #
 #######################
 
-# Communicator request aborted.
-COMMUNICATOR_REQUEST_ABORTED = 2100
-
-# Communicator disabled.
-COMMUNICATOR_DISABLED = 2101
-
-#######################
-# Internal AQL errors #
-#######################
-
-# Internal error during AQL execution.
+# General internal AQL error
 INTERNAL_AQL = 2200
 
-# AQL block wrote in too few output registers.
-WROTE_TOO_FEW_OUTPUT_REGISTERS = 2201
-
-# AQL block wrote in too many output registers.
-WROTE_TOO_MANY_OUTPUT_REGISTERS = 2202
-
-# AQL block wrote in an output register twice.
-WROTE_OUTPUT_REGISTER_TWICE = 2203
-
-# AQL block wrote in a register that is not its output.
-WROTE_IN_WRONG_REGISTER = 2204
-
-# AQL block did not copy its input registers.
-INPUT_REGISTERS_NOT_COPIED = 2205
-
 ##########################
-# Foxx Management Errors #
+# Foxx management errors #
 ##########################
 
-# Service manifest file not a well-formed JSON.
+# failed to parse manifest file
 MALFORMED_MANIFEST_FILE = 3000
 
-# Service manifest contains invalid values.
+# manifest file is invalid
 INVALID_SERVICE_MANIFEST = 3001
 
-# Service folder or bundle does not exist on the server.
+# service files missing
 SERVICE_FILES_MISSING = 3002
 
-# Local service bundle does not match the checksum in the database.
+# service files outdated
 SERVICE_FILES_OUTDATED = 3003
 
-# Service options contain invalid values.
+# service options are invalid
 INVALID_FOXX_OPTIONS = 3004
 
-# Service mountpath contains invalid characters.
+# invalid mountpath
 INVALID_MOUNTPOINT = 3007
 
-# No service found at given mountpath.
+# service not found
 SERVICE_NOT_FOUND = 3009
 
-# Service missing configuration or dependencies.
+# service needs configuration
 SERVICE_NEEDS_CONFIGURATION = 3010
 
-# Service already exists at given mountpath.
+# service already exists
 SERVICE_MOUNTPOINT_CONFLICT = 3011
 
-# Service directory does not contain a manifest file.
+# missing manifest file
 SERVICE_MANIFEST_NOT_FOUND = 3012
 
-# Service options are not well-formed JSONs.
+# failed to parse service options
 SERVICE_OPTIONS_MALFORMED = 3013
 
-# Source path does not match a file or directory.
+# source path not found
 SERVICE_SOURCE_NOT_FOUND = 3014
 
-# Source path could not be resolved.
+# error resolving source
 SERVICE_SOURCE_ERROR = 3015
 
-# Unknown service script.
+# unknown script
 SERVICE_UNKNOWN_SCRIPT = 3016
 
-# API for managing Foxx services disabled.
+# service api disabled
 SERVICE_API_DISABLED = 3099
 
 ###################################
-# JavaScript Module Loader Errors #
+# JavaScript module loader errors #
 ###################################
 
-# Cannot resolve module path.
+# cannot locate module
 MODULE_NOT_FOUND = 3100
 
-# Module could not be parsed because of a syntax error.
+# syntax error in module
 MODULE_SYNTAX_ERROR = 3101
 
-# Failed to invoke the module in its context.
+# failed to invoke module
 MODULE_FAILURE = 3103
 
-#####################
-# Enterprise Errors #
-#####################
+#############################
+# Enterprise Edition errors #
+#############################
 
-# Requested collection needs to be smart.
+# collection is not smart
 NO_SMART_COLLECTION = 4000
 
-# Given document does not have the smart graph attribute set.
+# smart graph attribute not given
 NO_SMART_GRAPH_ATTRIBUTE = 4001
 
-# Smart collection cannot be dropped.
+# cannot drop this smart collection
 CANNOT_DROP_SMART_COLLECTION = 4002
 
-# "_key" not prefixed with the value of the smart graph attribute.
+# in smart vertex collections _key must be a string and prefixed with the value of the smart graph attribute
 KEY_MUST_BE_PREFIXED_WITH_SMART_GRAPH_ATTRIBUTE = 4003
 
-# Given smart graph attribute is illegal and cannot be used for sharding.
+# attribute cannot be used as smart graph attribute
 ILLEGAL_SMART_GRAPH_ATTRIBUTE = 4004
 
-# Smart graph attribute of collection does not match the attribute of graph.
+# smart graph attribute mismatch
 SMART_GRAPH_ATTRIBUTE_MISMATCH = 4005
 
-# Invalid smart join attribute declaration.
+# invalid smart join attribute declaration
 INVALID_SMART_JOIN_ATTRIBUTE = 4006
 
-# Key must be prefixed with smart join attribute.
+# shard key value must be prefixed with the value of the smart join attribute
 KEY_MUST_BE_PREFIXED_WITH_SMART_JOIN_ATTRIBUTE = 4007
 
-# Document lacks required smart join attribute.
+# smart join attribute not given or invalid
 NO_SMART_JOIN_ATTRIBUTE = 4008
 
-# Cannot update the value of the smart join attribute.
+# must not change the value of the smartJoinAttribute
 CLUSTER_MUST_NOT_CHANGE_SMART_JOIN_ATTRIBUTE = 4009
 
-# There was an attempt to create an edge between separated graph components.
+# non disjoint edge found
 INVALID_DISJOINT_SMART_EDGE = 4010
 
-# Switching back and forth between Satellite and Smart in Disjoint SmartGraph is not
-# supported within a single AQL statement. Split into multiple statements.
+# Unsupported alternating Smart and Satellite in Disjoint SmartGraph.
 UNSUPPORTED_CHANGE_IN_SMART_TO_SATELLITE_DISJOINT_EDGE_DIRECTION = 4011
 
-#########################
-# Cluster Repair Errors #
-#########################
-
-# General error during cluster repairs.
-CLUSTER_REPAIRS_FAILED = 5000
-
-# Cluster repairs not healthy enough.
-CLUSTER_REPAIRS_NOT_ENOUGH_HEALTHY = 5001
-
-# Raised on various inconsistencies regarding the replication factor.
-CLUSTER_REPAIRS_REPLICATION_FACTOR_VIOLATED = 5002
-
-# Repaired collection has some shards without DBServers.
-CLUSTER_REPAIRS_NO_DBSERVERS = 5003
-
-# Shard in collection and its prototype in the corresponding "shard_like"
-# collection have mismatching leaders.
-CLUSTER_REPAIRS_MISMATCHING_LEADERS = 5004
-
-# Shard in collection and its prototype in the corresponding "shard_like"
-# collection don't have the same followers.
-CLUSTER_REPAIRS_MISMATCHING_FOLLOWERS = 5005
-
-# Repaired collection does not have "shard_like" as expected.
-CLUSTER_REPAIRS_INCONSISTENT_ATTRIBUTES = 5006
-
-# Collection and its "shard_like" prototype have unequal number of DBServers.
-CLUSTER_REPAIRS_MISMATCHING_SHARDS = 5007
-
-# Move shard job failed during cluster repairs.
-CLUSTER_REPAIRS_JOB_FAILED = 5008
-
-# Move shard job disappeared before finishing.
-CLUSTER_REPAIRS_JOB_DISAPPEARED = 5009
-
-# Agency transaction failed during either sending or executing it.
-CLUSTER_REPAIRS_OPERATION_FAILED = 5010
-
 #################
-# Agency Errors #
+# Agency errors #
 #################
 
-# Malformed gossip message.
+# malformed gossip message
 AGENCY_MALFORMED_GOSSIP_MESSAGE = 20001
 
-# Malformed inquire request.
+# malformed inquire request
 AGENCY_MALFORMED_INQUIRE_REQUEST = 20002
 
 # Inform message must be an object.
 AGENCY_INFORM_MUST_BE_OBJECT = 20011
 
-# Inform message must contain a uint parameter 'term'.
+# Inform message must contain uint parameter 'term'
 AGENCY_INFORM_MUST_CONTAIN_TERM = 20012
 
-# Inform message must contain a string parameter 'ID'.
+# Inform message must contain string parameter 'id'
 AGENCY_INFORM_MUST_CONTAIN_ID = 20013
 
-# Inform message must contain an array 'active'.
+# Inform message must contain array 'active'
 AGENCY_INFORM_MUST_CONTAIN_ACTIVE = 20014
 
-# Inform message must contain an object 'pool'.
+# Inform message must contain object 'pool'
 AGENCY_INFORM_MUST_CONTAIN_POOL = 20015
 
-# Inform message must contain an object 'min ping'.
+# Inform message must contain object 'min ping'
 AGENCY_INFORM_MUST_CONTAIN_MIN_PING = 20016
 
-# Inform message must contain an object 'max ping'.
+# Inform message must contain object 'max ping'
 AGENCY_INFORM_MUST_CONTAIN_MAX_PING = 20017
 
-# Inform message must contain an object 'timeoutMult'.
+# Inform message must contain object 'timeoutMult'
 AGENCY_INFORM_MUST_CONTAIN_TIMEOUT_MULT = 20018
 
-# Cannot rebuild readDB or the spearHead from replicated log.
+# Cannot rebuild readDB and spearHead
 AGENCY_CANNOT_REBUILD_DBS = 20021
 
-# Malformed agency transaction.
+# malformed agency transaction
 AGENCY_MALFORMED_TRANSACTION = 20030
 
 ######################
-# Supervision Errors #
+# Supervision errors #
 ######################
 
-# General supervision failure.
+# general supervision failure
 SUPERVISION_GENERAL_FAILURE = 20501
 
 ####################
-# Scheduler Errors #
+# Scheduler errors #
 ####################
 
-# Queue is full.
+# queue is full
 QUEUE_FULL = 21003
 
-# Request with a queue time requirement is set and cannot be fulfilled.
+# queue time violated
 QUEUE_TIME_REQUIREMENT_VIOLATED = 21004
 
+# too many detached scheduler threads
+TOO_MANY_DETACHED_THREADS = 21005
+
 ######################
-# Maintenance Errors #
+# Maintenance errors #
 ######################
 
-# Maintenance action cannot be stopped once started.
-ACTION_OPERATION_UNABORTABLE = 6002
-
-# This maintenance action is still processing.
+# maintenance action still processing
 ACTION_UNFINISHED = 6003
 
-# No such maintenance action exists.
-NO_SUCH_ACTION = 6004
-
 #########################
-# Backup/Restore Errors #
+# Backup/Restore errors #
 #########################
 
-# Failed to create hot backup set.
+# internal hot backup error
 HOT_BACKUP_INTERNAL = 7001
 
-# Failed to restore to hot backup set.
+# internal hot restore error
 HOT_RESTORE_INTERNAL = 7002
 
-# The hot backup set cannot be restored on non-matching cluster topology.
+# backup does not match this topology
 BACKUP_TOPOLOGY = 7003
 
-# No space left on device.
+# no space left on device
 NO_SPACE_LEFT_ON_DEVICE = 7004
 
-# Failed to upload hot backup set to remote target.
+# failed to upload hot backup set to remote target
 FAILED_TO_UPLOAD_BACKUP = 7005
 
-# Failed to download hot backup set from remote source.
+# failed to download hot backup set from remote source
 FAILED_TO_DOWNLOAD_BACKUP = 7006
 
-# Cannot find a hot backup set with this ID.
+# no such hot backup set can be found
 NO_SUCH_HOT_BACKUP = 7007
 
-# Invalid remote repository configuration.
+# remote hotback repository configuration error
 REMOTE_REPOSITORY_CONFIG_BAD = 7008
 
-# Some DB servers cannot be reached for transaction locks.
+# some db servers cannot be reached for transaction locks
 LOCAL_LOCK_FAILED = 7009
 
-# Some DB servers cannot be reached for transaction locks.
+# some db servers cannot be reached for transaction locks
 LOCAL_LOCK_RETRY = 7010
 
-# Conflict of multiple hot backup processes.
+# hot backup conflict
 HOT_BACKUP_CONFLICT = 7011
 
-# One or more db servers could not be reached for hot backup inquiry.
+# hot backup not all db servers reachable
 HOT_BACKUP_DBSERVERS_AWOL = 7012
 
-########################
-# Plan Analyzer Errors #
-########################
+#########################
+# Plan Analyzers errors #
+#########################
 
-# Plan could not be modified while creating or deleting Analyzers revision.
-ERROR_CLUSTER_COULD_NOT_MODIFY_ANALYZERS_IN_PLAN = 7021
-
-##############
-# AIR Errors #
-##############
-
-# During the execution of an AIR program an error occurred.
-AIR_EXECUTION_ERROR = 8001
+# analyzers in plan could not be modified
+CLUSTER_COULD_NOT_MODIFY_ANALYZERS_IN_PLAN = 7021
 
 #############
 # Licensing #
 #############
 
-# The license has expired or is invalid.
+# license has expired or is invalid
 LICENSE_EXPIRED_OR_INVALID = 9001
 
-# Verification of license failed.
+# license verification failed
 LICENSE_SIGNATURE_VERIFICATION = 9002
 
-# The ID of the license does not match the ID of this instance.
+# non-matching license id
 LICENSE_NON_MATCHING_ID = 9003
 
-# The installed license does not cover this feature.
+# feature is not enabled by the license
 LICENSE_FEATURE_NOT_ENABLED = 9004
 
-# The installed license does not cover a higher number of this resource.
+# the resource is exhausted
 LICENSE_RESOURCE_EXHAUSTED = 9005
 
-# The license does not hold features of an ArangoDB license.
+# invalid license
 LICENSE_INVALID = 9006
 
-# The license has one or more inferior features.
+# conflicting license
 LICENSE_CONFLICT = 9007
 
-# Could not verify the license’s signature.
+# failed to validate license signature
 LICENSE_VALIDATION_FAILED = 9008
