@@ -1,5 +1,7 @@
+import pytest
 from packaging import version
 
+from arango.errno import FORBIDDEN
 from arango.exceptions import (
     AQLCacheClearError,
     AQLCacheConfigureError,
@@ -344,6 +346,86 @@ def test_aql_function_management(db, bad_db):
     # Test delete AQL function group
     assert db.aql.delete_function(fn_group, group=True) == {"deleted": 1}
     assert db.aql.functions() == []
+
+
+def test_cache_results_management(db, bad_db, col, docs, cluster):
+    if cluster:
+        pytest.skip("Cluster mode does not support query result cache management")
+
+    aql = db.aql
+    cache = aql.cache
+
+    # Sanity check, just see if the response is OK.
+    _ = cache.properties()
+    with pytest.raises(AQLCachePropertiesError) as err:
+        _ = bad_db.aql.cache.properties()
+    assert err.value.error_code == FORBIDDEN
+
+    # Turn on caching
+    result = cache.configure(mode="on")
+    assert result["mode"] == "on"
+    result = cache.properties()
+    assert result["mode"] == "on"
+    with pytest.raises(AQLCacheConfigureError) as err:
+        _ = bad_db.aql.cache.configure(mode="on")
+    assert err.value.error_code == FORBIDDEN
+
+    # Run a simple query to use the cache
+    col.insert(docs[0])
+    _ = aql.execute(
+        query="FOR doc IN @@collection RETURN doc",
+        bind_vars={"@collection": col.name},
+        cache=True,
+    )
+
+    # Check the entries
+    entries = cache.entries()
+    assert isinstance(entries, list)
+    assert len(entries) > 0
+
+    with pytest.raises(AQLCacheEntriesError) as err:
+        _ = bad_db.aql.cache.entries()
+    assert err.value.error_code == FORBIDDEN
+
+    # Clear the cache
+    cache.clear()
+    entries = cache.entries()
+    assert len(entries) == 0
+    with pytest.raises(AQLCacheClearError) as err:
+        bad_db.aql.cache.clear()
+    assert err.value.error_code == FORBIDDEN
+
+
+def test_cache_plan_management(db, bad_db, col, docs, db_version):
+    if db_version < version.parse("3.12.4"):
+        pytest.skip("Query plan cache is supported in ArangoDB 3.12.4+")
+
+    aql = db.aql
+    cache = aql.cache
+
+    # Run a simple query to use the cache
+    col.insert(docs[0])
+    _ = aql.execute(
+        query="FOR doc IN @@collection RETURN doc",
+        bind_vars={"@collection": col.name},
+        use_plan_cache=True,
+    )
+
+    # Check the entries
+    entries = cache.plan_entries()
+    assert isinstance(entries, list)
+    assert len(entries) > 0
+    with pytest.raises(AQLCacheEntriesError) as err:
+        _ = bad_db.aql.cache.plan_entries()
+    assert err.value.error_code == FORBIDDEN
+
+    # Clear the cache
+    cache.clear_plan()
+    entries = cache.plan_entries()
+    assert len(entries) == 0
+    with pytest.raises(AQLCacheClearError) as err:
+        bad_db.aql.cache.clear_plan()
+    assert err.value.error_code == FORBIDDEN
 
 
 def test_aql_cache_management(db, bad_db):

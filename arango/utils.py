@@ -9,7 +9,7 @@ __all__ = [
 import json
 import logging
 from contextlib import contextmanager
-from typing import Any, Iterator, Sequence, Union
+from typing import Any, Iterator, Optional, Sequence, Union
 
 from arango.exceptions import DocumentParseError, SortValidationError
 from arango.typings import Json, Jsons
@@ -148,7 +148,7 @@ def validate_sort_parameters(sort: Sequence[Json]) -> bool:
     return True
 
 
-def build_sort_expression(sort: Jsons | None) -> str:
+def build_sort_expression(sort: Optional[Jsons]) -> str:
     """Build a sort condition for an AQL query.
 
     :param sort: Document sort parameters.
