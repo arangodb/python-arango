@@ -60,10 +60,10 @@ class AsyncJob(Generic[T]):
         fail.
 
         :return: Async job status. Possible values are "pending" (job is still
-            in queue), "done" (job finished or raised an error), or "cancelled"
-            (job was cancelled before completion).
+            in queue), "done" (job finished or raised an error).
         :rtype: str
-        :raise arango.exceptions.AsyncJobStatusError: If retrieval fails.
+        :raise arango.exceptions.AsyncJobStatusError: If retrieval fails or
+            job is not found.
         """
         request = Request(method="get", endpoint=f"/_api/job/{self._id}")
         resp = self._conn.send_request(request)
