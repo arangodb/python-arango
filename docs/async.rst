@@ -45,8 +45,8 @@ the results can be retrieved once available via :ref:`AsyncJob` objects.
 
     # Retrieve the status of each async job.
     for job in [job1, job2, job3, job4]:
-        # Job status can be "pending", "done" or "cancelled".
-        assert job.status() in {'pending', 'done', 'cancelled'}
+        # Job status can be "pending" or "done".
+        assert job.status() in {'pending', 'done'}
 
         # Let's wait until the jobs are finished.
         while job.status() != 'done':
