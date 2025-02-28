@@ -17,8 +17,7 @@ your HTTP client as described in the :ref:`HTTPClients` section.
 
 The ``ArangoClient`` class provides an option to override the verification behavior,
 no matter what has been defined in the underlying HTTP session.
-You can use this option to disable verification or provide a custom CA bundle without
-defining a custom HTTP Client.
+You can use this option to disable verification.
 
 .. code-block:: python
 
@@ -34,3 +33,18 @@ application:
 
     import requests
     requests.packages.urllib3.disable_warnings()
+
+You can also provide a custom CA bundle without defining a custom HTTP Client:
+
+.. code-block:: python
+
+    client = ArangoClient(hosts="https://localhost:8529", verify_override="path/to/certfile")
+
+If `verify_override` is set to a path to a directory, the directory must have been processed using the `c_rehash` utility
+supplied with OpenSSL. For more information, see the `requests documentation <https://requests.readthedocs.io/en/master/user/advanced/#ssl-cert-verification>`_.
+
+Setting `verify_override` to `True` will use the system's default CA bundle.
+
+.. code-block:: python
+
+    client = ArangoClient(hosts="https://localhost:8529", verify_override=True)

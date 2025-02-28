@@ -79,10 +79,12 @@ class ArangoClient:
     :type deserializer: callable
     :param verify_override: Override TLS certificate verification. This will
        override the verify method of the underlying HTTP client.
-       None: Do not change the verification behavior of the underlying HTTP client.
-       True: Verify TLS certificate using the system CA certificates.
-       False: Do not verify TLS certificate.
-       str: Path to a custom CA bundle file or directory.
+
+           - `None`: Do not change the verification behavior of the
+             underlying HTTP client.
+           - `True`: Verify TLS certificate using the system CA certificates.
+           - `False`: Do not verify TLS certificate.
+           - `str`: Path to a custom CA bundle file or directory.
     :type verify_override: Union[bool, str, None]
     :param request_timeout: This is the default request timeout (in seconds)
        for http requests issued by the client if the parameter http_client is
