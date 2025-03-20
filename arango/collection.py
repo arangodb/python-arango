@@ -566,15 +566,29 @@ class Collection(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def truncate(self) -> Result[bool]:
+    def truncate(
+        self,
+        sync: Optional[bool] = None,
+        compact: Optional[bool] = None,
+    ) -> Result[bool]:
         """Delete all documents in the collection.
 
+        :param sync: Block until deletion operation is synchronized to disk.
+        :param compact: Whether to compact the collection after truncation.
         :return: True if collection was truncated successfully.
         :rtype: bool
         :raise arango.exceptions.CollectionTruncateError: If operation fails.
         """
+        params: Json = {}
+        if sync is not None:
+            params["waitForSync"] = sync
+        if compact is not None:
+            params["compact"] = compact
+
         request = Request(
-            method="put", endpoint=f"/_api/collection/{self.name}/truncate"
+            method="put",
+            endpoint=f"/_api/collection/{self.name}/truncate",
+            params=params,
         )
 
         def response_handler(resp: Response) -> bool:
