@@ -2771,7 +2771,6 @@ class StandardCollection(Collection):
             "returnNew": return_new,
             "returnOld": return_old,
             "ignoreRevs": not check_rev,
-            "overwrite": not check_rev,
             "silent": silent,
         }
         if sync is not None:
