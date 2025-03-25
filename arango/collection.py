@@ -1761,14 +1761,6 @@ class Collection(ApiGroup):
             successfully (returns document metadata) and which were not
             (returns exception object).
 
-        .. note::
-
-            In edge/vertex collections, this method does NOT provide the
-            transactional guarantees and validations that single insert
-            operation does for graphs. If these properties are required, see
-            :func:`arango.database.StandardDatabase.begin_batch_execution`
-            for an alternative approach.
-
         :param documents: List of new documents to insert. If they contain the
             "_key" or "_id" fields, the values are used as the keys of the new
             documents (auto-generated otherwise). Any "_rev" field is ignored.
@@ -1890,14 +1882,6 @@ class Collection(ApiGroup):
             (returns exception object). Alternatively, you can rely on
             setting **raise_on_document_error** to True (defaults to False).
 
-        .. note::
-
-            In edge/vertex collections, this method does NOT provide the
-            transactional guarantees and validations that single update
-            operation does for graphs. If these properties are required, see
-            :func:`arango.database.StandardDatabase.begin_batch_execution`
-            for an alternative approach.
-
         :param documents: Partial or full documents with the updated values.
             They must contain the "_id" or "_key" fields.
         :type documents: [dict]
@@ -2009,14 +1993,6 @@ class Collection(ApiGroup):
     ) -> Result[int]:
         """Update matching documents.
 
-        .. note::
-
-            In edge/vertex collections, this method does NOT provide the
-            transactional guarantees and validations that single update
-            operation does for graphs. If these properties are required, see
-            :func:`arango.database.StandardDatabase.begin_batch_execution`
-            for an alternative approach.
-
         :param filters: Document filters.
         :type filters: dict
         :param body: Full or partial document body with the updates.
@@ -2098,14 +2074,6 @@ class Collection(ApiGroup):
             inspect the list to determine which documents were replaced
             successfully (returns document metadata) and which were not
             (returns exception object).
-
-        .. note::
-
-            In edge/vertex collections, this method does NOT provide the
-            transactional guarantees and validations that single replace
-            operation does for graphs. If these properties are required, see
-            :func:`arango.database.StandardDatabase.begin_batch_execution`
-            for an alternative approach.
 
         :param documents: New documents to replace the old ones with. They must
             contain the "_id" or "_key" fields. Edge documents must also have
@@ -2201,14 +2169,6 @@ class Collection(ApiGroup):
     ) -> Result[int]:
         """Replace matching documents.
 
-        .. note::
-
-            In edge/vertex collections, this method does NOT provide the
-            transactional guarantees and validations that single replace
-            operation does for graphs. If these properties are required, see
-            :func:`arango.database.StandardDatabase.begin_batch_execution`
-            for an alternative approach.
-
         :param filters: Document filters.
         :type filters: dict
         :param body: New document body.
@@ -2276,14 +2236,6 @@ class Collection(ApiGroup):
             inspect the list to determine which documents were deleted
             successfully (returns document metadata) and which were not
             (returns exception object).
-
-        .. note::
-
-            In edge/vertex collections, this method does NOT provide the
-            transactional guarantees and validations that single delete
-            operation does for graphs. If these properties are required, see
-            :func:`arango.database.StandardDatabase.begin_batch_execution`
-            for an alternative approach.
 
         :param documents: Document IDs, keys or bodies. Document bodies must
             contain the "_id" or "_key" fields.
@@ -2368,14 +2320,6 @@ class Collection(ApiGroup):
     ) -> Result[int]:
         """Delete matching documents.
 
-        .. note::
-
-            In edge/vertex collections, this method does NOT provide the
-            transactional guarantees and validations that single delete
-            operation does for graphs. If these properties are required, see
-            :func:`arango.database.StandardDatabase.begin_batch_execution`
-            for an alternative approach.
-
         :param filters: Document filters.
         :type filters: dict
         :param limit: Max number of documents to delete. If the limit is lower
@@ -2441,14 +2385,6 @@ class Collection(ApiGroup):
 
             This method is faster than :func:`arango.collection.Collection.insert_many`
             but does not return as many details.
-
-        .. note::
-
-            In edge/vertex collections, this method does NOT provide the
-            transactional guarantees and validations that single insert
-            operation does for graphs. If these properties are required, see
-            :func:`arango.database.StandardDatabase.begin_batch_execution`
-            for an alternative approach.
 
         :param documents: List of new documents to insert. If they contain the
             "_key" or "_id" fields, the values are used as the keys of the new
