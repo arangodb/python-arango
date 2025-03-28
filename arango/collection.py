@@ -576,6 +576,7 @@ class Collection(ApiGroup):
         :param sync: Block until deletion operation is synchronized to disk.
         :type sync: bool | None
         :param compact: Whether to compact the collection after truncation.
+        :type compact: bool | None
         :return: True if collection was truncated successfully.
         :rtype: bool
         :raise arango.exceptions.CollectionTruncateError: If operation fails.
