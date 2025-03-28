@@ -64,11 +64,11 @@ def get_doc_id(doc: Union[str, Json]) -> str:
 
 
 def is_none_or_int(obj: Any) -> bool:
-    """Check if obj is None or an integer.
+    """Check if obj is None or a positive integer.
 
     :param obj: Object to check.
     :type obj: Any
-    :return: True if object is None or an integer.
+    :return: True if object is None or a positive integer.
     :rtype: bool
     """
     return obj is None or (isinstance(obj, int) and obj >= 0)
@@ -128,11 +128,11 @@ def build_filter_conditions(filters: Json) -> str:
     return "FILTER " + " AND ".join(conditions)
 
 
-def validate_sort_parameters(sort: Sequence[Json]) -> bool:
+def validate_sort_parameters(sort: Jsons) -> bool:
     """Validate sort parameters for an AQL query.
 
     :param sort: Document sort parameters.
-    :type sort: Sequence[Json]
+    :type sort: Jsons
     :return: Validation success.
     :rtype: bool
     :raise arango.exceptions.SortValidationError: If sort parameters are invalid.

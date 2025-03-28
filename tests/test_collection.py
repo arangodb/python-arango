@@ -136,6 +136,8 @@ def test_collection_misc_methods(col, bad_col, cluster):
     # Test truncate collection
     assert col.truncate() is True
     assert len(col) == 0
+    assert col.truncate(sync=True, compact=False) is True
+    assert len(col) == 0
 
     # Test truncate with bad collection
     with assert_raises(CollectionTruncateError) as err:
