@@ -574,6 +574,7 @@ class Collection(ApiGroup):
         """Delete all documents in the collection.
 
         :param sync: Block until deletion operation is synchronized to disk.
+        :type sync: bool | None
         :param compact: Whether to compact the collection after truncation.
         :return: True if collection was truncated successfully.
         :rtype: bool
