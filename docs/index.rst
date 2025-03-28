@@ -7,6 +7,8 @@ Python-Arango
 
 Welcome to the documentation for **python-arango**, a Python driver for ArangoDB_.
 
+If you're interested in using asyncio, please check python-arango-async_ driver.
+
 Requirements
 =============
 
@@ -96,3 +98,4 @@ Development
     specs
 
 .. _ArangoDB: https://www.arangodb.com
+.. _python-arango-async: https://python-arango-async.readthedocs.io
