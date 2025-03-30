@@ -239,6 +239,10 @@ def test_document_insert_many(col, bad_col, docs):
         assert isinstance(result["old"], dict)
         assert isinstance(result["_old_rev"], str)
 
+    # Test insert_many with raise_on_document_error set to True
+    with assert_raises(DocumentInsertError) as err:
+        col.insert_many(docs, raise_on_document_error=True)
+
     # Test get with bad database
     with assert_raises(DocumentInsertError) as err:
         bad_col.insert_many(docs)
@@ -1092,6 +1096,10 @@ def test_document_delete_many(col, bad_col, docs):
         assert "[HTTP 202][ERR 1200]" in error.message
     assert len(col) == 6
 
+    # Test delete_many with raise_on_document_error set to True
+    with assert_raises(DocumentRevisionError) as err:
+        col.delete_many(docs, raise_on_document_error=True)
+
     # Test delete_many (documents) with missing documents
     empty_collection(col)
     results = col.delete_many(
@@ -1108,6 +1116,10 @@ def test_document_delete_many(col, bad_col, docs):
         assert error.http_code == 202
         assert "[HTTP 202][ERR 1202]" in error.message
     assert len(col) == 0
+
+    # Test delete_many with raise_on_document_error set to True
+    with assert_raises(DocumentDeleteError) as err:
+        col.delete_many(docs, raise_on_document_error=True)
 
     # Test delete_many with bad database
     with assert_raises(DocumentDeleteError) as err:
