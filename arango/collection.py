@@ -1752,6 +1752,7 @@ class Collection(ApiGroup):
         merge: Optional[bool] = None,
         refill_index_caches: Optional[bool] = None,
         version_attribute: Optional[str] = None,
+        raise_on_document_error: bool = False,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Insert multiple documents.
 
@@ -1761,7 +1762,8 @@ class Collection(ApiGroup):
             returned as an object in the result list. It is up to you to
             inspect the list to determine which documents were inserted
             successfully (returns document metadata) and which were not
-            (returns exception object).
+            (returns exception object). Alternatively, you can rely on
+            setting **raise_on_document_error** to True (defaults to False).
 
         :param documents: List of new documents to insert. If they contain the
             "_key" or "_id" fields, the values are used as the keys of the new
@@ -1801,6 +1803,11 @@ class Collection(ApiGroup):
         :param version_attribute: support for simple external versioning to
             document operations.
         :type version_attribute: str
+        :param raise_on_document_error: Whether to raise if a DocumentRevisionError
+            or a DocumentInsertError is encountered on an individual document,
+            as opposed to returning the error as an object in the result list.
+            Defaults to False.
+        :type raise_on_document_error: bool
         :return: List of document metadata (e.g. document keys, revisions) and
             any exception, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoServerError] | bool
@@ -1853,7 +1860,12 @@ class Collection(ApiGroup):
                     results.append(body)
                 else:
                     sub_resp = self._conn.prep_bulk_err_response(resp, body)
-                    results.append(DocumentInsertError(sub_resp, request))
+                    error = DocumentInsertError(sub_resp, request)
+
+                    if raise_on_document_error:
+                        raise error
+
+                    results.append(error)
 
             return results
 
@@ -2228,6 +2240,7 @@ class Collection(ApiGroup):
         sync: Optional[bool] = None,
         silent: bool = False,
         refill_index_caches: Optional[bool] = None,
+        raise_on_document_error: bool = False,
     ) -> Result[Union[bool, List[Union[Json, ArangoServerError]]]]:
         """Delete multiple documents.
 
@@ -2256,6 +2269,11 @@ class Collection(ApiGroup):
             index caches if document operations affect the edge index or
             cache-enabled persistent indexes.
         :type refill_index_caches: bool | None
+        :param raise_on_document_error: Whether to raise if a DocumentRevisionError
+            or a DocumentDeleteError is encountered on an individual document,
+            as opposed to returning the error as an object in the result list.
+            Defaults to False.
+        :type raise_on_document_error: bool
         :return: List of document metadata (e.g. document keys, revisions) and
             any exceptions, or True if parameter **silent** was set to True.
         :rtype: [dict | ArangoServerError] | bool
@@ -2307,6 +2325,10 @@ class Collection(ApiGroup):
                         error = DocumentRevisionError(sub_resp, request)
                     else:
                         error = DocumentDeleteError(sub_resp, request)
+
+                    if raise_on_document_error:
+                        raise error
+
                     results.append(error)
 
             return results
