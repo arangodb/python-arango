@@ -17,6 +17,7 @@ from arango.backup import Backup
 from arango.cluster import Cluster
 from arango.collection import StandardCollection
 from arango.connection import Connection
+from arango.errno import HTTP_NOT_FOUND
 from arango.exceptions import (
     AnalyzerCreateError,
     AnalyzerDeleteError,
@@ -1644,12 +1645,14 @@ class Database(ApiGroup):
         :return: True if graph exists, False otherwise.
         :rtype: bool
         """
-        request = Request(method="get", endpoint="/_api/gharial")
+        request = Request(method="get", endpoint=f"/_api/gharial/{name}")
 
         def response_handler(resp: Response) -> bool:
-            if not resp.is_success:
-                raise GraphListError(resp, request)
-            return any(name == graph["_key"] for graph in resp.body["graphs"])
+            if resp.is_success:
+                return True
+            if resp.status_code == HTTP_NOT_FOUND:
+                return False
+            raise GraphListError(resp, request)
 
         return self._execute(request, response_handler)
 
