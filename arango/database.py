@@ -1699,6 +1699,7 @@ class Database(ApiGroup):
         replication_factor: Optional[int] = None,
         write_concern: Optional[int] = None,
         satellite_collections: Optional[Sequence[str]] = None,
+        sync: Optional[bool] = None,
     ) -> Result[Graph]:
         """Create a new graph.
 
@@ -1753,6 +1754,8 @@ class Database(ApiGroup):
             element must be a string and a valid collection name. The
             collection type cannot be modified later.
         :type satellite_collections: [str] | None
+        :param sync: Wait until everything is synced to disk.
+        :type sync: bool | None
         :return: Graph API wrapper.
         :rtype: arango.graph.Graph
         :raise arango.exceptions.GraphCreateError: If create fails.
@@ -1796,7 +1799,16 @@ class Database(ApiGroup):
         if satellite_collections is not None:  # pragma: no cover
             data["options"]["satellites"] = satellite_collections
 
-        request = Request(method="post", endpoint="/_api/gharial", data=data)
+        params: Params = {}
+        if sync is not None:
+            params["waitForSync"] = sync
+
+        request = Request(
+            method="post",
+            endpoint="/_api/gharial",
+            data=data,
+            params=params,
+        )
 
         def response_handler(resp: Response) -> Graph:
             if resp.is_success:
