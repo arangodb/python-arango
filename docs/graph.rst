@@ -87,7 +87,7 @@ Here is an example showing how edge definitions are managed:
         teach = school.create_edge_definition(
             edge_collection='teach',
             from_vertex_collections=['teachers'],
-            to_vertex_collections=['teachers']
+            to_vertex_collections=['lectures']
         )
 
     # List edge definitions.
