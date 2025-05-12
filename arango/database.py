@@ -17,6 +17,7 @@ from arango.backup import Backup
 from arango.cluster import Cluster
 from arango.collection import StandardCollection
 from arango.connection import Connection
+from arango.errno import HTTP_NOT_FOUND
 from arango.exceptions import (
     AnalyzerCreateError,
     AnalyzerDeleteError,
@@ -1644,12 +1645,14 @@ class Database(ApiGroup):
         :return: True if graph exists, False otherwise.
         :rtype: bool
         """
-        request = Request(method="get", endpoint="/_api/gharial")
+        request = Request(method="get", endpoint=f"/_api/gharial/{name}")
 
         def response_handler(resp: Response) -> bool:
-            if not resp.is_success:
-                raise GraphListError(resp, request)
-            return any(name == graph["_key"] for graph in resp.body["graphs"])
+            if resp.is_success:
+                return True
+            if resp.status_code == HTTP_NOT_FOUND:
+                return False
+            raise GraphListError(resp, request)
 
         return self._execute(request, response_handler)
 
@@ -1699,6 +1702,7 @@ class Database(ApiGroup):
         replication_factor: Optional[int] = None,
         write_concern: Optional[int] = None,
         satellite_collections: Optional[Sequence[str]] = None,
+        sync: Optional[bool] = None,
     ) -> Result[Graph]:
         """Create a new graph.
 
@@ -1753,6 +1757,8 @@ class Database(ApiGroup):
             element must be a string and a valid collection name. The
             collection type cannot be modified later.
         :type satellite_collections: [str] | None
+        :param sync: Wait until everything is synced to disk.
+        :type sync: bool | None
         :return: Graph API wrapper.
         :rtype: arango.graph.Graph
         :raise arango.exceptions.GraphCreateError: If create fails.
@@ -1796,7 +1802,16 @@ class Database(ApiGroup):
         if satellite_collections is not None:  # pragma: no cover
             data["options"]["satellites"] = satellite_collections
 
-        request = Request(method="post", endpoint="/_api/gharial", data=data)
+        params: Params = {}
+        if sync is not None:
+            params["waitForSync"] = sync
+
+        request = Request(
+            method="post",
+            endpoint="/_api/gharial",
+            data=data,
+            params=params,
+        )
 
         def response_handler(resp: Response) -> Graph:
             if resp.is_success:

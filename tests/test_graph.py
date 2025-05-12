@@ -51,7 +51,7 @@ def test_graph_properties(graph, bad_graph, db):
         bad_graph.properties()
 
     new_graph_name = generate_graph_name()
-    new_graph = db.create_graph(new_graph_name)
+    new_graph = db.create_graph(new_graph_name, sync=True)
     properties = new_graph.properties()
     assert properties["id"] == f"_graphs/{new_graph_name}"
     assert properties["name"] == new_graph_name
