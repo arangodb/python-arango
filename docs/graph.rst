@@ -83,6 +83,7 @@ Here is an example showing how edge definitions are managed:
 
     # Create an edge definition named "teach". This creates any missing
     # collections and returns an API wrapper for "teach" edge collection.
+    # At first, create a wrong teachers->teachers mapping intentionally.
     if not school.has_edge_definition('teach'):
         teach = school.create_edge_definition(
             edge_collection='teach',
@@ -93,7 +94,7 @@ Here is an example showing how edge definitions are managed:
     # List edge definitions.
     school.edge_definitions()
 
-    # Replace the edge definition.
+    # Replace with the correct edge definition.
     school.replace_edge_definition(
         edge_collection='teach',
         from_vertex_collections=['teachers'],
