@@ -3008,9 +3008,8 @@ class VertexCollection(Collection):
         self,
         vertex: Json,
         sync: Optional[bool] = None,
-        silent: bool = False,
         return_new: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Insert a new vertex document.
 
         :param vertex: New vertex document to insert. If it has "_key" or "_id"
@@ -3019,20 +3018,16 @@ class VertexCollection(Collection):
         :type vertex: dict
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
         :param return_new: Include body of the new document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
-        :return: Document metadata (e.g. document key, revision), or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentInsertError: If insert fails.
         """
         vertex = self._ensure_key_from_id(vertex)
 
-        params: Params = {"silent": silent, "returnNew": return_new}
+        params: Params = {"returnNew": return_new}
         if sync is not None:
             params["waitForSync"] = sync
 
@@ -3044,11 +3039,9 @@ class VertexCollection(Collection):
             write=self.name,
         )
 
-        def response_handler(resp: Response) -> Union[bool, Json]:
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise DocumentInsertError(resp, request)
-            if silent:
-                return True
             return format_vertex(resp.body)
 
         return self._execute(request, response_handler)
@@ -3059,10 +3052,9 @@ class VertexCollection(Collection):
         check_rev: bool = True,
         keep_none: bool = True,
         sync: Optional[bool] = None,
-        silent: bool = False,
         return_old: bool = False,
         return_new: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Update a vertex document.
 
         :param vertex: Partial or full vertex document with updated values. It
@@ -3076,18 +3068,14 @@ class VertexCollection(Collection):
         :type keep_none: bool | None
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
         :param return_old: Include body of the old document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param return_new: Include body of the new document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentUpdateError: If update fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
@@ -3096,7 +3084,6 @@ class VertexCollection(Collection):
         params: Params = {
             "keepNull": keep_none,
             "overwrite": not check_rev,
-            "silent": silent,
             "returnNew": return_new,
             "returnOld": return_old,
         }
@@ -3112,13 +3099,11 @@ class VertexCollection(Collection):
             write=self.name,
         )
 
-        def response_handler(resp: Response) -> Union[bool, Json]:
+        def response_handler(resp: Response) -> Json:
             if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             elif not resp.is_success:
                 raise DocumentUpdateError(resp, request)
-            if silent is True:
-                return True
             return format_vertex(resp.body)
 
         return self._execute(request, response_handler)
@@ -3128,10 +3113,9 @@ class VertexCollection(Collection):
         vertex: Json,
         check_rev: bool = True,
         sync: Optional[bool] = None,
-        silent: bool = False,
         return_old: bool = False,
         return_new: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Replace a vertex document.
 
         :param vertex: New vertex document to replace the old one with. It must
@@ -3142,25 +3126,20 @@ class VertexCollection(Collection):
         :type check_rev: bool
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
         :param return_old: Include body of the old document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param return_new: Include body of the new document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentReplaceError: If replace fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
         vertex_id, headers = self._prep_from_body(vertex, check_rev)
 
         params: Params = {
-            "silent": silent,
             "returnNew": return_new,
             "returnOld": return_old,
         }
@@ -3176,13 +3155,11 @@ class VertexCollection(Collection):
             write=self.name,
         )
 
-        def response_handler(resp: Response) -> Union[bool, Json]:
+        def response_handler(resp: Response) -> Json:
             if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             elif not resp.is_success:
                 raise DocumentReplaceError(resp, request)
-            if silent is True:
-                return True
             return format_vertex(resp.body)
 
         return self._execute(request, response_handler)
@@ -3326,9 +3303,8 @@ class EdgeCollection(Collection):
         self,
         edge: Json,
         sync: Optional[bool] = None,
-        silent: bool = False,
         return_new: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Insert a new edge document.
 
         :param edge: New edge document to insert. It must contain "_from" and
@@ -3338,20 +3314,16 @@ class EdgeCollection(Collection):
         :type edge: dict
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
         :param return_new: Include body of the new document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentInsertError: If insert fails.
         """
         edge = self._ensure_key_from_id(edge)
 
-        params: Params = {"silent": silent, "returnNew": return_new}
+        params: Params = {"returnNew": return_new}
         if sync is not None:
             params["waitForSync"] = sync
 
@@ -3363,11 +3335,9 @@ class EdgeCollection(Collection):
             write=self.name,
         )
 
-        def response_handler(resp: Response) -> Union[bool, Json]:
+        def response_handler(resp: Response) -> Json:
             if not resp.is_success:
                 raise DocumentInsertError(resp, request)
-            if silent:
-                return True
             return format_edge(resp.body)
 
         return self._execute(request, response_handler)
@@ -3378,10 +3348,9 @@ class EdgeCollection(Collection):
         check_rev: bool = True,
         keep_none: bool = True,
         sync: Optional[bool] = None,
-        silent: bool = False,
         return_old: bool = False,
         return_new: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Update an edge document.
 
         :param edge: Partial or full edge document with updated values. It must
@@ -3395,18 +3364,14 @@ class EdgeCollection(Collection):
         :type keep_none: bool | None
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
         :param return_old: Include body of the old document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param return_new: Include body of the new document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentUpdateError: If update fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
@@ -3415,7 +3380,6 @@ class EdgeCollection(Collection):
         params: Params = {
             "keepNull": keep_none,
             "overwrite": not check_rev,
-            "silent": silent,
             "returnNew": return_new,
             "returnOld": return_old,
         }
@@ -3431,13 +3395,11 @@ class EdgeCollection(Collection):
             write=self.name,
         )
 
-        def response_handler(resp: Response) -> Union[bool, Json]:
+        def response_handler(resp: Response) -> Json:
             if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentUpdateError(resp, request)
-            if silent is True:
-                return True
             return format_edge(resp.body)
 
         return self._execute(request, response_handler)
@@ -3447,10 +3409,9 @@ class EdgeCollection(Collection):
         edge: Json,
         check_rev: bool = True,
         sync: Optional[bool] = None,
-        silent: bool = False,
         return_old: bool = False,
         return_new: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Replace an edge document.
 
         :param edge: New edge document to replace the old one with. It must
@@ -3462,25 +3423,20 @@ class EdgeCollection(Collection):
         :type check_rev: bool
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
         :param return_old: Include body of the old document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_old: bool
         :param return_new: Include body of the new document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentReplaceError: If replace fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
         edge_id, headers = self._prep_from_body(edge, check_rev)
 
         params: Params = {
-            "silent": silent,
             "returnNew": return_new,
             "returnOld": return_old,
         }
@@ -3496,13 +3452,11 @@ class EdgeCollection(Collection):
             write=self.name,
         )
 
-        def response_handler(resp: Response) -> Union[bool, Json]:
+        def response_handler(resp: Response) -> Json:
             if resp.status_code == 412:  # pragma: no cover
                 raise DocumentRevisionError(resp, request)
             if not resp.is_success:
                 raise DocumentReplaceError(resp, request)
-            if silent is True:
-                return True
             return format_edge(resp.body)
 
         return self._execute(request, response_handler)
@@ -3575,9 +3529,8 @@ class EdgeCollection(Collection):
         to_vertex: Union[str, Json],
         data: Optional[Json] = None,
         sync: Optional[bool] = None,
-        silent: bool = False,
         return_new: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Insert a new edge document linking the given vertices.
 
         :param from_vertex: "From" vertex document ID or body with "_id" field.
@@ -3590,21 +3543,17 @@ class EdgeCollection(Collection):
         :type data: dict | None
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
         :param return_new: Include body of the new document in the returned
             metadata. Ignored if parameter **silent** is set to True.
         :type return_new: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentInsertError: If insert fails.
         """
         edge = {"_from": get_doc_id(from_vertex), "_to": get_doc_id(to_vertex)}
         if data is not None:
             edge.update(self._ensure_key_from_id(data))
-        return self.insert(edge, sync=sync, silent=silent, return_new=return_new)
+        return self.insert(edge, sync=sync, return_new=return_new)
 
     def edges(
         self,
