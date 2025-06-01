@@ -67,7 +67,7 @@ cursor = db.aql.execute("FOR doc IN students RETURN doc")
 student_names = [document["name"] for document in cursor]
 ```
 
-Another example with [graphs](https://www.arangodb.com/docs/stable/graphs.html):
+Another example with [graphs](https://docs.arangodb.com/stable/graphs/):
 
 ```python
 from arango import ArangoClient
