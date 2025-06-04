@@ -543,6 +543,10 @@ class VertexCollectionDeleteError(ArangoServerError):
     """Failed to delete vertex collection."""
 
 
+class EdgeCollectionListError(ArangoServerError):
+    """Failed to retrieve edge collections."""
+
+
 class EdgeDefinitionListError(ArangoServerError):
     """Failed to retrieve edge definitions."""
 

@@ -334,6 +334,7 @@ def test_create_graph_with_edge_definition(db):
     )
     assert edge_definition in new_graph.edge_definitions()
     assert ovcol_name in new_graph.vertex_collections()
+    assert edge_definition["edge_collection"] in new_graph.edge_collections()
 
 
 def test_vertex_management(fvcol, bad_fvcol, fvdocs):
@@ -394,7 +395,7 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     key = vertex["_key"]
 
     # Test insert third valid vertex with silent set to True
-    assert fvcol.insert(vertex, silent=True) is True
+    assert isinstance(fvcol.insert(vertex), dict)
     assert len(fvcol) == 3
     assert fvcol[key]["val"] == vertex["val"]
 
@@ -444,7 +445,7 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
 
     # Test update vertex with silent set to True
     assert "bar" not in fvcol[vertex]
-    assert fvcol.update({"_key": key, "bar": 200}, silent=True) is True
+    assert isinstance(fvcol.update({"_key": key, "bar": 200}), dict)
     assert fvcol[vertex]["bar"] == 200
     assert fvcol[vertex]["_rev"] != old_rev
     old_rev = fvcol[key]["_rev"]
@@ -519,7 +520,7 @@ def test_vertex_management(fvcol, bad_fvcol, fvdocs):
     assert "vertex" in result
 
     # Test replace vertex with silent set to True
-    assert fvcol.replace({"_key": key, "bar": 200}, silent=True) is True
+    assert isinstance(fvcol.replace({"_key": key, "bar": 200}), dict)
     assert "foo" not in fvcol[key]
     assert "baz" not in fvcol[vertex]
     assert fvcol[vertex]["bar"] == 200
@@ -698,7 +699,7 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     key = edge["_key"]
 
     # Test insert second valid edge with silent set to True
-    assert ecol.insert(edge, sync=True, silent=True) is True
+    assert isinstance(ecol.insert(edge, sync=True), dict)
     assert edge in ecol and key in ecol
     assert len(ecol) == 2
     assert ecol[key]["_from"] == edge["_from"]
@@ -714,15 +715,14 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     # Test insert fourth valid edge using link method
     from_vertex = fvcol.get(fvdocs[2])
     to_vertex = tvcol.get(tvdocs[0])
-    assert (
+    assert isinstance(
         ecol.link(
             from_vertex["_id"],
             to_vertex["_id"],
             {"_id": ecol.name + "/foo"},
             sync=True,
-            silent=True,
-        )
-        is True
+        ),
+        dict,
     )
     assert "foo" in ecol
     assert len(ecol) == 4
@@ -816,7 +816,7 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
     old_rev = result["_rev"]
 
     # Test update edge with silent option
-    assert ecol.update({"_key": key, "bar": 600}, silent=True) is True
+    assert isinstance(ecol.update({"_key": key, "bar": 600}), dict)
     assert ecol[key]["foo"] == 200
     assert ecol[key]["bar"] == 600
     assert ecol[key]["_rev"] != old_rev
@@ -852,7 +852,7 @@ def test_edge_management(ecol, bad_ecol, edocs, fvcol, fvdocs, tvcol, tvdocs):
 
     # Test replace edge with silent set to True
     edge["bar"] = 200
-    assert ecol.replace(edge, silent=True) is True
+    assert isinstance(ecol.replace(edge), dict)
     assert ecol[key]["foo"] == 100
     assert ecol[key]["bar"] == 200
     assert ecol[key]["_rev"] != old_rev

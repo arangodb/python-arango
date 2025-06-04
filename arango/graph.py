@@ -7,6 +7,7 @@ from arango.api import ApiGroup
 from arango.collection import EdgeCollection, VertexCollection
 from arango.connection import Connection
 from arango.exceptions import (
+    EdgeCollectionListError,
     EdgeDefinitionCreateError,
     EdgeDefinitionDeleteError,
     EdgeDefinitionListError,
@@ -136,19 +137,28 @@ class Graph(ApiGroup):
         """
         return VertexCollection(self._conn, self._executor, self._name, name)
 
-    def create_vertex_collection(self, name: str) -> Result[VertexCollection]:
+    def create_vertex_collection(
+        self,
+        name: str,
+        options: Optional[Json] = None,
+    ) -> Result[VertexCollection]:
         """Create a vertex collection in the graph.
 
         :param name: Vertex collection name.
         :type name: str
+        :param options: Additional options for creating vertex collections.
+        :type options: dict | None
         :return: Vertex collection API wrapper.
         :rtype: arango.collection.VertexCollection
         :raise arango.exceptions.VertexCollectionCreateError: If create fails.
         """
+        data: Json = {"collection": name}
+        if options is not None:
+            data["options"] = options
         request = Request(
             method="post",
             endpoint=f"/_api/gharial/{self._name}/vertex",
-            data={"collection": name},
+            data=data,
         )
 
         def response_handler(resp: Response) -> VertexCollection:
@@ -259,6 +269,7 @@ class Graph(ApiGroup):
         edge_collection: str,
         from_vertex_collections: Sequence[str],
         to_vertex_collections: Sequence[str],
+        options: Optional[Json] = None,
     ) -> Result[EdgeCollection]:
         """Create a new edge definition.
 
@@ -279,18 +290,24 @@ class Graph(ApiGroup):
         :type from_vertex_collections: [str]
         :param to_vertex_collections: Names of "to" vertex collections.
         :type to_vertex_collections: [str]
+        :param options: Additional options for creating edge definitions.
+        :type options: dict | None
         :return: Edge collection API wrapper.
         :rtype: arango.collection.EdgeCollection
         :raise arango.exceptions.EdgeDefinitionCreateError: If create fails.
         """
+        data: Json = {
+            "collection": edge_collection,
+            "from": from_vertex_collections,
+            "to": to_vertex_collections,
+        }
+        if options is not None:
+            data["options"] = options
+
         request = Request(
             method="post",
             endpoint=f"/_api/gharial/{self._name}/edge",
-            data={
-                "collection": edge_collection,
-                "from": from_vertex_collections,
-                "to": to_vertex_collections,
-            },
+            data=data,
         )
 
         def response_handler(resp: Response) -> EdgeCollection:
@@ -300,11 +317,32 @@ class Graph(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def edge_collections(self) -> Result[List[str]]:
+        """Get the names of all edge collections in the graph.
+
+        :return: Edge collections in the graph.
+        :rtype: list
+        :raise: arango.exceptions.EdgeCollectionListError: If retrieval fails.
+        """
+        request = Request(
+            method="get",
+            endpoint=f"/_api/gharial/{self._name}/edge",
+        )
+
+        def response_handler(resp: Response) -> List[str]:
+            if not resp.is_success:
+                raise EdgeCollectionListError(resp, request)
+            return list(sorted(resp.body["collections"]))
+
+        return self._execute(request, response_handler)
+
     def replace_edge_definition(
         self,
         edge_collection: str,
         from_vertex_collections: Sequence[str],
         to_vertex_collections: Sequence[str],
+        sync: Optional[bool] = None,
+        purge: bool = False,
     ) -> Result[EdgeCollection]:
         """Replace an edge definition.
 
@@ -314,18 +352,28 @@ class Graph(ApiGroup):
         :type from_vertex_collections: [str]
         :param to_vertex_collections: Names of "to" vertex collections.
         :type to_vertex_collections: [str]
+        :param sync: Block until operation is synchronized to disk.
+        :type sync: bool | None
+        :param purge: Drop the edge collection in addition to removing it from
+            the graph. The collection is only dropped if it is not used in other graphs.
+        :type purge: bool
         :return: Edge collection API wrapper.
         :rtype: arango.collection.EdgeCollection
         :raise arango.exceptions.EdgeDefinitionReplaceError: If replace fails.
         """
+        data: Json = {
+            "collection": edge_collection,
+            "from": from_vertex_collections,
+            "to": to_vertex_collections,
+            "purge": purge,
+        }
+        if sync is not None:
+            data["waitForSync"] = sync
+
         request = Request(
             method="put",
             endpoint=f"/_api/gharial/{self._name}/edge/{edge_collection}",
-            data={
-                "collection": edge_collection,
-                "from": from_vertex_collections,
-                "to": to_vertex_collections,
-            },
+            data=data,
         )
 
         def response_handler(resp: Response) -> EdgeCollection:
@@ -335,7 +383,12 @@ class Graph(ApiGroup):
 
         return self._execute(request, response_handler)
 
-    def delete_edge_definition(self, name: str, purge: bool = False) -> Result[bool]:
+    def delete_edge_definition(
+        self,
+        name: str,
+        purge: bool = False,
+        sync: Optional[bool] = None,
+    ) -> Result[bool]:
         """Delete an edge definition from the graph.
 
         :param name: Edge collection name.
@@ -344,14 +397,20 @@ class Graph(ApiGroup):
             from the graph but the edge collection is also deleted completely
             from the database.
         :type purge: bool
+        :sync: Block until operation is synchronized to disk.
+        :type sync: bool | None
         :return: True if edge definition was deleted successfully.
         :rtype: bool
         :raise arango.exceptions.EdgeDefinitionDeleteError: If delete fails.
         """
+        params: Json = {"dropCollections": purge}
+        if sync is not None:
+            params["waitForSync"] = sync
+
         request = Request(
             method="delete",
             endpoint=f"/_api/gharial/{self._name}/edge/{name}",
-            params={"dropCollections": purge},
+            params=params,
         )
 
         def response_handler(resp: Response) -> bool:
@@ -549,8 +608,7 @@ class Graph(ApiGroup):
         collection: str,
         vertex: Json,
         sync: Optional[bool] = None,
-        silent: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Insert a new vertex document.
 
         :param collection: Vertex collection name.
@@ -561,15 +619,11 @@ class Graph(ApiGroup):
         :type vertex: dict
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentInsertError: If insert fails.
         """
-        return self.vertex_collection(collection).insert(vertex, sync, silent)
+        return self.vertex_collection(collection).insert(vertex, sync)
 
     def update_vertex(
         self,
@@ -577,8 +631,7 @@ class Graph(ApiGroup):
         check_rev: bool = True,
         keep_none: bool = True,
         sync: Optional[bool] = None,
-        silent: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Update a vertex document.
 
         :param vertex: Partial or full vertex document with updated values. It
@@ -592,12 +645,8 @@ class Graph(ApiGroup):
         :type keep_none: bool
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentUpdateError: If update fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
@@ -606,7 +655,6 @@ class Graph(ApiGroup):
             check_rev=check_rev,
             keep_none=keep_none,
             sync=sync,
-            silent=silent,
         )
 
     def replace_vertex(
@@ -614,8 +662,7 @@ class Graph(ApiGroup):
         vertex: Json,
         check_rev: bool = True,
         sync: Optional[bool] = None,
-        silent: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Replace a vertex document.
 
         :param vertex: New vertex document to replace the old one with. It must
@@ -626,17 +673,15 @@ class Graph(ApiGroup):
         :type check_rev: bool
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentReplaceError: If replace fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
         return self._get_col_by_vertex(vertex).replace(
-            vertex=vertex, check_rev=check_rev, sync=sync, silent=silent
+            vertex=vertex,
+            check_rev=check_rev,
+            sync=sync,
         )
 
     def delete_vertex(
@@ -727,8 +772,7 @@ class Graph(ApiGroup):
         collection: str,
         edge: Json,
         sync: Optional[bool] = None,
-        silent: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Insert a new edge document.
 
         :param collection: Edge collection name.
@@ -740,15 +784,11 @@ class Graph(ApiGroup):
         :type edge: dict
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentInsertError: If insert fails.
         """
-        return self.edge_collection(collection).insert(edge, sync, silent)
+        return self.edge_collection(collection).insert(edge, sync)
 
     def update_edge(
         self,
@@ -756,8 +796,7 @@ class Graph(ApiGroup):
         check_rev: bool = True,
         keep_none: bool = True,
         sync: Optional[bool] = None,
-        silent: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Update an edge document.
 
         :param edge: Partial or full edge document with updated values. It must
@@ -771,12 +810,8 @@ class Graph(ApiGroup):
         :type keep_none: bool | None
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentUpdateError: If update fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
@@ -785,7 +820,6 @@ class Graph(ApiGroup):
             check_rev=check_rev,
             keep_none=keep_none,
             sync=sync,
-            silent=silent,
         )
 
     def replace_edge(
@@ -793,8 +827,7 @@ class Graph(ApiGroup):
         edge: Json,
         check_rev: bool = True,
         sync: Optional[bool] = None,
-        silent: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Replace an edge document.
 
         :param edge: New edge document to replace the old one with. It must
@@ -806,17 +839,15 @@ class Graph(ApiGroup):
         :type check_rev: bool
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentReplaceError: If replace fails.
         :raise arango.exceptions.DocumentRevisionError: If revisions mismatch.
         """
         return self._get_col_by_edge(edge).replace(
-            edge=edge, check_rev=check_rev, sync=sync, silent=silent
+            edge=edge,
+            check_rev=check_rev,
+            sync=sync,
         )
 
     def delete_edge(
@@ -865,8 +896,7 @@ class Graph(ApiGroup):
         to_vertex: Union[str, Json],
         data: Optional[Json] = None,
         sync: Optional[bool] = None,
-        silent: bool = False,
-    ) -> Result[Union[bool, Json]]:
+    ) -> Result[Json]:
         """Insert a new edge document linking the given vertices.
 
         :param collection: Edge collection name.
@@ -881,12 +911,8 @@ class Graph(ApiGroup):
         :type data: dict
         :param sync: Block until operation is synchronized to disk.
         :type sync: bool | None
-        :param silent: If set to True, no document metadata is returned. This
-            can be used to save resources.
-        :type silent: bool
-        :return: Document metadata (e.g. document key, revision) or True if
-            parameter **silent** was set to True.
-        :rtype: bool | dict
+        :return: Document metadata (e.g. document key, revision).
+        :rtype: dict
         :raise arango.exceptions.DocumentInsertError: If insert fails.
         """
         return self.edge_collection(collection).link(
@@ -894,7 +920,6 @@ class Graph(ApiGroup):
             to_vertex=to_vertex,
             data=data,
             sync=sync,
-            silent=silent,
         )
 
     def edges(
