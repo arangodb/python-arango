@@ -125,7 +125,11 @@ class BaseConnection:
         return resp
 
     def process_request(
-        self, host_index: int, request: Request, auth: Optional[Tuple[str, str]] = None
+        self,
+        host_index: int,
+        request: Request,
+        auth: Optional[Tuple[str, str]] = None,
+        skip_db_prefix: bool = False,
     ) -> Response:
         """Execute a request until a valid response has been returned.
 
@@ -133,6 +137,10 @@ class BaseConnection:
         :type host_index: int
         :param request: HTTP request.
         :type request: arango.request.Request
+        :param auth: HTTP basic authentication tuple (username, password).
+        :type auth: tuple[str, str] | None
+        :param skip_db_prefix: Skip the database prefix in the URL.
+        :type skip_db_prefix: bool
         :return: HTTP response.
         :rtype: arango.response.Response
         """
@@ -152,11 +160,16 @@ class BaseConnection:
             request.headers["accept-encoding"] = self._response_compression
 
         while tries < self._host_resolver.max_tries:
+            if skip_db_prefix:
+                url = self._hosts[host_index] + request.endpoint
+            else:
+                url = self._url_prefixes[host_index] + request.endpoint
+
             try:
                 resp = self._http.send_request(
                     session=self._sessions[host_index],
                     method=request.method,
-                    url=self._url_prefixes[host_index] + request.endpoint,
+                    url=url,
                     params=request.params,
                     data=data,
                     headers=request.headers,
@@ -165,7 +178,6 @@ class BaseConnection:
 
                 return self.prep_response(resp, request.deserialize)
             except ConnectionError:
-                url = self._url_prefixes[host_index] + request.endpoint
                 logging.debug(f"ConnectionError: {url}")
 
                 if len(indexes_to_filter) == self._host_resolver.host_count - 1:
@@ -425,7 +437,7 @@ class JwtConnection(BaseConnection):
 
         host_index = self._host_resolver.get_host_index()
 
-        resp = self.process_request(host_index, request)
+        resp = self.process_request(host_index, request, skip_db_prefix=True)
 
         if not resp.is_success:
             raise JWTAuthError(resp, request)
