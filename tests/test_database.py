@@ -439,18 +439,23 @@ def test_database_utf8(sys_db, special_db_names):
         assert sys_db.delete_database(name)
 
 
-def test_license(sys_db, enterprise):
+def test_license(sys_db, enterprise, db_version):
     license = sys_db.license()
     assert isinstance(license, dict)
 
-    if enterprise:
-        assert set(license.keys()) == {
+    if db_version >= version.parse("3.12.5"):
+        expected_keys = {"diskUsage", "upgrading"}
+    else:
+        expected_keys = {
             "upgrading",
             "features",
             "license",
             "version",
             "status",
         }
+
+    if enterprise:
+        assert set(license.keys()) == expected_keys
     else:
         assert license == {"license": "none"}
         with pytest.raises(ServerLicenseSetError):

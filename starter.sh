@@ -6,7 +6,7 @@
 # Usage:
 #   ./starter.sh [single|cluster] [community|enterprise] [version]
 # Example:
-#   ./starter.sh cluster enterprise 3.12.1
+#   ./starter.sh cluster enterprise 3.12.5
 
 setup="${1:-single}"
 license="${2:-community}"
