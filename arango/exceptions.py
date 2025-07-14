@@ -298,6 +298,10 @@ class CollectionTruncateError(ArangoServerError):
     """Failed to truncate collection."""
 
 
+class CollectionKeyGeneratorsError(ArangoServerError):
+    """Failed to retrieve key generators."""
+
+
 class CollectionLoadError(ArangoServerError):
     """Failed to load collection."""
 
