@@ -13,6 +13,7 @@ from arango.errno import (
     USE_SYSTEM_DATABASE,
 )
 from arango.exceptions import (
+    CollectionKeyGeneratorsError,
     DatabaseCompactError,
     DatabaseCreateError,
     DatabaseDeleteError,
@@ -347,6 +348,12 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
     db_superuser = client.db(db.name, superuser_token=token)
     result = db_superuser.compact()
     assert result == {}
+
+    if db_version >= version.parse("3.12.0"):
+        key_generators = db.key_generators()
+        assert isinstance(key_generators, list)
+        with pytest.raises(CollectionKeyGeneratorsError):
+            bad_db.key_generators()
 
 
 def test_database_management(db, sys_db, bad_db):

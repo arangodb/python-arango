@@ -27,6 +27,7 @@ from arango.exceptions import (
     AsyncJobListError,
     CollectionCreateError,
     CollectionDeleteError,
+    CollectionKeyGeneratorsError,
     CollectionListError,
     DatabaseCompactError,
     DatabaseCreateError,
@@ -1620,6 +1621,23 @@ class Database(ApiGroup):
             if not resp.is_success:
                 raise CollectionDeleteError(resp, request)
             return True
+
+        return self._execute(request, response_handler)
+
+    def key_generators(self) -> Result[List[str]]:
+        """Returns the available key generators for collections.
+
+        :return: List of available key generators.
+        :rtype: [str]
+        :raise arango.exceptions.CollectionKeyGeneratorsError: If retrieval fails.
+        """  # noqa: E501
+        request = Request(method="get", endpoint="/_api/key-generators")
+
+        def response_handler(resp: Response) -> List[str]:
+            if not resp.is_success:
+                raise CollectionKeyGeneratorsError(resp, request)
+            result: List[str] = resp.body["keyGenerators"]
+            return result
 
         return self._execute(request, response_handler)
 
