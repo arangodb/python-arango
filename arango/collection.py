@@ -546,7 +546,6 @@ class Collection(ApiGroup):
         :rtype: bool
         :raise arango.exceptions.CollectionLoadError: If operation fails.
         """
-
         m = "The load function is deprecated from version 3.8.0 onwards and is a no-op from version 3.9.0 onwards."  # noqa: E501
         warn(m, DeprecationWarning, stacklevel=2)
 
@@ -562,10 +561,18 @@ class Collection(ApiGroup):
     def unload(self) -> Result[bool]:
         """Unload the collection from memory.
 
+        .. note::
+            The unload function is deprecated from version 3.8.0 onwards and is a
+            no-op from version 3.9.0 onwards. It should no longer be used, as it
+            may be removed in a future version of ArangoDB.
+
         :return: True if collection was unloaded successfully.
         :rtype: bool
         :raise arango.exceptions.CollectionUnloadError: If operation fails.
         """
+        m = "The unload function is deprecated from version 3.8.0 onwards and is a no-op from version 3.9.0 onwards."  # noqa: E501
+        warn(m, DeprecationWarning, stacklevel=2)
+
         request = Request(method="put", endpoint=f"/_api/collection/{self.name}/unload")
 
         def response_handler(resp: Response) -> bool:
