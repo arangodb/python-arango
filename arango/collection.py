@@ -537,10 +537,19 @@ class Collection(ApiGroup):
     def load(self) -> Result[bool]:
         """Load the collection into memory.
 
+        .. note::
+            The load function is deprecated from version 3.8.0 onwards and is a
+            no-op from version 3.9.0 onwards. It should no longer be used, as it
+            may be removed in a future version of ArangoDB.
+
         :return: True if collection was loaded successfully.
         :rtype: bool
         :raise arango.exceptions.CollectionLoadError: If operation fails.
         """
+
+        m = "The load function is deprecated from version 3.8.0 onwards and is a no-op from version 3.9.0 onwards."  # noqa: E501
+        warn(m, DeprecationWarning, stacklevel=2)
+
         request = Request(method="put", endpoint=f"/_api/collection/{self.name}/load")
 
         def response_handler(resp: Response) -> bool:
