@@ -33,7 +33,7 @@ class Backup(ApiGroup):  # pragma: no cover
         :type backup_id: str
         :return: Backup details.
         :rtype: dict
-        :raise arango.exceptions.BackupGetError: If delete fails.
+        :raise arango.exceptions.BackupGetError: If the operation fails.
         """
         request = Request(
             method="post",
