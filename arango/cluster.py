@@ -261,7 +261,7 @@ class Cluster(ApiGroup):  # pragma: no cover
 
         :return: List of endpoints.
         :rtype: [str]
-        :raise arango.exceptions.ServerEndpointsError: If retrieval fails.
+        :raise arango.exceptions.ClusterEndpointsError: If retrieval fails.
         """
         request = Request(method="get", endpoint="/_api/cluster/endpoints")
 

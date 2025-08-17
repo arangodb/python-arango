@@ -45,6 +45,7 @@ from arango.exceptions import (
     PermissionResetError,
     PermissionUpdateError,
     ServerAvailableOptionsGetError,
+    ServerCheckAvailabilityError,
     ServerCurrentOptionsGetError,
     ServerDetailsError,
     ServerEchoError,
@@ -445,7 +446,7 @@ class Database(ApiGroup):
         :type force: bool
         :return: Server license.
         :rtype: dict
-        :raise arango.exceptions.ServerLicenseError: If retrieval fails.
+        :raise arango.exceptions.ServerLicenseSetError: If retrieval fails.
         """
         request = Request(
             method="put",
@@ -478,6 +479,25 @@ class Database(ApiGroup):
             if not resp.is_success:
                 raise ServerStatusError(resp, request)
             return format_server_status(resp.body)
+
+        return self._execute(request, response_handler)
+
+    def check_availability(self) -> Result[str]:
+        """Return ArangoDB server availability mode.
+
+        :return: Server availability mode ("readonly" or "default").
+        :rtype: str
+        :raise arango.exceptions.ServerCheckAvailabilityError: If retrieval fails.
+        """
+        request = Request(
+            method="get",
+            endpoint="/_admin/server/availability",
+        )
+
+        def response_handler(resp: Response) -> str:
+            if not resp.is_success:
+                raise ServerCheckAvailabilityError(resp, request)
+            return str(resp.body["mode"])
 
         return self._execute(request, response_handler)
 
@@ -1069,6 +1089,7 @@ class Database(ApiGroup):
 
         :return: Server metrics in Prometheus format.
         :rtype: str
+        :raise arango.exceptions.ServerMetricsError: If operation fails.
         """
         request = Request(method="get", endpoint="/_admin/metrics/v2")
 

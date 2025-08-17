@@ -83,9 +83,9 @@ information, refer to `ArangoDB manual`_.
     foxx.readme(service_mount)
     foxx.swagger(service_mount)
     foxx.download(service_mount)
-    foxx.commit(service_mount)
+    foxx.commit()
     foxx.scripts(service_mount)
-    foxx.run_script(service_mount, 'setup', [])
+    foxx.run_script(service_mount, 'setup', {})
     foxx.run_tests(service_mount, reporter='xunit', output_format='xml')
 
     # Delete a service.
