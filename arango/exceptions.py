@@ -654,6 +654,10 @@ class ServerTimeError(ArangoServerError):
     """Failed to retrieve server system time."""
 
 
+class ServerCheckAvailabilityError(ArangoServerError):
+    """Failed to retrieve server availability mode."""
+
+
 class ServerEchoError(ArangoServerError):
     """Failed to retrieve details on last request."""
 
