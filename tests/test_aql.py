@@ -13,6 +13,7 @@ from arango.exceptions import (
     AQLQueryClearError,
     AQLQueryExecuteError,
     AQLQueryExplainError,
+    AQLQueryHistoryError,
     AQLQueryKillError,
     AQLQueryListError,
     AQLQueryTrackingGetError,
@@ -30,7 +31,7 @@ def test_aql_attributes(db, username):
     assert repr(db.aql.cache) == f"<AQLQueryCache in {db.name}>"
 
 
-def test_aql_query_management(db_version, db, bad_db, col, docs):
+def test_aql_query_management(db_version, db, sys_db, bad_db, col, docs):
     explain_fields = [
         "estimatedNrItems",
         "estimatedCost",
@@ -191,6 +192,12 @@ def test_aql_query_management(db_version, db, bad_db, col, docs):
     # Kick off some long-lasting queries in the background
     db.begin_async_execution().aql.execute("RETURN SLEEP(100)")
     db.begin_async_execution().aql.execute("RETURN SLEEP(50)")
+
+    # Test query history
+    with assert_raises(AQLQueryHistoryError):
+        bad_db.aql.history()
+    history = sys_db.aql.history()
+    assert isinstance(history, dict)
 
     # Test list queries
     queries = db.aql.queries()

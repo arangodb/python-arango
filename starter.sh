@@ -8,8 +8,8 @@
 # Example:
 #   ./starter.sh cluster enterprise 3.12.5
 
-setup="${1:-single}"
-license="${2:-community}"
+setup="${1:-cluster}"
+license="${2:-enterprise}"
 version="${3:-latest}"
 
 extra_ports=""
