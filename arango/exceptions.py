@@ -642,6 +642,10 @@ class ServerDetailsError(ArangoServerError):
     """Failed to retrieve server details."""
 
 
+class ServerAPICallsError(ArangoServerError):
+    """Failed to retrieve recent API calls."""
+
+
 class ServerLicenseGetError(ArangoServerError):
     """Failed to retrieve server license."""
 
