@@ -121,6 +121,10 @@ class AQLQueryTrackingGetError(ArangoServerError):
     """Failed to retrieve AQL tracking properties."""
 
 
+class AQLQueryHistoryError(ArangoServerError):
+    """Failed to retrieve recent AQL queries."""
+
+
 class AQLQueryTrackingSetError(ArangoServerError):
     """Failed to configure AQL tracking properties."""
 
@@ -636,6 +640,10 @@ class ServerVersionError(ArangoServerError):
 
 class ServerDetailsError(ArangoServerError):
     """Failed to retrieve server details."""
+
+
+class ServerAPICallsError(ArangoServerError):
+    """Failed to retrieve recent API calls."""
 
 
 class ServerLicenseGetError(ArangoServerError):

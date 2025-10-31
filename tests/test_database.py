@@ -20,6 +20,7 @@ from arango.exceptions import (
     DatabaseListError,
     DatabasePropertiesError,
     DatabaseSupportInfoError,
+    ServerAPICallsError,
     ServerCheckAvailabilityError,
     ServerDetailsError,
     ServerEchoError,
@@ -313,6 +314,12 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
         assert result == default_log_levels
         with assert_raises(ServerLogLevelResetError):
             bad_db.reset_log_levels()
+
+    # Test api calls history
+    with assert_raises(ServerAPICallsError):
+        bad_db.api_calls()
+    history = sys_db.api_calls()
+    assert isinstance(history, dict)
 
     # Test get storage engine
     engine = db.engine()

@@ -44,6 +44,7 @@ from arango.exceptions import (
     PermissionListError,
     PermissionResetError,
     PermissionUpdateError,
+    ServerAPICallsError,
     ServerAvailableOptionsGetError,
     ServerCheckAvailabilityError,
     ServerCurrentOptionsGetError,
@@ -460,6 +461,26 @@ class Database(ApiGroup):
                 result: Json = resp.body
                 return result
             raise ServerLicenseSetError(resp, request)
+
+        return self._execute(request, response_handler)
+
+    def api_calls(self) -> Result[Json]:
+        """Return recent API calls (admin only).
+
+        :return: API calls history.
+        :rtype: dict
+        :raise arango.exceptions.ServerAPICallsError: If retrieval fails.
+        """
+        request = Request(
+            method="get",
+            endpoint="/_admin/server/api-calls",
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise ServerAPICallsError(resp, request)
+            res: Json = resp.body["result"]
+            return res
 
         return self._execute(request, response_handler)
 
