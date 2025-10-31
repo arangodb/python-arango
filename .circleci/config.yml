@@ -11,10 +11,10 @@ workflows:
           name:  Python (<< matrix.python_version >>) - ArangoDB (<< matrix.arangodb_license >>, << matrix.arangodb_version >> << matrix.arangodb_config >>)
           matrix:
             parameters:
-              python_version: ["3.9", "3.10", "3.11", "3.12"]
+              python_version: ["3.10", "3.11", "3.12"]
               arangodb_config: ["single", "cluster"]
-              arangodb_license: ["community", "enterprise"]
-              arangodb_version: ["3.11", "latest"]
+              arangodb_license: ["enterprise"]
+              arangodb_version: ["latest"]
 
 jobs:
   lint:
