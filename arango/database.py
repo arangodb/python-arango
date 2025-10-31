@@ -465,7 +465,7 @@ class Database(ApiGroup):
         return self._execute(request, response_handler)
 
     def api_calls(self) -> Result[Json]:
-        """Return recent API calls.
+        """Return recent API calls (admin only).
 
         :return: API calls history.
         :rtype: dict
