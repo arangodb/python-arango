@@ -17,6 +17,7 @@ from arango.exceptions import (
     AQLQueryClearError,
     AQLQueryExecuteError,
     AQLQueryExplainError,
+    AQLQueryHistoryError,
     AQLQueryKillError,
     AQLQueryListError,
     AQLQueryRulesGetError,
@@ -624,6 +625,23 @@ class AQL(ApiGroup):
             if not resp.is_success:
                 raise AQLQueryTrackingSetError(resp, request)
             return format_aql_tracking(resp.body)
+
+        return self._execute(request, response_handler)
+
+    def history(self) -> Result[Json]:
+        """Return recently executed AQL queries (admin only).
+
+        :return: AQL query history.
+        :rtype: dict
+        :raise arango.exceptions.AQLQueryHistoryError: If retrieval fails.
+        """
+        request = Request(method="get", endpoint="/_admin/server/aql-queries")
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise AQLQueryHistoryError(resp, request)
+            res: Json = resp.body["result"]
+            return res
 
         return self._execute(request, response_handler)
 
