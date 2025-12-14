@@ -116,6 +116,10 @@ def format_index(body: Json, formatter: bool = True) -> Json:
     if "optimizeTopK" in body:
         result["optimizeTopK"] = body["optimizeTopK"]
 
+    # Introduced via Vector Index in 3.12.6
+    if "params" in body:
+        result["params"] = body["params"]
+
     return verify_format(body, result)
 
 
