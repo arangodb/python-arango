@@ -12,7 +12,7 @@ def normalize_headers(
     if driver_flags is not None:
         for flag in driver_flags:
             flags = flags + flag + ";"
-    driver_version = "8.2.3"
+    driver_version = "8.2.4"
     driver_header = "python-arango/" + driver_version + " (" + flags + ")"
     normalized_headers: Headers = {
         "charset": "utf-8",
