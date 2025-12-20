@@ -13,7 +13,10 @@ from arango.exceptions import (
 from tests.helpers import extract, generate_db_name
 
 
-def test_transaction_execute_raw(db, col, docs):
+def test_transaction_execute_raw(db, col, docs, skip_tests):
+    if "js-transactions" in skip_tests:
+        pytest.skip("Skipping JS transaction tests")
+
     # Test execute raw transaction
     doc = docs[0]
     key = doc["_key"]

@@ -199,7 +199,8 @@ def test_collection_management(db, bad_db, cluster):
     assert key_options["key_generator"] == "autoincrement"
     assert key_options["key_increment"] == 9
     assert key_options["key_offset"] == 100
-    db.delete_collection(col_name)
+
+    col_name = generate_col_name()
 
     col = db.create_collection(
         name=col_name,
@@ -338,9 +339,9 @@ def test_collection_utf8(db, special_collection_names):
 
 # Not sure if this belongs in here or in `test_database.py`...
 def test_database_and_collection_utf8(
-    sys_db, special_collection_names, special_db_names
+    sys_db, special_collection_names, special_db_names, url
 ):
-    client = ArangoClient(hosts="http://127.0.0.1:8529")
+    client = ArangoClient(hosts=url)
     for db_name in special_db_names:
         username = generate_username()
         password = generate_string()

@@ -39,7 +39,9 @@ class GlobalData:
     cluster: bool = None
     complete: bool = None
     replication: bool = None
-    enterprise: bool = None
+    skip: list[str] = None
+    foxx_path: str = None
+    backup_path: str = None
     secret: str = None
     root_password: str = None
     db_version: version = version.parse("0.0.0")
@@ -49,24 +51,70 @@ global_data = GlobalData()
 
 
 def pytest_addoption(parser):
-    parser.addoption("--host", action="store", default="127.0.0.1")
-    parser.addoption("--port", action="append", default=None)
-    parser.addoption("--passwd", action="store", default="passwd")
-    parser.addoption("--complete", action="store_true")
-    parser.addoption("--cluster", action="store_true")
-    parser.addoption("--replication", action="store_true")
-    parser.addoption("--enterprise", action="store_true")
-    parser.addoption("--secret", action="store", default="secret")
+    parser.addoption(
+        "--host", action="store", default="127.0.0.1", help="ArangoDB host address"
+    )
+    parser.addoption(
+        "--port", action="append", default=None, help="ArangoDB coordinator ports"
+    )
+    parser.addoption(
+        "--root", action="store", default="root", help="ArangoDB root user"
+    )
+    parser.addoption(
+        "--password", action="store", default="passwd", help="ArangoDB password"
+    )
+    parser.addoption(
+        "--secret", action="store", default="secret", help="ArangoDB JWT secret"
+    )
+    parser.addoption(
+        "--cluster", action="store_true", help="Run tests in a cluster setup"
+    )
+    parser.addoption(
+        "--complete",
+        action="store_true",
+        help="Run extra async and transaction tests (not supported)",
+    )
+    parser.addoption("--replication", action="store_true", help="Run replication tests")
+    parser.addoption(
+        "--foxx-path",
+        action="store",
+        default="/tests/static/service.zip",
+        help="Foxx tests service path",
+    )
+    parser.addoption(
+        "--backup-path",
+        action="store",
+        default="local://tmp",
+        help="Backup tests repository path",
+    )
+    parser.addoption(
+        "--skip",
+        action="store",
+        nargs="*",
+        choices=[
+            "backup",  # backup tests
+            "batch",  # batch API tests (deprecated)
+            "jwt-secret-keyfile",  # server was not configured with a keyfile
+            "foxx",  # foxx is not supported
+            "js-transactions",  # javascript transactions are not supported
+            "task",  # tasks API
+            "enterprise",  # skip what used to be "enterprise-only" before 3.12
+        ],
+        default=[],
+        help="Skip specific tests",
+    )
 
 
 def pytest_configure(config):
     ports = config.getoption("port")
     if ports is None:
         ports = ["8529"]
-    hosts = [f"http://{config.getoption('host')}:{p}" for p in ports]
+    hosts = [f"http://{config.getoption('host')}:{p}" for p in ports]  # noqa: E231
     url = hosts[0]
     secret = config.getoption("secret")
     cluster = config.getoption("cluster")
+    root_password = config.getoption("password")
+    root_user = config.getoption("root")
 
     host_resolver = "fallback"
     http_client = DefaultHTTPClient(request_timeout=120)
@@ -76,8 +124,8 @@ def pytest_configure(config):
     )
     sys_db = client.db(
         name="_system",
-        username="root",
-        password=config.getoption("passwd"),
+        username=root_user,
+        password=root_password,
         superuser_token=generate_jwt(secret),
         verify=True,
     )
@@ -148,9 +196,11 @@ def pytest_configure(config):
     global_data.cluster = cluster
     global_data.complete = config.getoption("complete")
     global_data.replication = config.getoption("replication")
-    global_data.enterprise = config.getoption("enterprise")
     global_data.secret = secret
-    global_data.root_password = config.getoption("passwd")
+    global_data.root_password = root_password
+    global_data.skip = config.getoption("skip")
+    global_data.backup_path = config.getoption("backup_path")
+    global_data.foxx_path = config.getoption("foxx_path")
 
 
 # noinspection PyShadowingNames
@@ -186,7 +236,7 @@ def pytest_unconfigure(*_):  # pragma: no cover
             sys_db.delete_collection(col_name, ignore_missing=True)
 
     # # Remove all backups.
-    if global_data.enterprise:
+    if "backup" not in global_data.skip and "enterprise" not in global_data.skip:
         for backup_id in sys_db.backup.get()["list"].keys():
             sys_db.backup.delete(backup_id)
 
@@ -222,16 +272,6 @@ def pytest_generate_tests(metafunc):
             bad_async_db = StandardDatabase(bad_conn)
             bad_async_db._executor = TestAsyncApiExecutor(bad_conn)
             bad_dbs.append(bad_async_db)
-
-            # Skip test batch databases, as they are deprecated.
-            """
-            tst_batch_db = StandardDatabase(tst_conn)
-            tst_batch_db._executor = TestBatchExecutor(tst_conn)
-            tst_dbs.append(tst_batch_db)
-            bad_batch_bdb = StandardDatabase(bad_conn)
-            bad_batch_bdb._executor = TestBatchExecutor(bad_conn)
-            bad_dbs.append(bad_batch_bdb)
-            """
 
     if "db" in metafunc.fixturenames and "bad_db" in metafunc.fixturenames:
         metafunc.parametrize("db,bad_db", zip(tst_dbs, bad_dbs))
@@ -432,10 +472,20 @@ def replication():
 
 
 @pytest.fixture(autouse=False)
-def enterprise():
-    return global_data.enterprise
-
-
-@pytest.fixture(autouse=False)
 def secret():
     return global_data.secret
+
+
+@pytest.fixture
+def backup_path():
+    return global_data.backup_path
+
+
+@pytest.fixture
+def foxx_path():
+    return global_data.foxx_path
+
+
+@pytest.fixture
+def skip_tests():
+    return global_data.skip

@@ -59,7 +59,7 @@ To run the test suite (use your own host, port and root password):
     ~$ pip install pytest
     ~$ git clone https://github.com/arangodb/python-arango.git
     ~$ cd python-arango
-    ~$ py.test --complete --host=127.0.0.1 --port=8529 --passwd=passwd
+    ~$ pytest --cluster --host=127.0.0.1 --port=8529 --password=passwd
 
 To run the test suite with coverage report:
 
@@ -68,7 +68,7 @@ To run the test suite with coverage report:
     ~$ pip install coverage pytest pytest-cov
     ~$ git clone https://github.com/arangodb/python-arango.git
     ~$ cd python-arango
-    ~$ py.test --complete --host=127.0.0.1 --port=8529 --passwd=passwd --cov=kq
+    ~$ pytest --cluster --host=127.0.0.1 --port=8529 --password=passwd --cov=kq
 
 As the test suite creates real databases and jobs, it should only be run in
 development environments.

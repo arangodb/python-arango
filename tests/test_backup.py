@@ -12,9 +12,11 @@ from arango.exceptions import (
 from tests.helpers import assert_raises
 
 
-def test_backup_management(sys_db, bad_db, enterprise, cluster):
-    if not enterprise:
+def test_backup_management(sys_db, bad_db, cluster, skip_tests):
+    if "enterprise" in skip_tests:
         pytest.skip("Only for ArangoDB enterprise edition")
+    if "backup" in skip_tests:
+        pytest.skip("Skipping backup tests")
 
     # Test create backup "foo".
     result = sys_db.backup.create(

@@ -12,7 +12,7 @@ from arango.exceptions import (
 from tests.helpers import assert_raises, generate_view_name
 
 
-def test_view_management(db, bad_db, col, cluster, db_version, enterprise):
+def test_view_management(db, bad_db, col, cluster, db_version, skip_tests):
     # Test create view
     view_name = generate_view_name()
     bad_view_name = generate_view_name()
@@ -124,7 +124,7 @@ def test_view_management(db, bad_db, col, cluster, db_version, enterprise):
     # Test delete missing view with ignore_missing set to True
     assert db.delete_view(view_name, ignore_missing=True) is False
 
-    if enterprise and db_version >= version.parse("3.12"):
+    if "enterprise" not in skip_tests and db_version >= version.parse("3.12"):
         res = db.create_view(
             view_name,
             view_type,
@@ -194,11 +194,11 @@ def test_arangosearch_view_management(db, bad_db, cluster):
     assert db.delete_view(view_name, ignore_missing=False) is True
 
 
-def test_arangosearch_view_properties(db, col, enterprise):
+def test_arangosearch_view_properties(db, col, skip_tests):
     view_name = generate_view_name()
     params = {"consolidationIntervalMsec": 50000}
 
-    if enterprise:
+    if "enterprise" not in skip_tests:
         params.update(
             {
                 "links": {
@@ -221,7 +221,7 @@ def test_arangosearch_view_properties(db, col, enterprise):
     assert result["name"] == view_name
     assert result["type"].lower() == "arangosearch"
 
-    if enterprise:
+    if "enterprise" not in skip_tests:
         assert "links" in result
         assert col.name in result["links"]
 
