@@ -1,3 +1,5 @@
+import pytest
+
 from arango.exceptions import (
     TaskCreateError,
     TaskDeleteError,
@@ -7,7 +9,10 @@ from arango.exceptions import (
 from tests.helpers import assert_raises, extract, generate_task_id, generate_task_name
 
 
-def test_task_management(sys_db, db, bad_db):
+def test_task_management(sys_db, db, bad_db, skip_tests):
+    if "task" in skip_tests:
+        pytest.skip("Skipping task tests")
+
     test_command = 'require("@arangodb").print(params);'
 
     # Test create task with random ID

@@ -250,7 +250,7 @@ def test_add_ttl_index(icol):
     icol.delete_index(result["id"])
 
 
-def test_add_inverted_index(icol, enterprise):
+def test_add_inverted_index(icol, skip_tests):
     parameters = dict(
         fields=[{"name": "attr1", "cache": True}],
         name="c0_cached",
@@ -261,7 +261,7 @@ def test_add_inverted_index(icol, enterprise):
     )
     expected_keys = ["primarySort", "analyzer", "includeAllFields", "searchField"]
 
-    if enterprise:
+    if "enterprise" not in skip_tests:
         parameters["cache"] = True
         parameters["primaryKeyCache"] = True
         expected_keys.extend(["cache", "primaryKeyCache"])

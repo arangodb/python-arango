@@ -19,21 +19,21 @@ from tests.helpers import (
 )
 
 
-def test_client_attributes():
+def test_client_attributes(url):
     http_client = DefaultHTTPClient()
 
-    client = ArangoClient(hosts="http://127.0.0.1:8529", http_client=http_client)
+    client = ArangoClient(hosts=url, http_client=http_client)
     assert client.version == importlib_metadata.version("python-arango")
-    assert client.hosts == ["http://127.0.0.1:8529"]
+    assert client.hosts == [url]
 
-    assert repr(client) == "<ArangoClient http://127.0.0.1:8529>"
+    assert repr(client) == f"<ArangoClient {url}>"
     assert isinstance(client._host_resolver, SingleHostResolver)
 
-    client_repr = "<ArangoClient http://127.0.0.1:8529,http://localhost:8529>"
-    client_hosts = ["http://127.0.0.1:8529", "http://localhost:8529"]
+    client_repr = f"<ArangoClient {url},{url}>"  # noqa: E231
+    client_hosts = [url, url]
 
     client = ArangoClient(
-        hosts="http://127.0.0.1:8529,http://localhost" ":8529",
+        hosts=f"{url},{url}",  # noqa: E231
         http_client=http_client,
         serializer=json.dumps,
         deserializer=json.loads,
@@ -59,8 +59,8 @@ def test_client_attributes():
     assert client.request_timeout == client._http.request_timeout == 120
 
 
-def test_client_good_connection(db, username, password):
-    client = ArangoClient(hosts="http://127.0.0.1:8529")
+def test_client_good_connection(db, username, password, url):
+    client = ArangoClient(hosts=url)
 
     # Test connection with verify flag on and off
     for verify in (True, False):
@@ -71,8 +71,8 @@ def test_client_good_connection(db, username, password):
         assert db.context == "default"
 
 
-def test_client_bad_connection(db, username, password, cluster):
-    client = ArangoClient(hosts="http://127.0.0.1:8529")
+def test_client_bad_connection(db, username, password, cluster, url):
+    client = ArangoClient(hosts=url)
 
     bad_db_name = generate_db_name()
     bad_username = generate_username()
@@ -94,7 +94,7 @@ def test_client_bad_connection(db, username, password, cluster):
     assert "bad connection" in str(err.value)
 
 
-def test_client_http_client_attributes(db, username, password):
+def test_client_http_client_attributes(db, username, password, url):
     http_client = DefaultHTTPClient(
         request_timeout=80,
         retry_attempts=5,
@@ -103,15 +103,13 @@ def test_client_http_client_attributes(db, username, password):
         pool_maxsize=12,
         pool_timeout=120,
     )
-    client = ArangoClient(
-        hosts="http://127.0.0.1:8529", http_client=http_client, request_timeout=30
-    )
+    client = ArangoClient(hosts=url, http_client=http_client, request_timeout=30)
     client.db(db.name, username, password, verify=True)
     assert http_client.request_timeout == 80
     assert client.request_timeout == http_client.request_timeout
 
 
-def test_client_custom_http_client(db, username, password):
+def test_client_custom_http_client(db, username, password, url):
     # Define custom HTTP client which increments the counter on any API call.
     class MyHTTPClient(DefaultHTTPClient):
         def __init__(self) -> None:
@@ -127,13 +125,13 @@ def test_client_custom_http_client(db, username, password):
             )
 
     http_client = MyHTTPClient()
-    client = ArangoClient(hosts="http://127.0.0.1:8529", http_client=http_client)
+    client = ArangoClient(hosts=url, http_client=http_client)
     # Set verify to True to send a test API call on initialization.
     client.db(db.name, username, password, verify=True)
     assert http_client.counter == 1
 
 
-def test_client_override_validate() -> None:
+def test_client_override_validate(url) -> None:
     # custom http client that manipulates the underlying session
     class MyHTTPClient(DefaultHTTPClient):
         def __init__(self, verify: Union[None, bool, str]) -> None:
@@ -152,7 +150,7 @@ def test_client_override_validate() -> None:
     ) -> None:
         http_client = MyHTTPClient(verify=http_client_verify)
         client = ArangoClient(
-            hosts="http://127.0.0.1:8529",
+            hosts=url,
             http_client=http_client,
             verify_override=arango_override,
         )
@@ -184,14 +182,14 @@ def test_client_override_validate() -> None:
     assert_verify("test", "foo", "foo")
 
 
-def test_can_serialize_deserialize_client() -> None:
-    client = ArangoClient(hosts="http://127.0.0.1:8529")
+def test_can_serialize_deserialize_client(url) -> None:
+    client = ArangoClient(hosts=url)
     client_pstr = pickle.dumps(client)
     client2 = pickle.loads(client_pstr)
     assert len(client2._sessions) > 0
 
 
-def test_client_compression(db, username, password):
+def test_client_compression(db, username, password, url):
     class CheckCompression:
         def __init__(self, should_compress: bool):
             self.should_compress = should_compress
@@ -219,7 +217,7 @@ def test_client_compression(db, username, password):
 
     # should not compress, as threshold is 0
     client = ArangoClient(
-        hosts="http://127.0.0.1:8529",
+        hosts=url,
         http_client=MyHTTPClient(compression_checker=checker),
         response_compression="gzip",
     )
@@ -230,7 +228,7 @@ def test_client_compression(db, username, password):
     # should not compress, as size of payload is less than threshold
     checker = CheckCompression(should_compress=False)
     client = ArangoClient(
-        hosts="http://127.0.0.1:8529",
+        hosts=url,
         http_client=MyHTTPClient(compression_checker=checker),
         request_compression=DeflateRequestCompression(250, level=7),
         response_compression="deflate",

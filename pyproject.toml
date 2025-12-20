@@ -57,6 +57,7 @@ dev = [
     "sphinx",
     "sphinx_rtd_theme",
     "types-requests",
+    "allure-pytest>=2.15",
     "types-setuptools",
 ]
 

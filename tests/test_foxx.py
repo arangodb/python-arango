@@ -29,16 +29,19 @@ from arango.exceptions import (
 from arango.foxx import Foxx
 from tests.helpers import assert_raises, extract, generate_service_mount
 
-service_file = "/tests/static/service.zip"
 service_name = "test"
 
 
-def test_foxx_attributes(db):
+def test_foxx_attributes(db, skip_tests):
+    if "foxx" in skip_tests:
+        pytest.skip("Skipping foxx tests")
     assert isinstance(db.foxx, Foxx)
     assert repr(db.foxx) == f"<Foxx in {db.name}>"
 
 
-def test_foxx_service_management_json(db, bad_db, cluster):
+def test_foxx_service_management_json(db, bad_db, cluster, skip_tests, foxx_path):
+    if "foxx" in skip_tests:
+        pytest.skip("Skipping foxx tests")
     if cluster:
         pytest.skip("Not tested in a cluster setup")
 
@@ -62,7 +65,7 @@ def test_foxx_service_management_json(db, bad_db, cluster):
     # Test create service
     service = db.foxx.create_service(
         mount=service_mount,
-        source=service_file,
+        source=foxx_path,
         config={},
         dependencies={},
         development=True,
@@ -101,7 +104,7 @@ def test_foxx_service_management_json(db, bad_db, cluster):
     # Test update service
     service = db.foxx.update_service(
         mount=service_mount,
-        source=service_file,
+        source=foxx_path,
         config={},
         dependencies={},
         teardown=True,
@@ -121,7 +124,7 @@ def test_foxx_service_management_json(db, bad_db, cluster):
     # Test replace service
     service = db.foxx.replace_service(
         mount=service_mount,
-        source=service_file,
+        source=foxx_path,
         config={},
         dependencies={},
         teardown=True,
@@ -147,7 +150,9 @@ def test_foxx_service_management_json(db, bad_db, cluster):
     assert err.value.error_code == 3009
 
 
-def test_foxx_service_management_file(db, cluster):
+def test_foxx_service_management_file(db, cluster, skip_tests):
+    if "foxx" in skip_tests:
+        pytest.skip("Skipping foxx tests")
     if cluster:
         pytest.skip("Not tested in a cluster setup")
 
@@ -235,7 +240,9 @@ def test_foxx_service_management_file(db, cluster):
     assert service_mount not in extract("mount", db.foxx.services())
 
 
-def test_foxx_config_management(db, cluster):
+def test_foxx_config_management(db, cluster, skip_tests, foxx_path):
+    if "foxx" in skip_tests:
+        pytest.skip("Skipping foxx tests")
     if cluster:
         pytest.skip("Not tested in a cluster setup")
 
@@ -245,7 +252,7 @@ def test_foxx_config_management(db, cluster):
     # Prep the test service
     db.foxx.create_service(
         mount=service_mount,
-        source=service_file,
+        source=foxx_path,
         config={},
     )
 
@@ -274,7 +281,9 @@ def test_foxx_config_management(db, cluster):
     assert err.value.error_code == 3009
 
 
-def test_foxx_dependency_management(db, cluster):
+def test_foxx_dependency_management(db, cluster, skip_tests, foxx_path):
+    if "foxx" in skip_tests:
+        pytest.skip("Skipping foxx tests")
     if cluster:
         pytest.skip("Not tested in a cluster setup")
 
@@ -282,7 +291,7 @@ def test_foxx_dependency_management(db, cluster):
     missing_mount = generate_service_mount()
 
     # Prep the test service
-    db.foxx.create_service(mount=service_mount, source=service_file, dependencies={})
+    db.foxx.create_service(mount=service_mount, source=foxx_path, dependencies={})
 
     # Test get service dependencies
     assert db.foxx.dependencies(service_mount) == {}
@@ -309,7 +318,9 @@ def test_foxx_dependency_management(db, cluster):
     assert err.value.error_code == 3009
 
 
-def test_foxx_development_toggle(db, cluster):
+def test_foxx_development_toggle(db, cluster, skip_tests, foxx_path):
+    if "foxx" in skip_tests:
+        pytest.skip("Skipping foxx tests")
     if cluster:
         pytest.skip("Not tested in a cluster setup")
 
@@ -319,7 +330,7 @@ def test_foxx_development_toggle(db, cluster):
     # Prep the test service
     db.foxx.create_service(
         mount=service_mount,
-        source=service_file,
+        source=foxx_path,
         development=False,
     )
 
@@ -346,7 +357,9 @@ def test_foxx_development_toggle(db, cluster):
     assert err.value.error_code == 3009
 
 
-def test_foxx_misc_functions(db, bad_db, cluster):
+def test_foxx_misc_functions(db, bad_db, cluster, skip_tests, foxx_path):
+    if "foxx" in skip_tests:
+        pytest.skip("Skipping foxx tests")
     if cluster:
         pytest.skip("Not tested in a cluster setup")
 
@@ -356,7 +369,7 @@ def test_foxx_misc_functions(db, bad_db, cluster):
     # Prep the test service
     db.foxx.create_service(
         mount=service_mount,
-        source=service_file,
+        source=foxx_path,
     )
 
     # Test get service readme

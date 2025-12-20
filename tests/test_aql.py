@@ -254,8 +254,8 @@ def test_aql_query_management(db_version, db, sys_db, bad_db, col, docs):
     assert err.value.error_code in {11, 1228}
 
 
-def test_aql_query_force_one_shard_attribute_value(db, db_version, enterprise, cluster):
-    if not enterprise or not cluster:
+def test_aql_query_force_one_shard_attribute_value(db, skip_tests, cluster):
+    if "enterprise" in skip_tests or not cluster:
         return
 
     name = generate_col_name()

@@ -1,7 +1,14 @@
 version: 2.1
 
-orbs:
-  codecov: codecov/codecov@3.3.0
+executors:
+  python-container:
+    docker:
+      - image: cimg/python:3.12
+    resource_class: small
+  python-vm:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
 
 workflows:
   ci:
@@ -14,98 +21,81 @@ workflows:
               python_version: ["3.10", "3.11", "3.12"]
               arangodb_config: ["single", "cluster"]
               arangodb_license: ["enterprise"]
-              arangodb_version: ["latest"]
+              arangodb_version: ["3.12"]
 
 jobs:
   lint:
-    docker:
-      - image: python:latest
+    executor: python-container
+    resource_class: small
     steps:
       - checkout
       - run:
           name: Install Dependencies
           command: pip install .[dev]
-
       - run:
-          name: Run black
-          command: black --check --verbose --diff --color --config=pyproject.toml ./arango ./tests/
-
+            name: Run black
+            command: black --check --verbose --diff --color --config=pyproject.toml ./arango ./tests/
       - run:
           name: Run flake8
           command: flake8 ./arango ./tests
-
       - run:
           name: Run isort
           command: isort --check ./arango ./tests
-
       - run:
           name: Run mypy
           command: mypy ./arango
-
   test:
     parameters:
-      python_version:
-        type: string
-      arangodb_config:
-        type: string
-      arangodb_license:
-        type: string
-      arangodb_version:
-        type: string
-    # TODO: Reconsider using a docker image instead of a machine
-    # i.e cimg/python:<< parameters.python_version >>
-    machine:
-      image: ubuntu-2204:current
+        python_version:
+            type: string
+        arangodb_config:
+            type: string
+        arangodb_license:
+            type: string
+        arangodb_version:
+            type: string
+    executor: python-vm
     steps:
       - checkout
-
       - run:
-          name: Set Up ArangoDB
+          name: Setup ArangoDB
           command: |
             chmod +x starter.sh
             ./starter.sh << parameters.arangodb_config >> << parameters.arangodb_license >> << parameters.arangodb_version >>
-
       - restore_cache:
           key: pip-and-local-cache
-
-      # TODO: Revisit this bottleneck
       - run:
           name: Setup Python
           command: |
             pyenv --version
             pyenv install -f << parameters.python_version >>
             pyenv global << parameters.python_version >>
-
       - run:
-          name: "Install Dependencies"
+          name: Install Dependencies
           command: pip install -e .[dev]
-
       - run: docker ps -a
-
       - run: docker logs arango
-
       - run:
-          name: "Run pytest"
+          name: Run pytest
           command: |
             mkdir test-results
+            mkdir htmlcov
 
             args=("--junitxml=test-results/junit.xml" "--log-cli-level=DEBUG" "--host" "localhost" "--port=8529")
             if [ << parameters.arangodb_config >> = "cluster" ]; then
               args+=("--cluster" "--port=8539" "--port=8549")
             fi
 
-            if [ << parameters.arangodb_license >> = "enterprise" ]; then
-              args+=("--enterprise")
+            if [ << parameters.arangodb_license >> != "enterprise" ]; then
+              args+=("--skip" "enterprise")
             fi
 
             echo "Running pytest with args: ${args[@]}"
-            pytest --cov=arango --cov-report=xml --cov-report term-missing --color=yes --code-highlight=yes "${args[@]}"
-
+            pytest --cov=arango --cov-report=html:htmlcov --color=yes --code-highlight=yes "${args[@]}"
+      - store_artifacts:
+          path: htmlcov
+          destination: coverage-report
       - store_artifacts:
           path: test-results
-
       - store_test_results:
           path: test-results
-
-      - codecov/upload:
-        file: coverage.xml

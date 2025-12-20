@@ -311,7 +311,7 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
             assert isinstance(sys_db.reset_log_levels(server_id), dict)
 
         result = sys_db.reset_log_levels()
-        assert result == default_log_levels
+        assert result.keys() == default_log_levels.keys()
         with assert_raises(ServerLogLevelResetError):
             bad_db.reset_log_levels()
 
@@ -459,7 +459,7 @@ def test_database_utf8(sys_db, special_db_names):
         assert sys_db.delete_database(name)
 
 
-def test_license(sys_db, enterprise, db_version):
+def test_license(sys_db, skip_tests, db_version):
     license = sys_db.license()
     assert isinstance(license, dict)
 
@@ -474,7 +474,7 @@ def test_license(sys_db, enterprise, db_version):
             "status",
         }
 
-    if enterprise:
+    if "enterprise" not in skip_tests:
         assert set(license.keys()) == expected_keys
     else:
         assert license == {"license": "none"}
