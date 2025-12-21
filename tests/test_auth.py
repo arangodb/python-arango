@@ -1,6 +1,11 @@
+import time
+
 from arango.connection import BasicConnection, JwtConnection, JwtSuperuserConnection
 from arango.errno import FORBIDDEN, HTTP_UNAUTHORIZED
 from arango.exceptions import (
+    AccessTokenCreateError,
+    AccessTokenDeleteError,
+    AccessTokenListError,
     JWTAuthError,
     JWTExpiredError,
     JWTSecretListError,
@@ -11,7 +16,12 @@ from arango.exceptions import (
     ServerTLSReloadError,
     ServerVersionError,
 )
-from tests.helpers import assert_raises, generate_jwt, generate_string
+from tests.helpers import (
+    assert_raises,
+    generate_jwt,
+    generate_string,
+    generate_token_name,
+)
 
 
 def test_auth_invalid_method(client, db_name, username, password):
@@ -155,3 +165,47 @@ def test_auth_jwt_expiry(client, db_name, root_password, secret):
     db = client.db("_system", user_token=valid_token)
     with assert_raises(JWTExpiredError) as err:
         db.conn.set_token(expired_token)
+
+
+def test_auth_access_token(client, db_name, username, password, bad_db):
+    # Login with basic auth
+    db_auth_basic = client.db(
+        name=db_name,
+        username=username,
+        password=password,
+        verify=True,
+        auth_method="basic",
+    )
+
+    # Create an access token
+    token_name = generate_token_name()
+    token = db_auth_basic.create_access_token(
+        user=username, name=token_name, valid_until=int(time.time() + 3600)
+    )
+    assert token["active"] is True
+
+    # Cannot create a token with the same name
+    with assert_raises(AccessTokenCreateError):
+        db_auth_basic.create_access_token(
+            user=username, name=token_name, valid_until=int(time.time() + 3600)
+        )
+
+    # Authenticate with the created token
+    access_token_db = client.db(
+        name=db_name,
+        username=username,
+        password=token["token"],
+        verify=True,
+        auth_method="basic",
+    )
+
+    # List access tokens
+    tokens = access_token_db.list_access_tokens(username)
+    assert isinstance(tokens, list)
+    with assert_raises(AccessTokenListError):
+        bad_db.list_access_tokens(username)
+
+    # Clean up
+    access_token_db.delete_access_token(username, token["id"])
+    with assert_raises(AccessTokenDeleteError):
+        access_token_db.delete_access_token(username, token["id"])

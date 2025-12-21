@@ -108,6 +108,15 @@ def generate_service_mount():
     return f"/test_{uuid4().hex}"
 
 
+def generate_token_name():
+    """Generate and return a random token name.
+
+    :return: Random token name.
+    :rtype: str
+    """
+    return f"test_token_{uuid4().hex}"
+
+
 def generate_jwt(secret, exp=3600):
     """Generate and return a JWT.
 

@@ -161,6 +161,23 @@ class AQLQueryRulesGetError(ArangoServerError):
     """Failed to retrieve AQL query rules."""
 
 
+#######################
+# Access Token Errors #
+#######################
+
+
+class AccessTokenCreateError(ArangoServerError):
+    """Failed to create an access token."""
+
+
+class AccessTokenDeleteError(ArangoServerError):
+    """Failed to delete an access token."""
+
+
+class AccessTokenListError(ArangoServerError):
+    """Failed to retrieve access tokens."""
+
+
 ##############################
 # Async Execution Exceptions #
 ##############################

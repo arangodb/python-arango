@@ -19,6 +19,9 @@ from arango.collection import StandardCollection
 from arango.connection import Connection
 from arango.errno import HTTP_NOT_FOUND
 from arango.exceptions import (
+    AccessTokenCreateError,
+    AccessTokenDeleteError,
+    AccessTokenListError,
     AnalyzerCreateError,
     AnalyzerDeleteError,
     AnalyzerGetError,
@@ -1157,6 +1160,89 @@ class Database(ApiGroup):
             return result
 
         return self._execute(request, response_handler)
+
+    def create_access_token(
+        self,
+        user: str,
+        name: str,
+        valid_until: int,
+    ) -> Result[Json]:
+        """Create an access token for the given user.
+
+        :param user: The name of the user.
+        :type user: str
+        :param name: A name for the access token to make identification easier,
+            like a short description.
+        :type name: str
+        :param valid_until: A Unix timestamp in seconds to set the expiration
+            date and time.
+        :type valid_until: int
+
+        :return: Information about the created access token, including the token itself.
+        :rtype: dict
+
+        :raise arango.exceptions.AccessTokenCreateError: If the operations fails.
+        """
+        data: Json = {
+            "name": name,
+            "valid_until": valid_until,
+        }
+
+        request = Request(
+            method="post",
+            endpoint=f"/_api/token/{user}",
+            data=data,
+        )
+
+        def response_handler(resp: Response) -> Json:
+            if not resp.is_success:
+                raise AccessTokenCreateError(resp, request)
+            result: Json = resp.body
+            return result
+
+        return self._executor.execute(request, response_handler)
+
+    def delete_access_token(self, user: str, token_id: int) -> Result[None]:
+        """Delete an access token for the given user.
+
+        :param user: The name of the user.
+        :type user: str
+        :param token_id: The ID of the access token to delete.
+        :type token_id: int
+
+        :raise arango.exceptions.AccessTokenDeleteError: If the operation fails.
+        """
+        request = Request(
+            method="delete",
+            endpoint=f"/_api/token/{user}/{token_id}",
+        )
+
+        def response_handler(resp: Response) -> None:
+            if not resp.is_success:
+                raise AccessTokenDeleteError(resp, request)
+
+        return self._executor.execute(request, response_handler)
+
+    def list_access_tokens(self, user: str) -> Result[Jsons]:
+        """List all access tokens for the given user.
+
+        :param user: The name of the user.
+        :type user: str
+
+        :return: List of access tokens for the user.
+        :rtype: list
+
+        :raise arango.exceptions.AccessTokenListError: If the operation fails.
+        """
+        request = Request(method="get", endpoint=f"/_api/token/{user}")
+
+        def response_handler(resp: Response) -> Jsons:
+            if not resp.is_success:
+                raise AccessTokenListError(resp, request)
+            result: Jsons = resp.body["tokens"]
+            return result
+
+        return self._executor.execute(request, response_handler)
 
     def tls(self) -> Result[Json]:
         """Return TLS data (server key, client-auth CA).
