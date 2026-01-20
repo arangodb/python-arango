@@ -871,9 +871,7 @@ class Collection(ApiGroup):
         query = """
         FOR doc IN NEAR(@collection, @latitude, @longitude{})
             RETURN doc
-        """.format(
-            "" if limit is None else ", @limit "
-        )
+        """.format("" if limit is None else ", @limit ")
 
         bind_vars = {
             "collection": self._name,
@@ -996,9 +994,7 @@ class Collection(ApiGroup):
         query = """
         FOR doc IN WITHIN(@@collection, @latitude, @longitude, @radius{})
             RETURN doc
-        """.format(
-            "" if distance_field is None else ", @distance"
-        )
+        """.format("" if distance_field is None else ", @distance")
 
         bind_vars = {
             "@collection": self._name,
@@ -1080,7 +1076,7 @@ class Collection(ApiGroup):
         coord_str = ""
         if index is None:
             # Find the first geo index
-            for collection_index in self.indexes():  # type:ignore[union-attr]
+            for collection_index in self.indexes():  # type: ignore[union-attr]
                 if collection_index["type"] == "geo":
                     coord_str = build_coord_str_from_index(collection_index)
                     break
@@ -1168,9 +1164,7 @@ class Collection(ApiGroup):
         aql = """
         FOR doc IN FULLTEXT(@collection, @field, @query{})
             RETURN doc
-        """.format(
-            "" if limit is None else ", @limit"
-        )
+        """.format("" if limit is None else ", @limit")
 
         request = Request(
             method="post",

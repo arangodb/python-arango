@@ -110,9 +110,7 @@ def test_aql_query_management(db_version, db, sys_db, bad_db, col, docs):
         FOR d IN {col}
             UPDATE {{_key: d._key, _val: @val }} IN {col}
             RETURN NEW
-        """.format(
-            col=col.name
-        ),
+        """.format(col=col.name),
         count=True,
         # batch_size=1,
         ttl=10,

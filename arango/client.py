@@ -3,8 +3,6 @@ __all__ = ["ArangoClient"]
 from json import dumps, loads
 from typing import Any, Callable, Optional, Sequence, Union
 
-import importlib_metadata
-
 from arango.connection import (
     BasicConnection,
     Connection,
@@ -27,6 +25,7 @@ from arango.resolver import (
     RoundRobinHostResolver,
     SingleHostResolver,
 )
+from arango.version import __version__
 
 
 def default_serializer(x: Any) -> str:
@@ -175,8 +174,7 @@ class ArangoClient:
         :return: Client version.
         :rtype: str
         """
-        version: str = importlib_metadata.version("python-arango")
-        return version
+        return __version__
 
     @property
     def request_timeout(self) -> Any:
