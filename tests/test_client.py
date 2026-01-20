@@ -5,12 +5,12 @@ from typing import Union
 import pytest
 from requests import Session
 
-from arango import version
 from arango.client import ArangoClient
 from arango.database import StandardDatabase
 from arango.exceptions import ArangoClientError, ServerConnectionError
 from arango.http import DefaultHTTPClient, DeflateRequestCompression
 from arango.resolver import FallbackHostResolver, RandomHostResolver, SingleHostResolver
+from arango.version import __version__
 from tests.helpers import (
     generate_col_name,
     generate_db_name,
@@ -23,7 +23,7 @@ def test_client_attributes(url):
     http_client = DefaultHTTPClient()
 
     client = ArangoClient(hosts=url, http_client=http_client)
-    assert client.version == version.__version__
+    assert client.version == __version__
     assert client.hosts == [url]
 
     assert repr(client) == f"<ArangoClient {url}>"
@@ -38,7 +38,7 @@ def test_client_attributes(url):
         serializer=json.dumps,
         deserializer=json.loads,
     )
-    assert client.version == version.__version__
+    assert client.version == __version__
     assert client.hosts == client_hosts
     assert repr(client) == client_repr
     assert isinstance(client._host_resolver, FallbackHostResolver)
@@ -50,7 +50,7 @@ def test_client_attributes(url):
         serializer=json.dumps,
         deserializer=json.loads,
     )
-    assert client.version == version.__version__
+    assert client.version == __version__
     assert client.hosts == client_hosts
     assert repr(client) == client_repr
     assert isinstance(client._host_resolver, RandomHostResolver)
