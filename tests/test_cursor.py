@@ -113,9 +113,7 @@ def test_cursor_write_query(db, col, docs):
         FOR d IN {col} FILTER d._key == @first OR d._key == @second
         UPDATE {{_key: d._key, _val: @val }} IN {col}
         RETURN NEW
-        """.format(
-            col=col.name
-        ),
+        """.format(col=col.name),
         bind_vars={"first": "1", "second": "2", "val": 42},
         count=True,
         batch_size=1,
