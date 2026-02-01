@@ -1,4 +1,5 @@
 import pytest
+from packaging import version
 
 from arango.errno import DATABASE_NOT_FOUND, FILE_NOT_FOUND, FORBIDDEN, HTTP_NOT_FOUND
 from arango.exceptions import (
@@ -12,11 +13,17 @@ from arango.exceptions import (
 from tests.helpers import assert_raises
 
 
-def test_backup_management(sys_db, bad_db, cluster, skip_tests):
+def test_backup_management(sys_db, bad_db, cluster, skip_tests, db_version):
     if "enterprise" in skip_tests:
         pytest.skip("Only for ArangoDB enterprise edition")
     if "backup" in skip_tests:
         pytest.skip("Skipping backup tests")
+    if not cluster:
+        pytest.skip("For simplicity, the backup API is only tested in cluster setups")
+    if db_version < version.parse("3.12.0"):
+        pytest.skip(
+            "For simplicity, the backup API is only tested in the latest versions"
+        )
 
     # Test create backup "foo".
     result = sys_db.backup.create(
