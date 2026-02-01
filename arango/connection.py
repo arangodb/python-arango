@@ -464,8 +464,8 @@ class JwtConnection(BaseConnection):
                     "verify_iat": True,
                     "verify_exp": True,
                     "verify_signature": False,
-                },
-            )  # type: ignore[arg-type]
+                },  # type: ignore[arg-type]
+            )
         except ExpiredSignatureError:
             raise JWTExpiredError("JWT token is expired")
 
@@ -554,8 +554,8 @@ class JwtSuperuserConnection(BaseConnection):
                     "verify_iat": True,
                     "verify_exp": True,
                     "verify_signature": False,
-                },
-            )  # type: ignore[arg-type]
+                },  # type: ignore[arg-type]
+            )
         except ExpiredSignatureError:
             raise JWTExpiredError("JWT token is expired")
 

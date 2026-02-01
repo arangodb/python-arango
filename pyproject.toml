@@ -38,7 +38,7 @@ dependencies = [
     "urllib3>=1.26.0",
     "requests",
     "requests_toolbelt",
-    "PyJWT",
+    "PyJWT>=2.10.0",
     "packaging>=23.1",
 ]
 
