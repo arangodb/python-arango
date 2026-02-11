@@ -1112,7 +1112,7 @@ def format_backup_dbserver(body: Json) -> Json:
     :return: Formatted body.
     :rtype: dict
     """
-    return {"status": body["Status"]}
+    return {"status": body.get("Status")}
 
 
 def format_backup_transfer(body: Json) -> Json:
