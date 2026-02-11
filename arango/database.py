@@ -1699,10 +1699,8 @@ class Database(ApiGroup):
         if write_concern is not None:
             data["writeConcern"] = write_concern
         if schema is not None:
-            if not isinstance(schema, dict) or "rule" not in schema:
-                raise ValueError(
-                    "schema parameter must be a dict with at least a 'rule' key"
-                )
+            if not isinstance(schema, dict) or len(schema) == 0:
+                raise ValueError("schema parameter cannot be empty")
             data["schema"] = schema
         if computedValues is not None:
             data["computedValues"] = computedValues

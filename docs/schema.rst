@@ -3,9 +3,7 @@ Schema Validation
 
 ArangoDB supports document validation using JSON schemas. You can use this
 feature by providing a schema during collection creation using the ``schema``
-parameter. It must not be an empty ``dict``` and contain at least a ``rule``
-key with a valid JSON schema as its value. You can also modify the schema of
-an existing collection using the ``Collection.configure()`` method.
+parameter. It must not be an empty ``dict```.
 
 **Example:**
 
