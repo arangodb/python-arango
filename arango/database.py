@@ -1668,6 +1668,7 @@ class Database(ApiGroup):
         :return: Standard collection API wrapper.
         :rtype: arango.collection.StandardCollection
         :raise arango.exceptions.CollectionCreateError: If create fails.
+        :raise ValueError: If parameters are invalid.
         """
         key_options: Json = {"type": key_generator, "allowUserKeys": user_keys}
         if key_generator == "autoincrement":
@@ -1698,6 +1699,10 @@ class Database(ApiGroup):
         if write_concern is not None:
             data["writeConcern"] = write_concern
         if schema is not None:
+            if not isinstance(schema, dict) or "rule" not in schema:
+                raise ValueError(
+                    "schema parameter must be a dict with at least a 'rule' key"
+                )
             data["schema"] = schema
         if computedValues is not None:
             data["computedValues"] = computedValues

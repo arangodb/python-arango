@@ -60,9 +60,13 @@ def test_collection_misc_methods(col, bad_col, cluster):
         }
     ]
 
-    properties = col.configure(
-        sync=not prev_sync, schema={}, computed_values=computed_values
-    )
+    with pytest.raises(ValueError):
+        # schema must not be empty
+        properties = col.configure(
+            sync=not prev_sync, schema={}, computed_values=computed_values
+        )
+
+    properties = col.configure(sync=not prev_sync, computed_values=computed_values)
 
     assert properties["name"] == col.name
     assert properties["system"] is False
@@ -201,6 +205,10 @@ def test_collection_management(db, bad_db, cluster):
     assert key_options["key_offset"] == 100
 
     col_name = generate_col_name()
+
+    with pytest.raises(ValueError):
+        # schema must not be empty
+        db.create_collection(name=col_name, schema={})
 
     col = db.create_collection(
         name=col_name,
