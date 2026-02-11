@@ -3,7 +3,7 @@ Schema Validation
 
 ArangoDB supports document validation using JSON schemas. You can use this
 feature by providing a schema during collection creation using the ``schema``
-parameter.
+parameter. It must not be an empty ``dict```.
 
 **Example:**
 
@@ -37,6 +37,3 @@ parameter.
 
     # Modify the schema.
     employees.configure(schema=my_schema)
-
-    # Remove the schema.
-    employees.configure(schema={})
