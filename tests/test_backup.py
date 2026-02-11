@@ -1,3 +1,5 @@
+import time
+
 import pytest
 from packaging import version
 
@@ -109,6 +111,9 @@ def test_backup_management(sys_db, bad_db, cluster, skip_tests, db_version):
     # Test restore backup.
     result = sys_db.backup.restore(backup_id_foo)
     assert isinstance(result, dict)
+
+    # Wait for restore to complete
+    time.sleep(10)
 
     # Test restore backup with bad database.
     with assert_raises(BackupRestoreError) as err:
