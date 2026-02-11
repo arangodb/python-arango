@@ -401,7 +401,7 @@ class Collection(ApiGroup):
             data["waitForSync"] = sync
         if schema is not None:
             if not isinstance(schema, dict) or len(schema) == 0:
-                raise ValueError("schema parameter cannot be empty")
+                raise ValueError("schema parameter must be a non-empty dict")
             data["schema"] = schema
         if replication_factor is not None:
             data["replicationFactor"] = replication_factor

@@ -1700,7 +1700,7 @@ class Database(ApiGroup):
             data["writeConcern"] = write_concern
         if schema is not None:
             if not isinstance(schema, dict) or len(schema) == 0:
-                raise ValueError("schema parameter cannot be empty")
+                raise ValueError("schema parameter must be a non-empty dict")
             data["schema"] = schema
         if computedValues is not None:
             data["computedValues"] = computedValues
