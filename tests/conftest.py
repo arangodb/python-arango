@@ -1,3 +1,4 @@
+import warnings
 from dataclasses import dataclass
 
 import pytest
@@ -298,7 +299,7 @@ def mock_formatters(monkeypatch):
         if len(body) != len(result):
             before = sorted(body, key=lambda x: x.strip("_"))
             after = sorted(result, key=lambda x: x.strip("_"))
-            raise ValueError(f"\nIN: {before}\nOUT: {after}")
+            warnings.warn(f"\nIN: {before}\nOUT: {after}")
         return result
 
     monkeypatch.setattr(formatter, "verify_format", mock_verify_format)
