@@ -1,3 +1,4 @@
+import warnings
 from dataclasses import dataclass
 
 import pytest
@@ -45,6 +46,7 @@ class GlobalData:
     secret: str = None
     root_password: str = None
     db_version: version = version.parse("0.0.0")
+    crash: bool = False
 
 
 global_data = GlobalData()
@@ -68,6 +70,11 @@ def pytest_addoption(parser):
     )
     parser.addoption(
         "--cluster", action="store_true", help="Run tests in a cluster setup"
+    )
+    parser.addoption(
+        "--crash",
+        action="store_true",
+        help="Crashes the tests on API keyword (for debugging)",
     )
     parser.addoption(
         "--complete",
@@ -201,6 +208,7 @@ def pytest_configure(config):
     global_data.skip = config.getoption("skip")
     global_data.backup_path = config.getoption("backup_path")
     global_data.foxx_path = config.getoption("foxx_path")
+    global_data.crash = config.getoption("crash")
 
 
 # noinspection PyShadowingNames
@@ -281,27 +289,6 @@ def pytest_generate_tests(metafunc):
 
     elif "bad_db" in metafunc.fixturenames:
         metafunc.parametrize("bad_db", bad_dbs)
-
-
-@pytest.fixture(autouse=True)
-def mock_formatters(monkeypatch):
-    def mock_verify_format(body, result):
-        body.pop("error", None)
-        body.pop("code", None)
-        result.pop("edge", None)
-
-        # Remove all None values
-        # Sometimes they are expected to be excluded from the body (see computedValues)
-        result = {k: v for k, v in result.items() if v is not None}
-        body = {k: v for k, v in body.items() if v is not None}
-
-        if len(body) != len(result):
-            before = sorted(body, key=lambda x: x.strip("_"))
-            after = sorted(result, key=lambda x: x.strip("_"))
-            raise ValueError(f"\nIN: {before}\nOUT: {after}")
-        return result
-
-    monkeypatch.setattr(formatter, "verify_format", mock_verify_format)
 
 
 @pytest.fixture(autouse=False)
@@ -489,3 +476,33 @@ def foxx_path():
 @pytest.fixture
 def skip_tests():
     return global_data.skip
+
+
+@pytest.fixture
+def crash_tests():
+    return global_data.crash
+
+
+@pytest.fixture(autouse=True)
+def mock_formatters(monkeypatch, crash_tests):
+    def mock_verify_format(body, result):
+        body.pop("error", None)
+        body.pop("code", None)
+        result.pop("edge", None)
+
+        # Remove all None values
+        # Sometimes they are expected to be excluded from the body (see computedValues)
+        result = {k: v for k, v in result.items() if v is not None}
+        body = {k: v for k, v in body.items() if v is not None}
+
+        if len(body) != len(result):
+            before = sorted(body, key=lambda x: x.strip("_"))
+            after = sorted(result, key=lambda x: x.strip("_"))
+            if crash_tests:
+                raise ValueError(f"\nIN: {before}\nOUT: {after}")
+            else:
+                warnings.warn(f"\nIN: {before}\nOUT: {after}")
+
+        return result
+
+    monkeypatch.setattr(formatter, "verify_format", mock_verify_format)
