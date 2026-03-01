@@ -21,7 +21,6 @@ def wait_for_cluster_resilient(sys_db):
     max_attempts = 100
 
     while not collections_in_sync and max_attempts > 0:
-        collections_in_sync = True
         count_in_sync = 0
         count_still_waiting = 0
 
@@ -33,6 +32,7 @@ def wait_for_cluster_resilient(sys_db):
             max_attempts -= 1
             continue
 
+        collections_in_sync = True
         for col in inventory["collections"]:
             if not col["all_in_sync"]:
                 count_still_waiting += 1
