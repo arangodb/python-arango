@@ -1,7 +1,6 @@
 import time
 
 import pytest
-import time
 from packaging import version
 
 from arango.errno import DATABASE_NOT_FOUND, FILE_NOT_FOUND, FORBIDDEN, HTTP_NOT_FOUND
@@ -12,44 +11,45 @@ from arango.exceptions import (
     BackupGetError,
     BackupRestoreError,
     BackupUploadError,
+    ReplicationClusterInventoryError,
 )
 from tests.helpers import assert_raises
 
-def wait_for_cluster_resilient(sys_db):
-    firstExec = True
-    collectionsInSync = True
-    attempts = 100
-    while not collectionsInSync and attempts > 0:
-        collectionsInSync = True
-        countInSync = 0
-        countStillWaiting = 0
-        cols = sys_db.replication.cluster_inventory(include_system=True)
-        print(cols)
-        if cols is None:
-          collectionsInSync = False
-          time.sleep(1)
-          attempts -= 1
-          continue
-        for col in cols:
-          collectionsInSync = collectionsInSync and col.allInSync
-          if not col.allInSync:
-            countStillWaiting += 1
-          else:
-            countInSync+= 1
 
-        if not collectionsInSync:
-          time.sleep(1)
-          if attempts % 50 == 0:
-            print(cols)
-            print(f"Amount of collection in sync: {countInSync}. Still not in sync: {countStillWaiting}")
-        if firstExec:
-          firstExec = False
-          if countInSync + countStillWaiting > 100:
-            attempts = Math.round((countInSync + countStillWaiting) * 0.8);
-            print("Set attempts to {attempts}")
-        attempts -= 1;
-    if attempts == 0:
-        raise Exception("collections didn't come in sync!")
+def wait_for_cluster_resilient(sys_db):
+    collections_in_sync = True
+    max_attempts = 100
+
+    while not collections_in_sync and max_attempts > 0:
+        collections_in_sync = True
+        count_in_sync = 0
+        count_still_waiting = 0
+
+        try:
+            cols = sys_db.replication.cluster_inventory(include_system=True)
+        except ReplicationClusterInventoryError:
+            time.sleep(1)
+            max_attempts -= 1
+            continue
+
+        for col in cols:
+            collections_in_sync = collections_in_sync and col["all_in_sync"]
+            if not col["all_in_sync"]:
+                count_still_waiting += 1
+            else:
+                count_in_sync += 1
+
+        if not collections_in_sync:
+            if max_attempts % 50 == 0:
+                print(cols)
+                print(f"In sync: {collections_in_sync}")
+                print(f"Still not in sync: {count_still_waiting}")
+
+        max_attempts -= 1
+
+    if not collections_in_sync:
+        raise Exception("Collections didn't come in sync!")
+
 
 def test_backup_management(sys_db, bad_db, cluster, skip_tests, db_version):
     if "enterprise" in skip_tests:
@@ -148,11 +148,7 @@ def test_backup_management(sys_db, bad_db, cluster, skip_tests, db_version):
     result = sys_db.backup.restore(backup_id_foo)
     assert isinstance(result, dict)
 
-    # Wait for restore to complete
-    if cluster:
-        wait_for_cluster_resilient(sys_db)
-    else:
-        time.sleep(10)
+    wait_for_cluster_resilient(sys_db)
 
     # Test restore backup with bad database.
     with assert_raises(BackupRestoreError) as err:
