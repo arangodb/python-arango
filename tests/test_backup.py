@@ -43,7 +43,7 @@ def wait_for_cluster_resilient(sys_db):
         if not collections_in_sync:
             if max_attempts % 50 == 0:
                 print(inventory)
-                print(f"In sync: {collections_in_sync}")
+                print(f"In sync: {count_in_sync}")
                 print(f"Still not in sync: {count_still_waiting}")
             time.sleep(1)
 
