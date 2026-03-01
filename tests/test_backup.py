@@ -17,7 +17,7 @@ from tests.helpers import assert_raises
 
 
 def wait_for_cluster_resilient(sys_db):
-    collections_in_sync = True
+    collections_in_sync = False
     max_attempts = 100
 
     while not collections_in_sync and max_attempts > 0:
@@ -26,24 +26,26 @@ def wait_for_cluster_resilient(sys_db):
         count_still_waiting = 0
 
         try:
-            cols = sys_db.replication.cluster_inventory(include_system=True)
+            inventory = sys_db.replication.cluster_inventory(include_system=True)
         except ReplicationClusterInventoryError:
+            print("Failed to get cluster inventory, retrying...")
             time.sleep(1)
             max_attempts -= 1
             continue
 
-        for col in cols:
-            collections_in_sync = collections_in_sync and col["all_in_sync"]
+        for col in inventory["collections"]:
             if not col["all_in_sync"]:
                 count_still_waiting += 1
+                collections_in_sync = False
             else:
                 count_in_sync += 1
 
         if not collections_in_sync:
             if max_attempts % 50 == 0:
-                print(cols)
+                print(inventory)
                 print(f"In sync: {collections_in_sync}")
                 print(f"Still not in sync: {count_still_waiting}")
+            time.sleep(1)
 
         max_attempts -= 1
 
