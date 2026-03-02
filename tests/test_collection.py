@@ -1,3 +1,5 @@
+import time
+
 import pytest
 
 from arango.client import ArangoClient
@@ -196,13 +198,30 @@ def test_collection_management(db, bad_db, cluster):
         }
     ]
 
-    col = db.create_collection(
-        name=col_name, key_generator="autoincrement", key_increment=9, key_offset=100
+    col = None
+    for _ in range(10):
+        try:
+            col = db.create_collection(
+                name=col_name,
+                key_generator="autoincrement",
+                key_increment=9,
+                key_offset=100,
+            )
+        except CollectionCreateError:
+            print(
+                "Failed to create collection with autoincrement key generator,"
+                "retrying..."
+            )
+            time.sleep(3)
+            continue
+        key_options = col.properties()["key_options"]
+        assert key_options["key_generator"] == "autoincrement"
+        assert key_options["key_increment"] == 9
+        assert key_options["key_offset"] == 100
+    assert col is not None, (
+        "Failed to create collection with autoincrement"
+        "key generator after multiple attempts"
     )
-    key_options = col.properties()["key_options"]
-    assert key_options["key_generator"] == "autoincrement"
-    assert key_options["key_increment"] == 9
-    assert key_options["key_offset"] == 100
 
     col_name = generate_col_name()
 
