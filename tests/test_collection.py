@@ -209,7 +209,7 @@ def test_collection_management(db, bad_db, cluster):
             )
         except CollectionCreateError:
             print(
-                "Failed to create collection with autoincrement key generator,"
+                "Failed to create collection with autoincrement key generator, "
                 "retrying..."
             )
             time.sleep(3)
@@ -218,8 +218,9 @@ def test_collection_management(db, bad_db, cluster):
         assert key_options["key_generator"] == "autoincrement"
         assert key_options["key_increment"] == 9
         assert key_options["key_offset"] == 100
+        break
     assert col is not None, (
-        "Failed to create collection with autoincrement"
+        "Failed to create collection with autoincrement "
         "key generator after multiple attempts"
     )
 
