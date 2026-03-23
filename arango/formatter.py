@@ -375,6 +375,10 @@ def format_aql_query(body: Json) -> Json:
         result["modification_query"] = body["modificationQuery"]
     if "warnings" in body:
         result["warnings"] = body["warnings"]
+
+    if "exitCode" in body:
+        result["exit_code"] = body["exitCode"]
+
     return verify_format(body, result)
 
 
