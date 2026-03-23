@@ -579,6 +579,7 @@ class AQL(ApiGroup):
         enabled: Optional[bool] = None,
         max_slow_queries: Optional[int] = None,
         slow_query_threshold: Optional[int] = None,
+        slow_streaming_query_threshold: Optional[int] = None,
         max_query_string_length: Optional[int] = None,
         track_bind_vars: Optional[bool] = None,
         track_slow_queries: Optional[bool] = None,
@@ -592,6 +593,9 @@ class AQL(ApiGroup):
         :type max_slow_queries: int
         :param slow_query_threshold: Runtime threshold (in seconds) for treating a
             query as slow.
+        :type slow_query_threshold: int
+        :param slow_streaming_query_threshold: Runtime threshold (in seconds) for
+            treating a streaming query as slow.
         :type slow_query_threshold: int
         :param max_query_string_length: Max query string length (in bytes) tracked.
         :type max_query_string_length: int
@@ -614,6 +618,8 @@ class AQL(ApiGroup):
             data["maxQueryStringLength"] = max_query_string_length
         if slow_query_threshold is not None:
             data["slowQueryThreshold"] = slow_query_threshold
+        if slow_streaming_query_threshold is not None:
+            data["slowStreamingQueryThreshold"] = slow_streaming_query_threshold
         if track_bind_vars is not None:
             data["trackBindVars"] = track_bind_vars
         if track_slow_queries is not None:

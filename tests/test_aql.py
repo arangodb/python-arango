@@ -169,6 +169,7 @@ def test_aql_query_management(db_version, db, sys_db, bad_db, col, docs):
         max_query_string_length=4000,
         max_slow_queries=60,
         slow_query_threshold=15,
+        slow_streaming_query_threshold=20,
         track_bind_vars=not tracking["track_bind_vars"],
         track_slow_queries=not tracking["track_slow_queries"],
     )
@@ -176,6 +177,7 @@ def test_aql_query_management(db_version, db, sys_db, bad_db, col, docs):
     assert new_tracking["max_query_string_length"] == 4000
     assert new_tracking["max_slow_queries"] == 60
     assert new_tracking["slow_query_threshold"] == 15
+    assert new_tracking["slow_streaming_query_threshold"] == 20
     assert new_tracking["track_bind_vars"] != tracking["track_bind_vars"]
     assert new_tracking["track_slow_queries"] != tracking["track_slow_queries"]
 
