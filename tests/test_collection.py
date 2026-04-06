@@ -4,6 +4,7 @@ import pytest
 
 from arango.client import ArangoClient
 from arango.collection import StandardCollection
+from arango.errno import DUPLICATE_NAME
 from arango.exceptions import (
     CollectionChecksumError,
     CollectionConfigureError,
@@ -199,6 +200,7 @@ def test_collection_management(db, bad_db, cluster):
     ]
 
     col = None
+    key_options = None
     for _ in range(10):
         try:
             col = db.create_collection(
@@ -207,14 +209,28 @@ def test_collection_management(db, bad_db, cluster):
                 key_increment=9,
                 key_offset=100,
             )
-        except CollectionCreateError:
+        except CollectionCreateError as err:
+            # Treat duplicate-name or already-visible collections as a
+            # successful prior create, reattach to the collection, and
+            # retry reading its properties until the metadata is available.
+            if err.error_code == DUPLICATE_NAME or db.has_collection(col_name):
+                col = db.collection(col_name)
+            else:
+                print(
+                    "Failed to create collection with autoincrement key "
+                    f"generator ({err}), retrying..."
+                )
+                time.sleep(3)
+                continue
+        try:
+            key_options = col.properties()["key_options"]
+        except CollectionPropertiesError:
             print(
-                "Failed to create collection with autoincrement key generator, "
-                "retrying..."
+                "Collection exists but its autoincrement properties are not "
+                "available yet, retrying..."
             )
             time.sleep(3)
             continue
-        key_options = col.properties()["key_options"]
         assert key_options["key_generator"] == "autoincrement"
         assert key_options["key_increment"] == 9
         assert key_options["key_offset"] == 100
@@ -223,6 +239,9 @@ def test_collection_management(db, bad_db, cluster):
         "Failed to create collection with autoincrement "
         "key generator after multiple attempts"
     )
+    assert (
+        key_options is not None
+    ), "Collection exists but its autoincrement properties are not available yet"
 
     col_name = generate_col_name()
 
