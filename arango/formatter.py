@@ -279,8 +279,6 @@ def format_collection(body: Json) -> Json:
     if "internalValidatorType" in body:
         result["internal_validator_type"] = body["internalValidatorType"]
 
-    if "deleted" in body:
-        result["deleted"] = body["deleted"]
     if "supportsRBAC" in body:
         result["supportsRBAC"] = body["supportsRBAC"]
 
