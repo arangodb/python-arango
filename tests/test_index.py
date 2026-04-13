@@ -8,7 +8,7 @@ from arango.exceptions import (
     IndexListError,
     IndexLoadError,
 )
-from tests.helpers import assert_raises, extract
+from tests.helpers import assert_raises, extract, generate_doc_key
 
 
 def test_list_indexes(icol, bad_col):
@@ -353,7 +353,7 @@ def test_add_mdi_index(icol, db_version):
 def test_add_vector_index(col):
     docs = []
     for i in range(100):
-        docs.append({"x": [1] * 128})
+        docs.append({"_key": generate_doc_key(), "x": [1] * 128})
     col.insert_many(docs)
     result = col.add_index(
         {
@@ -368,6 +368,7 @@ def test_add_vector_index(col):
         }
     )
     assert result["name"] == "vector_index"
+    col.delete_index(result["id"])
 
 
 def test_delete_index(icol, bad_col):
