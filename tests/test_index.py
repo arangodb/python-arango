@@ -350,6 +350,26 @@ def test_add_mdi_index(icol, db_version):
     icol.delete_index(result["id"])
 
 
+def test_add_vector_index(col):
+    docs = []
+    for i in range(100):
+        docs.append({"x": [1] * 128})
+    col.insert_many(docs)
+    result = col.add_index(
+        {
+            "type": "vector",
+            "fields": ["x"],
+            "name": "vector_index",
+            "params": {
+                "metric": "cosine",
+                "dimension": 128,
+                "nLists": 2,
+            },
+        }
+    )
+    assert result["name"] == "vector_index"
+
+
 def test_delete_index(icol, bad_col):
     old_indexes = set(extract("id", icol.indexes()))
     hash_index = {"type": "hash", "fields": ["attr1", "attr2"], "unique": True}

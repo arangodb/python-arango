@@ -119,6 +119,10 @@ def format_index(body: Json, formatter: bool = True) -> Json:
     # Introduced via Vector Index in 3.12.6
     if "params" in body:
         result["params"] = body["params"]
+    if "errorMessage" in body:
+        result["error_message"] = body["errorMessage"]
+    if "trainingState" in body:
+        result["training_state"] = body["trainingState"]
 
     return verify_format(body, result)
 
