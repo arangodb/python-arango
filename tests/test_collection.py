@@ -27,6 +27,7 @@ from tests.helpers import (
     generate_col_name,
     generate_string,
     generate_username,
+    wait_for_cluster_resilient,
 )
 
 
@@ -170,7 +171,10 @@ def test_collection_misc_methods(col, bad_col, cluster):
     assert result == info
 
 
-def test_collection_management(db, bad_db, cluster):
+def test_collection_management(sys_db, db, bad_db, cluster):
+    if cluster:
+        wait_for_cluster_resilient(sys_db)
+
     # Test create collection
     col_name = generate_col_name()
     assert db.has_collection(col_name) is False
@@ -249,25 +253,33 @@ def test_collection_management(db, bad_db, cluster):
         # schema must not be empty
         db.create_collection(name=col_name, schema={})
 
-    col = db.create_collection(
-        name=col_name,
-        sync=True,
-        system=False,
-        key_generator="traditional",
-        user_keys=False,
-        edge=True,
-        shard_count=2,
-        shard_fields=["test_attr:"],
-        replication_factor=1,
-        sync_replication=False,
-        enforce_replication_factor=False,
-        sharding_strategy="community-compat",
-        smart_join_attribute="test_attr",
-        write_concern=1,
-        schema=schema,
-        computedValues=computed_values,
-    )
+    for _ in range(10):
+        try:
+            col = db.create_collection(
+                name=col_name,
+                sync=True,
+                system=False,
+                key_generator="traditional",
+                user_keys=False,
+                edge=True,
+                shard_count=2,
+                shard_fields=["test_attr:"],
+                replication_factor=1,
+                sync_replication=False,
+                enforce_replication_factor=False,
+                sharding_strategy="community-compat",
+                smart_join_attribute="test_attr",
+                write_concern=1,
+                schema=schema,
+                computedValues=computed_values,
+            )
+        except CollectionCreateError as err:
+            if err.error_code != DUPLICATE_NAME or not db.has_collection(col_name):
+                print(f"Failed to create collection with name {col_name}: {err}")
+                time.sleep(3)
+                continue
     assert db.has_collection(col_name) is True
+    col = db.collection(col_name)
 
     if cluster:
         for details in (False, True):

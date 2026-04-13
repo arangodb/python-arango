@@ -6,7 +6,11 @@ import jwt
 import pytest
 
 from arango.cursor import Cursor
-from arango.exceptions import AsyncExecuteError, TransactionInitError
+from arango.exceptions import (
+    AsyncExecuteError,
+    ReplicationClusterInventoryError,
+    TransactionInitError,
+)
 
 
 def generate_db_name():
@@ -190,3 +194,40 @@ def assert_raises(*exc):
     :type: exc
     """
     return pytest.raises(exc + (AsyncExecuteError, TransactionInitError))
+
+
+def wait_for_cluster_resilient(sys_db):
+    collections_in_sync = False
+    max_attempts = 100
+
+    while not collections_in_sync and max_attempts > 0:
+        count_in_sync = 0
+        count_still_waiting = 0
+
+        try:
+            inventory = sys_db.replication.cluster_inventory(include_system=True)
+        except ReplicationClusterInventoryError:
+            print("Failed to get cluster inventory, retrying...")
+            time.sleep(1)
+            max_attempts -= 1
+            continue
+
+        collections_in_sync = True
+        for col in inventory["collections"]:
+            if not col["all_in_sync"]:
+                count_still_waiting += 1
+                collections_in_sync = False
+            else:
+                count_in_sync += 1
+
+        if not collections_in_sync:
+            if max_attempts % 50 == 0:
+                print(inventory)
+                print(f"In sync: {count_in_sync}")
+                print(f"Still not in sync: {count_still_waiting}")
+            time.sleep(1)
+
+        max_attempts -= 1
+
+    if not collections_in_sync:
+        raise Exception("Collections didn't come in sync!")
