@@ -138,6 +138,7 @@ def pytest_configure(config):
     )
 
     db_version = sys_db.version()
+    global_data.db_version = version.parse(db_version.split("-")[0])
 
     # Create a user and non-system database for testing.
     username = generate_username()
@@ -161,8 +162,9 @@ def pytest_configure(config):
     col_name = generate_col_name()
     tst_col = tst_db.create_collection(col_name, edge=False)
 
-    tst_col.add_index({"type": "skiplist", "fields": ["val"]})
-    tst_col.add_index({"type": "fulltext", "fields": ["text"]})
+    tst_col.add_index({"type": "persistent", "fields": ["val"]})
+    if global_data.db_version < version.parse("4.0.0"):
+        tst_col.add_index({"type": "fulltext", "fields": ["text"]})
     geo_index = tst_col.add_index({"type": "geo", "fields": ["loc"]})
 
     # Create a legacy edge collection for testing.
@@ -189,7 +191,6 @@ def pytest_configure(config):
     global_data.username = username
     global_data.password = password
     global_data.db_name = tst_db_name
-    global_data.db_version = version.parse(db_version.split("-")[0])
     global_data.sys_db = sys_db
     global_data.tst_db = tst_db
     global_data.bad_db = bad_db
@@ -220,11 +221,12 @@ def pytest_unconfigure(*_):  # pragma: no cover
     # Remove all test async jobs.
     sys_db.clear_async_jobs()
 
-    # Remove all test tasks.
-    for task in sys_db.tasks():
-        task_name = task["name"]
-        if task_name.startswith("test_task"):
-            sys_db.delete_task(task_name, ignore_missing=True)
+    if global_data.db_version < version.parse("4.0.0"):
+        # Remove all test tasks.
+        for task in sys_db.tasks():
+            task_name = task["name"]
+            if task_name.startswith("test_task"):
+                sys_db.delete_task(task_name, ignore_missing=True)
 
     # Remove all test users.
     for user in sys_db.users():

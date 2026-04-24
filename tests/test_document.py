@@ -1278,7 +1278,10 @@ def test_document_find(col, bad_col, docs):
     assert len(list(col.find({"foo.bar": "baz"}))) == 1
 
 
-def test_document_find_near(col, bad_col, docs):
+def test_document_find_near(db_version, col, bad_col, docs):
+    if db_version >= version.parse("4.0.0"):
+        pytest.skip("Not tested in ArangoDB 4.0 and above")
+
     col.import_bulk(docs)
 
     # Test find_near with default options
@@ -1362,7 +1365,10 @@ def test_document_find_in_range(col, bad_col, docs):
     assert err.value.error_code in {11, 1228}
 
 
-def test_document_find_in_radius(col, bad_col):
+def test_document_find_in_radius(db_version, col, bad_col):
+    if db_version >= version.parse("4.0.0"):
+        pytest.skip("Not tested in ArangoDB 4.0 and above")
+
     doc1 = {"_key": "1", "loc": [1, 1]}
     doc2 = {"_key": "2", "loc": [1, 4]}
     doc3 = {"_key": "3", "loc": [4, 1]}
@@ -1523,7 +1529,13 @@ def test_document_find_in_box(db, col, bad_col, geo, cluster):
     assert err.value.error_code in {11, 1228}
 
 
-def test_document_find_by_text(col, docs):
+def test_document_find_by_text(db_version, col, docs):
+    if db_version >= version.parse("4.0.0"):
+        pytest.skip(
+            "Fulltext indexes are no longer supported and have been replaced"
+            "by ArangoSearch (inverted indexes)"
+        )
+
     col.import_bulk(docs)
 
     # Test find_by_text with default options

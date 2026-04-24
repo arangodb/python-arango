@@ -1554,7 +1554,6 @@ class Database(ApiGroup):
                     "name": col["name"],
                     "system": col["isSystem"],
                     "type": StandardCollection.types[col["type"]],
-                    "status": StandardCollection.statuses[col["status"]],
                 }
                 for col in resp.body["result"]
             ]
