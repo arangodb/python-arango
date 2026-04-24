@@ -866,6 +866,9 @@ class Collection(ApiGroup):
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
         """
+        m = "find_near is deprecated in ArangoDB 4.0"
+        warn(m, DeprecationWarning, stacklevel=2)
+
         assert isinstance(latitude, Number), "latitude must be a number"
         assert isinstance(longitude, Number), "longitude must be a number"
         assert is_none_or_int(limit), "limit must be a non-negative int"
@@ -988,6 +991,9 @@ class Collection(ApiGroup):
         :rtype: arango.cursor.Cursor
         :raises arango.exceptions.DocumentGetError: If retrieval fails.
         """
+        m = "find_in_radius is deprecated in ArangoDB 4.0"
+        warn(m, DeprecationWarning, stacklevel=2)
+
         assert isinstance(latitude, Number), "latitude must be a number"
         assert isinstance(longitude, Number), "longitude must be a number"
         assert isinstance(radius, Number), "radius must be a number"
