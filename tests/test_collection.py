@@ -1,6 +1,7 @@
 import time
 
 import pytest
+from packaging import version
 
 from arango.client import ArangoClient
 from arango.collection import StandardCollection
@@ -39,7 +40,7 @@ def test_collection_attributes(db, col, username):
     assert repr(col) == f"<StandardCollection {col.name}>"
 
 
-def test_collection_misc_methods(col, bad_col, cluster):
+def test_collection_misc_methods(col, bad_col, cluster, db_version):
     # Test get properties
     properties = col.properties()
     assert properties["name"] == col.name
@@ -101,21 +102,22 @@ def test_collection_misc_methods(col, bad_col, cluster):
         bad_col.revision()
     assert err.value.error_code in {11, 1228}
 
-    # Test load into memory
-    assert col.load() is True
+    if db_version < version.parse("4.0.0"):
+        # Test load into memory
+        assert col.load() is True
 
-    # Test load with bad collection
-    with assert_raises(CollectionLoadError) as err:
-        bad_col.load()
-    assert err.value.error_code in {11, 1228}
+        # Test load with bad collection
+        with assert_raises(CollectionLoadError) as err:
+            bad_col.load()
+        assert err.value.error_code in {11, 1228}
 
-    # Test unload from memory
-    assert col.unload() is True
+        # Test unload from memory
+        assert col.unload() is True
 
-    # Test unload with bad collection
-    with assert_raises(CollectionUnloadError) as err:
-        bad_col.unload()
-    assert err.value.error_code in {11, 1228}
+        # Test unload with bad collection
+        with assert_raises(CollectionUnloadError) as err:
+            bad_col.unload()
+        assert err.value.error_code in {11, 1228}
 
     if cluster:
         col.insert({})
@@ -162,7 +164,8 @@ def test_collection_misc_methods(col, bad_col, cluster):
 
     # Test collection info
     info = col.info()
-    assert set(info.keys()) == {"id", "name", "system", "type", "status", "global_id"}
+    for key in ["id", "name", "system", "type", "global_id"]:
+        assert key in info
     assert info["name"] == col.name
     assert info["system"] is False
 

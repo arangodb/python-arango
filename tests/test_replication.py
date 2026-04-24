@@ -19,7 +19,6 @@ from arango.exceptions import (
     ReplicationDumpBatchExtendError,
     ReplicationDumpError,
     ReplicationInventoryError,
-    ReplicationLoggerFirstTickError,
     ReplicationLoggerStateError,
     ReplicationMakeSlaveError,
     ReplicationServerIDError,
@@ -103,18 +102,6 @@ def test_replication_logger_state(sys_db, bad_db, cluster):
 
     with assert_raises(ReplicationLoggerStateError) as err:
         bad_db.replication.logger_state()
-    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
-
-
-def test_replication_first_tick(sys_db, bad_db, cluster):
-    if cluster:
-        pytest.skip("Not tested in a cluster setup")
-
-    result = sys_db.replication.logger_first_tick()
-    assert isinstance(result, str)
-
-    with assert_raises(ReplicationLoggerFirstTickError) as err:
-        bad_db.replication.logger_first_tick()
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
 
 

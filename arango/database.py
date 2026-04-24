@@ -573,6 +573,9 @@ class Database(ApiGroup):
         :rtype: str
         :raise arango.exceptions.ServerRequiredDBVersionError: If retrieval fails.
         """
+        m = "target-version is removed in ArangoDB 4.0"
+        warn(m, DeprecationWarning, stacklevel=2)
+
         request = Request(method="get", endpoint="/_admin/database/target-version")
 
         def response_handler(resp: Response) -> str:
@@ -1115,7 +1118,7 @@ class Database(ApiGroup):
         :rtype: str
         :raise arango.exceptions.ServerMetricsError: If operation fails.
         """
-        request = Request(method="get", endpoint="/_admin/metrics/v2")
+        request = Request(method="get", endpoint="/_admin/metrics")
 
         def response_handler(resp: Response) -> str:
             if resp.is_success:
@@ -1554,7 +1557,6 @@ class Database(ApiGroup):
                     "name": col["name"],
                     "system": col["isSystem"],
                     "type": StandardCollection.types[col["type"]],
-                    "status": StandardCollection.statuses[col["status"]],
                 }
                 for col in resp.body["result"]
             ]

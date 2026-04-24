@@ -101,13 +101,14 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
         bad_db.details()
     assert err.value.error_code in {11, 1228}
 
-    # Test get server required database version
-    required_version = db.required_db_version()
-    assert isinstance(required_version, str)
+    if db_version < version.parse("4.0.0"):
+        # Test get server required database version
+        required_version = db.required_db_version()
+        assert isinstance(required_version, str)
 
-    # Test get server target version with bad database
-    with assert_raises(ServerRequiredDBVersionError):
-        bad_db.required_db_version()
+        # Test get server target version with bad database
+        with assert_raises(ServerRequiredDBVersionError):
+            bad_db.required_db_version()
 
     # Test get server metrics
     metrics = db.metrics()
@@ -118,23 +119,24 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
         bad_db.metrics()
     assert err.value.error_code in {11, 1228}
 
-    # Test get server statistics
-    statistics = db.statistics(description=False)
-    assert isinstance(statistics, dict)
-    assert "time" in statistics
-    assert "system" in statistics
-    assert "server" in statistics
+    if db_version < version.parse("4.0.0"):
+        # Test get server statistics
+        statistics = db.statistics(description=False)
+        assert isinstance(statistics, dict)
+        assert "time" in statistics
+        assert "system" in statistics
+        assert "server" in statistics
 
-    # Test get server statistics with description
-    description = db.statistics(description=True)
-    assert isinstance(description, dict)
-    assert "figures" in description
-    assert "groups" in description
+        # Test get server statistics with description
+        description = db.statistics(description=True)
+        assert isinstance(description, dict)
+        assert "figures" in description
+        assert "groups" in description
 
-    # Test get server statistics with bad database
-    with assert_raises(ServerStatisticsError) as err:
-        bad_db.statistics()
-    assert err.value.error_code in {11, 1228}
+        # Test get server statistics with bad database
+        with assert_raises(ServerStatisticsError) as err:
+            bad_db.statistics()
+        assert err.value.error_code in {11, 1228}
 
     # Test get server role
     assert db.role() in {"SINGLE", "COORDINATOR", "PRIMARY", "SECONDARY", "UNDEFINED"}
@@ -160,10 +162,11 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
     # Test get server status
     status = db.status()
     assert "host" in status
-    assert "operation_mode" in status
+    if db_version < version.parse("4.0.0"):
+        assert "operation_mode" in status
+        assert "write_ops_enabled" in status["server_info"]
     assert "server_info" in status
     assert "read_only" in status["server_info"]
-    assert "write_ops_enabled" in status["server_info"]
     assert "version" in status
 
     # Test get status with bad database
@@ -179,78 +182,74 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
         bad_db.time()
     assert err.value.error_code in {11, 1228}
 
-    # Test echo (get last request)
-    last_request = db.echo()
-    assert "protocol" in last_request
-    assert "user" in last_request
-    assert "requestType" in last_request
-    assert "rawRequestBody" in last_request
+    if db_version < version.parse("4.0.0"):
+        # Test echo (get last request)
+        last_request = db.echo()
+        assert "protocol" in last_request
+        assert "user" in last_request
+        assert "requestType" in last_request
+        assert "rawRequestBody" in last_request
 
-    # Test echo with bad database
-    with assert_raises(ServerEchoError) as err:
-        bad_db.echo()
-    assert err.value.error_code in {11, 1228}
+        # Test echo with bad database
+        with assert_raises(ServerEchoError) as err:
+            bad_db.echo()
+        assert err.value.error_code in {11, 1228}
 
-    # Test echo (forward request)
-    body = "request goes here"
-    echo = db.echo(body)
-    assert isinstance(echo, dict)
-    assert echo["requestBody"] == body
+        # Test echo (forward request)
+        body = "request goes here"
+        echo = db.echo(body)
+        assert isinstance(echo, dict)
+        assert echo["requestBody"] == body
 
-    # Test read_log with default parameters
-    # Deprecated in 3.8.0
-    # TODO: Remove in future release
-    log = sys_db.read_log(upto="fatal")
-    assert "lid" in log
-    assert "level" in log
-    assert "text" in log
-    assert "total_amount" in log
+        # Test read_log with default parameters
+        log = sys_db.read_log(upto="fatal")
+        assert "lid" in log
+        assert "level" in log
+        assert "text" in log
+        assert "total_amount" in log
 
-    log_entry = sys_db.read_log_entries(upto="fatal")
-    assert "total" in log_entry
-    assert "messages" in log_entry
+        log_entry = sys_db.read_log_entries(upto="fatal")
+        assert "total" in log_entry
+        assert "messages" in log_entry
 
-    kwargs = {
-        "level": "error",
-        "start": 0,
-        "size": 100000,
-        "offset": 0,
-        "search": "test",
-        "sort": "desc",
-    }
+        kwargs = {
+            "level": "error",
+            "start": 0,
+            "size": 100000,
+            "offset": 0,
+            "search": "test",
+            "sort": "desc",
+        }
 
-    # Test read_log with specific parameters
-    # Deprecated in 3.8.0
-    # TODO: Remove in future release
-    log = sys_db.read_log(**kwargs)
-    assert "lid" in log
-    assert "level" in log
-    assert "text" in log
-    assert "total_amount" in log
+        # Test read_log with specific parameters
+        # Deprecated in 3.8.0
+        log = sys_db.read_log(**kwargs)
+        assert "lid" in log
+        assert "level" in log
+        assert "text" in log
+        assert "total_amount" in log
 
-    log_entry = sys_db.read_log_entries(**kwargs)
-    assert "total" in log_entry
-    assert "messages" in log_entry
+        log_entry = sys_db.read_log_entries(**kwargs)
+        assert "total" in log_entry
+        assert "messages" in log_entry
 
-    # Test read_log with bad database
-    # Deprecated in 3.8.0
-    # TODO: Remove in future release
-    with assert_raises(ServerReadLogError) as err:
-        bad_db.read_log()
-    assert err.value.error_code in {11, 1228}
+        with assert_raises(ServerReadLogError) as err:
+            bad_db.read_log()
+        assert err.value.error_code in {11, 1228}
 
-    # Test read_log_entries with bad database
-    with assert_raises(ServerReadLogError) as err:
-        bad_db.read_log_entries()
-    assert err.value.error_code in {11, 1228}
+        # Test read_log_entries with bad database
+        with assert_raises(ServerReadLogError) as err:
+            bad_db.read_log_entries()
+        assert err.value.error_code in {11, 1228}
 
-    # Test reload routing
-    assert isinstance(db.reload_routing(), bool)
+        # Test reload routing
+        # Deprecated in ArangoDB 4.0
+        assert isinstance(db.reload_routing(), bool)
 
-    # Test reload routing with bad database
-    with assert_raises(ServerReloadRoutingError) as err:
-        bad_db.reload_routing()
-    assert err.value.error_code in {11, 1228}
+        # Test reload routing with bad database
+        with assert_raises(ServerReloadRoutingError) as err:
+            bad_db.reload_routing()
+        assert err.value.error_code in {11, 1228}
 
     # Test get log levels
     default_log_levels = sys_db.log_levels()
@@ -339,11 +338,12 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
     assert "deployment" in info
     assert "date" in info
 
-    # Test execute JavaScript code
-    assert db.execute(1) is None
-    assert db.execute(None) == {"error": False, "code": 200}
-    assert db.execute("") == {"error": False, "code": 200}
-    assert db.execute("return 1") == 1
+    if db_version < version.parse("4.0.0"):
+        # Test execute JavaScript code
+        assert db.execute(1) is None
+        assert db.execute(None) == {"error": False, "code": 200}
+        assert db.execute("") == {"error": False, "code": 200}
+        assert db.execute("return 1") == 1
 
     # Test database compact
     with assert_raises(DatabaseCompactError) as err:

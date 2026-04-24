@@ -2,6 +2,7 @@ import json
 import os
 
 import pytest
+from packaging import version
 
 from arango.exceptions import (
     FoxxCommitError,
@@ -32,14 +33,20 @@ from tests.helpers import assert_raises, extract, generate_service_mount
 service_name = "test"
 
 
-def test_foxx_attributes(db, skip_tests):
+def test_foxx_attributes(db, skip_tests, db_version):
+    if db_version >= version.parse("4.0.0"):
+        pytest.skip("Foxx API has been removed in ArangoDB v4.0")
     if "foxx" in skip_tests:
         pytest.skip("Skipping foxx tests")
     assert isinstance(db.foxx, Foxx)
     assert repr(db.foxx) == f"<Foxx in {db.name}>"
 
 
-def test_foxx_service_management_json(db, bad_db, cluster, skip_tests, foxx_path):
+def test_foxx_service_management_json(
+    db, bad_db, cluster, skip_tests, foxx_path, db_version
+):
+    if db_version >= version.parse("4.0.0"):
+        pytest.skip("Foxx API has been removed in ArangoDB v4.0")
     if "foxx" in skip_tests:
         pytest.skip("Skipping foxx tests")
     if cluster:
@@ -150,7 +157,9 @@ def test_foxx_service_management_json(db, bad_db, cluster, skip_tests, foxx_path
     assert err.value.error_code == 3009
 
 
-def test_foxx_service_management_file(db, cluster, skip_tests):
+def test_foxx_service_management_file(db, cluster, skip_tests, db_version):
+    if db_version >= version.parse("4.0.0"):
+        pytest.skip("Foxx API has been removed in ArangoDB v4.0")
     if "foxx" in skip_tests:
         pytest.skip("Skipping foxx tests")
     if cluster:
@@ -240,7 +249,9 @@ def test_foxx_service_management_file(db, cluster, skip_tests):
     assert service_mount not in extract("mount", db.foxx.services())
 
 
-def test_foxx_config_management(db, cluster, skip_tests, foxx_path):
+def test_foxx_config_management(db, cluster, skip_tests, foxx_path, db_version):
+    if db_version >= version.parse("4.0.0"):
+        pytest.skip("Foxx API has been removed in ArangoDB v4.0")
     if "foxx" in skip_tests:
         pytest.skip("Skipping foxx tests")
     if cluster:
@@ -281,7 +292,9 @@ def test_foxx_config_management(db, cluster, skip_tests, foxx_path):
     assert err.value.error_code == 3009
 
 
-def test_foxx_dependency_management(db, cluster, skip_tests, foxx_path):
+def test_foxx_dependency_management(db, cluster, skip_tests, foxx_path, db_version):
+    if db_version >= version.parse("4.0.0"):
+        pytest.skip("Foxx API has been removed in ArangoDB v4.0")
     if "foxx" in skip_tests:
         pytest.skip("Skipping foxx tests")
     if cluster:
@@ -318,7 +331,9 @@ def test_foxx_dependency_management(db, cluster, skip_tests, foxx_path):
     assert err.value.error_code == 3009
 
 
-def test_foxx_development_toggle(db, cluster, skip_tests, foxx_path):
+def test_foxx_development_toggle(db, cluster, skip_tests, foxx_path, db_version):
+    if db_version >= version.parse("4.0.0"):
+        pytest.skip("Foxx API has been removed in ArangoDB v4.0")
     if "foxx" in skip_tests:
         pytest.skip("Skipping foxx tests")
     if cluster:
@@ -357,7 +372,9 @@ def test_foxx_development_toggle(db, cluster, skip_tests, foxx_path):
     assert err.value.error_code == 3009
 
 
-def test_foxx_misc_functions(db, bad_db, cluster, skip_tests, foxx_path):
+def test_foxx_misc_functions(db, bad_db, cluster, skip_tests, foxx_path, db_version):
+    if db_version >= version.parse("4.0.0"):
+        pytest.skip("Foxx API has been removed in ArangoDB v4.0")
     if "foxx" in skip_tests:
         pytest.skip("Skipping foxx tests")
     if cluster:
