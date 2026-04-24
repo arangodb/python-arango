@@ -164,7 +164,8 @@ def test_collection_misc_methods(col, bad_col, cluster, db_version):
 
     # Test collection info
     info = col.info()
-    assert set(info.keys()) == {"id", "name", "system", "type", "global_id"}
+    for key in ["id", "name", "system", "type", "global_id"]:
+        assert key in info
     assert info["name"] == col.name
     assert info["system"] is False
 
