@@ -377,7 +377,7 @@ over edges and vertices using various algorithms.
     # AQL to perform a graph traversal
     query = """
     FOR v, e, p IN 1..3 OUTBOUND 'teachers/jon' GRAPH 'school'
-    OPTIONS { bfs: true, uniqueVertices: 'global' }
+    OPTIONS { order: 'bfs', uniqueVertices: 'global' }
     RETURN {vertex: v, edge: e, path: p}
     """
 
