@@ -1,6 +1,7 @@
 __all__ = ["Replication"]
 
 from typing import Optional, Sequence
+from warnings import warn
 
 from arango.api import ApiGroup
 from arango.exceptions import (
@@ -325,6 +326,9 @@ class Replication(ApiGroup):
         :rtype: str
         :raise arango.exceptions.ReplicationLoggerFirstTickError: If retrieval fails.
         """
+        m = "/_api/replication/logger-first-tick endpoint is removed in ArangoDB v4.0"
+        warn(m, DeprecationWarning, stacklevel=2)
+
         request = Request(
             method="get",
             endpoint="/_api/replication/logger-first-tick",
