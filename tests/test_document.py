@@ -109,7 +109,9 @@ def test_document_insert(col, docs):
 
     # Test insert replace
     doc = {"_key": doc["_key"], "foo": {"bar": 1}, "baz": None}
-    result = col.insert(document=doc, overwrite=True, return_old=True, return_new=True)
+    result = col.insert(
+        document=doc, overwrite_mode="replace", return_old=True, return_new=True
+    )
     assert result["new"]["foo"] == {"bar": 1}
     assert result["new"]["baz"] is None
     assert "val" in result["old"]
@@ -121,7 +123,6 @@ def test_document_insert(col, docs):
         document=doc,
         return_old=True,
         return_new=True,
-        overwrite=True,
         overwrite_mode="ignore",
         keep_none=False,
         merge=True,
@@ -136,7 +137,6 @@ def test_document_insert(col, docs):
             document=doc,
             return_old=True,
             return_new=True,
-            overwrite=True,
             overwrite_mode="conflict",
             keep_none=False,
             merge=True,
@@ -233,7 +233,7 @@ def test_document_insert_many(col, bad_col, docs):
         assert "[HTTP 202][ERR 1210]" in error.message
 
     # Test insert_many with overwrite and return_old set to True
-    results = col.insert_many(docs, overwrite=True, return_old=True)
+    results = col.insert_many(docs, overwrite_mode="replace", return_old=True)
     for result, doc in zip(results, docs):
         assert not isinstance(result, DocumentInsertError)
         assert isinstance(result["old"], dict)

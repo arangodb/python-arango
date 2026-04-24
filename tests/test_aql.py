@@ -284,7 +284,10 @@ def test_aql_query_force_one_shard_attribute_value(db, skip_tests, cluster):
     assert len(results) == 0
 
 
-def test_aql_function_management(db, bad_db):
+def test_aql_function_management(db, bad_db, db_version):
+    if db_version >= version.parse("4.0.0"):
+        pytest.skip("Javascript is not available in ArangoDB v4.0")
+
     fn_group = "functions::temperature"
     fn_name_1 = "functions::temperature::celsius_to_fahrenheit"
     fn_body_1 = "function (celsius) { return celsius * 1.8 + 32; }"

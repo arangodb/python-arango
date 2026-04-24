@@ -1,6 +1,7 @@
 __all__ = ["WAL"]
 
 from typing import Optional
+from warnings import warn
 
 from arango.api import ApiGroup
 from arango.exceptions import (
@@ -28,12 +29,15 @@ class WAL(ApiGroup):  # pragma: no cover
     """WAL (Write-Ahead Log) API wrapper."""
 
     def properties(self) -> Result[Json]:
-        """Return WAL properties.
+        """Return WAL properties. **Removed** in ArangoDB v4.0.0.
 
         :return: WAL properties.
         :rtype: dict
         :raise arango.exceptions.WALPropertiesError: If retrieval fails.
         """
+        m = "/_admin/wal/properties was removed in ArangoDB v4.0.0."
+        warn(m, DeprecationWarning, stacklevel=2)
+
         request = Request(method="get", endpoint="/_admin/wal/properties")
 
         def response_handler(resp: Response) -> Json:
@@ -52,7 +56,7 @@ class WAL(ApiGroup):  # pragma: no cover
         throttle_wait: Optional[int] = None,
         throttle_limit: Optional[int] = None,
     ) -> Result[Json]:
-        """Configure WAL properties.
+        """Configure WAL properties. **Removed in ArangoDB v4.0.0.
 
         :param oversized_ops: If set to True, operations bigger than a single
             log file are allowed to be executed and stored.
@@ -74,6 +78,9 @@ class WAL(ApiGroup):  # pragma: no cover
         :rtype: dict
         :raise arango.exceptions.WALConfigureError: If operation fails.
         """
+        m = "/_admin/wal/properties was removed in ArangoDB v4.0.0."
+        warn(m, DeprecationWarning, stacklevel=2)
+
         data: Json = {}
         if oversized_ops is not None:
             data["allowOversizeEntries"] = oversized_ops
@@ -98,7 +105,9 @@ class WAL(ApiGroup):  # pragma: no cover
         return self._execute(request, response_handler)
 
     def transactions(self) -> Result[Json]:
-        """Return details on currently running WAL transactions.
+        """**Removed** in ArangoDB v4.0.0.
+
+        Return details on currently running WAL transactions.
 
         Fields in the returned details are as follows:
 
@@ -118,6 +127,9 @@ class WAL(ApiGroup):  # pragma: no cover
         :rtype: dict
         :raise arango.exceptions.WALTransactionListError: If retrieval fails.
         """
+        m = "/_admin/wal/transactions was removed in ArangoDB v4.0.0."
+        warn(m, DeprecationWarning, stacklevel=2)
+
         request = Request(method="get", endpoint="/_admin/wal/transactions")
 
         def response_handler(resp: Response) -> Json:

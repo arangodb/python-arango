@@ -99,7 +99,9 @@ def test_cluster_server_engine(sys_db, bad_db, cluster):
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
 
 
-def test_cluster_server_statistics(sys_db, bad_db, cluster):
+def test_cluster_server_statistics(sys_db, bad_db, cluster, db_version):
+    if db_version >= version.parse("4.0.0"):
+        pytest.skip("Server statistics endpoint is removed in ArangoDB v4.0")
     if not cluster:
         pytest.skip("Only tested in a cluster setup")
 
