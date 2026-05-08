@@ -4,7 +4,7 @@ executors:
   python-container:
     docker:
       - image: cimg/python:3.12
-    resource_class: small
+    resource_class: arangodb/small-amd64
   python-vm:
     machine:
       image: ubuntu-2404:current
@@ -26,7 +26,7 @@ workflows:
 jobs:
   lint:
     executor: python-container
-    resource_class: small
+    resource_class: arangodb/small-amd64
     steps:
       - checkout
       - run:
