@@ -73,7 +73,10 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
     # Test get properties
     properties = db.properties()
     assert "id" in properties
-    assert "path" in properties
+
+    if db_version < version.parse("4.0"):
+        assert "path" in properties
+
     assert properties["name"] == db.name
     assert properties["system"] is False
 
