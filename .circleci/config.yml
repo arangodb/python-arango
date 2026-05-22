@@ -102,7 +102,7 @@ jobs:
               args+=("--cluster" "--port=8539" "--port=8549")
             fi
 
-            if [ << parameters.arangodb_license >> != "enterprise" ]; then
+            if [ << parameters.arangodb_license >> != "enterprise" ] && [ << parameters.arangodb_license >> != "enterprise-preview" ]; then
               args+=("--skip" "enterprise")
             fi
 
