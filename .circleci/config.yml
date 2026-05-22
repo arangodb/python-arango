@@ -15,11 +15,27 @@ workflows:
     jobs:
       - lint
       - test:
-          name:  Python (<< matrix.python_version >>) - ArangoDB (<< matrix.arangodb_license >>, << matrix.arangodb_version >> << matrix.arangodb_config >>)
+          name: Python (<< matrix.python_version >>) - ArangoDB (enterprise, << matrix.arangodb_version >> << matrix.arangodb_config >>)
+          matrix:
+            parameters:
+              python_version: ["3.13"]
+              arangodb_config: ["single", "cluster"]
+              arangodb_license: ["enterprise"]
+              arangodb_version: ["3.12"]
+      - test:
+          name: Python (<< matrix.python_version >>) - ArangoDB (enterprise-preview, << matrix.arangodb_version >> << matrix.arangodb_config >>)
+          matrix:
+            parameters:
+              python_version: ["3.13"]
+              arangodb_config: ["single", "cluster"]
+              arangodb_license: ["enterprise-preview"]
+              arangodb_version: ["4.0-nightly"]
+      - test:
+          name: Python (<< matrix.python_version >>) - ArangoDB (enterprise, 3.12 cluster)
           matrix:
             parameters:
               python_version: ["3.10", "3.11", "3.12"]
-              arangodb_config: ["single", "cluster"]
+              arangodb_config: ["cluster"]
               arangodb_license: ["enterprise"]
               arangodb_version: ["3.12"]
 
@@ -34,16 +50,16 @@ jobs:
           command: pip install .[dev]
       - run:
             name: Run black
-            command: black --check --verbose --diff --color --config=pyproject.toml ./arango ./tests/
+            command: black --check --verbose --diff --color --config=pyproject.toml ./arangoasync ./tests/
       - run:
           name: Run flake8
-          command: flake8 ./arango ./tests
+          command: flake8 ./arangoasync ./tests
       - run:
           name: Run isort
-          command: isort --check ./arango ./tests
+          command: isort --check ./arangoasync ./tests
       - run:
           name: Run mypy
-          command: mypy ./arango
+          command: mypy ./arangoasync
   test:
     parameters:
         python_version:
@@ -91,7 +107,7 @@ jobs:
             fi
 
             echo "Running pytest with args: ${args[@]}"
-            pytest --cov=arango --cov-report=html:htmlcov --color=yes --code-highlight=yes "${args[@]}"
+            pytest --cov=arangoasync --cov-report=html:htmlcov --color=yes --code-highlight=yes "${args[@]}"
       - store_artifacts:
           path: htmlcov
           destination: coverage-report
