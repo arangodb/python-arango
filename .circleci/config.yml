@@ -50,16 +50,16 @@ jobs:
           command: pip install .[dev]
       - run:
             name: Run black
-            command: black --check --verbose --diff --color --config=pyproject.toml ./arangoasync ./tests/
+            command: black --check --verbose --diff --color --config=pyproject.toml ./arango ./tests/
       - run:
           name: Run flake8
-          command: flake8 ./arangoasync ./tests
+          command: flake8 ./arango ./tests
       - run:
           name: Run isort
-          command: isort --check ./arangoasync ./tests
+          command: isort --check ./arango ./tests
       - run:
           name: Run mypy
-          command: mypy ./arangoasync
+          command: mypy ./arango
   test:
     parameters:
         python_version:
@@ -107,7 +107,7 @@ jobs:
             fi
 
             echo "Running pytest with args: ${args[@]}"
-            pytest --cov=arangoasync --cov-report=html:htmlcov --color=yes --code-highlight=yes "${args[@]}"
+            pytest --cov=arango --cov-report=html:htmlcov --color=yes --code-highlight=yes "${args[@]}"
       - store_artifacts:
           path: htmlcov
           destination: coverage-report
