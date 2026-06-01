@@ -849,7 +849,7 @@ class Collection(ApiGroup):
     ) -> Result[Cursor]:
         """Return documents near a given coordinate.
 
-        ..warning:: This functionality is deprecated in ArangoDB 4.0.
+        .. warning:: This functionality is deprecated in ArangoDB 4.0.
 
         Documents returned are sorted according to distance, with the nearest
         document being the first. If there are documents of equal distance,
@@ -976,7 +976,7 @@ class Collection(ApiGroup):
     ) -> Result[Cursor]:
         """Return documents within a given radius around a coordinate.
 
-        ..warning:: This functionality is deprecated in ArangoDB 4.0.
+        .. warning:: This functionality is deprecated in ArangoDB 4.0.
 
         A geo index must be defined in the collection to use this method.
 
@@ -1151,7 +1151,7 @@ class Collection(ApiGroup):
     ) -> Result[Cursor]:
         """Return documents that match the given fulltext query.
 
-        ..warning::
+        .. warning::
 
             Fulltext indexes are no longer supported and have been replaced
             by ArangoSearch (inverted indexes).

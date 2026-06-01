@@ -47,11 +47,8 @@ Here are all simple query (and other utility) methods available:
 
 * :func:`arango.collection.Collection.all`
 * :func:`arango.collection.Collection.find`
-* :func:`arango.collection.Collection.find_near`
 * :func:`arango.collection.Collection.find_in_range`
-* :func:`arango.collection.Collection.find_in_radius`
 * :func:`arango.collection.Collection.find_in_box`
-* :func:`arango.collection.Collection.find_by_text`
 * :func:`arango.collection.Collection.get_many`
 * :func:`arango.collection.Collection.ids`
 * :func:`arango.collection.Collection.keys`
