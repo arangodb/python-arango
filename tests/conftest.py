@@ -46,6 +46,7 @@ class GlobalData:
     secret: str = None
     root_password: str = None
     db_version: version = version.parse("0.0.0")
+    is_instrumented: bool = False
     crash: bool = False
 
 
@@ -138,6 +139,9 @@ def pytest_configure(config):
     )
 
     db_version = sys_db.version()
+    global_data.is_instrumented = (
+        "asan" in db_version or "tsan" in db_version or "coverage" in db_version
+    )
     global_data.db_version = version.parse(db_version.split("-")[0])
 
     # Create a user and non-system database for testing.
@@ -296,6 +300,11 @@ def pytest_generate_tests(metafunc):
 @pytest.fixture(autouse=False)
 def db_version():
     return global_data.db_version
+
+
+@pytest.fixture(autouse=False)
+def is_instrumented():
+    return global_data.is_instrumented
 
 
 @pytest.fixture(autouse=False)

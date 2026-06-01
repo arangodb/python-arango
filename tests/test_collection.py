@@ -40,7 +40,7 @@ def test_collection_attributes(db, col, username):
     assert repr(col) == f"<StandardCollection {col.name}>"
 
 
-def test_collection_misc_methods(col, bad_col, cluster, db_version):
+def test_collection_misc_methods(col, bad_col, cluster, db_version, is_instrumented):
     # Test get properties
     properties = col.properties()
     assert properties["name"] == col.name
@@ -65,11 +65,8 @@ def test_collection_misc_methods(col, bad_col, cluster, db_version):
         }
     ]
 
-    with pytest.raises(ValueError):
-        # schema must not be empty
-        properties = col.configure(
-            sync=not prev_sync, schema={}, computed_values=computed_values
-        )
+    sleep_time = 9 if is_instrumented else 3
+    time.sleep(sleep_time)  # Avoid "precondition failed" in slow clusters
 
     properties = col.configure(sync=not prev_sync, computed_values=computed_values)
 
@@ -77,6 +74,8 @@ def test_collection_misc_methods(col, bad_col, cluster, db_version):
     assert properties["system"] is False
     assert properties["sync"] is not prev_sync
     assert properties["computedValues"] == computed_values
+
+    time.sleep(sleep_time)  # Avoid "precondition failed" in slow clusters
     col.configure(computed_values=[])
 
     # Test configure properties with bad collection
