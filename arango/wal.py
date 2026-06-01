@@ -56,7 +56,7 @@ class WAL(ApiGroup):  # pragma: no cover
         throttle_wait: Optional[int] = None,
         throttle_limit: Optional[int] = None,
     ) -> Result[Json]:
-        """Configure WAL properties. **Removed in ArangoDB v4.0.0.
+        """Configure WAL properties. **Removed in ArangoDB v4.0.0.**
 
         :param oversized_ops: If set to True, operations bigger than a single
             log file are allowed to be executed and stored.

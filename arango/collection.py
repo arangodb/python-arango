@@ -542,7 +542,7 @@ class Collection(ApiGroup):
         .. note::
             The load function is deprecated from version 3.8.0 onwards and is a
             no-op from version 3.9.0 onwards. It should no longer be used, as it
-            may be removed in a future version of ArangoDB.
+            is removed from ArangoDB 4.0.
 
         :return: True if collection was loaded successfully.
         :rtype: bool
@@ -566,7 +566,7 @@ class Collection(ApiGroup):
         .. note::
             The unload function is deprecated from version 3.8.0 onwards and is a
             no-op from version 3.9.0 onwards. It should no longer be used, as it
-            may be removed in a future version of ArangoDB.
+            is removed from ArangoDB 4.0.
 
         :return: True if collection was unloaded successfully.
         :rtype: bool

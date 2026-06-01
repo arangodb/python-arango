@@ -43,8 +43,6 @@ Here is an example showing how you can manage standard collections:
     students.count()
 
     # Perform various operations.
-    students.load()
-    students.unload()
     students.truncate()
     students.configure()
 

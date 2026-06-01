@@ -246,6 +246,10 @@ class Database(ApiGroup):
     def execute(self, command: str) -> Result[Any]:
         """Execute raw Javascript command on the server.
 
+        .. warning::
+
+            Javascript command execution is no longer available in ArangoDB 4.0.
+
         Executes the JavaScript code in the body on the server as
         the body of a function with no arguments. If you have a
         return statement then the return value you produce will be returned
@@ -571,6 +575,8 @@ class Database(ApiGroup):
     def required_db_version(self) -> Result[str]:
         """Return required version of target database.
 
+        .. warning:: Required version endpoint is no longer available in ArangoDB 4.0.
+
         :return: Required version of target database.
         :rtype: str
         :raise arango.exceptions.ServerRequiredDBVersionError: If retrieval fails.
@@ -605,6 +611,11 @@ class Database(ApiGroup):
 
     def statistics(self, description: bool = False) -> Result[Json]:
         """Return server statistics.
+
+        .. warning::
+            Server Statistics are no longer available in ArangoDB 4.0.
+            Use :meth:`Database.metrics <arango.database.StandardDatabase.metrics>`
+            instead.
 
         :return: Server statistics.
         :rtype: dict
@@ -711,6 +722,8 @@ class Database(ApiGroup):
     def echo(self, body: Optional[Any] = None) -> Result[Json]:
         """Return details of the last request (e.g. headers, payload),
         or echo the given request body.
+
+        .. warning:: Request echoing is no longer available in ArangoDB 4.0.
 
         :param body: The body of the request. Can be of any type
             and is simply forwarded. If not set, the details of the last
