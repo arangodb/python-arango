@@ -542,7 +542,7 @@ class Collection(ApiGroup):
         .. note::
             The load function is deprecated from version 3.8.0 onwards and is a
             no-op from version 3.9.0 onwards. It should no longer be used, as it
-            may be removed in a future version of ArangoDB.
+            is removed from ArangoDB 4.0.
 
         :return: True if collection was loaded successfully.
         :rtype: bool
@@ -566,7 +566,7 @@ class Collection(ApiGroup):
         .. note::
             The unload function is deprecated from version 3.8.0 onwards and is a
             no-op from version 3.9.0 onwards. It should no longer be used, as it
-            may be removed in a future version of ArangoDB.
+            is removed from ArangoDB 4.0.
 
         :return: True if collection was unloaded successfully.
         :rtype: bool
@@ -849,6 +849,8 @@ class Collection(ApiGroup):
     ) -> Result[Cursor]:
         """Return documents near a given coordinate.
 
+        .. warning:: This functionality is deprecated in ArangoDB 4.0.
+
         Documents returned are sorted according to distance, with the nearest
         document being the first. If there are documents of equal distance,
         they are randomly chosen from the set until the limit is reached. A geo
@@ -973,6 +975,8 @@ class Collection(ApiGroup):
         allow_dirty_read: bool = False,
     ) -> Result[Cursor]:
         """Return documents within a given radius around a coordinate.
+
+        .. warning:: This functionality is deprecated in ArangoDB 4.0.
 
         A geo index must be defined in the collection to use this method.
 
@@ -1146,6 +1150,11 @@ class Collection(ApiGroup):
         allow_dirty_read: bool = False,
     ) -> Result[Cursor]:
         """Return documents that match the given fulltext query.
+
+        .. warning::
+
+            Fulltext indexes are no longer supported and have been replaced
+            by ArangoSearch (inverted indexes).
 
         :param field: Document field with fulltext index.
         :type field: str

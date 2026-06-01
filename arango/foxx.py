@@ -37,7 +37,10 @@ from arango.typings import Json, Jsons, Params
 
 
 class Foxx(ApiGroup):
-    """Foxx API wrapper."""
+    """Foxx API wrapper.
+
+    .. warning:: Foxx microservice features are no longer available in ArangoDB 4.0.
+    """
 
     def __repr__(self) -> str:
         return f"<Foxx in {self._conn.db_name}>"

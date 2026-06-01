@@ -181,6 +181,8 @@ class Database(ApiGroup):
     def foxx(self) -> Foxx:
         """Return Foxx API wrapper.
 
+        .. warning:: Foxx microservice features are no longer available in ArangoDB 4.0.
+
         :return: Foxx API wrapper.
         :rtype: arango.foxx.Foxx
         """
@@ -243,6 +245,10 @@ class Database(ApiGroup):
 
     def execute(self, command: str) -> Result[Any]:
         """Execute raw Javascript command on the server.
+
+        .. warning::
+
+            Javascript command execution is no longer available in ArangoDB 4.0.
 
         Executes the JavaScript code in the body on the server as
         the body of a function with no arguments. If you have a
@@ -569,6 +575,8 @@ class Database(ApiGroup):
     def required_db_version(self) -> Result[str]:
         """Return required version of target database.
 
+        .. warning:: Required version endpoint is no longer available in ArangoDB 4.0.
+
         :return: Required version of target database.
         :rtype: str
         :raise arango.exceptions.ServerRequiredDBVersionError: If retrieval fails.
@@ -603,6 +611,11 @@ class Database(ApiGroup):
 
     def statistics(self, description: bool = False) -> Result[Json]:
         """Return server statistics.
+
+        .. warning::
+            Server Statistics are no longer available in ArangoDB 4.0.
+            Use :meth:`Database.metrics <arango.database.StandardDatabase.metrics>`
+            instead.
 
         :return: Server statistics.
         :rtype: dict
@@ -709,6 +722,8 @@ class Database(ApiGroup):
     def echo(self, body: Optional[Any] = None) -> Result[Json]:
         """Return details of the last request (e.g. headers, payload),
         or echo the given request body.
+
+        .. warning:: Request echoing is no longer available in ArangoDB 4.0.
 
         :param body: The body of the request. Can be of any type
             and is simply forwarded. If not set, the details of the last
@@ -1097,6 +1112,8 @@ class Database(ApiGroup):
 
     def reload_routing(self) -> Result[bool]:
         """Reload the routing information.
+
+        .. warning:: Route reloading is no longer available in ArangoDB 4.0.
 
         :return: True if routing was reloaded successfully.
         :rtype: bool
@@ -2271,6 +2288,8 @@ class Database(ApiGroup):
     def tasks(self) -> Result[Jsons]:
         """Return all currently active server tasks.
 
+        .. warning:: Tasks are no longer available in ArangoDB 4.0.
+
         :return: Currently active server tasks.
         :rtype: [dict]
         :raise arango.exceptions.TaskListError: If retrieval fails.
@@ -2287,6 +2306,8 @@ class Database(ApiGroup):
 
     def task(self, task_id: str) -> Result[Json]:
         """Return the details of an active server task.
+
+        .. warning:: Tasks are no longer available in ArangoDB 4.0.
 
         :param task_id: Server task ID.
         :type task_id: str
@@ -2313,6 +2334,8 @@ class Database(ApiGroup):
         task_id: Optional[str] = None,
     ) -> Result[Json]:
         """Create a new server task.
+
+        .. warning:: Tasks are no longer available in ArangoDB 4.0.
 
         :param name: Name of the server task.
         :type name: str
@@ -2356,6 +2379,8 @@ class Database(ApiGroup):
 
     def delete_task(self, task_id: str, ignore_missing: bool = False) -> Result[bool]:
         """Delete a server task.
+
+        .. warning:: Tasks are no longer available in ArangoDB 4.0.
 
         :param task_id: Server task ID.
         :type task_id: str

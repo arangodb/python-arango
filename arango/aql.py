@@ -654,6 +654,8 @@ class AQL(ApiGroup):
     def functions(self) -> Result[Jsons]:
         """List the AQL functions defined in the database.
 
+        .. warning:: AQL User Functions are no longer available in ArangoDB 4.0.
+
         :return: AQL functions.
         :rtype: [dict]
         :raise arango.exceptions.AQLFunctionListError: If retrieval fails.
@@ -675,6 +677,8 @@ class AQL(ApiGroup):
 
     def create_function(self, name: str, code: str) -> Result[Json]:
         """Create a new AQL function.
+
+        .. warning:: AQL User Functions are no longer available in ArangoDB 4.0.
 
         :param name: AQL function name.
         :type name: str
@@ -702,6 +706,8 @@ class AQL(ApiGroup):
         self, name: str, group: bool = False, ignore_missing: bool = False
     ) -> Result[Union[bool, Json]]:
         """Delete an AQL function.
+
+        .. warning:: AQL User Functions are no longer available in ArangoDB 4.0.
 
         :param name: AQL function name.
         :type name: str

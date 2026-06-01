@@ -144,6 +144,11 @@ class Cluster(ApiGroup):  # pragma: no cover
     def server_statistics(self, server_id: str) -> Result[Json]:
         """Return the statistics for the given server.
 
+        .. warning::
+            DB Server Statistics are no longer available in ArangoDB 4.0.
+            Use :meth:`Database.metrics <arango.database.StandardDatabase.metrics>`
+            instead.
+
         :param server_id: Server ID.
         :type server_id: str
         :return: Statistics for the given server.

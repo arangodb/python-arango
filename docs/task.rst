@@ -1,6 +1,10 @@
 Tasks
 -----
 
+.. warning::
+    Tasks are no longer available in ArangoDB 4.0.
+
+
 ArangoDB can schedule user-defined Javascript snippets as one-time or periodic
 (re-scheduled after each execution) tasks. Tasks are executed in the context of
 the database they are defined in.
