@@ -2271,6 +2271,8 @@ class Database(ApiGroup):
     def tasks(self) -> Result[Jsons]:
         """Return all currently active server tasks.
 
+        .. warning:: Tasks are no longer available in ArangoDB 4.0.
+
         :return: Currently active server tasks.
         :rtype: [dict]
         :raise arango.exceptions.TaskListError: If retrieval fails.
@@ -2287,6 +2289,8 @@ class Database(ApiGroup):
 
     def task(self, task_id: str) -> Result[Json]:
         """Return the details of an active server task.
+
+        .. warning:: Tasks are no longer available in ArangoDB 4.0.
 
         :param task_id: Server task ID.
         :type task_id: str
@@ -2313,6 +2317,8 @@ class Database(ApiGroup):
         task_id: Optional[str] = None,
     ) -> Result[Json]:
         """Create a new server task.
+
+        .. warning:: Tasks are no longer available in ArangoDB 4.0.
 
         :param name: Name of the server task.
         :type name: str
@@ -2356,6 +2362,8 @@ class Database(ApiGroup):
 
     def delete_task(self, task_id: str, ignore_missing: bool = False) -> Result[bool]:
         """Delete a server task.
+
+        .. warning:: Tasks are no longer available in ArangoDB 4.0.
 
         :param task_id: Server task ID.
         :type task_id: str
