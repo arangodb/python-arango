@@ -1098,6 +1098,8 @@ class Database(ApiGroup):
     def reload_routing(self) -> Result[bool]:
         """Reload the routing information.
 
+        .. warning:: Route reloading is no longer available in ArangoDB 4.0.
+
         :return: True if routing was reloaded successfully.
         :rtype: bool
         :raise arango.exceptions.ServerReloadRoutingError: If reload fails.
