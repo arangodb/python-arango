@@ -181,6 +181,8 @@ class Database(ApiGroup):
     def foxx(self) -> Foxx:
         """Return Foxx API wrapper.
 
+        .. warning:: Foxx microservice features are no longer available in ArangoDB 4.0.
+
         :return: Foxx API wrapper.
         :rtype: arango.foxx.Foxx
         """
