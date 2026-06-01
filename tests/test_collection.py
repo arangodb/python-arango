@@ -65,7 +65,7 @@ def test_collection_misc_methods(col, bad_col, cluster, db_version, is_instrumen
         }
     ]
 
-    sleep_time = 5 if is_instrumented else 1
+    sleep_time = 9 if is_instrumented else 3
     time.sleep(sleep_time)  # Avoid "precondition failed" in slow clusters
 
     properties = col.configure(sync=not prev_sync, computed_values=computed_values)
