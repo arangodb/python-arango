@@ -48,6 +48,7 @@ class GlobalData:
     db_version: version = version.parse("0.0.0")
     is_instrumented: bool = False
     crash: bool = False
+    skip_arango_setup: bool = False
 
 
 global_data = GlobalData()
@@ -111,9 +112,18 @@ def pytest_addoption(parser):
         default=[],
         help="Skip specific tests",
     )
+    parser.addoption(
+        "--skip-arango-setup",
+        action="store_true",
+        help="Skip the ArangoDB connection check during pytest configuration",
+    )
 
 
 def pytest_configure(config):
+    if config.getoption("skip_arango_setup"):
+        global_data.skip_arango_setup = True
+        return
+
     ports = config.getoption("port")
     if ports is None:
         ports = ["8529"]
