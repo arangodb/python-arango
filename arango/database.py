@@ -1128,6 +1128,20 @@ class Database(ApiGroup):
 
         return self._execute(request, response_handler)
 
+    def request(self, request: Request) -> Result[Response]:
+        """Execute a custom request.
+
+        :param request: Request object to be executed.
+        :type request: Request
+        :return: Response object containing the result of the request.
+        :rtype: Response
+        """
+
+        def response_handler(resp: Response) -> Response:
+            return resp
+
+        return self._executor.execute(request, response_handler)
+
     def metrics(self) -> Result[str]:
         """Return server metrics in Prometheus format.
 
