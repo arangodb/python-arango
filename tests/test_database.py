@@ -377,7 +377,7 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
         method="get",
         endpoint="/_api/version",
     )
-    response = sys_db.request(request)
+    response = db.request(request)
     assert "version" in response.body
 
 

@@ -12,7 +12,7 @@ information.
 
 .. testcode::
 
-    from arango import ArangoClient
+    from arango import ArangoClient, Request
 
     # Initialize the ArangoDB client.
     client = ArangoClient()
@@ -49,6 +49,13 @@ information.
 
     # Make sure that user "jane" has read and write permissions.
     sys_db.update_permission(username='jane', permission='rw', database='test')
+
+    # Example of a custom request
+    request = Request(
+        method="get",
+        endpoint="/_api/version",
+    )
+    response = db.request(request)
 
     # Retrieve various database and server information.
     db.name
