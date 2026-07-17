@@ -43,6 +43,7 @@ from arango.exceptions import (
 from arango.foxx import Foxx
 from arango.pregel import Pregel
 from arango.replication import Replication
+from arango.request import Request
 from arango.wal import WAL
 from tests.helpers import (
     assert_raises,
@@ -370,6 +371,14 @@ def test_database_misc_methods(client, sys_db, db, bad_db, cluster, secret, db_v
         bad_db.check_availability()
     availability = db.check_availability()
     assert isinstance(availability, str)
+
+    # Custom request
+    request = Request(
+        method="get",
+        endpoint="/_api/version",
+    )
+    response = sys_db.request(request)
+    assert "version" in response.body
 
 
 def test_database_management(db, sys_db, bad_db):
