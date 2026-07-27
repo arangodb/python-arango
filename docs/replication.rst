@@ -5,7 +5,7 @@ Replication
 basis of all disaster recovery and failover features ArangoDB offers. For more
 information, refer to `ArangoDB manual`_.
 
-.. _ArangoDB manual: https://www.arangodb.com/docs/stable/architecture-replication.html
+.. _ArangoDB manual: https://docs.arango.ai/arangodb/stable/deploy/architecture/replication/
 
 
 **Example:**
@@ -59,43 +59,6 @@ information, refer to `ArangoDB manual`_.
 
     # Get the logger first tick value.
     replication.logger_first_tick()
-
-    # Get the replication applier configuration.
-    replication.applier_config()
-
-    # Update the replication applier configuration.
-    result = replication.set_applier_config(
-        endpoint='http://127.0.0.1:8529',
-        database='test',
-        username='root',
-        password='passwd',
-        max_connect_retries=120,
-        connect_timeout=15,
-        request_timeout=615,
-        chunk_size=0,
-        auto_start=True,
-        adaptive_polling=False,
-        include_system=True,
-        auto_resync=True,
-        auto_resync_retries=3,
-        initial_sync_max_wait_time=405,
-        connection_retry_wait_time=25,
-        idle_min_wait_time=2,
-        idle_max_wait_time=3,
-        require_from_present=False,
-        verbose=True,
-        restrict_type='include',
-        restrict_collections=['students']
-    )
-
-    # Get the replication applier state.
-    replication.applier_state()
-
-    # Start the replication applier.
-    replication.start_applier()
-
-    # Stop the replication applier.
-    replication.stop_applier()
 
     # Get the server ID.
     replication.server_id()
