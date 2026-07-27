@@ -8,11 +8,6 @@ from arango.errno import (
     HTTP_UNAUTHORIZED,
 )
 from arango.exceptions import (
-    ReplicationApplierConfigError,
-    ReplicationApplierConfigSetError,
-    ReplicationApplierStartError,
-    ReplicationApplierStateError,
-    ReplicationApplierStopError,
     ReplicationClusterInventoryError,
     ReplicationDumpBatchCreateError,
     ReplicationDumpBatchDeleteError,
@@ -20,7 +15,6 @@ from arango.exceptions import (
     ReplicationDumpError,
     ReplicationInventoryError,
     ReplicationLoggerStateError,
-    ReplicationMakeSlaveError,
     ReplicationServerIDError,
     ReplicationSyncError,
 )
@@ -102,137 +96,6 @@ def test_replication_logger_state(sys_db, bad_db, cluster):
 
     with assert_raises(ReplicationLoggerStateError) as err:
         bad_db.replication.logger_state()
-    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
-
-
-def test_replication_applier(sys_db, bad_db, url, cluster):
-    if cluster:
-        pytest.skip("Not tested in a cluster setup")
-
-    # Test replication applier state
-    state = sys_db.replication.applier_state()
-    assert "server" in state
-    assert "state" in state
-
-    with assert_raises(ReplicationApplierStateError) as err:
-        bad_db.replication.applier_state()
-    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
-
-    # Test replication get applier config
-    result = sys_db.replication.applier_config()
-    assert "verbose" in result
-    assert "incremental" in result
-    assert "include_system" in result
-
-    with assert_raises(ReplicationApplierConfigError) as err:
-        bad_db.replication.applier_config()
-    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
-
-    # Test replication stop applier
-    result = sys_db.replication.stop_applier()
-    assert "server" in result
-    assert "state" in result
-
-    with assert_raises(ReplicationApplierStopError) as err:
-        bad_db.replication.stop_applier()
-    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
-
-    # We need a tcp endpoint
-    tcp_endpoint = url.replace("http", "tcp")
-
-    # Test replication set applier config
-    result = sys_db.replication.set_applier_config(
-        endpoint=tcp_endpoint,
-        database="_system",
-        username="root",
-        password="passwd",
-        max_connect_retries=120,
-        connect_timeout=15,
-        request_timeout=615,
-        chunk_size=0,
-        auto_start=True,
-        adaptive_polling=False,
-        include_system=True,
-        auto_resync=True,
-        auto_resync_retries=3,
-        initial_sync_max_wait_time=405,
-        connection_retry_wait_time=25,
-        idle_min_wait_time=2,
-        idle_max_wait_time=3,
-        require_from_present=False,
-        verbose=True,
-        restrict_type="exclude",
-        restrict_collections=["students"],
-    )
-    assert result["endpoint"] == tcp_endpoint
-    assert result["database"] == "_system"
-    assert result["username"] == "root"
-    assert result["max_connect_retries"] == 120
-    assert result["connect_timeout"] == 15
-    assert result["request_timeout"] == 615
-    assert result["chunk_size"] == 0
-    assert result["auto_start"] is True
-    assert result["adaptive_polling"] is False
-    assert result["include_system"] is True
-    assert result["auto_resync"] is True
-    assert result["auto_resync_retries"] == 3
-    assert result["initial_sync_max_wait_time"] == 405
-    assert result["connection_retry_wait_time"] == 25
-    assert result["idle_min_wait_time"] == 2
-    assert result["idle_max_wait_time"] == 3
-    assert result["require_from_present"] is False
-    assert result["verbose"] is True
-    assert result["restrict_type"] == "exclude"
-    assert result["restrict_collections"] == ["students"]
-
-    with assert_raises(ReplicationApplierConfigSetError) as err:
-        bad_db.replication.set_applier_config(tcp_endpoint)
-    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
-
-    # Test replication start applier
-    result = sys_db.replication.start_applier()
-    assert "server" in result
-    assert "state" in result
-    sys_db.replication.stop_applier()
-
-    with assert_raises(ReplicationApplierStartError) as err:
-        bad_db.replication.start_applier()
-    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
-
-
-def test_replication_make_slave(sys_db, bad_db, url, replication):
-    if not replication:
-        pytest.skip("Only tested for replication")
-
-    sys_db.replication.stop_applier()
-
-    result = sys_db.replication.make_slave(
-        endpoint="tcp://192.168.1.65:8500",
-        database="test",
-        username="root",
-        password="passwd",
-        restrict_type="include",
-        restrict_collections=["test"],
-        include_system=False,
-        max_connect_retries=5,
-        connect_timeout=500,
-        request_timeout=500,
-        chunk_size=0,
-        adaptive_polling=False,
-        auto_resync=False,
-        auto_resync_retries=0,
-        initial_sync_max_wait_time=0,
-        connection_retry_wait_time=0,
-        idle_min_wait_time=0,
-        idle_max_wait_time=0,
-        require_from_present=False,
-        verbose=True,
-    )
-    assert "endpoint" in result
-    assert "database" in result
-
-    with assert_raises(ReplicationMakeSlaveError) as err:
-        bad_db.replication.make_slave(endpoint=url)
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
 
 

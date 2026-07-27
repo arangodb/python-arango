@@ -18,7 +18,6 @@ from arango.exceptions import (
     ReplicationInventoryError,
     ReplicationLoggerFirstTickError,
     ReplicationLoggerStateError,
-    ReplicationMakeSlaveError,
     ReplicationServerIDError,
     ReplicationSyncError,
 )
@@ -342,12 +341,17 @@ class Replication(ApiGroup):
         return self._execute(request, response_handler)
 
     def applier_config(self) -> Result[Json]:
-        """Return the configuration of the replication applier.
+        """**Removed** in ArangoDB v3.12.10.
+
+        Return the configuration of the replication applier.
 
         :return: Configuration of the replication applier.
         :rtype: dict
         :raise arango.exceptions.ReplicationApplierConfigError: If retrieval fails.
         """
+        m = "/_api/replication/applier-config was removed in ArangoDB v3.12.10."
+        warn(m, DeprecationWarning, stacklevel=2)
+
         request = Request(
             method="get",
             endpoint="/_api/replication/applier-config",
@@ -384,7 +388,9 @@ class Replication(ApiGroup):
         restrict_type: Optional[str] = None,
         restrict_collections: Optional[Sequence[str]] = None,
     ) -> Result[Json]:
-        """Set configuration values of the replication applier.
+        """**Removed** in ArangoDB v3.12.10.
+
+        Set configuration values of the replication applier.
 
         :param endpoint: Server endpoint (e.g. "tcp://192.168.173.13:8529").
         :type endpoint: str
@@ -477,6 +483,9 @@ class Replication(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.ReplicationApplierConfigSetError: If update fails.
         """
+        m = "/_api/replication/applier-config was removed in ArangoDB v3.12.10."
+        warn(m, DeprecationWarning, stacklevel=2)
+
         data: Json = {"endpoint": endpoint}
 
         if database is not None:
@@ -532,12 +541,17 @@ class Replication(ApiGroup):
         return self._execute(request, response_handler)
 
     def applier_state(self) -> Result[Json]:
-        """Return the state of the replication applier
+        """**Removed** in ArangoDB v3.12.10.
+
+        Return the state of the replication applier
 
         :return: Applier state and details.
         :rtype: dict
         :raise arango.exceptions.ReplicationApplierStateError: If retrieval fails.
         """
+        m = "/_api/replication/applier-state was removed in ArangoDB v3.12.10."
+        warn(m, DeprecationWarning, stacklevel=2)
+
         request = Request(
             method="get",
             endpoint="/_api/replication/applier-state",
@@ -551,7 +565,9 @@ class Replication(ApiGroup):
         return self._execute(request, response_handler)
 
     def start_applier(self, last_tick: Optional[str] = None) -> Result[Json]:
-        """Start the replication applier.
+        """**Removed** in ArangoDB v3.12.10.
+
+        Start the replication applier.
 
         :param last_tick: The remote last log tick value from which to start
             applying replication. If not specified, the last saved tick from
@@ -563,6 +579,9 @@ class Replication(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.ReplicationApplierStartError: If operation fails.
         """
+        m = "/_api/replication/applier-start was removed in ArangoDB v3.12.10."
+        warn(m, DeprecationWarning, stacklevel=2)
+
         request = Request(
             method="put",
             endpoint="/_api/replication/applier-start",
@@ -577,12 +596,15 @@ class Replication(ApiGroup):
         return self._execute(request, response_handler)
 
     def stop_applier(self) -> Result[Json]:
-        """Stop the replication applier.
+        """**Removed** in ArangoDB v3.12.10.
 
         :return: Applier state and details.
         :rtype: dict
         :raise arango.exceptions.ReplicationApplierStopError: If operation fails.
         """
+        m = "/_api/replication/applier-stop was removed in ArangoDB v3.12.10."
+        warn(m, DeprecationWarning, stacklevel=2)
+
         request = Request(
             method="put",
             endpoint="/_api/replication/applier-stop",
@@ -592,171 +614,6 @@ class Replication(ApiGroup):
             if resp.is_success:
                 return format_replication_applier_state(resp.body)
             raise ReplicationApplierStopError(resp, request)
-
-        return self._execute(request, response_handler)
-
-    def make_slave(
-        self,
-        endpoint: str,
-        database: Optional[str] = None,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        restrict_type: Optional[str] = None,
-        restrict_collections: Optional[Sequence[str]] = None,
-        include_system: Optional[bool] = None,
-        max_connect_retries: Optional[int] = None,
-        connect_timeout: Optional[int] = None,
-        request_timeout: Optional[int] = None,
-        chunk_size: Optional[int] = None,
-        adaptive_polling: Optional[bool] = None,
-        auto_resync: Optional[bool] = None,
-        auto_resync_retries: Optional[int] = None,
-        initial_sync_max_wait_time: Optional[int] = None,
-        connection_retry_wait_time: Optional[int] = None,
-        idle_min_wait_time: Optional[int] = None,
-        idle_max_wait_time: Optional[int] = None,
-        require_from_present: Optional[bool] = None,
-        verbose: Optional[bool] = None,
-    ) -> Result[Json]:  # pragma: no cover
-        """Change the server role to slave.
-
-        :param endpoint: Master endpoint (e.g. "tcp://192.168.173.13:8529").
-        :type endpoint: str
-        :param database: Database name.
-        :type database: str | None
-        :param username: Username.
-        :type username: str | None
-        :param password: Password.
-        :type password: str | None
-        :param restrict_type: Optional string value for collection filtering.
-            Allowed values are "include" or "exclude".
-        :type restrict_type: str | None
-        :param restrict_collections: Optional list of collections for use with
-            argument **restrict_type**. If **restrict_type** set to "include",
-            only the specified collections are included. Otherwise, only the
-            specified collections are excluded.
-        :type restrict_collections: [str] | None
-        :param include_system: Whether system collection operations are
-            applied.
-        :type include_system: bool | None
-        :param max_connect_retries: Maximum number of connection attempts the
-            applier makes in a row before stopping itself.
-        :type max_connect_retries: int | None
-        :param connect_timeout: Timeout in seconds when attempting to connect
-            to the endpoint. This value is used for each connection attempt.
-        :type connect_timeout: int | None
-        :param request_timeout: Timeout in seconds for individual requests to
-            the endpoint.
-        :type request_timeout: int | None
-        :param chunk_size: Requested maximum size in bytes for log transfer
-            packets when the endpoint is contacted.
-        :type chunk_size: int | None
-        :param adaptive_polling: If set to True, replication applier sleeps
-            for an increasingly long period in case the logger server at the
-            endpoint has no replication events to apply. Using adaptive polling
-            reduces the amount of work done by both the applier and the logger
-            server when there are infrequent changes. The downside is that it
-            might take longer for the replication applier to detect new events.
-        :type adaptive_polling: bool | None
-        :param auto_resync: Whether the slave should perform a full automatic
-            resynchronization with the master in case the master cannot serve
-            log data requested by the slave, or when the replication is started
-            and no tick value can be found.
-        :type auto_resync: bool | None
-        :param auto_resync_retries: Max number of resynchronization retries.
-            Setting this to 0 disables it.
-        :type auto_resync_retries: int | None
-        :param initial_sync_max_wait_time: Max wait time in seconds the initial
-            synchronization waits for master on collection data. This value
-            is relevant even for continuous replication when **auto_resync** is
-            set to True because this may restart the initial synchronization
-            when master cannot provide log data slave requires. This value is
-            ignored if set to 0.
-        :type initial_sync_max_wait_time: int | None
-        :param connection_retry_wait_time: Time in seconds the applier idles
-            before trying to connect to master in case of connection problems.
-            This value is ignored if set to 0.
-        :type connection_retry_wait_time: int | None
-        :param idle_min_wait_time: Minimum wait time in seconds the applier
-            idles before fetching more log data from the master in case the
-            master has already sent all its log data. This wait time can be
-            used to control the frequency with which the replication applier
-            sends HTTP log fetch requests to the master in case there is no
-            write activity on the master. This value is ignored if set to 0.
-        :type idle_min_wait_time: int | None
-        :param idle_max_wait_time: Maximum wait time in seconds the applier
-            idles before fetching more log data from the master in case the
-            master has already sent all its log data. This wait time can be
-            used to control the maximum frequency with which the replication
-            applier sends HTTP log fetch requests to the master in case there
-            is no write activity on the master. Applies only when argument
-            **adaptive_polling** is set to True. This value is ignored if set
-            to 0.
-        :type idle_max_wait_time: int | None
-        :param require_from_present: If set to True, replication applier checks
-            at start whether the start tick from which it starts or resumes
-            replication is still present on the master. If not, then there
-            would be data loss. If set to True, the replication applier aborts
-            with an appropriate error message. If set to False, the applier
-            still starts and ignores the data loss.
-        :type require_from_present: bool | None
-        :param verbose: If set to True, a log line is emitted for all
-            operations performed by the replication applier. This should be
-            used for debugging replication problems only.
-        :type verbose: bool | None
-        :return: Replication details.
-        :rtype: dict
-        :raise arango.exceptions.ReplicationApplierStopError: If operation fails.
-        """
-        data: Json = {"endpoint": endpoint}
-
-        if database is not None:
-            data["database"] = database
-        if username is not None:
-            data["username"] = username
-        if password is not None:
-            data["password"] = password
-        if restrict_type is not None:
-            data["restrictType"] = restrict_type
-        if restrict_collections is not None:
-            data["restrictCollections"] = restrict_collections
-        if include_system is not None:
-            data["includeSystem"] = include_system
-        if max_connect_retries is not None:
-            data["maxConnectRetries"] = max_connect_retries
-        if connect_timeout is not None:
-            data["connectTimeout"] = connect_timeout
-        if request_timeout is not None:
-            data["requestTimeout"] = request_timeout
-        if chunk_size is not None:
-            data["chunkSize"] = chunk_size
-        if adaptive_polling is not None:
-            data["adaptivePolling"] = adaptive_polling
-        if auto_resync is not None:
-            data["autoResync"] = auto_resync
-        if auto_resync_retries is not None:
-            data["autoResyncRetries"] = auto_resync_retries
-        if initial_sync_max_wait_time is not None:
-            data["initialSyncMaxWaitTime"] = initial_sync_max_wait_time
-        if connection_retry_wait_time is not None:
-            data["connectionRetryWaitTime"] = connection_retry_wait_time
-        if idle_min_wait_time is not None:
-            data["idleMinWaitTime"] = idle_min_wait_time
-        if idle_max_wait_time is not None:
-            data["idleMaxWaitTime"] = idle_max_wait_time
-        if require_from_present is not None:
-            data["requireFromPresent"] = require_from_present
-        if verbose is not None:
-            data["verbose"] = verbose
-
-        request = Request(
-            method="put", endpoint="/_api/replication/make-slave", data=data
-        )
-
-        def response_handler(resp: Response) -> Json:
-            if resp.is_success:
-                return format_replication_applier_state(resp.body)
-            raise ReplicationMakeSlaveError(resp, request)
 
         return self._execute(request, response_handler)
 
