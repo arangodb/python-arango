@@ -57,22 +57,5 @@ information, refer to `ArangoDB manual`_.
     # Get the logger state.
     replication.logger_state()
 
-    # Get the logger first tick value.
-    replication.logger_first_tick()
-
-    # Get the server ID.
-    replication.server_id()
-
-    # Synchronize data from a remote (master) endpoint
-    replication.synchronize(
-        endpoint='tcp://master:8500',
-        database='test',
-        username='root',
-        password='passwd',
-        include_system=False,
-        incremental=False,
-        restrict_type='include',
-        restrict_collections=['students']
-    )
 
 See :ref:`Replication` for API specification.
