@@ -208,7 +208,9 @@ class Replication(ApiGroup):
         restrict_collections: Optional[Sequence[str]] = None,
         initial_sync_wait_time: Optional[int] = None,
     ) -> Result[Json]:  # pragma: no cover
-        """Synchronize data from a remote endpoint.
+        """**Removed** in ArangoDB v3.12.10.
+
+        Synchronize data from a remote endpoint.
 
         :param endpoint: Master endpoint (e.g. "tcp://192.168.173.13:8529").
         :type endpoint: str
@@ -246,6 +248,9 @@ class Replication(ApiGroup):
         :rtype: dict
         :raise arango.exceptions.ReplicationSyncError: If sync fails.
         """
+        m = "/_api/replication/sync was removed in ArangoDB v3.12.10."
+        warn(m, DeprecationWarning, stacklevel=2)
+
         data: Json = {"endpoint": endpoint}
 
         if database is not None:
@@ -319,13 +324,18 @@ class Replication(ApiGroup):
         return self._execute(request, response_handler)
 
     def logger_first_tick(self) -> Result[str]:
-        """Return the first available tick value from the server.
+        """**Removed** in ArangoDB v3.12.10.
+
+        Return the first available tick value from the server.
 
         :return: First tick value.
         :rtype: str
         :raise arango.exceptions.ReplicationLoggerFirstTickError: If retrieval fails.
         """
-        m = "/_api/replication/logger-first-tick endpoint is removed in ArangoDB v4.0"
+        m = (
+            "/_api/replication/logger-first-tick endpoint is removed in "
+            "ArangoDB v3.12.10."
+        )
         warn(m, DeprecationWarning, stacklevel=2)
 
         request = Request(
@@ -618,12 +628,17 @@ class Replication(ApiGroup):
         return self._execute(request, response_handler)
 
     def server_id(self) -> Result[str]:
-        """Return this server's ID.
+        """**Removed** in ArangoDB v3.12.10.
+
+        Return this server's ID.
 
         :return: Server ID.
         :rtype: str
         :raise arango.exceptions.ReplicationServerIDError: If retrieval fails.
         """
+        m = "/_api/replication/server-id was removed in ArangoDB v3.12.10."
+        warn(m, DeprecationWarning, stacklevel=2)
+
         request = Request(
             method="get",
             endpoint="/_api/replication/server-id",

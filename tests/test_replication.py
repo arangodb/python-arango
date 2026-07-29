@@ -15,8 +15,6 @@ from arango.exceptions import (
     ReplicationDumpError,
     ReplicationInventoryError,
     ReplicationLoggerStateError,
-    ReplicationServerIDError,
-    ReplicationSyncError,
 )
 from tests.helpers import assert_raises
 
@@ -106,36 +104,4 @@ def test_replication_cluster_inventory(sys_db, bad_db, cluster):
 
     with assert_raises(ReplicationClusterInventoryError) as err:
         bad_db.replication.cluster_inventory(include_system=True)
-    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
-
-
-def test_replication_server_id(sys_db, bad_db):
-    result = sys_db.replication.server_id()
-    assert isinstance(result, str)
-
-    with assert_raises(ReplicationServerIDError) as err:
-        bad_db.replication.server_id()
-    assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
-
-
-def test_replication_synchronize(sys_db, bad_db, url, replication):
-    if not replication:
-        pytest.skip("Only tested for replication")
-
-    result = sys_db.replication.synchronize(
-        endpoint="tcp://192.168.1.65:8500",
-        database="test",
-        username="root",
-        password="passwd",
-        include_system=False,
-        incremental=False,
-        restrict_type="include",
-        restrict_collections=["test"],
-        initial_sync_wait_time=None,
-    )
-    assert "collections" in result
-    assert "last_log_tick" in result
-
-    with assert_raises(ReplicationSyncError) as err:
-        bad_db.replication.synchronize(endpoint=url)
     assert err.value.error_code in {FORBIDDEN, DATABASE_NOT_FOUND}
