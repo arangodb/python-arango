@@ -438,7 +438,7 @@ def test_cache_plan_management(db, bad_db, col, docs, db_version):
     assert err.value.error_code == FORBIDDEN
 
 
-def test_aql_cache_management(db, bad_db):
+def test_aql_cache_management(db, sys_db, bad_db):
     # Test get AQL cache properties
     properties = db.aql.cache.properties()
     assert "mode" in properties
@@ -452,7 +452,7 @@ def test_aql_cache_management(db, bad_db):
         bad_db.aql.cache.properties()
 
     # Test get AQL cache configure properties
-    properties = db.aql.cache.configure(
+    properties = sys_db.aql.cache.configure(
         mode="on",
         max_results=100,
         max_results_size=10000,
@@ -486,7 +486,7 @@ def test_aql_cache_management(db, bad_db):
     assert err.value.error_code in {11, 1228}
 
     # Test get AQL cache clear
-    result = db.aql.cache.clear()
+    result = sys_db.aql.cache.clear()
     assert isinstance(result, bool)
 
     # Test get AQL cache clear with bad database
