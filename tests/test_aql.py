@@ -358,12 +358,13 @@ def test_aql_function_management(db, bad_db, db_version):
     assert db.aql.functions() == []
 
 
-def test_cache_results_management(db, bad_db, col, docs, cluster):
+def test_cache_results_management(db, sys_db, bad_db, col, docs, cluster):
     if cluster:
         pytest.skip("Cluster mode does not support query result cache management")
 
     aql = db.aql
     cache = aql.cache
+    sys_cache = sys_db.aql.cache
 
     # Sanity check, just see if the response is OK.
     _ = cache.properties()
@@ -372,7 +373,7 @@ def test_cache_results_management(db, bad_db, col, docs, cluster):
     assert err.value.error_code == FORBIDDEN
 
     # Turn on caching
-    result = cache.configure(mode="on")
+    result = sys_cache.configure(mode="on")
     assert result["mode"] == "on"
     result = cache.properties()
     assert result["mode"] == "on"
@@ -398,8 +399,8 @@ def test_cache_results_management(db, bad_db, col, docs, cluster):
     assert err.value.error_code == FORBIDDEN
 
     # Clear the cache
-    cache.clear()
-    entries = cache.entries()
+    sys_cache.clear()
+    entries = sys_cache.entries()
     assert len(entries) == 0
     with pytest.raises(AQLCacheClearError) as err:
         bad_db.aql.cache.clear()
