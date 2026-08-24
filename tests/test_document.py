@@ -1278,6 +1278,53 @@ def test_document_find(col, bad_col, docs):
     assert len(list(col.find({"foo.bar": "baz"}))) == 1
 
 
+def test_document_match_with_invalid_field_name(col):
+    field = "foo`bar"
+    dotted_field = "foo.bar"
+    complex_field = "foo.bar`baz.qux`quux"
+
+    col.insert_many(
+        [
+            {
+                "_key": "find",
+                field: "find",
+                dotted_field: "find",
+                complex_field: "find",
+            },
+            {
+                "_key": "update",
+                field: "update",
+                dotted_field: "update",
+                complex_field: "update",
+            },
+            {
+                "_key": "replace",
+                field: "replace",
+                dotted_field: "replace",
+                complex_field: "replace",
+            },
+            {
+                "_key": "delete",
+                field: "delete",
+                dotted_field: "delete",
+                complex_field: "delete",
+            },
+        ]
+    )
+    assert [doc["_key"] for doc in col.find({field: "find"})] == ["find"]
+    assert [doc["_key"] for doc in col.find({dotted_field: "find"})] == ["find"]
+    assert [doc["_key"] for doc in col.find({complex_field: "find"})] == ["find"]
+
+    assert col.update_match({field: "update"}, {"updated": True}) == 1
+    assert col["update"]["updated"] is True
+
+    assert col.replace_match({field: "replace"}, {"replaced": True}) == 1
+    assert col["replace"]["replaced"] is True
+
+    assert col.delete_match({field: "delete"}) == 1
+    assert "delete" not in col
+
+
 def test_document_find_near(db_version, col, bad_col, docs):
     if db_version >= version.parse("4.0.0"):
         pytest.skip("Not tested in ArangoDB 4.0 and above")
