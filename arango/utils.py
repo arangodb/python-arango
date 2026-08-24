@@ -6,10 +6,9 @@ __all__ = [
     "is_none_or_str",
 ]
 
-import json
 import logging
 from contextlib import contextmanager
-from typing import Any, Iterator, Optional, Sequence, Union
+from typing import Any, Iterator, Optional, Sequence, Tuple, Union
 
 from arango.exceptions import DocumentParseError, SortValidationError
 from arango.typings import Json, Jsons
@@ -109,23 +108,39 @@ def get_batches(elements: Sequence[Json], batch_size: int) -> Iterator[Sequence[
         yield elements[index : index + batch_size]
 
 
-def build_filter_conditions(filters: Json) -> str:
+def build_filter_conditions(filters: Json) -> Tuple[str, Json]:
     """Build a filter condition for an AQL query.
 
     :param filters: Document filters.
     :type filters: Dict[str, Any]
-    :return: The complete AQL filter condition.
-    :rtype: str
+    :return: The complete AQL filter condition and its bind variables.
+    :rtype: tuple[str, dict]
     """
     if not filters:
-        return ""
+        return "", {}
 
     conditions = []
-    for k, v in filters.items():
-        field = k if "." in k else f"`{k}`"
-        conditions.append(f"doc.{field} == {json.dumps(v)}")
+    bind_vars = {}
+    for filter_index, (field, value) in enumerate(filters.items()):
+        field_access = "doc"
+        for field_index, field_part in enumerate(field.split(".")):
+            field_var = f"filter_field_{filter_index}_{field_index}"
+            bind_vars[field_var] = field_part
+            field_access += f"[@{field_var}]"
 
-    return "FILTER " + " AND ".join(conditions)
+        if "." in field:
+            full_field_var = f"filter_field_{filter_index}"
+            bind_vars[full_field_var] = field
+            field_access = (
+                f"(HAS(doc, @{full_field_var}) "
+                f"? doc[@{full_field_var}] : {field_access})"
+            )
+
+        value_var = f"filter_value_{filter_index}"
+        bind_vars[value_var] = value
+        conditions.append(f"{field_access} == @{value_var}")
+
+    return "FILTER " + " AND ".join(conditions), bind_vars
 
 
 def validate_sort_parameters(sort: Jsons) -> bool:

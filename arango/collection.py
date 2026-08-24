@@ -816,14 +816,15 @@ class Collection(ApiGroup):
 
         skip_val = skip if skip is not None else 0
         limit_val = limit if limit is not None else "null"
+        filter_conditions, filter_bind_vars = build_filter_conditions(filters)
         query = f"""
             FOR doc IN @@collection
-                {build_filter_conditions(filters)}
+                {filter_conditions}
                 LIMIT {skip_val}, {limit_val}
                 {build_sort_expression(sort)}
                 RETURN doc
         """
-        bind_vars = {"@collection": self.name}
+        bind_vars = {"@collection": self.name, **filter_bind_vars}
 
         request = Request(
             method="post",
@@ -1920,9 +1921,10 @@ class Collection(ApiGroup):
         # then the collection’s default waitForSync behavior is applied.
         sync_val = f", waitForSync: {sync}" if sync is not None else ""
 
+        filter_conditions, filter_bind_vars = build_filter_conditions(filters)
         query = f"""
             FOR doc IN @@collection
-                {build_filter_conditions(filters)}
+                {filter_conditions}
                 {f"LIMIT {limit}" if limit is not None else ""}
                 UPDATE doc WITH @body IN @@collection
                 OPTIONS {{ keepNull: @keep_none, mergeObjects: @merge {sync_val} }}
@@ -1933,6 +1935,7 @@ class Collection(ApiGroup):
             "body": body,
             "keep_none": keep_none,
             "merge": merge,
+            **filter_bind_vars,
         }
 
         request = Request(
@@ -2089,15 +2092,20 @@ class Collection(ApiGroup):
         # then the collection’s default waitForSync behavior is applied.
         sync_val = f"waitForSync: {sync}" if sync is not None else ""
 
+        filter_conditions, filter_bind_vars = build_filter_conditions(filters)
         query = f"""
             FOR doc IN @@collection
-                {build_filter_conditions(filters)}
+                {filter_conditions}
                 {f"LIMIT {limit}" if limit is not None else ""}
                 REPLACE doc WITH @body IN @@collection
                 {f"OPTIONS {{ {sync_val} }}" if sync_val else ""}
         """  # noqa: E201 E202
 
-        bind_vars = {"@collection": self.name, "body": body}
+        bind_vars = {
+            "@collection": self.name,
+            "body": body,
+            **filter_bind_vars,
+        }
 
         request = Request(
             method="post",
@@ -2248,15 +2256,16 @@ class Collection(ApiGroup):
         # then the collection’s default waitForSync behavior is applied.
         sync_val = f"waitForSync: {sync}" if sync is not None else ""
 
+        filter_conditions, filter_bind_vars = build_filter_conditions(filters)
         query = f"""
             FOR doc IN @@collection
-                {build_filter_conditions(filters)}
+                {filter_conditions}
                 {f"LIMIT {limit}" if limit is not None else ""}
                 REMOVE doc IN @@collection
                 {f"OPTIONS {{ {sync_val} }}" if sync_val else ""}
         """  # noqa: E201 E202
 
-        bind_vars = {"@collection": self.name}
+        bind_vars = {"@collection": self.name, **filter_bind_vars}
 
         request = Request(
             method="post",
