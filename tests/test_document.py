@@ -1309,11 +1309,16 @@ def test_document_match_with_invalid_field_name(col):
                 dotted_field: "delete",
                 complex_field: "delete",
             },
+            {
+                "_key": "nested",
+                "foo": {"bar`baz": {"qux`quux": "nested"}},
+            },
         ]
     )
     assert [doc["_key"] for doc in col.find({field: "find"})] == ["find"]
     assert [doc["_key"] for doc in col.find({dotted_field: "find"})] == ["find"]
     assert [doc["_key"] for doc in col.find({complex_field: "find"})] == ["find"]
+    assert [doc["_key"] for doc in col.find({complex_field: "nested"})] == ["nested"]
 
     assert col.update_match({field: "update"}, {"updated": True}) == 1
     assert col["update"]["updated"] is True
