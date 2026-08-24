@@ -1319,6 +1319,10 @@ def test_document_match_with_invalid_field_name(col):
     assert [doc["_key"] for doc in col.find({dotted_field: "find"})] == ["find"]
     assert [doc["_key"] for doc in col.find({complex_field: "find"})] == ["find"]
     assert [doc["_key"] for doc in col.find({complex_field: "nested"})] == ["nested"]
+    assert [
+        doc["_key"]
+        for doc in col.find({}, sort=[{"sort_by": complex_field, "sort_order": "ASC"}])
+    ] == ["delete", "find", "nested", "replace", "update"]
 
     assert col.update_match({field: "update"}, {"updated": True}) == 1
     assert col["update"]["updated"] is True

@@ -108,6 +108,23 @@ def get_batches(elements: Sequence[Json], batch_size: int) -> Iterator[Sequence[
         yield elements[index : index + batch_size]
 
 
+def _build_attribute_expression(field: str, prefix: str, bind_vars: Json) -> str:
+    """Build a bind-safe AQL document attribute expression."""
+    bind_vars[prefix] = field
+    field_access = f"doc[@{prefix}]"
+
+    if "." not in field:
+        return field_access
+
+    nested_access = "doc"
+    for field_index, field_part in enumerate(field.split(".")):
+        field_var = f"{prefix}_{field_index}"
+        bind_vars[field_var] = field_part
+        nested_access += f"[@{field_var}]"
+
+    return f"(HAS(doc, @{prefix}) ? {field_access} : {nested_access})"
+
+
 def build_filter_conditions(filters: Json) -> Tuple[str, Json]:
     """Build a filter condition for an AQL query.
 
@@ -120,21 +137,13 @@ def build_filter_conditions(filters: Json) -> Tuple[str, Json]:
         return "", {}
 
     conditions = []
-    bind_vars = {}
+    bind_vars: Json = {}
     for filter_index, (field, value) in enumerate(filters.items()):
-        field_access = "doc"
-        for field_index, field_part in enumerate(field.split(".")):
-            field_var = f"filter_field_{filter_index}_{field_index}"
-            bind_vars[field_var] = field_part
-            field_access += f"[@{field_var}]"
-
-        if "." in field:
-            full_field_var = f"filter_field_{filter_index}"
-            bind_vars[full_field_var] = field
-            field_access = (
-                f"(HAS(doc, @{full_field_var}) "
-                f"? doc[@{full_field_var}] : {field_access})"
-            )
+        field_access = _build_attribute_expression(
+            field,
+            f"filter_field_{filter_index}",
+            bind_vars,
+        )
 
         value_var = f"filter_value_{filter_index}"
         bind_vars[value_var] = value
@@ -163,20 +172,26 @@ def validate_sort_parameters(sort: Jsons) -> bool:
     return True
 
 
-def build_sort_expression(sort: Optional[Jsons]) -> str:
+def build_sort_expression(sort: Optional[Jsons]) -> Tuple[str, Json]:
     """Build a sort condition for an AQL query.
 
     :param sort: Document sort parameters.
     :type sort: Jsons | None
-    :return: The complete AQL sort condition.
-    :rtype: str
+    :return: The complete AQL sort condition and its bind variables.
+    :rtype: tuple[str, dict]
     """
     if not sort:
-        return ""
+        return "", {}
 
     sort_chunks = []
-    for sort_param in sort:
-        chunk = f"doc.{sort_param['sort_by']} {sort_param['sort_order']}"
+    bind_vars: Json = {}
+    for sort_index, sort_param in enumerate(sort):
+        field_access = _build_attribute_expression(
+            sort_param["sort_by"],
+            f"sort_field_{sort_index}",
+            bind_vars,
+        )
+        chunk = f"{field_access} {sort_param['sort_order'].upper()}"
         sort_chunks.append(chunk)
 
-    return "SORT " + ", ".join(sort_chunks)
+    return "SORT " + ", ".join(sort_chunks), bind_vars

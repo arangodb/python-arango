@@ -817,14 +817,19 @@ class Collection(ApiGroup):
         skip_val = skip if skip is not None else 0
         limit_val = limit if limit is not None else "null"
         filter_conditions, filter_bind_vars = build_filter_conditions(filters)
+        sort_expression, sort_bind_vars = build_sort_expression(sort)
         query = f"""
             FOR doc IN @@collection
                 {filter_conditions}
                 LIMIT {skip_val}, {limit_val}
-                {build_sort_expression(sort)}
+                {sort_expression}
                 RETURN doc
         """
-        bind_vars = {"@collection": self.name, **filter_bind_vars}
+        bind_vars = {
+            "@collection": self.name,
+            **filter_bind_vars,
+            **sort_bind_vars,
+        }
 
         request = Request(
             method="post",
