@@ -3,13 +3,6 @@ name: Upload to PyPI
 on:
   release:
     types: [published]
-  workflow_dispatch:
-    inputs:
-      debug_enabled:
-        type: boolean
-        description: Debug with tmate
-        required: false
-        default: false
 
 jobs:
   upload:
@@ -17,19 +10,14 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Fetch all tags and branches
-        run: git fetch --prune --unshallow
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/checkout@v7
         with:
-          python-version: "3.10"
+          fetch-depth: 0
+          fetch-tags: true
 
-      - name: Debug with tmate
-        uses: mxschmitt/action-tmate@v3
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
