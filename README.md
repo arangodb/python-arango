@@ -24,7 +24,7 @@ If you're interested in using asyncio, please check [python-arango-async](https:
 ## Requirements
 
 - ArangoDB version 3.11+
-- Python version 3.9+
+- Python version 3.10+
 
 ## Installation
 
