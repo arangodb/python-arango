@@ -120,8 +120,7 @@ class BaseConnection:
         else:
             resp.body = resp.raw_body
 
-        http_ok = 200 <= resp.status_code < 300
-        resp.is_success = http_ok and resp.error_code is None
+        resp.is_success = 200 <= resp.status_code < 300
         return resp
 
     def process_request(

@@ -29,7 +29,7 @@ def test_response(conn):
         url="test_url",
         headers={"foo": "bar"},
         status_text="baz",
-        status_code=200,
+        status_code=400,
         raw_body=test_body,
     )
     conn.prep_response(response)
@@ -37,7 +37,7 @@ def test_response(conn):
     assert response.method == "get"
     assert response.url == "test_url"
     assert response.headers == {"foo": "bar"}
-    assert response.status_code == 200
+    assert response.status_code == 400
     assert response.status_text == "baz"
     assert response.raw_body == test_body
     assert response.body == {"errorMessage": "qux", "errorNum": 1}
