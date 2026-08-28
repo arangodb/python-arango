@@ -37,7 +37,7 @@ workflows:
               arangodb_image: ["arangodb/enterprise:3.12"]
               arangodb_conf_version: ["3.12"]
       - integration-test:
-          name: ArangoDB (enterprise-preview, 3.12-nightly << matrix.arangodb_config >>)
+          name: ArangoDB (enterprise-preview, 4.0-nightly << matrix.arangodb_config >>)
           matrix:
             parameters:
               arangodb_config: [ "single", "cluster" ]
