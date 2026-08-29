@@ -62,4 +62,43 @@ on fields ``_from`` and ``_to``. For more information on indexes, refer to
     # Delete the last index from the collection.
     cities.delete_index(index['id'])
 
+    # Insert documents with vector embeddings.
+    cities.insert_many([
+        {
+            '_key': f'city{i}',
+            'continent': f'continent{i}',
+            'country': f'country{i}',
+            'population': i,
+            'coordinates': [float(i % 180), float(i % 90)],
+            'x': float(i),
+            'y': float(i),
+            'embedding': [float(i), float(i % 7), float(i % 11), 1.0],
+        }
+        for i in range(100)
+    ])
+
+    # Let ArangoDB determine the number of vector-index centroids.
+    vector_index = cities.add_index({
+        'type': 'vector',
+        'fields': ['embedding'],
+        'name': 'vector_index',
+        'params': {
+            'metric': 'cosine',
+            'dimension': 4,
+        },
+    })
+
+    # Index creation may succeed even if vector training fails.
+    if vector_index.get('trainingState') != 'ready':
+        raise RuntimeError(
+            vector_index.get('errorMessage', 'Vector index is not ready')
+        )
+
+Omitted or scaling-object ``nLists``, ``numberOfDocsPerCentroid``, factory
+placeholders such as ``IVF{},Flat``, and successful-but-unusable creation
+behavior require ArangoDB 3.12.10 or later. A successful creation response
+means that the index exists, but callers should check ``trainingState`` before
+using it. If training fails permanently, the state is ``"unusable"`` and
+``errorMessage`` describes the failure.
+
 See :ref:`StandardCollection` for API specification.
