@@ -19,10 +19,21 @@ jobs:
       - name: Create ArangoDB Docker container
         run: >
           docker create --name arango -p 8529:8529 -e ARANGO_ROOT_PASSWORD=passwd -v "$(pwd)/tests/static/":/tests/static
-          arangodb/arangodb:latest --server.jwt-secret-keyfile=/tests/static/keyfile --vector-index=true
+          arangodb/enterprise:latest --server.jwt-secret-keyfile=/tests/static/keyfile --vector-index=true
 
       - name: Start ArangoDB Docker container
         run: docker start arango
+
+      - name: Wait for ArangoDB
+        run: |
+          for _ in {1..30}; do
+            if curl --fail --silent --user root:passwd http://localhost:8529/_api/version > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs arango
+          exit 1
 
       - name: Set up Python
         uses: actions/setup-python@v7
