@@ -273,34 +273,136 @@ def test_add_mdi_index(icol, db_version):
 
 
 def test_add_vector_index(col, db_version):
+    # Insert vector data.
     docs = []
     for i in range(100):
-        docs.append({"_key": generate_doc_key(), "x": [1] * 128})
+        docs.append(
+            {
+                "_key": generate_doc_key(),
+                "x": [1] * 128,
+                "y": [1] * 128,
+            }
+        )
     col.insert_many(docs)
-    index = {
-        "type": "vector",
-        "fields": ["x"],
-        "name": "vector_index",
-        "params": {
-            "metric": "cosine",
-            "dimension": 128,
-            "nLists": 2,
+
+    # Test basic compatibility.
+    index_meta = [
+        {
+            "type": "vector",
+            "fields": ["x"],
+            "name": "vector_index_1",
+            "params": {
+                "metric": "cosine",
+                "dimension": 128,
+                "nLists": 2,
+            },
         },
-    }
+        {
+            "type": "vector",
+            "fields": ["y"],
+            "name": "vector_index_2",
+            "params": {
+                "metric": "cosine",
+                "dimension": 128,
+                "nLists": 3,
+            },
+        },
+    ]
 
-    result = col.add_index(index)
-    assert result["name"] == "vector_index"
+    results = [col.add_index(index_meta[0]), col.add_index(index_meta[1])]
+    assert results[0]["name"] == "vector_index_1"
+    assert results[1]["name"] == "vector_index_2"
 
+    # Test hidden shard details.
     indexes = col.indexes(with_hidden=True)
 
     if db_version >= version.parse("3.12.10"):
-        details = next(item for item in indexes if item["id"] == result["id"])
+        details = {item["id"]: item for item in indexes}
+        for result in results:
+            shards = details[result["id"]]["shards"]
+            assert shards is not None
+            for status in shards.values():
+                assert {"trainingState", "error", "resolvedNLists"} <= status.keys()
 
-        assert details["shards"] is not None
-        for status in details["shards"].values():
-            assert {"trainingState", "error", "resolvedNLists"} <= status.keys()
+    col.delete_index(results[0]["id"])
+    col.delete_index(results[1]["id"])
 
-    col.delete_index(result["id"])
+    if db_version >= version.parse("3.12.10"):
+        # Test server-managed nLists.
+        default_index = {
+            "type": "vector",
+            "fields": ["x"],
+            "name": "vector_index_default",
+            "params": {
+                "metric": "cosine",
+                "dimension": 128,
+            },
+        }
+        scaling_n_lists = {
+            "strategy": "autoSqrt",
+            "multiplier": 1,
+            "minNLists": 2,
+            "tiers": [],
+        }
+        scaling_index = {
+            "type": "vector",
+            "fields": ["y"],
+            "name": "vector_index_scaling",
+            "params": {
+                "metric": "cosine",
+                "dimension": 128,
+                "nLists": scaling_n_lists,
+                "numberOfDocsPerCentroid": 10,
+                "factory": "IVF{},Flat",
+            },
+        }
+
+        default_result = col.add_index(default_index)
+        scaling_result = col.add_index(scaling_index)
+
+        default_n_lists = default_result["params"]["nLists"]
+        assert default_n_lists["strategy"] == "autoSqrt"
+        assert default_n_lists["multiplier"] == 4
+        assert default_n_lists["minNLists"] == 2
+        assert scaling_result["params"]["nLists"] == scaling_n_lists
+        assert scaling_result["params"]["numberOfDocsPerCentroid"] == 10
+        assert scaling_result["params"]["factory"] == "IVF{},Flat"
+
+        col.delete_index(default_result["id"])
+        col.delete_index(scaling_result["id"])
+
+        # Test unusable creation.
+        unusable_index = {
+            "type": "vector",
+            "fields": ["x"],
+            "name": "vector_index_unusable",
+            "params": {
+                "metric": "cosine",
+                "dimension": 128,
+                "nLists": 2,
+                "factory": "IVF3,Flat",
+            },
+        }
+        unusable_result = col.add_index(unusable_index)
+        assert unusable_result["trainingState"] == "unusable"
+        assert unusable_result["errorMessage"]
+        col.delete_index(unusable_result["id"])
+
+        # Test invalid request failure.
+        with assert_raises(IndexCreateError) as err:
+            col.add_index(
+                {
+                    "type": "vector",
+                    "fields": ["x"],
+                    "name": "vector_index_invalid",
+                    "params": {
+                        "metric": "cosine",
+                        "dimension": 128,
+                        "nLists": 0,  # must be greater than 0
+                    },
+                }
+            )
+        assert err.value.http_code == 400
 
 
 def test_delete_index(icol, bad_col):
