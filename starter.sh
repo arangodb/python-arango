@@ -8,8 +8,8 @@
 #   ./starter.sh [single|cluster] [image[:tag]]
 # Example:
 #   ./starter.sh cluster enterprise 3.12.4
-#   ./starter.sh single enterprise-preview 4.0-nightly
-#   ./starter.sh single arangodb/enterprise-preview:4.0-nightly
+#   ./starter.sh single core-preview 4.0-nightly
+#   ./starter.sh single arangodb/enterprise-preview:3.12-nightly
 
 setup="${1:-single}"
 image="${2:-community}"
