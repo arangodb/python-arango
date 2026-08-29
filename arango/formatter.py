@@ -73,6 +73,8 @@ def format_index(body: Json, formatter: bool = True) -> Json:
         result["cacheEnabled"] = body["cacheEnabled"]
     if "legacyPolygons" in body:
         result["legacyPolygons"] = body["legacyPolygons"]
+    if "figures" in body:
+        result["figures"] = body["figures"]
     if "estimates" in body:
         result["estimates"] = body["estimates"]
     if "analyzer" in body:

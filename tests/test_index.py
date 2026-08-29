@@ -22,12 +22,15 @@ def test_list_indexes(icol, bad_col):
     assert "sparse" in indexes[0]
     assert "unique" in indexes[0]
 
+    indexes = icol.indexes(with_stats=True)
+    assert "figures" in indexes[0]
+
     with assert_raises(IndexListError) as err:
         bad_col.indexes()
     assert err.value.error_code in {11, 1228}
 
 
-def test_list_indexes_with_hidden(icol, monkeypatch):
+def test_list_indexes_options(icol, monkeypatch):
     requests = []
 
     def execute(request, response_handler):
@@ -42,6 +45,19 @@ def test_list_indexes_with_hidden(icol, monkeypatch):
     assert icol.indexes(with_hidden=True) == []
     assert requests[-1].params == {
         "collection": icol.name,
+        "withHidden": "1",
+    }
+
+    assert icol.indexes(with_stats=True) == []
+    assert requests[-1].params == {
+        "collection": icol.name,
+        "withStats": "1",
+    }
+
+    assert icol.indexes(with_stats=True, with_hidden=True) == []
+    assert requests[-1].params == {
+        "collection": icol.name,
+        "withStats": "1",
         "withHidden": "1",
     }
 
