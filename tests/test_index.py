@@ -27,6 +27,25 @@ def test_list_indexes(icol, bad_col):
     assert err.value.error_code in {11, 1228}
 
 
+def test_list_indexes_with_hidden(icol, monkeypatch):
+    requests = []
+
+    def execute(request, response_handler):
+        requests.append(request)
+        return []
+
+    monkeypatch.setattr(icol, "_execute", execute)
+
+    assert icol.indexes() == []
+    assert requests[-1].params == {"collection": icol.name}
+
+    assert icol.indexes(with_hidden=True) == []
+    assert requests[-1].params == {
+        "collection": icol.name,
+        "withHidden": "1",
+    }
+
+
 def test_get_index(icol, bad_col):
     indexes = icol.indexes()
     for index in indexes:
@@ -253,24 +272,34 @@ def test_add_mdi_index(icol, db_version):
     icol.delete_index(result["id"])
 
 
-def test_add_vector_index(col):
+def test_add_vector_index(col, db_version):
     docs = []
     for i in range(100):
         docs.append({"_key": generate_doc_key(), "x": [1] * 128})
     col.insert_many(docs)
-    result = col.add_index(
-        {
-            "type": "vector",
-            "fields": ["x"],
-            "name": "vector_index",
-            "params": {
-                "metric": "cosine",
-                "dimension": 128,
-                "nLists": 2,
-            },
-        }
-    )
+    index = {
+        "type": "vector",
+        "fields": ["x"],
+        "name": "vector_index",
+        "params": {
+            "metric": "cosine",
+            "dimension": 128,
+            "nLists": 2,
+        },
+    }
+
+    result = col.add_index(index)
     assert result["name"] == "vector_index"
+
+    indexes = col.indexes(with_hidden=True)
+
+    if db_version >= version.parse("3.12.10"):
+        details = next(item for item in indexes if item["id"] == result["id"])
+
+        assert details["shards"] is not None
+        for status in details["shards"].values():
+            assert {"trainingState", "error", "resolvedNLists"} <= status.keys()
+
     col.delete_index(result["id"])
 
 

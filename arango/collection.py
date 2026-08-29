@@ -1274,17 +1274,23 @@ class Collection(ApiGroup):
     # Index Management #
     ####################
 
-    def indexes(self) -> Result[Jsons]:
+    def indexes(self, with_hidden: bool = False) -> Result[Jsons]:
         """Return the collection indexes.
 
+        :param with_hidden: Include hidden index details.
+        :type with_hidden: bool
         :return: Collection indexes.
         :rtype: [dict]
         :raise arango.exceptions.IndexListError: If retrieval fails.
         """
+        params: Params = {"collection": self.name}
+        if with_hidden:
+            params["withHidden"] = True
+
         request = Request(
             method="get",
             endpoint="/_api/index",
-            params={"collection": self.name},
+            params=params,
         )
 
         def response_handler(resp: Response) -> Jsons:

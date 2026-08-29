@@ -123,6 +123,8 @@ def format_index(body: Json, formatter: bool = True) -> Json:
         result["error_message"] = body["errorMessage"]
     if "trainingState" in body:
         result["training_state"] = body["trainingState"]
+    if "shards" in body:
+        result["shards"] = body["shards"]
 
     return verify_format(body, result)
 
