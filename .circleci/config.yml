@@ -30,11 +30,18 @@ workflows:
             parameters:
               python_version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
       - integration-test:
-          name: ArangoDB (enterprise, 3.12 << matrix.arangodb_config >>)
+          name: ArangoDB (enterprise, 3.12.10 << matrix.arangodb_config >>)
           matrix:
             parameters:
               arangodb_config: ["single", "cluster"]
-              arangodb_image: ["arangodb/enterprise:3.12"]
+              arangodb_image: ["arangodb/enterprise:3.12.10"]
+              arangodb_conf_version: ["3.12"]
+      - integration-test:
+          name: ArangoDB (enterprise, 3.12.9 << matrix.arangodb_config >>)
+          matrix:
+            parameters:
+              arangodb_config: ["single", "cluster"]
+              arangodb_image: ["arangodb/enterprise:3.12.9"]
               arangodb_conf_version: ["3.12"]
       - integration-test:
           name: ArangoDB (core-preview, 4.0-nightly << matrix.arangodb_config >>)
