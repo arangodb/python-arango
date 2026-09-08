@@ -72,14 +72,15 @@ def test_permission_management(client, sys_db, bad_db, cluster):
     assert sys_db.permission(username, db_name) == "ro"
 
     # Test reset permission (database level) and verify access
+    # since 4.0, the error code is 403 instead of 401
     assert sys_db.reset_permission(username, db_name) is True
     assert sys_db.permission(username, db_name) == "none"
     with assert_raises(CollectionCreateError) as err:
         db.create_collection(col_name_1)
-    assert err.value.http_code == 401
+    assert err.value.http_code in {401, 403}
     with assert_raises(CollectionListError) as err:
         db.collections()
-    assert err.value.http_code == 401
+    assert err.value.http_code in {401, 403}
 
     # Test update permission (database level) and verify access
     assert sys_db.update_permission(username, "rw", db_name) is True
