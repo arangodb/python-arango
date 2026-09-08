@@ -387,23 +387,6 @@ def test_add_vector_index(col, db_version):
         col.delete_index(default_result["id"])
         col.delete_index(scaling_result["id"])
 
-        # Test unusable creation.
-        unusable_index = {
-            "type": "vector",
-            "fields": ["x"],
-            "name": "vector_index_unusable",
-            "params": {
-                "metric": "cosine",
-                "dimension": 128,
-                "nLists": 2,
-                "factory": "IVF3,Flat",
-            },
-        }
-        unusable_result = col.add_index(unusable_index)
-        assert unusable_result["trainingState"] == "unusable"
-        assert unusable_result["errorMessage"]
-        col.delete_index(unusable_result["id"])
-
         # Test invalid request failure.
         with assert_raises(IndexCreateError) as err:
             col.add_index(
@@ -419,6 +402,29 @@ def test_add_vector_index(col, db_version):
                 }
             )
         assert err.value.http_code == 400
+
+
+def test_unusable_vector_index(col, db_version):
+    if db_version < version.parse("3.12.10"):
+        pytest.skip("Unusable vector index test require ArangoDB 3.12.10+")
+
+    # One training vector is insufficient for two centroids.
+    col.insert({"x": [1.0, 1.0]})
+    result = col.add_index(
+        {
+            "type": "vector",
+            "fields": ["x"],
+            "name": "vector_index_unusable",
+            "params": {
+                "metric": "cosine",
+                "dimension": 2,
+                "nLists": 2,
+            },
+        }
+    )
+    assert result["trainingState"] == "unusable"
+    assert result["errorMessage"]
+    col.delete_index(result["id"])
 
 
 def test_delete_index(icol, bad_col):

@@ -88,7 +88,7 @@ on fields ``_from`` and ``_to``. For more information on indexes, refer to
         },
     })
 
-    # Index creation may succeed even if vector training fails.
+    # Index creation may succeed even if there is insufficient training data.
     if vector_index.get('trainingState') != 'ready':
         raise RuntimeError(
             vector_index.get('errorMessage', 'Vector index is not ready')
@@ -98,7 +98,10 @@ Omitted or scaling-object ``nLists``, ``numberOfDocsPerCentroid``, factory
 placeholders such as ``IVF{},Flat``, and successful-but-unusable creation
 behavior require ArangoDB 3.12.10 or later. A successful creation response
 means that the index exists, but callers should check ``trainingState`` before
-using it. If training fails permanently, the state is ``"unusable"`` and
-``errorMessage`` describes the failure.
+using it. If there is insufficient data to train the index, the state is
+``"unusable"`` and ``errorMessage`` describes the failure. Invalid index
+definitions, such as an ``nLists`` value that disagrees with the number of
+centroids in the factory string, are rejected during creation with
+``IndexCreateError`` and no index is created.
 
 See :ref:`StandardCollection` for API specification.
