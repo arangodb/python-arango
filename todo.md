@@ -390,3 +390,8 @@ Retaining legacy indefinitely requires permanent compatibility tests. Freeze his
 of new fields; preserve existing formatter options in legacy mode and reject conflicting options in server mode.
 Dictionary subclasses preserve isinstance(result, dict), but change type(result) is dict; include this and custom
 serializer compatibility in the major-release migration notes.
+
+
+## Documentation tests
+
+This could be done better, especially for the async driver.
