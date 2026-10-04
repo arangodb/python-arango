@@ -94,7 +94,6 @@ Development
 .. toctree::
     :maxdepth: 1
 
-    contributing
     specs
 
 .. _ArangoDB: https://www.arangodb.com

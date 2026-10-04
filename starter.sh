@@ -10,9 +10,10 @@
 #   ./starter.sh cluster enterprise 3.12.4
 #   ./starter.sh single core-preview 4.0-nightly
 #   ./starter.sh single arangodb/enterprise-preview:3.12-nightly
+# Defaults: single server, enterprise image, latest version.
 
 setup="${1:-single}"
-image="${2:-community}"
+image="${2:-enterprise}"
 version="${3:-latest}"
 
 extra_ports=""
