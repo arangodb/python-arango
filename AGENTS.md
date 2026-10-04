@@ -84,7 +84,6 @@ the coverage report.
 - Follow existing code patterns, type annotations, and Sphinx docstrings.
 - Add regression tests for fixes and tests for new behavior; update user documentation.
 - Run relevant tests and checks; report anything skipped and why.
-- Keep test coverage at 100% and squash changes into one commit for submission,
-  as described in `docs/contributing.rst`.
+- Keep test coverage up and squash changes into one commit for submission.
 - Use present-tense commit messages, such as `Fix cursor retry`.
 - Explain what changed, why, and any compatibility impact in the pull request.
