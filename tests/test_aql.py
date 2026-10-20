@@ -164,7 +164,7 @@ def test_aql_query_management(db_version, db, sys_db, bad_db, col, docs):
     assert db.aql.tracking()["enabled"] == tracking["enabled"]
 
     # Test set tracking properties
-    new_tracking = db.aql.set_tracking(
+    new_tracking = sys_db.aql.set_tracking(
         enabled=not tracking["enabled"],
         max_query_string_length=4000,
         max_slow_queries=60,
@@ -182,7 +182,7 @@ def test_aql_query_management(db_version, db, sys_db, bad_db, col, docs):
     assert new_tracking["track_slow_queries"] != tracking["track_slow_queries"]
 
     # Make sure to revert the properties
-    new_tracking = db.aql.set_tracking(
+    new_tracking = sys_db.aql.set_tracking(
         enabled=True, track_bind_vars=True, track_slow_queries=True
     )
     assert new_tracking["enabled"] is True
