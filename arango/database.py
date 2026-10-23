@@ -1898,25 +1898,22 @@ class Database(ApiGroup):
         :param orphan_collections: Names of additional vertex collections that
             are not in edge definitions.
         :type orphan_collections: [str] | None
-        :param smart: If set to True, sharding is enabled (see parameter
-            **smart_field** below). Applies only to enterprise version of
-            ArangoDB.
+        :param smart: If set to True, create a SmartGraph when **smart_field**
+            is specified, or an EnterpriseGraph otherwise. Applies only to enterprise
+            version of ArangoDB.
         :type smart: bool | None
         :param disjoint: If set to True, create a disjoint SmartGraph instead
-            of a regular SmartGraph. Applies only to enterprise version of
-            ArangoDB.
+            of a regular SmartGraph. Only has an effect with **smart_field**
+            or **smart**. Applies only to enterprise version of ArangoDB.
         :type disjoint: bool | None
         :param smart_field: Document field used to shard the vertices of the
-            graph. To use this, parameter **smart** must be set to True and
-            every vertex in the graph must have the smart field. Applies only
-            to enterprise version of ArangoDB. NOTE: If this field is
-            None and **smart** is True, an Enterprise Graph will be created.
+            graph. Setting this creates a SmartGraph, even if **smart** is
+            omitted or False. Every vertex in the graph must have this field.
+            Applies only to enterprise version of ArangoDB.
         :type smart_field: str | None
         :param shard_count: Number of shards used for every collection in the
-            graph. To use this, parameter **smart** must be set to True and
-            every vertex in the graph must have the smart field. This number
-            cannot be modified later once set. Applies only to enterprise
-            version of ArangoDB.
+            graph. This number cannot be modified later once set. Used for
+            clusters only.
         :type shard_count: int | None
         :param replication_factor: Number of copies of each shard on different
             servers in a cluster. Allowed values are 1 (only one copy is kept
@@ -1969,11 +1966,11 @@ class Database(ApiGroup):
             ]
         if orphan_collections is not None:
             data["orphanCollections"] = orphan_collections
-        if smart is not None:  # pragma: no cover
-            data["isSmart"] = smart
-        if disjoint is not None:  # pragma: no cover
-            data["isDisjoint"] = disjoint
-        if smart_field is not None:  # pragma: no cover
+        if smart is not None:
+            data["options"]["isSmart"] = smart
+        if disjoint is not None:
+            data["options"]["isDisjoint"] = disjoint
+        if smart_field is not None:
             data["options"]["smartGraphAttribute"] = smart_field
         if shard_count is not None:  # pragma: no cover
             data["options"]["numberOfShards"] = shard_count
