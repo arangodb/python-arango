@@ -40,6 +40,37 @@ For more information, refer to `ArangoDB manual`_.
     # Delete the graph.
     db.delete_graph('school')
 
+Graph creation options
+======================
+
+To create an EnterpriseGraph, pass ``smart=True`` and omit ``smart_field``.
+EnterpriseGraphs use optimized graph sharding without a user-defined smart
+field.
+
+To create a SmartGraph, set ``smart_field`` to the vertex attribute used for
+sharding (``smart=True`` is then optional).Set ``disjoint=True`` alongside
+``smart_field`` to create a Disjoint SmartGraph, which rejects edges between
+vertices with different smart field values.
+
+For example, on an enterprise cluster:
+
+.. code-block:: python
+
+    regional = db.create_graph(
+        'regional',
+        edge_definitions=[{
+            'edge_collection': 'routes',
+            'from_vertex_collections': ['places'],
+            'to_vertex_collections': ['places'],
+        }],
+        smart_field='region',
+        disjoint=True,
+        shard_count=3,
+    )
+
+See :meth:`arango.database.StandardDatabase.create_graph` for all creation
+options.
+
 .. _edge-definitions:
 
 Edge Definitions
