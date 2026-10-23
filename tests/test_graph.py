@@ -2,6 +2,7 @@ import pytest
 from packaging import version
 
 from arango.collection import EdgeCollection
+from arango.errno import INVALID_DISJOINT_SMART_EDGE
 from arango.exceptions import (
     DocumentDeleteError,
     DocumentGetError,
@@ -33,6 +34,59 @@ from tests.helpers import (
     generate_doc_key,
     generate_graph_name,
 )
+
+
+@pytest.mark.parametrize(
+    "smart_field,disjoint",
+    [(None, False), ("region", False), ("region", True)],
+    ids=["enterprise", "smart", "disjoint-smart"],
+)
+def test_graph_create_smart_options(db, cluster, skip_tests, smart_field, disjoint):
+    if "enterprise" in skip_tests:
+        pytest.skip("Only for ArangoDB enterprise edition")
+    if not cluster:
+        pytest.skip("Only for ArangoDB clusters")
+
+    graph_name = generate_graph_name()
+    vertices = generate_col_name()
+    edges = generate_col_name()
+    graph = db.create_graph(
+        graph_name,
+        edge_definitions=[
+            {
+                "edge_collection": edges,
+                "from_vertex_collections": [vertices],
+                "to_vertex_collections": [vertices],
+            }
+        ],
+        smart=True,
+        smart_field=smart_field,
+        disjoint=disjoint,
+        shard_count=3,
+    )
+    try:
+        properties = db.graph(graph_name).properties()
+        assert properties["smart"] is True
+        assert properties["disjoint"] is disjoint
+        assert properties.get("smart_field", "") == (smart_field or "")
+        assert properties["shard_count"] == 3
+
+        first = graph.insert_vertex(vertices, {"region": "eu"})
+        second = graph.insert_vertex(vertices, {"region": "eu"})
+        third = graph.insert_vertex(vertices, {"region": "us"})
+        edge = graph.insert_edge(edges, {"_from": first["_id"], "_to": second["_id"]})
+        assert graph.has_edge(edge["_id"])
+
+        cross_region_edge = {"_from": first["_id"], "_to": third["_id"]}
+        if disjoint:
+            with pytest.raises(DocumentInsertError) as err:
+                graph.insert_edge(edges, cross_region_edge)
+            assert err.value.error_code == INVALID_DISJOINT_SMART_EDGE
+        else:
+            edge = graph.insert_edge(edges, cross_region_edge)
+            assert graph.has_edge(edge["_id"])
+    finally:
+        db.delete_graph(graph_name, drop_collections=True)
 
 
 def test_graph_properties(graph, bad_graph, db):

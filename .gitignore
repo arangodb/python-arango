@@ -124,3 +124,5 @@ node_modules/
 
 # devcontainers
 .devcontainer
+
+test-results/
