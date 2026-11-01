@@ -25,9 +25,25 @@ that behavior. Preserve `Result[T]` annotations where applicable: an operation
 can return a value, an async or batch job, or `None`, depending on its context.
 See `arango/result.py` for the shared type.
 
-Follow the neighboring handler's success checks, response formatting, and
-operation-specific exceptions from `arango/exceptions.py`. Preserve existing
-return shapes and error contracts when fixing a bug.
+For endpoint or option changes, verify the server HTTP API for the targeted
+ArangoDB versions. Map Python option names to the specified wire names and
+locations: endpoint path, `params` for query parameters, `headers`, or `data`
+for the body. Preserve existing defaults and distinguish omitted options from
+explicit `False`, `0`, or empty values. Where `None` means omission, use
+`is not None` rather than a truthiness check. `normalize_params` in `arango/request.py`
+stringifies supplied values, including `None`; omit such query entries before
+constructing the request. Keep explicit JSON nulls where the body contract
+requires them.
+
+Follow the neighboring handler's success checks and response formatting;
+reuse helpers in `arango/formatter.py` where applicable. Preserve Python-facing
+field names, return shapes, and silent-operation results. Handle special
+statuses before the general failure check where required, such as revision
+conflicts. Raise the operation-specific exception from `arango/exceptions.py`
+with `(resp, request)` to retain HTTP and ArangoDB error details. Keep signatures,
+annotations, and Sphinx parameter and return documentation aligned. Cover
+omitted and explicit option values, result conversion, and affected error
+paths in regression tests.
 
 Add focused regression coverage in the relevant `tests/test_*.py` module,
 reusing fixtures and helpers from `tests/conftest.py` and `tests/helpers.py`.
