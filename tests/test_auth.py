@@ -1,5 +1,7 @@
 import time
 
+import jwt
+
 from arango.connection import BasicConnection, JwtConnection, JwtSuperuserConnection
 from arango.errno import FORBIDDEN, HTTP_UNAUTHORIZED
 from arango.exceptions import (
@@ -140,6 +142,8 @@ def test_auth_jwt_expiry(client, db_name, root_password, secret):
     expired_token = generate_jwt(secret, exp=-1000)
     db.conn._token = expired_token
     db.conn._auth_header = f"bearer {expired_token}"
+    payload = jwt.decode(expired_token, options={"verify_signature": False})
+    db.conn._token_exp = payload["exp"]
     assert isinstance(db.version(), str)
 
     # Test expiry error on db instantiation (superuser)
