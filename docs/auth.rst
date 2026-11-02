@@ -102,7 +102,6 @@ responsible for obtaining replacements. Supplied username/password and
 ``auth_method`` are ignored when either token argument is used, so they cannot
 provide renewal credentials for that connection.
 
-The credentials-based renewal policy above does not apply to these tokens.
 ``user_token`` is checked for expiration locally when the connection is
 created. ``superuser_token`` is accepted without a local expiry check at
 construction; the server can reject it on the first request. With
