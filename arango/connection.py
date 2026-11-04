@@ -407,7 +407,8 @@ class JwtConnection(BaseConnection):
             return resp
 
         now = int(time.time())
-        if self._token_exp < now - self.exp_leeway:  # pragma: no cover
+        has_credentials = self._username is not None and self._password is not None
+        if not has_credentials and self._token_exp < now - self.exp_leeway:
             return resp
 
         self.refresh_token()
